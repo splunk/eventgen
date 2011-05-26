@@ -1,0 +1,59 @@
+###### Example 1: Windows Event Generation ######
+   
+--- Sample ($SPLUNK_HOME/etc/apps/windows/samples/server2k3.540.windows) ---
+03/11/10 01:12:01 PM
+LogName=Security
+SourceName=Security
+EventCode=540
+EventType=8
+Type=@@AuditType Audit
+ComputerName=@@ComputerName
+User=@@User
+Sid=S-1-5-18
+SidType=1
+Category=2
+CategoryString=Logon/Logoff
+RecordNumber=@@RecordNumber
+Message=Successful Network Logon:
+...
+
+
+--- File Replacement ($SPLUNK_HOME/etc/apps/windows/samples/users.list) ---
+johnny
+bobby
+tommy
+charlie
+
+
+--- eventgen.conf ($SPLUNK_HOME/etc/apps/windows/default/eventgen.conf) ---
+
+[server2k3.540.windows]
+interval = 300
+count = 10
+earliest = -5m
+latest = now
+
+## replace timestamp 03/11/10 01:12:01 PM
+token.0.token = \d{2}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\s+[AaPp][Mm]
+token.0.replacementType = timestamp
+token.0.replacement = %m/%d/%y %I:%M:%S %p
+
+## replace @@AuditType
+token.1.token = @@AuditType
+token.1.replacementType = static
+token.1.replacement = Success
+
+## replace @@ComputerName
+token.2.token = @@ComputerName
+token.2.replacementType = random
+token.2.replacement = ipv4
+
+## replace @@User
+token.3.token = @@User
+token.3.replacementType = file
+token.3.replacement = users.list
+
+## replace @@RecordNumber
+token.4.token = @@ RecordNumber
+token.4.replacementType = random
+token.4.replacement = integer[0:99999]
