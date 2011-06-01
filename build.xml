@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<!-- solutions/cisco_eventgen/mainline/build.xml
+     ant build file for event_gen
+     Splunk, Inc.           			         -->
+
+<project name="event_gen" basedir="." default="rebuild">
+
+  <!-- Get the environment -->
+  <property environment="env" />
+
+  <!-- Set the name of the build (is typically the name of the app) -->
+  <property name="build.name" value="event_gen"/>
+
+  <!-- Import the shared build content -->
+  <import file="${env.SOLN_ROOT}/common/build/base_build.xml" />
+
+</project>
