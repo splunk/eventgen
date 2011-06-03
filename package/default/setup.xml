@@ -13,21 +13,5 @@
 			<type>bool</type>
 		</input>
 	</block>
-	 
-	<block title="Add splunkd credentials" endpoint="admin/passwords" entity="_new">
-		<input field="name">
-			<label>Username</label>
-			<type>text</type>
-		</input>
-		<input field="password">
-			<label>Password</label>
-			<type>password</type>
-		</input>
-		<!-- feel free to comment realm out if your app is not using it
-		<input field="realm">
-			<label>Realm</label>
-			<type>text</type>
-		</input> -->
-	</block>
     
 </setup>

@@ -38,24 +38,6 @@ DEFAULT_REPLACEMENTS = ['static', 'timestamp', 'random', 'file']
 ## Validations
 tokenRex = re.compile('^token\.(\d+)$')
 
-
-## Gets credentials from /admin/passwords
-def getCredentials(sessionKey, app):
-
-  try:
-    # list all credentials
-    entities = entity.getEntities(['admin', 'passwords'], namespace=app,
-                  owner='nobody', sessionKey=sessionKey)
-  except Exception, e:
-    raise Exception("Could not get %s credentials from splunk. Error: %s"
-            % (app, str(e)))
-
-  # return first set of credentials
-  for i, c in entities.items():
-    return c['username'], c['clear_password']
-
-  raise Exception("No credentials have been found")  
-  
   
 ## Replaces $SPLUNK_HOME w/ correct pathing
 def pathParser(path):
@@ -127,7 +109,6 @@ def getSamples(confDict):
   
 ## Sort tokens dictionary
 def sortTokens(sample, tokens):
-  
   tokensList = []
   stanzas = []  
   maxWeight = 0
@@ -204,7 +185,6 @@ def sortTokens(sample, tokens):
 
 ## Flatten confs for each sample
 def flattenConf(confDict, samples):
-
   flatSamples = {}
     
   ## Iterate samples
@@ -342,12 +322,11 @@ def flattenConf(confDict, samples):
               
               
 ## Parses time strings using /search/timeparser endpoint
-def timeParser(ts='now'):
-
+def timeParser(ts='now', sessionKey=None):
   getargs = {}
   getargs['time'] = ts
 
-  tsStatus, tsResp = rest.simpleRequest('/search/timeparser', getargs=getargs)
+  tsStatus, tsResp = rest.simpleRequest('/search/timeparser', sessionKey=sessionKey, getargs=getargs)
         
   root = et.fromstring(tsResp)  
     
@@ -360,8 +339,7 @@ def timeParser(ts='now'):
   
 
 ## sessionKey required for timestamp replacement
-def getReplacement(old, tokenArr, earliest=DEFAULT_EARLIEST, latest=DEFAULT_LATEST):
-
+def getReplacement(old, tokenArr, earliest=DEFAULT_EARLIEST, latest=DEFAULT_LATEST, sessionKey=None):
   ## If token array is proper
   if len(tokenArr) == 3:
 
@@ -381,8 +359,8 @@ def getReplacement(old, tokenArr, earliest=DEFAULT_EARLIEST, latest=DEFAULT_LATE
       ## If earliest and latest are avail
       if earliest and latest:
         ## Create earliest/latestTime ISO8601 values
-        earliestTime = timeParser(earliest)
-        latestTime = timeParser(latest)
+        earliestTime = timeParser(earliest, sessionKey=sessionKey)
+        latestTime = timeParser(latest, sessionKey=sessionKey)
         
         ## If earliest/latestTime are proper
         if earliestTime and latestTime and latestTime>=earliestTime:
@@ -544,7 +522,7 @@ def getReplacement(old, tokenArr, earliest=DEFAULT_EARLIEST, latest=DEFAULT_LATE
     return old
 
 
-def genSample(app, sample):      
+def genSample(app, sample, sessionKey=None):
   ## Verify sample still exists
   sampleFile = os.path.join(grandparent, app, 'samples', sample)
   spoolDir = pathParser(samples[app][sample]['spoolDir'])
@@ -644,7 +622,7 @@ def genSample(app, sample):
           ## If tokenMatch
           if tokenMatch:
             ## Set up replacement
-            replacement = getReplacement(old=None, tokenArr=token, earliest=earliest, latest=latest)
+            replacement = getReplacement(old=None, tokenArr=token, earliest=earliest, latest=latest, sessionKey=sessionKey)
             
             if replacement != None:    
               ## Iterate matches
@@ -680,7 +658,7 @@ if __name__ == '__main__':
   
   ## Get session key sent from splunkd
   sessionKey = sys.stdin.readline().strip()
-        
+          
   if len(sessionKey) == 0:
     sys.stderr.write("Did not receive a session key from splunkd. " +
             "Please enable passAuth in inputs.conf for this " +
@@ -690,17 +668,9 @@ if __name__ == '__main__':
   elif sessionKey == 'debug':
     debug = True
     sessionKey = auth.getSessionKey('admin', 'changeme')
-    
-  else:
-    ## Get credentials stored in <app>
-    username, password = getCredentials(sessionKey, app='SA-Eventgen')
-  
-    ## Get new session key based on credentials
-    sessionKey = auth.getSessionKey(username, password)
-  
+
   ## Get eventgen configurations
-  confDict = entity.getEntities('admin/eventgen', count=-1)
-  #print confDict
+  confDict = entity.getEntities('admin/eventgen', count=-1, sessionKey=sessionKey)
   
   samples = {}
   if confDict != None:
@@ -731,11 +701,11 @@ if __name__ == '__main__':
         if interval > 0:
           ## If debug call genSample
           if debug:
-            genSample(app, sample)
+            genSample(app, sample, sessionKey=sessionKey)
         
           ## If not debug initialize timer object
           else:  
-            t = threading.Timer(interval, genSample(app, sample))
+            t = threading.Timer(interval, genSample(app, sample, sessionKey=sessionKey))
           
             if t:
               sampleTimers.append(t)
