@@ -3,7 +3,7 @@
 # This file contains all possible options for an eventgen.conf file.  Use this file to configure 
 # Splunk's event generation properties.
 #
-# To generate events place an eventgen.conf in $SPLUNK_HOME/etc/apps/SA-Eventgen/local/. 
+# To generate events place an eventgen.conf in $SPLUNK_HOME/etc/apps/<app>/local/. 
 # For examples, see eventgen.conf.example. You must restart Splunk to enable configurations.
 #
 # To learn more about configuration files (including precedence) please see the documentation 
