@@ -670,7 +670,7 @@ if __name__ == '__main__':
     sessionKey = auth.getSessionKey('admin', 'changeme')
 
   ## Get eventgen configurations
-  confDict = entity.getEntities('admin/eventgen', count=-1, sessionKey=sessionKey)
+  confDict = entity.getEntities('configs/eventgen', count=-1, sessionKey=sessionKey)
   
   samples = {}
   if confDict != None:
