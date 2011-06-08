@@ -254,7 +254,11 @@ class EventGenApp(admin.MConfigHandler):
             else:
               pass
           
-          ## Key is meta; Set meta
+          ## Key is eai; userName/appName
+          elif key.startswith('eai') and key != 'eai:acl':
+              confInfo[stanza].append(key, val)
+          
+          ## Key is eai; Set meta  
           else:
             confInfo[stanza].setMetadata(key, val)
           
