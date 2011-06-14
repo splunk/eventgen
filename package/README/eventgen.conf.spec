@@ -54,16 +54,9 @@ spoolFile = <spool file name>
     * Spool file is the generated files name.
     * Not valid if stanza is a pattern.
     * Defaults to <SAMPLE> (sample file name).
-
-breaker = <regular expression>
-    * NOT to be confused w/ props.conf LINE_BREAKER
-    * PCRE used for flow control
-    * If count > 0; data will be generated until number of discovered breakers <= "count"
-    * If breaker does not match in sample, one iteration of sample will be generated
-    * Defaults to [^\r\n\s]+
     
 interval = <integer>
-   * How often to execute the specified command (in seconds)
+   * How often to generate sample (in seconds).
    * 0 means disabled.
    * Defaults to 60 seconds.  
     
@@ -71,6 +64,13 @@ count = <integer>
     * Maximum number of events to generate per sample file
     * 0 means sample length.
     * Defaults to 0.
+    
+breaker = <regular expression>
+    * NOT to be confused w/ props.conf LINE_BREAKER.
+    * PCRE used for flow control.
+    * If count > 0; data will be generated until number of discovered breakers <= "count".
+    * If breaker does not match in sample, one iteration of sample will be generated.
+    * Defaults to [^\r\n\s]+
     
 earliest = <time-str>
     * Specifies the earliest random time for generated events.
