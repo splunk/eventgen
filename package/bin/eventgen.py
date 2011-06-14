@@ -598,8 +598,8 @@ def genSample(app, sample, sessionKey=None):
         breaker = DEFAULT_BREAKER
           
       elif count > 0:
-        logger.info("Count %s specified is non-default for sample '%s' in app '%s'; setting up line breaker '%s'" % (count, sample, app, breaker) )
         breaker = samples[app][sample]['breaker']
+        logger.info("Count %s specified is non-default for sample '%s' in app '%s'; setting up line breaker '%s'" % (count, sample, app, breaker) )
         
       else:
         logger.error("Count %s is not proper for sample '%s' in app '%s'; reverting to default %s" % (count, sample, app, DEFAULT_COUNT) )
@@ -680,7 +680,7 @@ def genSample(app, sample, sessionKey=None):
         while len(events) < count:
           y = 0
           while len(events) < count and y < len(tempEvents):
-            events.append(tempEvents[x])
+            events.append(tempEvents[y])
             y += 1
           
       ## Iterate events
