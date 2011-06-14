@@ -123,17 +123,17 @@ def getSamples(confDict):
             
               ## If sample is a file
               if os.path.isfile(samplePath):
-                logger.info("Found sample file '%s' for app '%s' using config '%s'" % (sample, app, stanza) )
+                logger.info("Found sample file '%s' for app '%s' using config '%s'; adding to list" % (sample, app, stanza) )
                 samplesDict[app].append(sample)
               
               else:
-                logger.error("Sample '%s' for app '%s' is not a valid file" % (sample, app) )  
+                logger.warn("Sample '%s' for app '%s' is not a valid file; will not add to list" % (sample, app) )  
                 
           else:
-            logger.error("Samples directory '%s' for app '%s' does not exist" % (sampleDir, app) )
+            logger.error("Samples directory '%s' for app '%s' does not exist; skipping app" % (sampleDir, app) )
   
       else:
-        logger.error("Eventgen configuration '%s' does not have an app defined in eai:acl" % (stanza) )
+        logger.error("Eventgen configuration '%s' does not have an app defined in eai:acl; skipping app" % (stanza) )
   
   return samplesDict
   
