@@ -2,6 +2,8 @@
 Copyright (C) 2005 - 2010 Splunk Inc. All Rights Reserved.
 '''
 import datetime
+import logging
+import os
 import re
 import splunk.admin as admin
 import splunk.entity as entity
@@ -22,6 +24,24 @@ tokenRex = re.compile('^token\.(\d+)\.(.*)$')
 validSettings = ['spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest', 'latest']
 validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
 
+## Setup the logger
+def setup_logger():
+   """
+   Setup a logger for the REST handler.
+   """
+   
+   logger = logging.getLogger('eventgen_rest_handler')
+   logger.setLevel(logging.DEBUG)
+   
+   file_handler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen_rest_handler.log' )
+   formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+   file_handler.setFormatter(formatter)
+   
+   logger.addHandler(file_handler)
+   
+   return logger
+
+logger = setup_logger()
 
 ## Replaces $SPLUNK_HOME w/ correct pathing
 def pathParser(path):
@@ -68,23 +88,6 @@ class EventGenApp(admin.MConfigHandler):
     #  for arg in ['field_1', 'field_2_boolean', 'field_3']:
     #    self.supportedArgs.addOptArg(arg)
     pass
-    
-  '''
-  Read the initial values of the parameters from the custom file
-      myappsetup.conf, and write them to the setup screen. 
-
-  If the app has never been set up,
-      uses .../<appname>/default/myappsetup.conf. 
-
-  If app has been set up, looks at 
-      .../local/myappsetup.conf first, then looks at 
-  .../default/myappsetup.conf only if there is no value for a field in
-      .../local/myappsetup.conf
-
-  For boolean fields, may need to switch the true/false setting.
-
-  For text fields, if the conf file says None, set to the empty string.
-  '''
 
   def handleList(self, confInfo):
     

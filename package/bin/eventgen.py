@@ -366,6 +366,7 @@ def timeParser(ts='now', sessionKey=None):
     return util.parseISO(ts.text, strict=True)
   
   else:
+    logger.error("Could not retrieve timestamp for specifier '%s' from /search/timeparser" % (ts) )
     return False
 
 ## Converts Time Delta object to number of seconds in delta
@@ -389,42 +390,45 @@ def getReplacement(old, tokenArr, earliest=DEFAULT_EARLIEST, latest=DEFAULT_LATE
       return replacement
       
     ## If replacement is of type timestamp
-    elif replacementType == 'timestamp':    
-
+    elif replacementType == 'timestamp':
       ## If earliest and latest are avail
       if earliest and latest:
         ## Create earliest/latestTime ISO8601 values
         earliestTime = timeParser(earliest, sessionKey=sessionKey)
-        latestTime = timeParser(latest, sessionKey=sessionKey)
+        latestTime = timeParser(latest, sessionKey=sessionKey)    
         
         ## If earliest/latestTime are proper
-        if earliestTime and latestTime and latestTime>=earliestTime:
-          minDelta = 0
+        if earliestTime and latestTime:
+          if latestTime>=earliestTime:
+            minDelta = 0
         
-          ## Compute timeDelta as total_seconds
-          td = latestTime - earliestTime
-          maxDelta = timeDelta2secs(td)
+            ## Compute timeDelta as total_seconds
+            td = latestTime - earliestTime
+            maxDelta = timeDelta2secs(td)
 
-          ## Get random timeDelta
-          randomDelta = datetime.timedelta(seconds=random.randint(minDelta, maxDelta))
+            ## Get random timeDelta
+            randomDelta = datetime.timedelta(seconds=random.randint(minDelta, maxDelta))
           
-          ## Compute replacmentTime
-          replacementTime = latestTime - randomDelta
-          replacementTime = replacementTime.strftime(replacement)
+            ## Compute replacmentTime
+            replacementTime = latestTime - randomDelta
+            replacementTime = replacementTime.strftime(replacement)
           
-          ## replacementTime == replacement for invalid strptime specifiers
-          if replacementTime != replacement.replace('%', ''):
-            return replacementTime
+            ## replacementTime == replacement for invalid strptime specifiers
+            if replacementTime != replacement.replace('%', ''):
+              return replacementTime
           
-          else:
-            return old
+            else:
+              logger.error("Invalid strptime specifier '%s' detected; will not replace" % (replacement) )
+              return old
         
-        ## earliestTime/latestTime not proper
-        else:
-          return old
+          ## earliestTime/latestTime not proper
+          else:
+            logger.error("Earliest specifier '%s' is greater than latest specifier '%s'; will not replace" % (earliest, latest) )
+            return old
       
       ## earliest/latest not proper
       else:
+        logger.error('Earliest or latest specifier were not set; will not replace')
         return old  
 
     ## If replacement is of type random
@@ -494,6 +498,7 @@ def getReplacement(old, tokenArr, earliest=DEFAULT_EARLIEST, latest=DEFAULT_LATE
           
         ## If range is not proper simply return string untouched
         else:
+          logger.error("Start integer %s greater than end integer %s; will not replace" % (startInt, endInt) )
           return old
           
       ## If replacement is of type string
@@ -517,10 +522,12 @@ def getReplacement(old, tokenArr, earliest=DEFAULT_EARLIEST, latest=DEFAULT_LATE
         
         ## If length is not proper simply return string untouched
         else:
+          logger.error("Length specifier %s for string replacement must be greater than 0; will not replace" % (strLength) )
           return old
       
       ## If replacement type is not proper simply return string untouched
       else:
+        logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (replacement, replacementType) )
         return old
       
     ## If replacement is of type file
@@ -536,6 +543,7 @@ def getReplacement(old, tokenArr, earliest=DEFAULT_EARLIEST, latest=DEFAULT_LATE
         
         ## If file is empty
         if len(replacementLines) == 0:
+          logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
           return old
         
         ## If file has at least 1 entry
@@ -549,10 +557,16 @@ def getReplacement(old, tokenArr, earliest=DEFAULT_EARLIEST, latest=DEFAULT_LATE
       
       ## If file doesn't exist simply return string untouched
       else:
+        logger.error("Replacement file '%s' is invalid or does not exist; will not replace" % (replacementFile) )
+        return old
+    
+    else:
+        logger.error("Unknown replacementType '%s'; will not replace" % (replacementType) )
         return old
         
   ## If token is not proper simply return string untouched
   else:
+    logger.error('Invalid token array; will not replace')
     return old
 
 
@@ -669,13 +683,19 @@ def genSample(app, sample, sessionKey=None):
         ## events = sample
         if breakersFound == 0:
           logger.warn("Breaker '%s' not found for sample '%s' in app '%s'; using default breaker" % (breaker, sample, app) )
-          events = sampleLines
+          
+          if count >= len(sampleLines):
+            events = sampleLines
+          
+          else:
+            events = sampleLines[0:count]
     
         else:
           logger.info("Found '%s' breakers for sample '%s' in app '%s'" % (breakersFound, sample, app) )
       
       ## Continue to fill events array until len(events) == count
-      if len(events) > 0:
+      if len(events) > 0 and len(events) < count:
+        logger.info("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (sample, app, len(events), count) )
         tempEvents = events[:]
         while len(events) < count:
           y = 0
@@ -720,17 +740,19 @@ def genSample(app, sample, sessionKey=None):
         workingFH.write(event)
                    
       ## Close file handles
+      logger.info("Closing file handles for working file '%s' and sample '%s' in app '%s'" % (workingFile, sample, app) )
       sampleFH.close()
       workingFH.close()
       
       ## Move file to spool
+      logger.info("Moving '%s' to '%s' for sample '%s' in app '%s'" % (workingFilePath, spoolFilePath, sample, app) )
       shutil.move(workingFilePath, spoolFilePath)
       
     else:
-        logger.warn("Sample file '%s' in app '%s' contains no data" % (sample, app) )
+        logger.warn("Sample '%s' in app '%s' contains no data" % (sample, app) )
       
   else:
-      logger.error("Sample file '%s' in app '%s' or Spool directory '%s' does not exist" % (sample, app, spoolDir) )
+      logger.error("Sample '%s' in app '%s' or Spool directory '%s' does not exist" % (sample, app, spoolDir) )
 
 
 def genSampleWrapper(app, sample, interval, sessionKey=None):
@@ -794,13 +816,12 @@ if __name__ == '__main__':
     logger.info('Finished retrieving %s eventgen configurations from /configs/eventgen' % (len(confDict)) )
 
     ## Get samples
-    logger.info('Getting files from samples directory in each Splunk app')
+    logger.info('Retrieving sample files from $SPLUNK_HOME/etc/apps/<app>/samples directories')
     samples = getSamples(confDict)
     sampleCount = 0
     for app in samples:
       for sample in samples[app]:
-        sampleCount += 1
-        
+        sampleCount += 1   
     logger.info("Finished retrieving %s files from %s app samples directories" % (sampleCount, len(samples)) )
   
     ## Flatten configs
@@ -809,7 +830,7 @@ if __name__ == '__main__':
     sampleCount = 0
     for app in samples:
       for sample in samples[app]:
-          sampleCount += 1
+          sampleCount += 1     
     logger.info("Matched %s samples with eventgen configurations" % (sampleCount) )
 
     ## Print configs
@@ -852,7 +873,7 @@ if __name__ == '__main__':
                 logger.error("Failed to create timer object for sample '%s' in app '%s'" % (sample, app) )
                 
         else:
-            logger.info("Event generation for '%s' in app '%s' is disabled" % (sample, app) )
+            logger.info("Event generation for sample '%s' in app '%s' is disabled" % (sample, app) )
     
     ## Start the timers
     if not debug:        
