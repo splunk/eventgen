@@ -7,7 +7,7 @@
 		</text>
 	</block>
 	
-	<block title="Event Generator" endpoint="admin/script/" entity=".*SA-Eventgen.*eventgen\.py" mode="iter">
+	<block title="Event Generator" endpoint="data/inputs/script" entity=".*SA-Eventgen.*eventgen\.py" mode="iter">
 		<input field="enabled">
 			<label>Enable $name$</label>
 			<type>bool</type>
