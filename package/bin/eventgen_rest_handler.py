@@ -3,6 +3,7 @@ Copyright (C) 2005 - 2010 Splunk Inc. All Rights Reserved.
 '''
 import datetime
 import logging
+import logging.handlers
 import os
 import re
 import splunk.admin as admin
