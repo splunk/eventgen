@@ -42,6 +42,7 @@ latest = now
         * random -> mac
         * random -> integer[<start>:<end>]
         * random -> string(<integer>)
+        * random -> hex([integer])
         * file -> <replacment file name>
 
 spoolDir = <spool directory>

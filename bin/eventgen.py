@@ -4,41 +4,18 @@ Copyright (C) 2005-2011 Splunk Inc. All Rights Reserved.
 ## True division
 from __future__ import division
 
-import datetime
-import httplib2
+import sys, os
+if 'SPLUNK_HOME' in os.environ:
+    path_prepend = os.environ['SPLUNK_HOME']+'/etc/apps/SA-Eventgen/bin/lib'
+else:
+    path_prepend = './lib'
+sys.path.append(path_prepend)
+
+
+# 5/6/12 CS Moving logging setup before imports so sub-modules can benefit of logger global
+# Probably bad practice, but I'm lazy
 import logging
-import os
-import random
-import re
-import shutil
-import splunk.auth as auth
-import splunk.bundle as bundle
-import splunk.entity as entity
-import splunk.rest as rest
-import splunk.util as util
-import sys
-import threading
-import time
-import lxml.etree as et
-import urllib
-
-## Globals
-grandparent = os.path.dirname(os.path.dirname(os.path.dirname(__file__))) 
-
-## Defaults
-DEFAULT_BLACKLIST = '.*\.part'
-DEFAULT_SPOOLDIR = '$SPLUNK_HOME/var/spool/splunk'
-DEFAULT_SPOOLFILE = '<SAMPLE>'
-DEFAULT_BREAKER = '[^\r\n\s]+'
-DEFAULT_INTERVAL = 60
-DEFAULT_COUNT = 0
-DEFAULT_EARLIEST = 'now'
-DEFAULT_LATEST = 'now'
-DEFAULT_REPLACEMENTS = ['static', 'timestamp', 'random', 'file']
-
-## Validations
-tokenRex = re.compile('^token\.(\d+)$')
-
+import logging.handlers
 
 ## Setup the logger
 def setup_logger():
@@ -59,6 +36,52 @@ def setup_logger():
     return logger
 
 logger = setup_logger()
+
+import datetime
+import httplib2
+import random
+import re
+import shutil
+import splunk.auth as auth
+import splunk.bundle as bundle
+import splunk.entity as entity
+import splunk.rest as rest
+import splunk.util as util
+import threading
+import time
+import lxml.etree as et
+import urllib
+
+# Imports added by CSharp
+from timeparser import timeParser
+
+# 5/6/12 CS Determine if we're running as SA-Eventgen (i.e., the global eventgen app)
+# And should run as we've always run, checking for samples across all Splunk apps
+# using the Splunk REST handler to grab our config info, etc.
+# If we're not running as SA-Eventgen, we'll configure ourselves much more simply
+# by simply looking for a samples directory in our parent and the default/local directories
+# as well
+if os.getcwd().find(os.path.join('etc', 'apps', 'SA-Eventgen')):
+    SPLUNK_EMBEDDED = True
+else:
+    SPLUNK_EMBEDDED = False
+
+## Globals
+grandparent = os.path.dirname(os.path.dirname(os.path.dirname(__file__))) 
+
+## Defaults
+DEFAULT_BLACKLIST = '.*\.part'
+DEFAULT_SPOOLDIR = '$SPLUNK_HOME/var/spool/splunk'
+DEFAULT_SPOOLFILE = '<SAMPLE>'
+DEFAULT_BREAKER = '[^\r\n\s]+'
+DEFAULT_INTERVAL = 60
+DEFAULT_COUNT = 0
+DEFAULT_EARLIEST = 'now'
+DEFAULT_LATEST = 'now'
+DEFAULT_REPLACEMENTS = ['static', 'timestamp', 'random', 'file', 'mvfile']
+
+## Validations
+tokenRex = re.compile('^token\.(\d+)$')
 
     
 ## Replaces $SPLUNK_HOME w/ correct pathing
@@ -353,21 +376,22 @@ def flattenConf(confDict, samples):
                             
                             
 ## Parses time strings using /search/timeparser endpoint
-def timeParser(ts='now', sessionKey=None):
-    getargs = {}
-    getargs['time'] = ts
-
-    tsStatus, tsResp = rest.simpleRequest('/search/timeparser', sessionKey=sessionKey, getargs=getargs)
-                
-    root = et.fromstring(tsResp)    
+# def timeParser(ts='now', sessionKey=None):
+#     getargs = {}
+#     getargs['time'] = ts
+#     
+#     tsStatus, tsResp = rest.simpleRequest('/search/timeparser', sessionKey=sessionKey, getargs=getargs)
+#                 
+#     root = et.fromstring(tsResp)    
+#         
+#     ts = root.find('dict/key')
+#     if ts != None:
+#         return util.parseISO(ts.text, strict=True)
+#     
+#     else:
+#         logger.error("Could not retrieve timestamp for specifier '%s' from /search/timeparser" % (ts) )
+#         return False
         
-    ts = root.find('dict/key')
-    if ts != None:
-        return util.parseISO(ts.text, strict=True)
-    
-    else:
-        logger.error("Could not retrieve timestamp for specifier '%s' from /search/timeparser" % (ts) )
-        return False
 
 ## Converts Time Delta object to number of seconds in delta
 def timeDelta2secs(timeDiff):
@@ -868,7 +892,7 @@ if __name__ == '__main__':
         
     elif sessionKey == 'debug':
         debug = True
-        sessionKey = auth.getSessionKey('admin', 'rUstY3')
+        sessionKey = auth.getSessionKey('admin', 'changeme')
 
     ## Get eventgen configurations
     logger.info('Retrieving eventgen configurations from /configs/eventgen')
@@ -933,10 +957,10 @@ if __name__ == '__main__':
                             sampleTimers.append(t)
                             
                         else:
-                                logger.error("Failed to create timer object for sample '%s' in app '%s'" % (sample, app) )
+                            logger.error("Failed to create timer object for sample '%s' in app '%s'" % (sample, app) )
                                 
                 else:
-                        logger.info("Event generation for sample '%s' in app '%s' is disabled" % (sample, app) )
+                    logger.info("Event generation for sample '%s' in app '%s' is disabled" % (sample, app) )
         
         ## Start the timers
         if not debug:                
