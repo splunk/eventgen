@@ -1,14 +1,24 @@
 '''
-Copyright (C) 2005-2011 Splunk Inc. All Rights Reserved.
+Copyright (C) 2005-2012 Splunk Inc. All Rights Reserved.
 '''
+
+###########################################################
+## SETUP CODE
+## All of this junk is poorly organized setup code.  Sorry, but two reasons makes this so messy
+## 1) We want to be able to run inside Splunk, which means using Splunk
+##    modules to grab the configuration, or outside Splunk using ConfigParser etc
+## 2) Running inside of Splunk means we have a lot of stupid pathing hacks to get around Splunk
+##    not including setuptools and needing third party modules that don't come with Splunk python
+###########################################################
+
 ## True division
 from __future__ import division
 
 import sys, os
 if 'SPLUNK_HOME' in os.environ:
-    path_prepend = os.environ['SPLUNK_HOME']+'/etc/apps/SA-Eventgen/bin/lib'
+    path_prepend = os.environ['SPLUNK_HOME']+'/etc/apps/SA-Eventgen/lib'
 else:
-    path_prepend = './lib'
+    path_prepend = '../lib'
 sys.path.append(path_prepend)
 
 
@@ -16,6 +26,8 @@ sys.path.append(path_prepend)
 # Probably bad practice, but I'm lazy
 import logging
 import logging.handlers
+# Creating as global so we can remove it later if needbe
+stream_handler = logging.StreamHandler()
 
 ## Setup the logger
 def setup_logger():
@@ -26,48 +38,37 @@ def setup_logger():
     logger = logging.getLogger('eventgen')
     logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
     logger.setLevel(logging.DEBUG)
-
-    file_handler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen.log', maxBytes=25000000, backupCount=5)
+    
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    file_handler.setFormatter(formatter)
+    stream_handler.setFormatter(formatter)
 
-    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
 
     return logger
 
 logger = setup_logger()
+
 
 import datetime
 import httplib2
 import random
 import re
 import shutil
-import splunk.auth as auth
-import splunk.bundle as bundle
-import splunk.entity as entity
-import splunk.rest as rest
-import splunk.util as util
 import threading
 import time
-import lxml.etree as et
 import urllib
 
 # Imports added by CSharp
 from timeparser import timeParser
-
-# 5/6/12 CS Determine if we're running as SA-Eventgen (i.e., the global eventgen app)
-# And should run as we've always run, checking for samples across all Splunk apps
-# using the Splunk REST handler to grab our config info, etc.
-# If we're not running as SA-Eventgen, we'll configure ourselves much more simply
-# by simply looking for a samples directory in our parent and the default/local directories
-# as well
-if os.getcwd().find(os.path.join('etc', 'apps', 'SA-Eventgen')):
-    SPLUNK_EMBEDDED = True
-else:
-    SPLUNK_EMBEDDED = False
+from select import select
 
 ## Globals
-grandparent = os.path.dirname(os.path.dirname(os.path.dirname(__file__))) 
+# 5/7/12 CS __file__ doesn't seem to return an absolute path for me in my copy of python
+# This seems to be inconsistent amongst implementations.  If we're not an absolute path, use CWD
+if __file__.find('/') > 0:
+    grandparent = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+else:
+    grandparent = os.path.dirname(os.path.dirname(os.getcwd()))
 
 ## Defaults
 DEFAULT_BLACKLIST = '.*\.part'
@@ -83,10 +84,44 @@ DEFAULT_REPLACEMENTS = ['static', 'timestamp', 'random', 'file', 'mvfile']
 ## Validations
 tokenRex = re.compile('^token\.(\d+)$')
 
+# 5/6/12 CS Called if we don't receive anything on stdin for 5 seconds
+# This is legacy operations mode, just a little bit obfuscated now
+# If we're not Splunk embedded, we operate simpler.  No rest handler for configurations
+# we only read configs in our parent app's directory
+SPLUNK_EMBEDDED = False
+def splunkEmbedded():
+    logger.info("Running as Splunk embedded")
+    import splunk.auth as auth
+    import splunk.bundle as bundle
+    import splunk.entity as entity
+    import splunk.rest as rest
+    import splunk.util as util
     
+    # 5/7/12 CS For some reason Splunk will not import the modules into global in its copy of python
+    # This is a hacky workaround, but it does fix the problem
+    globals()['auth'] = locals()['auth']
+    globals()['bundle'] = locals()['bundle']
+    globals()['entity'] = locals()['entity']
+    globals()['rest'] = locals()['rest']
+    globals()['util'] = locals()['util']
+    globals()['SPLUNK_EMBEDDED'] = True
+    globals()['grandparent'] = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    # import lxml.etree as et
+    
+    file_handler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen.log', maxBytes=25000000, backupCount=5)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    logger.removeHandler(stream_handler)
+    
+###########################################################
+## END SETUP CODE
+###########################################################
+
 ## Replaces $SPLUNK_HOME w/ correct pathing
 def pathParser(path):
-    grandparent = os.path.dirname(os.path.dirname(os.path.dirname(__file__))) 
+    # 5/7/12 CS Use global
+    # grandparent = os.path.dirname(os.path.dirname(os.path.dirname(__file__))) 
     greatgreatgrandparent = os.path.dirname(os.path.dirname(grandparent)) 
     sharedStorage = ['$SPLUNK_HOME/etc/apps', '$SPLUNK_HOME/etc/users/', '$SPLUNK_HOME/var/run/splunk']
 
@@ -667,7 +702,7 @@ def genSample(app, sample, sessionKey=None):
         if len(sampleLines) > 0:
         
             ## Create epoch time
-            nowTime = util.mktimegm(time.gmtime())
+            nowTime = int(time.mktime(time.gmtime()))
             ## Formulate working file
             workingFile = str(nowTime) + '-' + sample + '.part'
             workingFilePath = os.path.join(grandparent, app, 'samples', workingFile)
@@ -842,61 +877,121 @@ def genSample(app, sample, sessionKey=None):
         logger.error("Sample '%s' in app '%s' or Spool directory '%s' does not exist" % (sample, app, spoolDir) )
 
 
-def genSampleWrapper(app, sample, interval, sessionKey=None):
+        # 5/7/12 Working around poor signal handling by python Threads (mainly on BSD implementations
+        # it seems).  This hopefully handles signals properly and allows us to terminate.
+        # Copied from http://code.activestate.com/recipes/496960/
+        import ctypes
+
+def _async_raise(tid, excobj):
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(excobj))
+    if res == 0:
+        raise ValueError("nonexistent thread id")
+    elif res > 1:
+        # """if it returns a number greater than one, you're in trouble, 
+        # and you should call it again with exc=NULL to revert the effect"""
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, 0)
+        raise SystemError("PyThreadState_SetAsyncExc failed")
+
+class Timer(threading.Thread):
+    def raise_exc(self, excobj):
+        assert self.isAlive(), "thread must be started"
+        for tid, tobj in threading._active.items():
+            if tobj is self:
+                _async_raise(tid, excobj)
+                return
+
+        # the thread was alive when we entered the loop, but was not found 
+        # in the dict, hence it must have been already terminated. should we raise
+        # an exception here? silently ignore?
+
+    def terminate(self):
+        # must raise the SystemExit type, instead of a SystemExit() instance
+        # due to a bug in PyThreadState_SetAsyncExc
+        self.raise_exc(SystemExit)
+
+    # Added by CS 5/7/12 to emulate threading.Timer
+    def __init__(self, time, app, sample, interval, sessionKey=None):
+        self.time = time
+        self.stopping = False
         
-    while(1):
-        ## Compute starting time    
-        startTime = datetime.datetime.now()
-        
-        ## Generate sample
-        genSample(app, sample, sessionKey=sessionKey)
-        
-        ## Compute ending time
-        endTime = datetime.datetime.now()
-        
-        ## Compute timeDiff
-        timeDiff = endTime - startTime
-        
-        ## Compute timeDiff in secs
-        timeDiff = timeDelta2secs(timeDiff)
-        logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" % (sample, app, timeDiff) )
-        
-        ## Compute number of intervals that last generation sequence spanned
-        wholeIntervals = timeDiff / interval
-        ## Computer partial interval that last generation sequence spanned
-        partialInterval = timeDiff % interval
-        
-        if wholeIntervals > 1:
-            logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" % (sample, app, timeDiff, interval) )
-             
-        ## Compute sleep as the difference between interval and partial interval
-        partialInterval = interval - partialInterval
-        logger.info("Generation of sample '%s' in app '%s' sleeping for %s seconds" % (sample, app, partialInterval) )
-        
-        ## Sleep for partial interval
-        time.sleep(partialInterval)
+        self.app = app
+        self.sample = sample
+        self.interval = interval
+        self.sessionKey = sessionKey
+        threading.Thread.__init__(self)
+
+    def run(self):
+        while (1):
+            if not self.stopping:
+                ## Compute starting time    
+                startTime = datetime.datetime.now()
+
+                ## Generate sample
+                genSample(self.app, self.sample, sessionKey=self.sessionKey)
+
+                ## Compute ending time
+                endTime = datetime.datetime.now()
+
+                ## Compute timeDiff
+                timeDiff = endTime - startTime
+
+                ## Compute timeDiff in secs
+                timeDiff = timeDelta2secs(timeDiff)
+                logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" % (sample, app, timeDiff) )
+
+                ## Compute number of intervals that last generation sequence spanned
+                wholeIntervals = timeDiff / self.interval
+                ## Computer partial interval that last generation sequence spanned
+                partialInterval = timeDiff % self.interval
+
+                if wholeIntervals > 1:
+                    logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" % (sample, app, timeDiff, interval) )
+
+                ## Compute sleep as the difference between interval and partial interval
+                partialInterval = self.interval - partialInterval
+                logger.info("Generation of sample '%s' in app '%s' sleeping for %s seconds" % (sample, app, partialInterval) )
+
+                ## Sleep for partial interval
+                time.sleep(partialInterval)
+            else:
+                sys.exit(0)
+
+    def stop(self):
+        self.stopping = True
+
+
+
+# def genSampleWrapper(app, sample, interval, sessionKey=None):
+#         
+#     while(1):
                      
             
 if __name__ == '__main__':
     logger.info('Starting eventgen')
     debug = False
     
-    ## Get session key sent from splunkd
-    sessionKey = sys.stdin.readline().strip()
-                    
-    if len(sessionKey) == 0:
-        sys.stderr.write("Did not receive a session key from splunkd. " +
-                        "Please enable passAuth in inputs.conf for this " +
-                        "script\n")
-        exit(2)
-        
-    elif sessionKey == 'debug':
+    # 5/6/12 CS use select to listen for input on stdin
+    # if we timeout, assume we're not splunk embedded
+    rlist, _, _ = select([sys.stdin], [], [], 5)
+    if rlist:
+        sessionKey = sys.stdin.readline().strip()
+    else:
+        sessionKey = ''
+    
+    if sessionKey == 'debug':
         debug = True
+        splunkEmbedded()
         sessionKey = auth.getSessionKey('admin', 'changeme')
+    elif len(sessionKey) > 0:
+        splunkEmbedded()
 
     ## Get eventgen configurations
-    logger.info('Retrieving eventgen configurations from /configs/eventgen')
-    confDict = entity.getEntities('configs/eventgen', count=-1, sessionKey=sessionKey)
+    if SPLUNK_EMBEDDED:
+        logger.info('Retrieving eventgen configurations from /configs/eventgen')
+        confDict = entity.getEntities('configs/eventgen', count=-1, sessionKey=sessionKey)
+    else:
+        from eventgenconfig import configParser
+        confDict = configParser()
     
     samples = {}
     if confDict != None:
@@ -950,7 +1045,7 @@ if __name__ == '__main__':
                     ## If not debug initialize timer object
                     else:
                         logger.info("Creating timer object for sample '%s' in app '%s'" % (sample, app) )    
-                        t = threading.Timer(0.1, genSampleWrapper, [app, sample, interval, sessionKey])
+                        t = Timer(0.1, app, sample, interval, sessionKey)
                     
                         if t:
                             logger.info("Timer object for sample '%s' in app '%s' successfully created" % (sample, app) )    
@@ -966,10 +1061,15 @@ if __name__ == '__main__':
         if not debug:                
             first = True
             while (1):
-                ## Only need to start timers once
-                if first:
-                    logger.info('Starting timers')
+                try:
+                    ## Only need to start timers once
+                    if first:
+                        logger.info('Starting timers')
+                        for sampleTimer in sampleTimers:
+                            sampleTimer.start()
+                        first = False
+                    time.sleep(600)
+                except KeyboardInterrupt:
                     for sampleTimer in sampleTimers:
-                        sampleTimer.start()
-                    first = False
-                time.sleep(600)
+                        sampleTimer.stop()
+                    sys.exit(0)
