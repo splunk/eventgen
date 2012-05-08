@@ -9,6 +9,9 @@ import re
 import splunk.admin as admin
 import splunk.entity as entity
 
+# 5/8/12 CS To accommodate new settings
+import json
+
 ## Defaults
 DEFAULT_BLACKLIST = '.*\.part'
 DEFAULT_SPOOLDIR = '$SPLUNK_HOME/var/spool/splunk'
@@ -22,7 +25,8 @@ DEFAULT_REPLACEMENTS = ['static', 'timestamp', 'random', 'file', 'mvfile']
 
 ## Validations
 tokenRex = re.compile('^token\.(\d+)\.(.*)$')
-validSettings = ['spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest', 'latest']
+validSettings = ['spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest', 'latest',
+                    'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents']
 validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
 
 ## Setup the logger
@@ -198,6 +202,33 @@ class EventGenApp(admin.MConfigHandler):
                                 
                             if val != None:
                                 confInfo[stanza].append(key, val)
+                                
+                        # 5/8/12 CS New Settings added
+                        # 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents'
+                        elif key == 'hourOfDayRate':
+                            try:
+                                parsed_val = json.loads(val)
+                                confInfo[stanza].append(key, val)
+                            except:
+                                logger.error('Error parsing JSON for %s in stanza %s' % (key, stanza))
+                        elif key == 'dayOfWeekRate':
+                            try:
+                                parsed_val = json.loads(val)
+                                confInfo[stanza].append(key, val)
+                            except:
+                                logger.error('Error parsing JSON for %s in stanza %s' % (key, stanza))
+                        elif key == 'randomizeCount':
+                            try:
+                                parsed_val = float(val)
+                                confInfo[stanza].append(key, val)
+                            except:
+                                logger.error('Error parsing float for %s in stanza %s' % (key, stanza))
+                        elif key == 'randomizeEvents':
+                            try:
+                                parsed_val = bool(val)
+                                confInfo[stanza].append(key, val)
+                            except:
+                                logger.error('Error parsing bool for %s in stanza %s' % (key, stanza))
                         
                         ## If key is spoolDir
                         elif key == 'spoolDir':

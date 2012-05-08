@@ -61,6 +61,7 @@ import urllib
 # Imports added by CSharp
 from timeparser import timeParser
 from select import select
+import json
 
 ## Globals
 # 5/7/12 CS __file__ doesn't seem to return an absolute path for me in my copy of python
@@ -701,6 +702,14 @@ def genSample(app, sample, sessionKey=None):
         ## If sampleData has stuff
         if len(sampleLines) > 0:
         
+            # 5/8/12 CS Added randomizeEvents config to randomize items from the file
+            try:
+                if bool(samples[app][sample]['randomizeEvents']):
+                    logger.info("Shuffling events for sample '%s' in app '%s'" % (sample, app))
+                    random.shuffle(sampleLines)
+            except:
+                logger.error("randomizeEvents for sample '%s' in app '%s' unparseable." % (sample, app))
+                
             ## Create epoch time
             nowTime = int(time.mktime(time.gmtime()))
             ## Formulate working file
@@ -723,6 +732,54 @@ def genSample(app, sample, sessionKey=None):
                 breaker = DEFAULT_BREAKER
                     
             elif count > 0:
+                # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
+                # hourOfDay, dayOfWeek and randomizeCount configs
+                orig_count = count
+                rate_factor = 1.0
+                if 'randomizeCount' in samples[app][sample]:
+                    try:
+                        randomizeCount = float(samples[app][sample]['randomizeCount'])
+                        logger.debug("randomizeCount for sample '%s' in app '%s' is %s" % (sample, app, randomizeCount))
+                        # If we say we're going to be 20% variable, then that means we
+                        # can be .1% high or .1% low.  Math below does that.
+                        rand_bound = round(randomizeCount * 1000, 0)
+                        rand = random.randint(0, rand_bound)
+                        rand_factor = 1+((-((rand_bound / 2) - rand)) / 1000)
+                        logger.debug("rand_factor for sample '%s' in app '%s' is %s" % (sample, app, rand_factor))
+                        rate_factor *= rand_factor
+                    except:
+                        import traceback
+                        stack =  traceback.format_exc()
+                        logger.error("Randomize count failed.  Stacktrace %s" % stack)
+                if 'hourOfDayRate' in samples[app][sample]:
+                    try:
+                        hourOfDayRates = json.loads(samples[app][sample]['hourOfDayRate'])
+                        now = datetime.datetime.now()
+                        rate = hourOfDayRates[str(now.hour)]
+                        logger.debug("hourOfDayRate for sample '%s' in app '%s' is %s" % (sample, app, rate))
+                        rate_factor *= rate
+                    except:
+                        import traceback
+                        stack =  traceback.format_exc()
+                        logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
+                if 'dayOfWeekRate' in samples[app][sample]:
+                    try:
+                        dayOfWeekRates = json.loads(samples[app][sample]['dayOfWeekRate'])
+                        weekday = datetime.date.weekday(datetime.datetime.now())
+                        if weekday == 6:
+                            weekday = 0
+                        else:
+                            weekday += 1
+                        rate = dayOfWeekRates[str(weekday)]
+                        logger.debug("dayOfWeekRate for sample '%s' in app '%s' is %s" % (sample, app, rate))
+                        rate_factor *= rate
+                    except:
+                        import traceback
+                        stack =  traceback.format_exc()
+                        logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
+                count = int(round(count * rate_factor, 0))
+                logger.info("Original count: %s Rated count: %s Rate factor: %s" % (orig_count, count, rate_factor))
+                
                 breaker = samples[app][sample]['breaker']
                 logger.info("Count %s specified is non-default for sample '%s' in app '%s'; setting up line breaker '%s'" % (count, sample, app, breaker) )
                 

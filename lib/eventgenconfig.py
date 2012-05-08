@@ -3,7 +3,8 @@ import os
 import re
 
 ## Validations
-validSettings = ['spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest', 'latest', 'eai:acl']
+validSettings = ['spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest', 'latest', 
+                'eai:acl', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents']
 validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
 
 def configParser():
