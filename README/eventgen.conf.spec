@@ -45,9 +45,17 @@ latest = now
         * random -> hex([integer])
         * file -> <replacment file name>
         * mvfile -> <replacement file name, expects CSV file>:<column number>
+        
+outputMode = spool | file | splunkstream
+    * Specifies how to output log data.  Spool is default (for legacy reasons).
+    * If setting spool, should set spoolDir
+    * If setting file, should set logFile
+    * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser
+      and splunkPassword if not Splunk embedded
 
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.
+    * Only valid in spool outputMode.
     * Windows separators should contain double forward slashes '\\' (i.e. $SPLUNK_HOME\\var\\spool\\splunk).
     * Unix separators will work on Windows and vice-versa.
     * Defaults to $SPLUNK_HOME/var/spool/splunk
@@ -56,6 +64,49 @@ spoolFile = <spool file name>
     * Spool file is the generated files name.
     * Not valid if stanza is a pattern.
     * Defaults to <SAMPLE> (sample file name).
+    
+file = </path/to/file>
+    * Should set the full path
+    * Uses a rotating file handler which will rotate the file at a certain size, by default 10 megs
+      and will by default only save 5 files.  See fileMaxBytes and fileBackupFiles
+      
+fileMaxBytes = <size in bytes>
+    * Will rotate a file output at this given size
+    * Defaults to 10 Megabytes (10485760 bytes)
+    
+fileBackupFiles = <number of files>
+    * Will keep this number of files (.1, .2, etc) after rotation
+    * Defaults to 5
+    
+splunkHost = <host> | <json list of hosts>
+    * If you specify just one host, will only POST to that host, if you specify a JSON list,
+      it will POST to multiple hosts in a random distribution.  This allows us from one eventgen to
+      feed an entire cluster of Splunk indexers without needing forwarders.
+    * JSON list should look like [ "host.name", "host2.name" ]
+    
+splunkPort = <port>
+    * Defaults to the default Splunk management port 8089
+
+splunkMethod = http | https
+    * Defaults to https
+    
+splunkUser = <user>
+    * User with rights to post to REST endpoint receivers/stream
+    
+splunkPass = <pass>
+    * Password for SplunkUser
+    
+index = <index>
+    * ONLY VALID WITH outputMode SPLUNKSTREAM
+    * Splunk index to write events to.  Defaults to main if none specified.
+    
+source = <source>
+    * ONLY VALID WITH outputMode SPLUNKSTREAM
+    * Set event source in Splunk to <source>.  Defaults to 'eventgen' if none specified.
+    
+sourcetype = <sourcetype>
+    * ONLY VALID WITH outputMode SPLUNKSTREAM
+    * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
     
 interval = <integer>
    * How often to generate sample (in seconds).

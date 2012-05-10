@@ -22,12 +22,17 @@ DEFAULT_COUNT = 0
 DEFAULT_EARLIEST = 'now'
 DEFAULT_LATEST = 'now'
 DEFAULT_REPLACEMENTS = ['static', 'timestamp', 'random', 'file', 'mvfile']
+DEFAULT_OUTPUTMODE = 'spool'
 
 ## Validations
 tokenRex = re.compile('^token\.(\d+)\.(.*)$')
 validSettings = ['spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest', 'latest',
-                    'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents']
+                    'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 
+                    'outputMode', 'file', 'fileMaxBytes', 'fileBackupFiles', 'splunkHost', 'splunkPort',
+                    'splunkMethod', 'splunkUser', 'splunkPass', 'index', 'source', 'sourcetype' ]
 validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
+validOutputModes = ['spool', 'file', 'splunkstream']
+validSplunkMethods = ['http', 'https']
 
 ## Setup the logger
 def setup_logger():
@@ -229,6 +234,50 @@ class EventGenApp(admin.MConfigHandler):
                                 confInfo[stanza].append(key, val)
                             except:
                                 logger.error('Error parsing bool for %s in stanza %s' % (key, stanza))
+                                
+                        # 5/8/12 More new settings added for output modes
+                        # 'outputMode', 'file', 'fileMaxBytes', 'fileBackupFiles', 'splunkHost', 'splunkPort',
+                        # 'splunkMethod', 'splunkUser', 'splunkPass', 'index', 'source', 'sourcetype'
+                        elif key == 'outputMode':
+                            if stanza == 'global':
+                                val = DEFAULT_OUTPUTMODE
+                            if val in validOutputModes:
+                                confInfo[stanza].append(key, val)
+                        elif key == 'file':
+                            confInfo[stanza].append(key, val)
+                        elif key == 'fileMaxBytes':
+                            try:
+                                parsed_val = int(val)
+                                confInfo[stanza].append(key, val)
+                            except:
+                                logger.error("Error parsing int for %s in stanza %s" % (key, stanza))
+                        elif key == 'fileBackupFiles':
+                            try:
+                                parsed_val = int(val)
+                                confInfo[stanza].append(key, val)
+                            except:
+                                logger.error("Error parsing int for %s in stanza %s" % (key, stanza))
+                        elif key == 'splunkHost':
+                            confInfo[stanza].append(key, val)
+                        elif key == 'splunkPort':
+                            try:
+                                parsed_val = int(val)
+                                confInfo[stanza].append(key, val)
+                            except:
+                                logger.error("Error parsing int for %s in stanza %s" % (key, stanza))
+                        elif key == 'splunkMethod':
+                            if val in validSplunkMethods:
+                                confInfo[stanza].append(key, val)
+                        elif key == 'splunkUser':
+                            confInfo[stanza].append(key, val)
+                        elif key == 'splunkPass':
+                            confInfo[stanza].append(key, val)
+                        elif key == 'index':
+                            confInfo[stanza].append(key, val)
+                        elif key == 'source':
+                            confInfo[stanza].append(key, val)
+                        elif key == 'sourcetype':
+                            confInfo[stanza].append(key, val)
                         
                         ## If key is spoolDir
                         elif key == 'spoolDir':

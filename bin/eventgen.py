@@ -18,7 +18,7 @@ import sys, os
 if 'SPLUNK_HOME' in os.environ:
     path_prepend = os.environ['SPLUNK_HOME']+'/etc/apps/SA-Eventgen/lib'
 else:
-    path_prepend = '../lib'
+    path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
 sys.path.append(path_prepend)
 
 
@@ -37,7 +37,7 @@ def setup_logger():
 
     logger = logging.getLogger('eventgen')
     logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
     stream_handler.setFormatter(formatter)
@@ -62,6 +62,7 @@ import urllib
 from timeparser import timeParser
 from select import select
 import json
+from eventgenoutput import EventgenOutput
 
 ## Globals
 # 5/7/12 CS __file__ doesn't seem to return an absolute path for me in my copy of python
@@ -81,6 +82,15 @@ DEFAULT_COUNT = 0
 DEFAULT_EARLIEST = 'now'
 DEFAULT_LATEST = 'now'
 DEFAULT_REPLACEMENTS = ['static', 'timestamp', 'random', 'file', 'mvfile']
+# 5/9/12 More Defaults
+DEFAULT_OUTPUTMODE = 'spool'
+DEFAULT_FILEMAXBYTES = 10485760
+DEFAULT_FILEBACKUPFILES = 5
+DEFAULT_SPLUNKPORT = 8089
+DEFAULT_SPLUNKMETHOD = 'https'
+DEFAULT_INDEX = 'main'
+DEFAULT_SOURCE = 'eventgen'
+DEFAULT_SOURCETYPE = 'eventgen'
 
 ## Validations
 tokenRex = re.compile('^token\.(\d+)$')
@@ -118,6 +128,7 @@ def splunkEmbedded():
 ###########################################################
 ## END SETUP CODE
 ###########################################################
+    
 
 ## Replaces $SPLUNK_HOME w/ correct pathing
 def pathParser(path):
@@ -183,7 +194,7 @@ def getSamples(confDict):
                         
                             ## If sample is a file
                             if os.path.isfile(samplePath):
-                                logger.info("Found sample file '%s' for app '%s' using config '%s'; adding to list" % (sample, app, stanza) )
+                                logger.debug("Found sample file '%s' for app '%s' using config '%s'; adding to list" % (sample, app, stanza) )
                                 samplesDict[app].append(sample)
                             
                             else:
@@ -682,21 +693,20 @@ def getReplacement(old, tokenArr, earliest=DEFAULT_EARLIEST, latest=DEFAULT_LATE
         return old
 
 
-def genSample(app, sample, sessionKey=None):
-        
-    logger.info("Generating sample '%s' in app '%s'" % (sample, app))
-        
+def genSample(app, sample, sessionKey, out):
+    logger.debug("Generating sample '%s' in app '%s'" % (sample, app))
+    
     ## Verify sample still exists
     sampleFile = os.path.join(grandparent, app, 'samples', sample)
     spoolDir = pathParser(samples[app][sample]['spoolDir'])
     
     if os.path.exists(sampleFile) and os.path.exists(spoolDir):
         ## Create sampleFH
-        logger.info("Opening sample '%s' in app '%s'" % (sample, app) )
+        logger.debug("Opening sample '%s' in app '%s'" % (sample, app) )
         sampleFH = open(sampleFile, 'rU')
         
         ## Read sample
-        logger.info("Reading sample '%s' in app '%s'" % (sample, app) )
+        logger.debug("Reading sample '%s' in app '%s'" % (sample, app) )
         sampleLines = sampleFH.readlines()
         
         ## If sampleData has stuff
@@ -705,29 +715,17 @@ def genSample(app, sample, sessionKey=None):
             # 5/8/12 CS Added randomizeEvents config to randomize items from the file
             try:
                 if bool(samples[app][sample]['randomizeEvents']):
-                    logger.info("Shuffling events for sample '%s' in app '%s'" % (sample, app))
+                    logger.debug("Shuffling events for sample '%s' in app '%s'" % (sample, app))
                     random.shuffle(sampleLines)
             except:
                 logger.error("randomizeEvents for sample '%s' in app '%s' unparseable." % (sample, app))
                 
-            ## Create epoch time
-            nowTime = int(time.mktime(time.gmtime()))
-            ## Formulate working file
-            workingFile = str(nowTime) + '-' + sample + '.part'
-            workingFilePath = os.path.join(grandparent, app, 'samples', workingFile)
-            logger.info("Creating working file '%s' for sample '%s' in app '%s'" % (workingFile, sample, app) )
-            workingFH = open(workingFilePath, 'w')
-            
-            ## Set up spool file
-            spoolFile = samples[app][sample]['spoolFile']
-            if spoolFile == DEFAULT_SPOOLFILE:
-                spoolFile = sample
-            spoolFilePath = os.path.join(spoolDir, spoolFile)
+
             
             ## Set up count
             count = int(samples[app][sample]['count'])
             if count == 0:
-                logger.info("Count %s specified as default for sample '%s' in app '%s'; adjusting count to sample length %s; using default breaker" % (count, sample, app, len(sampleLines)) )
+                logger.debug("Count %s specified as default for sample '%s' in app '%s'; adjusting count to sample length %s; using default breaker" % (count, sample, app, len(sampleLines)) )
                 count = len(sampleLines)
                 breaker = DEFAULT_BREAKER
                     
@@ -781,7 +779,7 @@ def genSample(app, sample, sessionKey=None):
                 logger.info("Original count: %s Rated count: %s Rate factor: %s" % (orig_count, count, rate_factor))
                 
                 breaker = samples[app][sample]['breaker']
-                logger.info("Count %s specified is non-default for sample '%s' in app '%s'; setting up line breaker '%s'" % (count, sample, app, breaker) )
+                logger.debug("Count %s specified is non-default for sample '%s' in app '%s'; setting up line breaker '%s'" % (count, sample, app, breaker) )
                 
             else:
                 logger.error("Count %s is not proper for sample '%s' in app '%s'; reverting to default %s" % (count, sample, app, DEFAULT_COUNT) )
@@ -807,8 +805,8 @@ def genSample(app, sample, sessionKey=None):
             event = ''
             
             if breaker == DEFAULT_BREAKER:
-                logger.info("Default breaker detected for sample '%s' in app '%s'; using simple event fill" % (sample, app) )
-                logger.info("Filling events array for sample '%s' in app '%s'; count=%s, sampleLines=%s" % (sample, app, count, len(sampleLines)) )
+                logger.debug("Default breaker detected for sample '%s' in app '%s'; using simple event fill" % (sample, app) )
+                logger.debug("Filling events array for sample '%s' in app '%s'; count=%s, sampleLines=%s" % (sample, app, count, len(sampleLines)) )
                 
                 if count >= len(sampleLines):
                     events = sampleLines
@@ -817,13 +815,13 @@ def genSample(app, sample, sessionKey=None):
                     events = sampleLines[0:count]
                             
             else:
-                logger.info("Non-default breaker '%s' detected for sample '%s' in app '%s'; using advanced event fill" % (breaker, sample, app) ) 
+                logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'; using advanced event fill" % (breaker, sample, app) ) 
             
                 ## Fill events array from breaker and sampleLines
                 breakersFound = 0
                 x = 0
                 
-                logger.info("Filling events array for sample '%s' in app '%s'; count=%s, sampleLines=%s" % (sample, app, count, len(sampleLines)) )
+                logger.debug("Filling events array for sample '%s' in app '%s'; count=%s, sampleLines=%s" % (sample, app, count, len(sampleLines)) )
                 while len(events) < count and x < len(sampleLines):
                     #logger.debug("Attempting to match regular expression '%s' with line '%s' for sample '%s' in app '%s'" % (breaker, sampleLines[x], sample, app) )
                     breakerMatch = breakerRE.search(sampleLines[x])
@@ -859,11 +857,11 @@ def genSample(app, sample, sessionKey=None):
                         events = sampleLines[0:count]
         
                 else:
-                    logger.info("Found '%s' breakers for sample '%s' in app '%s'" % (breakersFound, sample, app) )
+                    logger.debug("Found '%s' breakers for sample '%s' in app '%s'" % (breakersFound, sample, app) )
             
             ## Continue to fill events array until len(events) == count
             if len(events) > 0 and len(events) < count:
-                logger.info("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (sample, app, len(events), count) )
+                logger.debug("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (sample, app, len(events), count) )
                 tempEvents = events[:]
                 while len(events) < count:
                     y = 0
@@ -916,17 +914,12 @@ def genSample(app, sample, sessionKey=None):
                                 # logger.debug("matchStart %d matchEnd %d offset %d" % (matchStart, matchEnd, offset))
                                 event = startEvent + replacement + endEvent
                     
-                workingFH.write(event)
+                out.send(event)
                                      
             ## Close file handles
-            logger.info("Closing file handles for working file '%s' and sample '%s' in app '%s'" % (workingFile, sample, app) )
+            logger.debug("Flushing output for sample '%s' in app '%s'" % (sample, app))
+            out.flush()
             sampleFH.close()
-            workingFH.close()
-            
-            ## Move file to spool
-            logger.info("Moving '%s' to '%s' for sample '%s' in app '%s'" % (workingFilePath, spoolFilePath, sample, app) )
-            shutil.move(workingFilePath, spoolFilePath)
-            
         else:
             logger.warn("Sample '%s' in app '%s' contains no data" % (sample, app) )
             
@@ -975,6 +968,7 @@ class Timer(threading.Thread):
         self.sample = sample
         self.interval = interval
         self.sessionKey = sessionKey
+        self.out = EventgenOutput(samples[app][sample], app, sample, sessionKey)
         threading.Thread.__init__(self)
 
     def run(self):
@@ -984,7 +978,7 @@ class Timer(threading.Thread):
                 startTime = datetime.datetime.now()
 
                 ## Generate sample
-                genSample(self.app, self.sample, sessionKey=self.sessionKey)
+                genSample(self.app, self.sample, self.sessionKey, self.out)
 
                 ## Compute ending time
                 endTime = datetime.datetime.now()
@@ -993,8 +987,9 @@ class Timer(threading.Thread):
                 timeDiff = endTime - startTime
 
                 ## Compute timeDiff in secs
+                time_diff_frac = "%s.%s" % (timeDiff.seconds, timeDiff.microseconds)
                 timeDiff = timeDelta2secs(timeDiff)
-                logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" % (sample, app, timeDiff) )
+                logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" % (sample, app, time_diff_frac) )
 
                 ## Compute number of intervals that last generation sequence spanned
                 wholeIntervals = timeDiff / self.interval
@@ -1006,7 +1001,7 @@ class Timer(threading.Thread):
 
                 ## Compute sleep as the difference between interval and partial interval
                 partialInterval = self.interval - partialInterval
-                logger.info("Generation of sample '%s' in app '%s' sleeping for %s seconds" % (sample, app, partialInterval) )
+                logger.debug("Generation of sample '%s' in app '%s' sleeping for %s seconds" % (sample, app, partialInterval) )
 
                 ## Sleep for partial interval
                 time.sleep(partialInterval)
@@ -1015,12 +1010,6 @@ class Timer(threading.Thread):
 
     def stop(self):
         self.stopping = True
-
-
-
-# def genSampleWrapper(app, sample, interval, sessionKey=None):
-#         
-#     while(1):
                      
             
 if __name__ == '__main__':
@@ -1048,6 +1037,7 @@ if __name__ == '__main__':
         confDict = entity.getEntities('configs/eventgen', count=-1, sessionKey=sessionKey)
     else:
         from eventgenconfig import configParser
+        logger.info('Retrieving eventgen configurations from configParser()')
         confDict = configParser()
     
     samples = {}
