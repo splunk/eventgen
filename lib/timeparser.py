@@ -178,3 +178,8 @@ def timeParserTimeMath(plusminus, num, unit, ret):
     ret = datetime.datetime(ret.year, ret.month, ret.day, ret.hour, ret.minute, ret.second)
     
     return ret
+    
+## Converts Time Delta object to number of seconds in delta
+def timeDelta2secs(timeDiff):
+    deltaSecs = (timeDiff.microseconds + (timeDiff.seconds + timeDiff.days * 24 * 3600) * 10**6) / 10**6
+    return int(deltaSecs)
