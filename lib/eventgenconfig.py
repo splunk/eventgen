@@ -24,6 +24,7 @@ class Config:
     # Internal vars
     _firsttime = True
     _confDict = None
+    _isOwnApp = False
     
     # Externally used vars
     debug = False
@@ -58,9 +59,9 @@ class Config:
     sourcetype = None
 
     ## Validations
-    _validSettings = ['blacklist', 'spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest', 
+    _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest', 
                     'latest', 'eai:acl', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents',
-                    'outputMode', 'file', 'fileMaxBytes', 'fileBackupFiles', 'splunkHost', 'splunkPort',
+                    'outputMode', 'fileName', 'fileMaxBytes', 'fileBackupFiles', 'splunkHost', 'splunkPort',
                     'splunkMethod', 'splunkUser', 'splunkPass', 'index', 'source', 'sourcetype']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validReplacementTypes = ['static', 'timestamp', 'random', 'file', 'mvfile']
@@ -68,9 +69,9 @@ class Config:
     _validSplunkMethods = ['http', 'https']
     _intSettings = ['interval', 'count', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort']
     _floatSettings = ['randomizeCount']
-    _boolSettings = ['randomizeEvents']
+    _boolSettings = ['disabled', 'randomizeEvents']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate']
-    _defaultableSettings = ['spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest',
+    _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest',
                             'latest', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents',
                             'outputMode', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort', 'splunkMethod',
                             'index', 'source', 'sourcetype']
@@ -93,6 +94,10 @@ class Config:
         
             self.grandparentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             self.greatgrandparentdir = os.path.dirname(self.grandparentdir)
+            
+            appName = self.grandparentdir.split(os.sep)[-1]
+            if appName == 'SA-Eventgen' or appName == 'eventgen':
+                self._isOwnApp = True
             self._firsttime = False
             
     def __str__(self):
@@ -155,6 +160,8 @@ class Config:
             
         del self._confDict['global']
         
+        tempsamples = [ ]
+        
         # Now iterate for the rest of the samples we've found
         # We'll create Sample objects for each of them
         for stanza, settings in self._confDict.items():
@@ -189,6 +196,7 @@ class Config:
                     else:
                         setattr(s, key, value)
                         
+                        
                 # Validate all the tokens are fully setup, can't do this in _validateSettings
                 # because they come over multiple lines
                 # Don't error out at this point, just log it and remove the token and move on
@@ -216,28 +224,82 @@ class Config:
                     if getattr(s, setting) == None:
                         setattr(s, setting, getattr(self, setting))
                 
-                # Now we need to match this up to real files.  May generate multiple copies of the sample.
-                foundFiles = [ ]
+                # Append to temporary holding list
+                if not s.disabled:
+                    tempsamples.append(s)
+        
+        # We're now going go through the samples and attempt to apply any matches from other stanzas
+        # This allows us to specify a wildcard at the beginning of the file and get more specific as we go on
+        # We're going to reverse the list and work from the bottom up.  Working in reverse also helps us later
+        # as we're going to want to match at the end of the file first (because it should be the most specific)
+        tempsamples.reverse()
+        
+        # Loop through all samples
+        for s in tempsamples:
+            # Now loop through the samples we've matched with files to see if we apply to any of them
+            for matchs in self.samples:
+                if re.match(s.name, matchs.name) != None and s.name != matchs.name:
+                    # Now we're going to loop through all valid settings and set them assuming
+                    # the more specific object that we've matched doesn't already have them set
+                    # There's really no penalty for setting defaults again, so don't check if they're
+                    # already default
+                    for settingname in self._validSettings:
+                        if settingname not in ['eai:acl', 'blacklist', 'disabled', 'name']:
+                            sourcesetting = getattr(s, settingname)
+                            destsetting = getattr(matchs, settingname)
+                            # We want to check that the setting we're copying to hasn't been
+                            # set, otherwise keep the more specific value
+                            if (destsetting == None or destsetting == getattr(self, settingname)) \
+                                    and sourcesetting != None and sourcesetting != getattr(self, settingname):
+                                logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to sample '%s' in app '%s'" \
+                                                % (settingname, destsetting, s.name, matchs.name, s.app))
+                                setattr(matchs, settingname, sourcesetting)
+                    
+                    # Now prepend all the tokens to the beginning of the list so they'll be sure to match first
+                    newtokens = copy.deepcopy(s.tokens)
+                    logger.debug("Prepending tokens from sample '%s' to sample '%s' in app '%s': %s" \
+                                % (s.name, matchs.name, s.app, pprint.pformat(newtokens)))
+                    newtokens.extend(matchs.tokens)
+                    matchs.tokens = newtokens
+                    
+            # Now we need to match this up to real files.  May generate multiple copies of the sample.
+            foundFiles = [ ]
+            
+            if self.splunkEmbedded and self._isOwnApp:
                 sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
-                if os.path.exists(sampleDir):
-                    sampleFiles = os.listdir(sampleDir)
-                    for sample in sampleFiles:
-                        results = re.match(s.name, sample)
-                        if results != None:
-                            samplePath = os.path.join(sampleDir, sample)
-                            if os.path.isfile(samplePath):
-                                logger.debug("Found sample file '%s' for app '%s' using config '%s'; adding to list" % (sample, s.app, stanza) )
-                                foundFiles.append(samplePath)
-                # If we didn't find any files, log about it
-                if len(foundFiles) == 0:
-                    logger.error("Sample '%s' in config but no matching files" % s.name)
-                for f in foundFiles:
-                    news = copy.deepcopy(s)
-                    news.filePath = f
-                    # Override <SAMPLE> with real name
-                    if s.outputMode == 'spool' and s.spoolFile == self.spoolFile:
-                        s.spoolFile = f.split(os.sep)[-1]
-                    self.samples.append(news)
+            else:
+                sampleDir = os.path.join(self.grandparentdir, 'samples')
+                print sampleDir
+            if os.path.exists(sampleDir):
+                sampleFiles = os.listdir(sampleDir)
+                for sample in sampleFiles:
+                    results = re.match(s.name, sample)
+                    if results != None:
+                        samplePath = os.path.join(sampleDir, sample)
+                        if os.path.isfile(samplePath):
+                            logger.debug("Found sample file '%s' for app '%s' using config '%s'; adding to list" % (sample, s.app, stanza) )
+                            foundFiles.append(samplePath)
+            # If we didn't find any files, log about it
+            if len(foundFiles) == 0:
+                logger.error("Sample '%s' in config but no matching files" % s.name)
+            for f in foundFiles:
+                news = copy.deepcopy(s)
+                news.filePath = f
+                # Override <SAMPLE> with real name
+                if s.outputMode == 'spool' and s.spoolFile == self.spoolFile:
+                    news.spoolFile = f.split(os.sep)[-1]
+                # Override s.name with file name.  Usually they'll match unless we've been a regex
+                news.name = f.split(os.sep)[-1]
+                if not s.disabled:
+                    # Search to make sure we haven't already matched this file
+                    sExists = False
+                    for scheck in self.samples:
+                        if scheck.name == news.name:
+                            sExists = True
+                    if not sExists:
+                        self.samples.append(news)
+                else:
+                    logger.info("Sample '%s' for app '%s' is marked disabled." % (news.name, news.app))
         
         self._confDict = None
         logger.debug("Finished parsing.  Config str:\n%s" % self)
@@ -280,6 +342,10 @@ class Config:
                     raise ValueError("Could not parse float for '%s' in stanza '%s'" % (key, stanza))
             elif key in self._boolSettings:
                 try:
+                    # Splunk gives these to us as a string '0' which bool thinks is True
+                    # ConfigParser gives 'false', so adding more strings
+                    if value in ('0', 'false', 'False'):
+                        value = 0
                     value = bool(value)
                 except:
                     logger.error("Could not parse bool for '%s' in stanza '%s'" % (key, stanza))
@@ -306,7 +372,10 @@ class Config:
     
     def _buildConfDict(self):
         """Build configuration dictionary that we will use """
-        if not self.splunkEmbedded:
+        if self.splunkEmbedded and self._isOwnApp:
+            logger.info('Retrieving eventgen configurations from /configs/eventgen')
+            self._confDict = entity.getEntities('configs/eventgen', count=-1, sessionKey=self.sessionKey)
+        else:
             logger.info('Retrieving eventgen configurations with ConfigParser()')
             # We assume we're in a bin directory and that there are default and local directories
             conf = ConfigParser()
@@ -345,7 +414,5 @@ class Config:
                 #             newitem = self._validSettings[[x.lower() for x in self._validSettings].index(item.lower())]
                 #         ret[section][newitem] = orig[section][item]
             self._confDict = ret
-        else:
-            logger.info('Retrieving eventgen configurations from /configs/eventgen')
-            self._confDict = entity.getEntities('configs/eventgen', count=-1, sessionKey=self.sessionKey)
+        logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
             

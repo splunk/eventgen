@@ -19,6 +19,7 @@ class Sample:
     filePath = None
     
     # Options which are all valid for a sample
+    disabled = None
     spoolDir = None
     spoolFile = None
     breaker = None
@@ -28,18 +29,21 @@ class Sample:
     latest = None
     hourOfDayRate = None
     dayOfWeekRate = None
+    randomizeEvents = None
     randomizeCount = None
     outputMode = None
+    fileName = None
     fileMaxBytes = None
     fileBackupFiles = None
     splunkHost = None
     splunkPort = None
     splunkMethod = None
-    splunkuser = None
+    splunkUser = None
+    splunkPass = None
     index = None
     source = None
     sourcetype = None
-    tokens = [ ]
+    tokens = None
     
     # Internal fields
     _c = None
@@ -51,6 +55,7 @@ class Sample:
         globals()['logger'] = logger
         
         self.name = name
+        self.tokens = [ ]
         
         # Import config
         from eventgenconfig import Config
@@ -84,22 +89,13 @@ class Sample:
                 sampleLines[i] += '\n'
 
         if len(sampleLines) > 0:
-            # 5/8/12 CS Added randomizeEvents config to randomize items from the file
-            try:
-                if self.randomizeEvents:
-                    logger.debug("Shuffling events for sample '%s' in app '%s'" \
-                                    % (self.name, self.app))
-                    random.shuffle(sampleLines)
-            except:
-                logger.error("randomizeEvents for sample '%s' in app '%s' unparseable." \
-                                % (self.name, self.app))
-
             count = self.count
             if self.count == 0:
                 logger.debug("Count %s specified as default for sample '%s' in app '%s'; adjusting count to sample length %s; using default breaker" \
                                 % (self.count, self.name, self.app, len(sampleLines)) )
-                self.count = len(sampleLines)
+                count = len(sampleLines)
             elif self.count > 0:
+                
                 # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
                 # hourOfDay, dayOfWeek and randomizeCount configs
                 rateFactor = 1.0
@@ -162,6 +158,16 @@ class Sample:
                 logger.debug("Filling events array for sample '%s' in app '%s'; count=%s, sampleLines=%s" \
                                 % (self.name, self.app, count, len(sampleLines)) )
 
+                # 5/8/12 CS Added randomizeEvents config to randomize items from the file
+                try:
+                    if self.randomizeEvents:
+                        logger.debug("Shuffling events for sample '%s' in app '%s'" \
+                                        % (self.name, self.app))
+                        random.shuffle(sampleLines)
+                except:
+                    logger.error("randomizeEvents for sample '%s' in app '%s' unparseable." \
+                                    % (self.name, self.app))
+                
                 if count >= len(sampleLines):
                     events = sampleLines
                 else:
@@ -201,7 +207,7 @@ class Sample:
                 ## If breaker wasn't found in sample
                 ## events = sample
                 if breakersFound == 0:
-                    logger.warn("Breaker '%s' not found for sample '%s' in app '%s'; using default breaker" % (self.breaker, self.sample, self.app) )
+                    logger.warn("Breaker '%s' not found for sample '%s' in app '%s'; using default breaker" % (self.breaker, self.name, self.app) )
 
                     if count >= len(sampleLines):
                         events = sampleLines
@@ -220,7 +226,7 @@ class Sample:
                         events.append(tempEvents[y])
                         y += 1
 
-            logger.debug('Replacing %s tokens in %s events' % (len(self.tokens), len(events)))
+            logger.debug("Replacing %s tokens in %s events for sample '%s' in app '%s'" % (len(self.tokens), len(events), self.name, self.app))
             ## Iterate events
             for x in range(0, len(events)):
                 event = events[x]
@@ -321,7 +327,10 @@ class Token:
         if tokenMatch:
             # Find old in case of error
             oldMatch = self._search(event)
-            old = event[oldMatch.start(0):oldMatch.end(0)]
+            if oldMatch:
+                old = event[oldMatch.start(0):oldMatch.end(0)]
+            else:
+                old = ""
             
             # logger.debug("Got match for token: '%s'" % (self.token))
             replacement = self._getReplacement(old)

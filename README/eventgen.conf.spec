@@ -46,6 +46,9 @@ latest = now
         * file -> <replacment file name>
         * mvfile -> <replacement file name, expects CSV file>:<column number>
         
+disabled = true | false
+    * Like what it looks like.  Will disable event generation for this sample.
+        
 outputMode = spool | file | splunkstream
     * Specifies how to output log data.  Spool is default (for legacy reasons).
     * If setting spool, should set spoolDir
@@ -65,7 +68,7 @@ spoolFile = <spool file name>
     * Not valid if stanza is a pattern.
     * Defaults to <SAMPLE> (sample file name).
     
-file = </path/to/file>
+fileName = </path/to/file>
     * Should set the full path
     * Uses a rotating file handler which will rotate the file at a certain size, by default 10 megs
       and will by default only save 5 files.  See fileMaxBytes and fileBackupFiles

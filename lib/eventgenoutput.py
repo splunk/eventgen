@@ -41,7 +41,7 @@ class Output:
     _spoolFile = None
     _workingFilePath = None
     _workingFH = None
-    _file = None
+    _fileName = None
     _fileMaxBytes = None
     _fileBackupFiles = None
     _fileLogger = None
@@ -61,7 +61,7 @@ class Output:
     validSplunkMethods = ['http', 'https']
     
     # Queue of outputs.  Will be sent to host when flush() is called
-    _queue = deque([])
+    _queue = None
     
     def __init__(self, sample):
         from eventgenconfig import Config
@@ -69,6 +69,8 @@ class Output:
         self._app = sample.app
         self._sample = sample.name
         self._outputMode = sample.outputMode
+        
+        self._queue = deque([])
         
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
@@ -78,11 +80,11 @@ class Output:
             self._spoolDir = sample.pathParser(sample.spoolDir)
             self._spoolFile = sample.spoolFile
         elif self._outputMode == 'file':
-            if sample.file == None:
+            if sample.fileName == None:
                 logger.error('outputMode file but file not specified for sample %s' % self._sample)
                 raise ValueError('outputMode file but file not specified for sample %s' % self._sample)
                 
-            self._file = sample.file
+            self._file = sample.fileName
             self._fileMaxBytes = sample.fileMaxBytes
             self._fileBackupFiles = sample.fileBackupFiles
             
@@ -179,7 +181,6 @@ class Output:
                 else:
                     connmethod = httplib.HTTPConnection
                 self._splunkhttp = connmethod(self._splunkHost, self._splunkPort)
-                self._splunkhttp.set_debuglevel(1)
                 self._splunkhttp.connect()
                 url = '/services/receivers/stream?%s' % (urllib.urlencode([('index', self._index),
                                                                             ('source', self._source),
@@ -216,9 +217,13 @@ class Output:
         # Cleanup after writing queue
         if self._outputMode == 'spool':
             ## Move file to spool
+            self._workingFH.close()
             spoolPath = self._spoolDir + os.sep + self._spoolFile
             logger.debug("Moving '%s' to '%s' for sample '%s' in app '%s'" % (self._workingFilePath, spoolPath, self._sample, self._app))
-            shutil.move(self._workingFilePath, spoolPath)
+            if os.path.exists(self._workingFilePath):
+                shutil.move(self._workingFilePath, spoolPath)
+            else:
+                logger.error("File '%s' missing" % self._workingFilePath)
         elif self._outputMode == 'splunkstream':
             # logger.debug("Closing self._splunkhttp connection")
             self._splunkhttp.close()

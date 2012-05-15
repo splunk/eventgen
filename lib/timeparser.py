@@ -10,15 +10,7 @@ import logging
 #
 # python-dateutil acquired from http://labix.org/python-dateutil.  BSD Licensed
 import sys, os
-if 'SPLUNK_HOME' not in os.environ and 'SPLUNK_DB' not in os.environ:
-    os.environ['SPLUNK_HOME'] = '/Applications/splunk'
-    os.environ['SPLUNK_DB'] = '/Applications/splunk/var/lib/db'
-    
-if 'SPLUNK_HOME' in os.environ:
-    path_prepend = os.environ['SPLUNK_HOME']+'/etc/apps/SA-Eventgen/lib'
-else:
-    path_prepend = './lib'
-
+path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
 sys.path.append(path_prepend + '/python_dateutil-1.4.1-py2.7.egg')
 import dateutil.parser as dateutil_parser
 

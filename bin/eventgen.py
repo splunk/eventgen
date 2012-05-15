@@ -4,52 +4,18 @@ Copyright (C) 2005-2012 Splunk Inc. All Rights Reserved.
 from __future__ import division
 
 import sys, os
-if 'SPLUNK_HOME' in os.environ:
-    path_prepend = os.environ['SPLUNK_HOME']+'/etc/apps/SA-Eventgen/lib'
-else:
-    path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
+path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
 sys.path.append(path_prepend)
 
 import logging
 import threading
 import time
-import ctypes
 import datetime
 from select import select
 from eventgenconfig import Config
 from timeparser import timeDelta2secs
 
-# 5/7/12 CS Working around poor signal handling by python Threads (mainly on BSD implementations
-# it seems).  This hopefully handles signals properly and allows us to terminate.
-# Copied from http://code.activestate.com/recipes/496960/
-
-def _async_raise(tid, excobj):
-    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(excobj))
-    if res == 0:
-        raise ValueError("nonexistent thread id")
-    elif res > 1:
-        # """if it returns a number greater than one, you're in trouble, 
-        # and you should call it again with exc=NULL to revert the effect"""
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, 0)
-        raise SystemError("PyThreadState_SetAsyncExc failed")
-
 class Timer(threading.Thread):
-    def raise_exc(self, excobj):
-        assert self.isAlive(), "thread must be started"
-        for tid, tobj in threading._active.items():
-            if tobj is self:
-                _async_raise(tid, excobj)
-                return
-
-        # the thread was alive when we entered the loop, but was not found 
-        # in the dict, hence it must have been already terminated. should we raise
-        # an exception here? silently ignore?
-
-    def terminate(self):
-        # must raise the SystemExit type, instead of a SystemExit() instance
-        # due to a bug in PyThreadState_SetAsyncExc
-        self.raise_exc(SystemExit)
-
     # Added by CS 5/7/12 to emulate threading.Timer
     def __init__(self, time, sample):
         self.time = time
@@ -91,6 +57,25 @@ class Timer(threading.Thread):
         self.stopping = True
                      
             
+# Copied from http://danielkaes.wordpress.com/2009/06/04/how-to-catch-kill-events-with-python/
+def set_exit_handler(func):
+	if os.name == "nt":
+		try:
+			import win32api
+			win32api.SetConsoleCtrlHandler(func, True)
+		except ImportError:
+			version = ".".join(map(str, sys.version_info[:2]))
+			raise Exception("pywin32 not installed for Python " + version)
+	else:
+		import signal
+		signal.signal(signal.SIGTERM, func)
+    
+def handle_exit(sig=None, func=None):
+    for sampleTimer in sampleTimers:
+        sampleTimer.stop()
+    sys.exit(0)
+    		
+
 if __name__ == '__main__':
     debug = False
     c = Config()
@@ -128,7 +113,8 @@ if __name__ == '__main__':
                 sampleTimers.append(t)
     
     ## Start the timers
-    if not c.debug:                
+    if not c.debug:
+        set_exit_handler(handle_exit)
         first = True
         while (1):
             try:
@@ -140,6 +126,4 @@ if __name__ == '__main__':
                     first = False
                 time.sleep(600)
             except KeyboardInterrupt:
-                for sampleTimer in sampleTimers:
-                    sampleTimer.stop()
-                sys.exit(0)
+                handle_exit()
