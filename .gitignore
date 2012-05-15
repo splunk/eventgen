@@ -1,1 +1,3 @@
 *.pyc
+lib/*.pyc
+bin/*.pyc
