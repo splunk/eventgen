@@ -85,11 +85,15 @@ if __name__ == '__main__':
     
     # 5/6/12 CS use select to listen for input on stdin
     # if we timeout, assume we're not splunk embedded
-    rlist, _, _ = select([sys.stdin], [], [], 5)
-    if rlist:
-        sessionKey = sys.stdin.readline().strip()
+    # Only support standalone mode on Unix due to limitation with select()
+    if os.name != "nt":
+        rlist, _, _ = select([sys.stdin], [], [], 5)
+        if rlist:
+            sessionKey = sys.stdin.readline().strip()
+        else:
+            sessionKey = ''
     else:
-        sessionKey = ''
+        sessionKey = sys.stdin.readline().strip()
     
     if sessionKey == 'debug':
         c.makeSplunkEmbedded(debug=True)

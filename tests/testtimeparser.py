@@ -110,7 +110,7 @@ def timeParserOld(ts='now', sessionKey=None):
 if __name__ == '__main__':
     
     # Login to Splunk
-    sessionKey = auth.getSessionKey('admin', 'rUstY3')
+    sessionKey = auth.getSessionKey('admin', 'changeme')
     print sessionKey
     for teststr in TEST_STRINGS:
         tpold = timeParserOld(teststr, sessionKey)
