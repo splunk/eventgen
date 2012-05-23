@@ -5,7 +5,7 @@
 CURRENT_PWD=`pwd`
 
 # Cleanup
-rm $CURRENT_PWD/oidemo.spl
+rm $CURRENT_PWD/eventgen.spl
 
 # Create a build directory that we can use
 BUILD_DIR=.build/SA-eventgen
