@@ -49,6 +49,7 @@ class Config:
     hourOfDayRate = None
     dayOfWeekRate = None
     randomizeCount = None
+    randomizeEvents = None
     outputMode = None
     fileMaxBytes = None
     fileBackupFiles = None
