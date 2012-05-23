@@ -38,7 +38,10 @@ class Config:
     # from either the eventgen.conf in the SA-Eventgen app (embedded)
     # or the eventgen_defaults file in the lib directory (standalone)
     # These are only options which are valid in the 'global' stanza
-    blacklist = None
+    # 5/22 CS Except for blacklist, we define that in code, since splunk complains about it in
+    # the config files
+    disabled = None
+    blacklist = ".*\.part"
     spoolDir = None
     spoolFile = None
     breaker = None

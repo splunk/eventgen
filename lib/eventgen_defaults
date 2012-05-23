@@ -1,6 +1,5 @@
 [global]
 disabled = false
-blacklist = .*\.part
 spoolDir = $SPLUNK_HOME/var/spool/splunk
 spoolFile = <SAMPLE>
 breaker = [^\r\n\s]+
