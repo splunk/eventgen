@@ -28,8 +28,8 @@ randomizeEvents = true
 # splunkPass = changeme
 
 outputMode = stormstream
-projectID = e7b962e8a5ad11e1981712313b04d4b1
-accessToken = KMdu5sxV8LZ4jUHinZBmGFhi6XyKM9t16lJHUIPiY3Fr5_KR7BicLNSFWcaCOzN0afNRLN34cdE=
+projectID = <projectid>
+accessToken = <accesstoken>
 source = eventgen
 sourcetype = business_event
 

@@ -49,12 +49,13 @@ latest = now
 disabled = true | false
     * Like what it looks like.  Will disable event generation for this sample.
         
-outputMode = spool | file | splunkstream
+outputMode = spool | file | splunkstream | stormstream
     * Specifies how to output log data.  Spool is default (for legacy reasons).
     * If setting spool, should set spoolDir
     * If setting file, should set logFile
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser
       and splunkPassword if not Splunk embedded
+    * If setting stormstream, should set projectID and accessToken.
 
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.
@@ -98,6 +99,12 @@ splunkUser = <user>
     
 splunkPass = <pass>
     * Password for SplunkUser
+    
+projectID = <id>
+    * Project ID for Splunk Storm
+    
+accessToken = <accesstoken>
+    * Access Token for Splunk Storm
     
 index = <index>
     * ONLY VALID WITH outputMode SPLUNKSTREAM

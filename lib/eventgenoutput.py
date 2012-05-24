@@ -11,6 +11,7 @@ from collections import deque
 import os
 import shutil
 import pprint
+import base64
 # 5/9/12 CS This is a hack until I can move configuration 
 # and constants into a better place than the main module
 import __main__
@@ -56,6 +57,8 @@ class Output:
     _index = None
     _source = None
     _sourcetype = None
+    _projectID = None
+    _accessToken = None
     
     validOutputModes = ['spool', 'file', 'splunkstream']
     validSplunkMethods = ['http', 'https']
@@ -75,6 +78,11 @@ class Output:
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
+                
+        if self._outputMode in ('splunkstream', 'stormstream'):
+            self._index = sample.index
+            self._source = sample.source
+            self._sourcetype = sample.sourcetype
             
         if self._outputMode == 'spool':
             self._spoolDir = sample.pathParser(sample.spoolDir)
@@ -146,10 +154,9 @@ class Output:
                     raise IOError('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample)
                     
             logging.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._c.sessionKey, self._sample))    
-                
-            self._index = sample.index
-            self._source = sample.source
-            self._sourcetype = sample.sourcetype
+        elif self._outputMode == 'stormstream':        
+            self._accessToken = sample.accessToken
+            self._projectID = sample.projectID
             
         logger.debug("Output init completed.  Output: %s" % self)
         
@@ -196,6 +203,7 @@ class Output:
                 raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
         try:
             msg = self._queue.popleft()
+            streamout = ""
             while msg:
                 if self._outputMode == 'spool':
                     self._workingFH.write(msg)
@@ -206,8 +214,10 @@ class Output:
                         msg = msg[:-1]
                     self._fileLogger.error(msg)
                 elif self._outputMode == 'splunkstream':
-                    # logger.debug("Sending %s to self._splunkhttp" % msg)
+                    #logger.debug("Sending %s to self._splunkhttp" % msg)
                     self._splunkhttp.send(msg)
+                elif self._outputMode == 'stormstream':
+                    streamout += msg
                     
                 msg = self._queue.popleft()
             logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
@@ -225,5 +235,20 @@ class Output:
             else:
                 logger.error("File '%s' missing" % self._workingFilePath)
         elif self._outputMode == 'splunkstream':
-            # logger.debug("Closing self._splunkhttp connection")
+            #logger.debug("Closing self._splunkhttp connection")
             self._splunkhttp.close()
+        elif self._outputMode == 'stormstream':
+            try:
+                self._splunkhttp = httplib.HTTPSConnection('api.splunkstorm.com', 443)
+                url = '/1/inputs/http?%s' % (urllib.urlencode([('project', self._projectID), 
+                                            ('source', self._source),('sourcetype', self._sourcetype)]))
+                headers = {'Authorization': "Basic %s" % base64.b64encode(self._accessToken+':')}
+                self._splunkhttp.request("POST", url, streamout, headers)
+                logger.debug("POSTing to url %s on https://api.splunkstorm.com with accessToken %s" \
+                            % (url, base64.b64encode(self._accessToken+':')))
+            except httplib.HTTPException:
+                logger.error('Error connecting to Splunk for logging for sample %s' % self._sample)
+                raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
+            response = self._splunkhttp.getresponse()
+            data = response.read()
+            logger.debug("Data returned %s" % data)

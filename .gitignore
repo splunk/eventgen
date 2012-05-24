@@ -1,3 +1,4 @@
 *.pyc
 lib/*.pyc
 bin/*.pyc
+local/eventgen-standalone.conf
