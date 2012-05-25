@@ -44,6 +44,8 @@ class Sample:
     source = None
     sourcetype = None
     tokens = None
+    projectID = None
+    accessToken = None
     
     # Internal fields
     _c = None
