@@ -102,6 +102,7 @@ class Sample:
             if self._sampleLines == None:
                 logger.debug("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
                 sampleDict = [ ]
+                sampleLines = [ ]
                 csvReader = csv.DictReader(sampleFH)
                 for line in csvReader:
                     sampleDict.append(line)
