@@ -260,12 +260,13 @@ class Sample:
             logger.debug("Replacing %s tokens in %s events for sample '%s' in app '%s'" % (len(self.tokens), len(events), self.name, self.app))
             
             if self.sampletype == 'csv':
-                self._out.index = sampleDict[0]['index']
-                self._out.host = sampleDict[0]['host']
-                self._out.source = sampleDict[0]['source']
-                self._out.sourcetype = sampleDict[0]['sourcetype']
+                self.index = sampleDict[0]['index']
+                self.host = sampleDict[0]['host']
+                self.source = sampleDict[0]['source']
+                self.sourcetype = sampleDict[0]['sourcetype']
                 logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
-                            % (self._out.index, self._out.host, self._out.source, self._out.sourcetype))
+                            % (self.index, self.host, self.source, self.sourcetype))
+                self._out.refreshconfig(self)
                 
             ## Iterate events
             for x in range(0, len(events)):
@@ -287,12 +288,13 @@ class Sample:
                     # Flush events before we change all the various parameters
                     logger.debug("Sampletype CSV, parameters changed at event %s.  Flushing output." % x)
                     self._out.flush()
-                    self._out.index = sampleDict[x]['index']
-                    self._out.host = sampleDict[x]['host']
-                    self._out.source = sampleDict[x]['source']
-                    self._out.sourcetype = sampleDict[x]['sourcetype']
+                    self.index = sampleDict[x]['index']
+                    self.host = sampleDict[x]['host']
+                    self.source = sampleDict[x]['source']
+                    self.sourcetype = sampleDict[x]['sourcetype']
                     logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
-                                % (self._out.index, self._out.host, self._out.source, self._out.sourcetype))
+                                % (self.index, self.host, self.source, self.sourcetype))
+                    self._out.refreshconfig(self)
                 self._out.send(event)
 
             ## Close file handles
