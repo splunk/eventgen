@@ -24,6 +24,7 @@ class Sample:
     spoolFile = None
     breaker = None
     interval = None
+    delay = None
     count = None
     earliest = None
     latest = None
@@ -403,6 +404,9 @@ class Token:
             ## Validations:
             integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
             integerMatch = integerRE.match(self.replacement)
+            
+            floatRE = re.compile('float\[(\d+)\.(\d+):(\d+)\.(\d+)\]', re.I)
+            floatMatch = floatRE.match(self.replacement)
 
             stringRE = re.compile('string\((\d+)\)', re.I)
             stringMatch = stringRE.match(self.replacement)
@@ -455,6 +459,26 @@ class Token:
                     return replacement
                 else:
                     logger.error("Start integer %s greater than end integer %s; will not replace" % (startInt, endInt) )
+                    return old
+            elif floatMatch:
+                try:
+                    startFloat = float(floatMatch.group(1)+'.'+floatMatch.group(2))
+                    endFloat = float(floatMatch.group(3)+'.'+floatMatch.group(4))
+                    
+                    if endFloat >= startFloat:
+                        precision = 10 ** len(floatMatch.group(2))
+                        startInt = int(round(float(floatMatch.group(1)) * precision,0))
+                        endInt = int(round(float(floatMatch.group(3)) * precision,0))
+                        
+                        randInt = random.randint(startInt, endInt)
+                        floatret = str(round(randInt / precision, len(floatMatch.group(2))))
+                        return floatret
+                    else:
+                        logger.error("Start float %s greater than end float %s; will not replace" % (startFloat, endFloat))
+                        return old
+                except ValueError:
+                    logger.error("Could not parse float[%s.%s:%s.%s]" % (floatMatch.group(1), floatMatch.group(2), \
+                                floatMatch.group(3), floatMatch.group(4)))
                     return old
             elif stringMatch:
                 strLength = int(stringMatch.group(1))

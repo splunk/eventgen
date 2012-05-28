@@ -25,6 +25,9 @@ class Timer(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
+        if self.sample.delay > 0:
+            logger.info("Sample set to delay %s, sleeping." % s.delay)
+            time.sleep(self.sample.delay)
         while (1):
             if not self.stopping:
                 startTime = datetime.datetime.now()

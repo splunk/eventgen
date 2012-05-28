@@ -49,6 +49,10 @@ latest = now
 disabled = true | false
     * Like what it looks like.  Will disable event generation for this sample.
         
+#############################
+## OUTPUT RELATED SETTINGS ##
+#############################
+
 outputMode = spool | file | splunkstream | stormstream
     * Specifies how to output log data.  Spool is default (for legacy reasons).
     * If setting spool, should set spoolDir
@@ -118,14 +122,24 @@ sourcetype = <sourcetype>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
     
+    
+###############################
+## EVENT GENERATION SETTINGS ##
+###############################
+
 interval = <integer>
    * How often to generate sample (in seconds).
    * 0 means disabled.
    * Defaults to 60 seconds.  
+   
+delay = <integer>
+    * Specifies how long to wait until we begin generating events for this sample
+    * Primarily this is used so we can stagger sets of samples which similar but slightly different data
+    * Defaults to 0 which is disabled.
     
 count = <integer>
     * Maximum number of events to generate per sample file
-    * 0 means sample length.
+    * 0 means replay the entire sample.
     * Defaults to 0.
     
 hourOfDayRate = <json>
@@ -168,6 +182,10 @@ latest = <time-str>
     * If this value is an absolute time, use the dispatch.time_format to format the value.
     * Defaults to now.
     
+################################
+## TOKEN REPLACEMENT SETTINGS ##
+################################
+    
 token.<n>.token = <regular expression>
     * 'n' is a number starting at 0, and increasing by 1.
     * PCRE expression used to identify segment for replacement.
@@ -183,7 +201,7 @@ token.<n>.replacementType = static | timestamp | random | file | mvfile
     * For mvfile, the token will be replaced with a random value of a column retrieved from a file specified in the replacement setting.  Multiple files can reference the same source file and receive different columns from the same random line.
     * Defaults to None.
     
-token.<n>.replacement = <string> | <strptime> | ipv4 | ipv6 | mac | integer[<start>:<end>] | string(<i>) | hex(<i>) | <replacement file name> | <replacement file name>:<column number>
+token.<n>.replacement = <string> | <strptime> | ipv4 | ipv6 | mac | integer[<start>:<end>] | float[<start>:<end>] | string(<i>) | hex(<i>) | <replacement file name> | <replacement file name>:<column number>
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For <string>, the token will be replaced with the value specified.
     * For ipv4, the token will be replaced with a random valid IPv4 Address (i.e. 10.10.200.1).
@@ -192,6 +210,12 @@ token.<n>.replacement = <string> | <strptime> | ipv4 | ipv6 | mac | integer[<sta
     * For integer[<start>:<end>], the token will be replaced with a random integer between 
       start and end values where <start> is a number greater than 0 
       and <end> is a number greater than 0 and greater than or equal to <start>
+    * For float[<start>:<end>], the token will be replaced with a random float between
+      start and end values where <start> is a number greater than 0
+      and <end> is a number greater than 0 and greater than or equal to <start>.
+      For floating point numbers, precision will be based off the precision specified
+      in <start>.  For example, if we specify 1.0, precision will be one digit, if we specify
+      1.0000, precision will be four digits.
     * For string(<i>), the token will be replaced with i number(s) of ASCII characters where 'i' is a number greater than 0.
     * For hex(<i>), the token will be replaced with i number of Hexadecimal characters [0-9A-F] where 'i' is a number greater than 0.
     * For <replacement file name>, the token will be replaced with a random line in the replacement file.

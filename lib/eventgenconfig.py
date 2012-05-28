@@ -46,6 +46,7 @@ class Config:
     spoolFile = None
     breaker = None
     interval = None
+    delay = None
     count = None
     earliest = None
     latest = None
@@ -65,23 +66,23 @@ class Config:
     accessToken = None
 
     ## Validations
-    _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest', 
-                    'latest', 'eai:acl', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents',
-                    'outputMode', 'fileName', 'fileMaxBytes', 'fileBackupFiles', 'splunkHost', 'splunkPort',
-                    'splunkMethod', 'splunkUser', 'splunkPass', 'index', 'source', 'sourcetype', 'projectID', 
-                    'accessToken']
+    _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'interval', 'delay', 'count', 
+                    'earliest', 'latest', 'eai:acl', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 
+                    'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 'fileBackupFiles', 'splunkHost',
+                    'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass', 'index', 'source', 'sourcetype', 
+                    'projectID', 'accessToken']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validReplacementTypes = ['static', 'timestamp', 'random', 'file', 'mvfile']
     _validOutputModes = ['spool', 'file', 'splunkstream', 'stormstream']
     _validSplunkMethods = ['http', 'https']
     _intSettings = ['interval', 'count', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort']
-    _floatSettings = ['randomizeCount']
+    _floatSettings = ['randomizeCount', 'delay']
     _boolSettings = ['disabled', 'randomizeEvents']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate']
-    _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'interval', 'count', 'earliest',
-                            'latest', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents',
-                            'outputMode', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort', 'splunkMethod',
-                            'index', 'source', 'sourcetype', 'projectID', 'accessToken']
+    _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'interval', 'delay', 'count', 
+                            'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 
+                            'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort',
+                            'splunkMethod', 'index', 'source', 'sourcetype', 'projectID', 'accessToken']
     
     def __init__(self):
         # Rebind the internal datastore of the class to an Instance variable
