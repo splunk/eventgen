@@ -281,10 +281,10 @@ class Sample:
                 for token in self.tokens:
                     token.mvhash = mvhash
                     event = token.replace(event)
-                if self.sampletype == 'csv' and (sampleDict[x]['index'] != self._out.index or \
-                                                sampleDict[x]['host'] != self._out.host or \
-                                                sampleDict[x]['source'] != self._out.source or \
-                                                sampleDict[x]['sourcetype'] != self._out.sourcetype):
+                if self.sampletype == 'csv' and (sampleDict[x]['index'] != self.index or \
+                                                sampleDict[x]['host'] != self.host or \
+                                                sampleDict[x]['source'] != self.source or \
+                                                sampleDict[x]['sourcetype'] != self.sourcetype):
                     # Flush events before we change all the various parameters
                     logger.debug("Sampletype CSV, parameters changed at event %s.  Flushing output." % x)
                     self._out.flush()
