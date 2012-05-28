@@ -54,10 +54,10 @@ class Output:
     _splunkPass = None
     _splunkUrl = None
     _splunkhttp = None
-    _index = None
-    _source = None
-    _sourcetype = None
-    _host = None
+    index = None
+    source = None
+    sourcetype = None
+    host = None
     _hostRegex = None
     _projectID = None
     _accessToken = None
@@ -167,7 +167,7 @@ class Output:
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
         # Eliminate recursive going back to parent
-        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != '_c' ])
+        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != '_c'])
         return pprint.pformat(temp)
 
     def __repr__(self):
@@ -178,6 +178,18 @@ class Output:
         self._queue.append(msg)
         if len(self._queue) > 10000:
             self.flush()
+            
+    def refreshconfig(self, sample):
+        """Refreshes output config based on sample"""
+        logger.debug("refreshconfig called.  _outputMode: %s" % self._outputMode)
+        if self._outputMode in ('splunkstream', 'stormstream'):
+            self._index = sample.index
+            self._source = sample.source
+            self._sourcetype = sample.sourcetype
+            self._host = sample.host
+            self._hostRegex = sample.hostRegex
+            logger.debug("Refreshed config.  Set Index '%s': Source '%s': Sourcetype: '%s' Host: '%s' HostRegex: '%s'" % \
+                        (self._index, self._source, self._sourcetype, self._host, self._hostregex))
         
     def flush(self):
         """Flushes output from the queue out to the specified output"""
