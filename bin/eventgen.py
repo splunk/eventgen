@@ -74,6 +74,7 @@ def set_exit_handler(func):
 		signal.signal(signal.SIGTERM, func)
     
 def handle_exit(sig=None, func=None):
+    print '\n\nCaught kill, exiting...'
     for sampleTimer in sampleTimers:
         sampleTimer.stop()
     sys.exit(0)
@@ -131,6 +132,6 @@ if __name__ == '__main__':
                     for sampleTimer in sampleTimers:
                         sampleTimer.start()
                     first = False
-                time.sleep(600)
+                time.sleep(5)
             except KeyboardInterrupt:
                 handle_exit()
