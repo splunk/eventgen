@@ -19,12 +19,14 @@ class Timer(threading.Thread):
     time = None
     stopping = None
     interruptcatcher = None
+    countdown = None
     
     # Added by CS 5/7/12 to emulate threading.Timer
     def __init__(self, time, sample=None, interruptcatcher=None):
         self.time = time
         self.stopping = False
         self.interruptcatcher = interruptcatcher
+        self.countdown = 0
         
         self.sample = sample
         threading.Thread.__init__(self)
@@ -36,29 +38,34 @@ class Timer(threading.Thread):
         while (1):
             if not self.stopping:
                 if not self.interruptcatcher:
-                    startTime = datetime.datetime.now()
-                    self.sample.gen()
-                    endTime = datetime.datetime.now()
-                    timeDiff = endTime - startTime
+                    if self.countdown <= 0:
+                        startTime = datetime.datetime.now()
+                        self.sample.gen()
+                        endTime = datetime.datetime.now()
+                        timeDiff = endTime - startTime
 
-                    timeDiffFrac = "%s.%s" % (timeDiff.seconds, timeDiff.microseconds)
-                    logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" \
-                                % (self.sample.name, self.sample.app, timeDiffFrac) )
+                        timeDiffFrac = "%s.%s" % (timeDiff.seconds, timeDiff.microseconds)
+                        logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" \
+                                    % (self.sample.name, self.sample.app, timeDiffFrac) )
 
-                    timeDiff = timeDelta2secs(timeDiff)
-                    wholeIntervals = timeDiff / self.sample.interval
-                    partialInterval = timeDiff % self.sample.interval
+                        timeDiff = timeDelta2secs(timeDiff)
+                        wholeIntervals = timeDiff / self.sample.interval
+                        partialInterval = timeDiff % self.sample.interval
 
-                    if wholeIntervals > 1:
-                        logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
-                                    % (self.sample.name, self.sample.app, timeDiff, self.sample.interval) )
+                        if wholeIntervals > 1:
+                            logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
+                                        % (self.sample.name, self.sample.app, timeDiff, self.sample.interval) )
 
-                    partialInterval = self.sample.interval - partialInterval
-                    logger.debug("Generation of sample '%s' in app '%s' sleeping for %s seconds" \
-                                % (self.sample.name, self.sample.app, partialInterval) )
+                        partialInterval = self.sample.interval - partialInterval
+                        logger.debug("Generation of sample '%s' in app '%s' sleeping for %s seconds" \
+                                    % (self.sample.name, self.sample.app, partialInterval) )
 
-                    ## Sleep for partial interval
-                    time.sleep(partialInterval)
+                        self.countdown = partialInterval
+                        ## Sleep for partial interval
+                        time.sleep(self.time)
+                    else:
+                        self.countdown -= self.time
+                        time.sleep(self.time)
                 else:
                     time.sleep(self.time)
             else:
@@ -130,7 +137,7 @@ if __name__ == '__main__':
                 s.gen()
             else:
                 logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )    
-                t = Timer(0.1, s) 
+                t = Timer(1.0, s) 
                 sampleTimers.append(t)
     
     ## Start the timers
