@@ -122,15 +122,31 @@ sourcetype = <sourcetype>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
     
+host = <host>
+    * ONLY VALID WITH outputMode SPLUNKSTREAM
+    * Set event host in Splunk to <host>.  Defaults to 127.0.0.1 if none specified.
+    
+hostRegex = <hostRegex>
+    * ONLY VALID WITH outputMode SPLUNKSTREAM
+    * Allows setting the event host via a regex from the actual event itself.  Only used if host not set.
+    
     
 ###############################
 ## EVENT GENERATION SETTINGS ##
 ###############################
 
+sampletype = raw | csv
+    * Raw are raw events (default)
+    * CSV are from an outputcsv or export from Splunk.
+      CSV allows you to override output fields for the sample like host, index, source and sourcetype
+      from the CSV file.  Will read the raw events from a field called _raw.  Assumes the CSV file has
+      a header row which defines field names.
+      OVERRIDES FOR DEFAULT FIELDS WILL ONLY WITH WITH outputMode SPLUNKSTREAM.
+
 interval = <integer>
-   * How often to generate sample (in seconds).
-   * 0 means disabled.
-   * Defaults to 60 seconds.  
+    * How often to generate sample (in seconds).
+    * 0 means disabled.
+    * Defaults to 60 seconds.  
    
 delay = <integer>
     * Specifies how long to wait until we begin generating events for this sample
@@ -164,6 +180,7 @@ randomizeCount = <float>
     
 randomizeEvents = <boolean>
     * Will randomize the events found in the sample file before choosing the events.
+    * NOT SUPPORTED WITH sampletype csv
     
 breaker = <regular expression>
     * NOT to be confused w/ props.conf LINE_BREAKER.

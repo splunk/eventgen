@@ -57,6 +57,8 @@ class Output:
     _index = None
     _source = None
     _sourcetype = None
+    _host = None
+    _hostRegex = None
     _projectID = None
     _accessToken = None
     
@@ -83,6 +85,8 @@ class Output:
             self._index = sample.index
             self._source = sample.source
             self._sourcetype = sample.sourcetype
+            self._host = sample.host
+            self._hostRegex = sample.hostRegex
             
         if self._outputMode == 'spool':
             self._spoolDir = sample.pathParser(sample.spoolDir)
@@ -172,6 +176,8 @@ class Output:
     def send(self, msg):
         """Queues a message for output to configured outputs"""
         self._queue.append(msg)
+        if len(self._queue) > 10000:
+            self.flush()
         
     def flush(self):
         """Flushes output from the queue out to the specified output"""
@@ -189,9 +195,18 @@ class Output:
                     connmethod = httplib.HTTPConnection
                 self._splunkhttp = connmethod(self._splunkHost, self._splunkPort)
                 self._splunkhttp.connect()
-                url = '/services/receivers/stream?%s' % (urllib.urlencode([('index', self._index),
-                                                                            ('source', self._source),
-                                                                            ('sourcetype', self._sourcetype)]))
+                urlparms = [ ]
+                if self._index != None:
+                    urlparms.append(('index', self._index))
+                if self._source != None:
+                    urlparms.append(('source', self._source))
+                if self._sourcetype != None:
+                    urlparms.append(('sourcetype', self._sourcetype))
+                if self._hostRegex != None:
+                    urlparms.append(('host_regex', self._hostRegex))
+                elif self._host != None:
+                    urlparms.append(('host', self._host))
+                url = '/services/receivers/stream?%s' % (urllib.urlencode(urlparms))
                 self._splunkhttp.putrequest("POST", url)
                 self._splunkhttp.putheader("Authorization", "Splunk %s" % self._c.sessionKey)
                 self._splunkhttp.putheader("x-splunk-input-mode", "streaming")
@@ -240,8 +255,14 @@ class Output:
         elif self._outputMode == 'stormstream':
             try:
                 self._splunkhttp = httplib.HTTPSConnection('api.splunkstorm.com', 443)
-                url = '/1/inputs/http?%s' % (urllib.urlencode([('project', self._projectID), 
-                                            ('source', self._source),('sourcetype', self._sourcetype)]))
+                urlparms = [ ]
+                if self._source != None:
+                    urlparms.append(('source', self._source))
+                if self._sourcetype != None:
+                    urlparms.append(('sourcetype', self._sourcetype))
+                if self._host != None:
+                    urlparms.append(('host', self._host))
+                url = '/1/inputs/http?%s' % (urllib.urlencode(urlparms))
                 headers = {'Authorization': "Basic %s" % base64.b64encode(self._accessToken+':')}
                 self._splunkhttp.request("POST", url, streamout, headers)
                 logger.debug("POSTing to url %s on https://api.splunkstorm.com with accessToken %s" \

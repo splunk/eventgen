@@ -5,6 +5,7 @@ import pprint
 import random
 import datetime
 import re
+import csv
 from eventgenoutput import Output
 from timeparser import timeParser, timeDelta2secs
 # Config may get imported multiple times, in that case just ignore it
@@ -23,6 +24,7 @@ class Sample:
     spoolDir = None
     spoolFile = None
     breaker = None
+    sampletype = None
     interval = None
     delay = None
     count = None
@@ -44,6 +46,8 @@ class Sample:
     index = None
     source = None
     sourcetype = None
+    host = None
+    hostRegex = None
     tokens = None
     projectID = None
     accessToken = None
@@ -51,6 +55,8 @@ class Sample:
     # Internal fields
     _c = None
     _out = None
+    _sampleLines = None
+    _sampleDict = None
     
     def __init__(self, name):
         # Logger already setup by config, just get an instance
@@ -83,8 +89,28 @@ class Sample:
         
         logger.debug("Opening sample '%s' in app '%s'" % (self.name, self.app) )
         sampleFH = open(self.filePath, 'rU')
-        logger.debug("Reading sample '%s' in app '%s'" % (self.name, self.app) )
-        sampleLines = sampleFH.readlines()
+        if self.sampletype == 'raw':
+            # 5/27/12 CS Added caching of the sample file
+            if self._sampleLines == None:
+                logger.debug("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
+                sampleLines = sampleFH.readlines()
+                self._sampleLines = sampleLines
+            else:
+                sampleLines = self._sampleLines
+        elif self.sampletype == 'csv':
+            logger.debug("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
+            if self._sampleLines == None:
+                logger.debug("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
+                sampleDict = [ ]
+                csvReader = csv.DictReader(sampleFH)
+                for line in csvReader:
+                    sampleDict.append(line)
+                    sampleLines.append(line['_raw'])
+                self._sampleDict = sampleDict
+                self._sampleLines = sampleLines
+            else:
+                sampleDict = self._sampleDict
+                sampleLines = self._sampleLines
         
         # Ensure all lines have a newline
         for i in xrange(0, len(sampleLines)):
@@ -162,8 +188,9 @@ class Sample:
                                 % (self.name, self.app, count, len(sampleLines)) )
 
                 # 5/8/12 CS Added randomizeEvents config to randomize items from the file
+                # 5/27/12 CS Don't randomize unless we're raw
                 try:
-                    if self.randomizeEvents:
+                    if self.randomizeEvents and self.sampletype == 'raw':
                         logger.debug("Shuffling events for sample '%s' in app '%s'" \
                                         % (self.name, self.app))
                         random.shuffle(sampleLines)
@@ -230,6 +257,15 @@ class Sample:
                         y += 1
 
             logger.debug("Replacing %s tokens in %s events for sample '%s' in app '%s'" % (len(self.tokens), len(events), self.name, self.app))
+            
+            if self.sampletype == 'csv':
+                self._out.index = sampleDict[x]['index']
+                self._out.host = sampleDict[x]['host']
+                self._out.source = sampleDict[x]['source']
+                self._out.sourcetype = sampleDict[x]['sourcetype']
+                logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                            % (self._out.index, self._out.host, self._out.source, self._out.sourcetype))
+                
             ## Iterate events
             for x in range(0, len(events)):
                 event = events[x]
@@ -243,6 +279,19 @@ class Sample:
                 for token in self.tokens:
                     token.mvhash = mvhash
                     event = token.replace(event)
+                if self.sampletype == 'csv' and (sampleDict[x]['index'] != self._out.index or \
+                                                sampleDict[x]['host'] != self._out.host or \
+                                                sampleDict[x]['source'] != self._out.source or \
+                                                sampleDict[x]['sourcetype'] != self._out.sourcetype):
+                    # Flush events before we change all the various parameters
+                    logger.debug("Sampletype CSV, parameters changed at event %s.  Flushing output." % x)
+                    self._out.flush()
+                    self._out.index = sampleDict[x]['index']
+                    self._out.host = sampleDict[x]['host']
+                    self._out.source = sampleDict[x]['source']
+                    self._out.sourcetype = sampleDict[x]['sourcetype']
+                    logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                                % (self._out.index, self._out.host, self._out.source, self._out.sourcetype))
                 self._out.send(event)
 
             ## Close file handles
