@@ -72,6 +72,7 @@ def set_exit_handler(func):
 	else:
 		import signal
 		signal.signal(signal.SIGTERM, func)
+		signal.signal(signal.SIGINT, func)
     
 def handle_exit(sig=None, func=None):
     print '\n\nCaught kill, exiting...'

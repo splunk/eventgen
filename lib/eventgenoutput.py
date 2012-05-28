@@ -181,7 +181,6 @@ class Output:
             
     def refreshconfig(self, sample):
         """Refreshes output config based on sample"""
-        logger.debug("refreshconfig called.  _outputMode: %s" % self._outputMode)
         if self._outputMode in ('splunkstream', 'stormstream'):
             self._index = sample.index
             self._source = sample.source
