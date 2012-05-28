@@ -189,7 +189,7 @@ class Output:
             self._host = sample.host
             self._hostRegex = sample.hostRegex
             logger.debug("Refreshed config.  Set Index '%s': Source '%s': Sourcetype: '%s' Host: '%s' HostRegex: '%s'" % \
-                        (self._index, self._source, self._sourcetype, self._host, self._hostregex))
+                        (self._index, self._source, self._sourcetype, self._host, self._hostRegex))
         
     def flush(self):
         """Flushes output from the queue out to the specified output"""
