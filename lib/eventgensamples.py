@@ -260,10 +260,10 @@ class Sample:
             logger.debug("Replacing %s tokens in %s events for sample '%s' in app '%s'" % (len(self.tokens), len(events), self.name, self.app))
             
             if self.sampletype == 'csv':
-                self._out.index = sampleDict[x]['index']
-                self._out.host = sampleDict[x]['host']
-                self._out.source = sampleDict[x]['source']
-                self._out.sourcetype = sampleDict[x]['sourcetype']
+                self._out.index = sampleDict[0]['index']
+                self._out.host = sampleDict[0]['host']
+                self._out.source = sampleDict[0]['source']
+                self._out.sourcetype = sampleDict[0]['sourcetype']
                 logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                             % (self._out.index, self._out.host, self._out.source, self._out.sourcetype))
                 
