@@ -16,10 +16,15 @@ from eventgenconfig import Config
 from timeparser import timeDelta2secs
 
 class Timer(threading.Thread):
+    time = None
+    stopping = None
+    interruptcatcher = None
+    
     # Added by CS 5/7/12 to emulate threading.Timer
-    def __init__(self, time, sample):
+    def __init__(self, time, sample=None, interruptcatcher=None):
         self.time = time
         self.stopping = False
+        self.interruptcatcher = interruptcatcher
         
         self.sample = sample
         threading.Thread.__init__(self)
@@ -30,29 +35,32 @@ class Timer(threading.Thread):
             time.sleep(self.sample.delay)
         while (1):
             if not self.stopping:
-                startTime = datetime.datetime.now()
-                self.sample.gen()
-                endTime = datetime.datetime.now()
-                timeDiff = endTime - startTime
+                if not self.interruptcatcher:
+                    startTime = datetime.datetime.now()
+                    self.sample.gen()
+                    endTime = datetime.datetime.now()
+                    timeDiff = endTime - startTime
 
-                timeDiffFrac = "%s.%s" % (timeDiff.seconds, timeDiff.microseconds)
-                logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" \
-                            % (self.sample.name, self.sample.app, timeDiffFrac) )
+                    timeDiffFrac = "%s.%s" % (timeDiff.seconds, timeDiff.microseconds)
+                    logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" \
+                                % (self.sample.name, self.sample.app, timeDiffFrac) )
 
-                timeDiff = timeDelta2secs(timeDiff)
-                wholeIntervals = timeDiff / self.sample.interval
-                partialInterval = timeDiff % self.sample.interval
+                    timeDiff = timeDelta2secs(timeDiff)
+                    wholeIntervals = timeDiff / self.sample.interval
+                    partialInterval = timeDiff % self.sample.interval
 
-                if wholeIntervals > 1:
-                    logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
-                                % (self.sample.name, self.sample.app, timeDiff, self.sample.interval) )
+                    if wholeIntervals > 1:
+                        logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
+                                    % (self.sample.name, self.sample.app, timeDiff, self.sample.interval) )
 
-                partialInterval = self.sample.interval - partialInterval
-                logger.debug("Generation of sample '%s' in app '%s' sleeping for %s seconds" \
-                            % (self.sample.name, self.sample.app, partialInterval) )
+                    partialInterval = self.sample.interval - partialInterval
+                    logger.debug("Generation of sample '%s' in app '%s' sleeping for %s seconds" \
+                                % (self.sample.name, self.sample.app, partialInterval) )
 
-                ## Sleep for partial interval
-                time.sleep(partialInterval)
+                    ## Sleep for partial interval
+                    time.sleep(partialInterval)
+                else:
+                    time.sleep(self.time)
             else:
                 sys.exit(0)
 
@@ -111,6 +119,10 @@ if __name__ == '__main__':
         
     if c.debug:
         logger.info('Entering debug (single iteration) mode')
+
+    # Hopefully this will catch interrupts, signals, etc
+    # To allow us to stop gracefully
+    t = Timer(1.0, interruptcatcher=True)
 
     for s in c.samples:
         if s.interval > 0:
