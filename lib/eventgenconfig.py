@@ -49,6 +49,7 @@ class Config:
     interval = None
     delay = None
     count = None
+    bundlelines = None
     earliest = None
     latest = None
     hourOfDayRate = None
@@ -70,23 +71,23 @@ class Config:
 
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
-                    'delay', 'count', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate', 'dayOfWeekRate', 
-                    'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
+                    'delay', 'count', 'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate', 
+                    'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
                     'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
-    _validReplacementTypes = ['static', 'timestamp', 'random', 'file', 'mvfile']
+    _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile']
     _validOutputModes = ['spool', 'file', 'splunkstream', 'stormstream']
     _validSplunkMethods = ['http', 'https']
     _validSampleTypes = ['raw', 'csv']
     _intSettings = ['interval', 'count', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort']
     _floatSettings = ['randomizeCount', 'delay']
-    _boolSettings = ['disabled', 'randomizeEvents']
+    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate']
     _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 
-                            'count', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 
-                            'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort',
-                            'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
+                            'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate', 
+                            'randomizeCount', 'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles',
+                            'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
                             'projectID', 'accessToken']
     
     def __init__(self):

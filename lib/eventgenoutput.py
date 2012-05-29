@@ -12,24 +12,6 @@ import os
 import shutil
 import pprint
 import base64
-# 5/9/12 CS This is a hack until I can move configuration 
-# and constants into a better place than the main module
-import __main__
-
-# If we're inside eventgen, we'll have a global logger, if not set one up
-try:
-    if logger == None:
-        logger = logging.getLogger('eventgen')
-except NameError:
-    try:
-        logger = logging.getLogger('eventgen')
-    except NameError:
-        logger = logging.getLogger('eventgenoutput')
-        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(logging.DEBUG)
     
 class Output:
     """Output events, abstracting output method"""
@@ -240,7 +222,9 @@ class Output:
                         msg = msg[:-1]
                     self._fileLogger.error(msg)
                 elif self._outputMode == 'splunkstream':
-                    #logger.debug("Sending %s to self._splunkhttp" % msg)
+                    if msg[-1] != '\n':
+                        msg += '\n'
+                    logger.debug("Sending %s to self._splunkhttp" % msg)
                     self._splunkhttp.send(msg)
                 elif self._outputMode == 'stormstream':
                     streamout += msg
@@ -263,6 +247,7 @@ class Output:
         elif self._outputMode == 'splunkstream':
             #logger.debug("Closing self._splunkhttp connection")
             self._splunkhttp.close()
+            self._splunkhttp = None
         elif self._outputMode == 'stormstream':
             try:
                 self._splunkhttp = httplib.HTTPSConnection('api.splunkstorm.com', 443)
