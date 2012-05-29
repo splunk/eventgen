@@ -37,12 +37,16 @@ latest = now
     * This stanza is only valid for the following replacementType -> replacement values:
         * static -> <string>
         * timestamp -> <strptime>
+        * replaytimestamp -> <strptime>
         * random -> ipv4
         * random -> ipv6
         * random -> mac
         * random -> integer[<start>:<end>]
+        * random -> float[<start.numzerosforprecision>:<end.numzerosforprecision>]
         * random -> string(<integer>)
         * random -> hex([integer])
+        * rated -> integer[<start>:<end>]
+        * rated -> float[<start.numzerosforprecision>:<end.numzerosforprecision>]
         * file -> <replacment file name>
         * mvfile -> <replacement file name, expects CSV file>:<column number>
         
@@ -158,6 +162,16 @@ count = <integer>
     * 0 means replay the entire sample.
     * Defaults to 0.
     
+bundlelines = true | false
+    * For outside use cases where you need to take all the lines in a sample file and pretend they are
+      one event, but count = 0 will not work because you want to replay all the lines more than once.
+      Also, please note you can also use breaker=\r*\n\r*\n to break the sample file into multi-line
+      transactions that would work better than this as well.  This is also useful where you want to bring
+      in sampletype = csv and bundle that multiple times.
+    * If bundlelines = true and the token replacementType is replaytimestamp, we will introduce some randomness
+      into the times between items in the transaction in microseconds.
+    * Will override any breaker setting.
+    
 hourOfDayRate = <json>
     * Takes a JSON hash of 24 hours with float values to rate limit how many events we should see
       in a given hour.
@@ -209,30 +223,43 @@ token.<n>.token = <regular expression>
     * If one or more capture groups are present the replacement will be performed on group 1.
     * Defaults to None.
     
-token.<n>.replacementType = static | timestamp | random | file | mvfile
+token.<n>.replacementType = static | timestamp | replaytimestamp | random | rated | file | mvfile
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For static, the token will be replaced with the value specified in the replacement setting.
     * For timestamp, the token will be replaced with the strptime specified in the replacement setting
+    * For replaytimestamp, the token will be replaced with the strptime specified in the replacement setting
+      but the time will not be based on earliest and latest, but will instead be replaced by looking at the
+      offset of the timestamp in the current event versus the first event, and then adding that time difference
+      to the timestamp when we started processing the sample.  This allows for replaying events with a
+      new timestamp but to look much like the original transaction.  Assumes replacement value is the same
+      strptime format as the original token we're replacing, otherwise it will fail.  First timestamp will
+      be the value of earliest.
     * For random, the token will be replaced with a type aware value (i.e. valid IPv4 Address).
+    * For rated, the token will be replaced with a subset of random types (float, integer), which are
+      rated by hourOfDayRate and dayOfWeekRate.
     * For file, the token will be replaced with a random value retrieved from a file specified in the replacement setting.
     * For mvfile, the token will be replaced with a random value of a column retrieved from a file specified in the replacement setting.  Multiple files can reference the same source file and receive different columns from the same random line.
     * Defaults to None.
     
-token.<n>.replacement = <string> | <strptime> | ipv4 | ipv6 | mac | integer[<start>:<end>] | float[<start>:<end>] | string(<i>) | hex(<i>) | <replacement file name> | <replacement file name>:<column number>
+token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | ipv4 | ipv6 | mac | integer[<start>:<end>] | float[<start>:<end>] | string(<i>) | hex(<i>) | <replacement file name> | <replacement file name>:<column number>
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For <string>, the token will be replaced with the value specified.
+    * For <strptime>, a strptime formatted string to replace the timestamp with
+    * For ["list","of","strptime"], only used with replaytimestamp, a JSON formatted list of strptime
+      formats to try.  Will find the replace with the same format which matches the replayed timestamp.
     * For ipv4, the token will be replaced with a random valid IPv4 Address (i.e. 10.10.200.1).
     * For ipv6, the token will be replaced with a random valid IPv6 Address (i.e. c436:4a57:5dea:1035:7194:eebb:a210:6361).
     * For mac, the token will be replaced with a random valid MAC Address (i.e. 6e:0c:51:c6:c6:3a).
     * For integer[<start>:<end>], the token will be replaced with a random integer between 
       start and end values where <start> is a number greater than 0 
-      and <end> is a number greater than 0 and greater than or equal to <start>
+      and <end> is a number greater than 0 and greater than or equal to <start>.  If rated,
+      will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For float[<start>:<end>], the token will be replaced with a random float between
       start and end values where <start> is a number greater than 0
       and <end> is a number greater than 0 and greater than or equal to <start>.
       For floating point numbers, precision will be based off the precision specified
       in <start>.  For example, if we specify 1.0, precision will be one digit, if we specify
-      1.0000, precision will be four digits.
+      1.0000, precision will be four digits. If rated, will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For string(<i>), the token will be replaced with i number(s) of ASCII characters where 'i' is a number greater than 0.
     * For hex(<i>), the token will be replaced with i number of Hexadecimal characters [0-9A-F] where 'i' is a number greater than 0.
     * For <replacement file name>, the token will be replaced with a random line in the replacement file.

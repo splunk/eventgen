@@ -6,13 +6,11 @@ import random
 import datetime
 import re
 import csv
+import json
+import copy
 from eventgenoutput import Output
 from timeparser import timeParser, timeDelta2secs
-# Config may get imported multiple times, in that case just ignore it
-# try:
-#     from eventgenconfig import Config
-# except ImportError:
-#     pass
+
 class Sample:
     # Required fields for Sample
     name = None
@@ -28,6 +26,7 @@ class Sample:
     interval = None
     delay = None
     count = None
+    bundlelines = None
     earliest = None
     latest = None
     hourOfDayRate = None
@@ -107,16 +106,31 @@ class Sample:
                 for line in csvReader:
                     sampleDict.append(line)
                     sampleLines.append(line['_raw'])
-                self._sampleDict = sampleDict
-                self._sampleLines = sampleLines
+                self._sampleDict = copy.deepcopy(sampleDict)
+                self._sampleLines = copy.deepcopy(sampleLines)
             else:
-                sampleDict = self._sampleDict
-                sampleLines = self._sampleLines
+                sampleDict = copy.deepcopy(self._sampleDict)
+                sampleLines = copy.deepcopy(self._sampleLines)
         
         # Ensure all lines have a newline
         for i in xrange(0, len(sampleLines)):
             if sampleLines[i][-1] != '\n':
                 sampleLines[i] += '\n'
+
+        # If we've set bundlelines, then we want count copies of all of the lines in the file
+        # And we'll set breaker to be a weird delimiter so that we'll end up with an events 
+        # array that can be rated by the hour of day and day of week rates
+        # This is only for weird outside use cases like when we want to include a CSV file as the source
+        # so we can't set breaker properly
+        if self.bundlelines:
+            logger.debug("Bundlelines set.  Creating %s copies of original sample lines and setting breaker." % (self.count-1))
+            self.breaker = '\n------\n'
+            origSampleLines = copy.deepcopy(sampleLines)
+            sampleLines.append(self.breaker)
+            for i in range(0, self.count-1):
+                sampleLines.extend(origSampleLines)
+                sampleLines.append(self.breaker)
+            
 
         if len(sampleLines) > 0:
             count = self.count
@@ -151,7 +165,7 @@ class Sample:
                         rate = self.hourOfDayRate[str(now.hour)]
                         logger.debug("hourOfDayRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
-                    except:
+                    except KeyError:
                         import traceback
                         stack =  traceback.format_exc()
                         logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
@@ -165,7 +179,7 @@ class Sample:
                         rate = self.dayOfWeekRate[str(weekday)]
                         logger.debug("dayOfWeekRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
-                    except:
+                    except KeyError:
                         import traceback
                         stack =  traceback.format_exc()
                         logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
@@ -220,15 +234,20 @@ class Sample:
                     if breakerMatch:
                         #logger.debug("Match found for regular expression '%s' and line '%s' for sample '%s' in app '%s'" % (breaker, sampleLines[x], sample, app) )
                         ## If not first
-                        if breakersFound != 0:
-                            events.append(event)
-                            event = ''
+                        # 5/28/12 CS This may cause a regression defect, but I can't figure out why
+                        # you'd want to ignore the first breaker you find.  It's certainly breaking
+                        # my current use case.
+                        # if breakersFound != 0:
+                        events.append(event)
+                        event = ''
 
                         breakersFound += 1
                     # else:
                     #     logger.debug("Match not found for regular expression '%s' and line '%s' for sample '%s' in app '%s'" % (breaker, sampleLines[x], sample, app) )
 
-                    event += sampleLines[x]
+                    # If we've inserted the breaker with bundlelines, don't insert the line, otherwise insert
+                    if not (self.bundlelines and breakerMatch):
+                        event += sampleLines[x]
                     x += 1
 
                 ## If events < count append remaining data in samples
@@ -257,6 +276,7 @@ class Sample:
                         events.append(tempEvents[y])
                         y += 1
 
+            logger.debug("events: %s" % pprint.pformat(events))
             logger.debug("Replacing %s tokens in %s events for sample '%s' in app '%s'" % (len(self.tokens), len(events), self.name, self.app))
             
             if self.sampletype == 'csv':
@@ -281,21 +301,51 @@ class Sample:
                 for token in self.tokens:
                     token.mvhash = mvhash
                     event = token.replace(event)
-                if self.sampletype == 'csv' and (sampleDict[x]['index'] != self.index or \
-                                                sampleDict[x]['host'] != self.host or \
-                                                sampleDict[x]['source'] != self.source or \
-                                                sampleDict[x]['sourcetype'] != self.sourcetype):
-                    # Flush events before we change all the various parameters
-                    logger.debug("Sampletype CSV, parameters changed at event %s.  Flushing output." % x)
+                    
+                # Hack for bundle lines to work with sampletype csv
+                # Basically, bundlelines allows us to create copies of a bundled set of
+                # of events as one event, and this splits those back out so that we properly
+                # send each line with the proper sourcetype and source if we're we're sampletype csv
+                if self.bundlelines and self.sampletype == 'csv':
+                    # Trim last newline so we don't end up with blank at end of the array
+                    if event[-1] == '\n':
+                        event = event[:-1]
+                    lines = event.split('\n')
+                    logger.debug("Bundlelines set and sampletype csv, breaking event back apart.  %s lines." % (len(lines)))
+                    for lineno in range(0, len(lines)):
+                        if self.sampletype == 'csv' and (sampleDict[lineno]['index'] != self.index or \
+                                                         sampleDict[lineno]['host'] != self.host or \
+                                                         sampleDict[lineno]['source'] != self.source or \
+                                                         sampleDict[lineno]['sourcetype'] != self.sourcetype):
+                             # Flush events before we change all the various parameters
+                             logger.debug("Sampletype CSV with bundlelines, parameters changed at event %s.  Flushing output." % lineno)
+                             self._out.flush()
+                             self.index = sampleDict[lineno]['index']
+                             self.host = sampleDict[lineno]['host']
+                             self.source = sampleDict[lineno]['source']
+                             self.sourcetype = sampleDict[lineno]['sourcetype']
+                             logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                                         % (self.index, self.host, self.source, self.sourcetype))
+                             self._out.refreshconfig(self)
+                        self._out.send(lines[lineno])
+                    logger.debug("Completed bundlelines event.  Flushing.")
                     self._out.flush()
-                    self.index = sampleDict[x]['index']
-                    self.host = sampleDict[x]['host']
-                    self.source = sampleDict[x]['source']
-                    self.sourcetype = sampleDict[x]['sourcetype']
-                    logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
-                                % (self.index, self.host, self.source, self.sourcetype))
-                    self._out.refreshconfig(self)
-                self._out.send(event)
+                else:
+                    if self.sampletype == 'csv' and (sampleDict[x]['index'] != self.index or \
+                                                    sampleDict[x]['host'] != self.host or \
+                                                    sampleDict[x]['source'] != self.source or \
+                                                    sampleDict[x]['sourcetype'] != self.sourcetype):
+                        # Flush events before we change all the various parameters
+                        logger.debug("Sampletype CSV, parameters changed at event %s.  Flushing output." % x)
+                        self._out.flush()
+                        self.index = sampleDict[x]['index']
+                        self.host = sampleDict[x]['host']
+                        self.source = sampleDict[x]['source']
+                        self.sourcetype = sampleDict[x]['sourcetype']
+                        logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                                    % (self.index, self.host, self.source, self.sourcetype))
+                        self._out.refreshconfig(self)
+                    self._out.send(event)
 
             ## Close file handles
             logger.debug("Flushing output for sample '%s' in app '%s'" % (self.name, self.app))
@@ -345,12 +395,18 @@ class Token:
     sample = None
     mvhash = { }
     
+    _now = None
+    _replaytd = None
+    _lastts = None
+    
     def __init__(self, sample):
         self.sample = sample
         
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
+        
+        self._now = datetime.datetime.now()
         
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this token"""
@@ -380,7 +436,12 @@ class Token:
         # logger.debug("Checking for match for token: '%s'" % (self.token))
 
         if tokenMatch:
-            # Find old in case of error
+            # 5/28/12 Changing logic to account for needing old to match
+            # the right token we're actually replacing
+            # This will call getReplacement for every match which is more
+            # expensive, but necessary.
+            
+            # # Find old in case of error
             oldMatch = self._search(event)
             if oldMatch:
                 old = event[oldMatch.start(0):oldMatch.end(0)]
@@ -389,7 +450,7 @@ class Token:
             
             # logger.debug("Got match for token: '%s'" % (self.token))
             replacement = self._getReplacement(old)
-
+            
             if replacement != None:
                 # logger.debug("Replacement: '%s'" % (replacement))
                 ## Iterate matches
@@ -400,23 +461,35 @@ class Token:
                         matchEnd = match.end(1) + offset
                         startEvent = event[:matchStart]
                         endEvent = event[matchEnd:]
+                        # In order to not break legacy which might replace the same timestamp
+                        # with the same value in multiple matches, here we'll include
+                        # ones that need to be replaced for every match
+                        if self.replacementType in ('replaytimestamp'):
+                            replacement = self._getReplacement(event[matchStart:matchEnd])
                         offset += len(replacement) - len(match.group(1))
-
                     except:
                         matchStart = match.start(0) + offset
                         matchEnd = match.end(0) + offset
                         startEvent = event[:matchStart]
                         endEvent = event[matchEnd:]
+                        # In order to not break legacy which might replace the same timestamp
+                        # with the same value in multiple matches, here we'll include
+                        # ones that need to be replaced for every match
+                        if self.replacementType in ('replaytimestamp'):
+                            replacement = self._getReplacement(event[matchStart:matchEnd])
                         offset += len(replacement) - len(match.group(0))
-
                     # logger.debug("matchStart %d matchEnd %d offset %d" % (matchStart, matchEnd, offset))
                     event = startEvent + replacement + endEvent
+                
+                # Reset replay internal variables for this token
+                self._replaytd = None
+                self._lastts = None
         return event
                     
-    def _getReplacement(self, old=None):
+    def _getReplacement(self, old=None, event=None):
         if self.replacementType == 'static':
             return self.replacement
-        elif self.replacementType == 'timestamp':
+        elif self.replacementType in ('timestamp', 'replaytimestamp'):
             if self.sample.earliest and self.sample.latest:
                 earliestTime = timeParser(self.sample.earliest)
                 latestTime = timeParser(self.sample.latest)        
@@ -434,8 +507,77 @@ class Token:
 
                         ## Compute replacmentTime
                         replacementTime = latestTime - randomDelta
-                        replacementTime = replacementTime.strftime(self.replacement)
-
+                        
+                        if self.replacementType == 'replaytimestamp':
+                            if old != None and len(old) > 0:
+                                # Determine type of timestamp to use for this token
+                                # We can either be a string with one strptime format
+                                # or we can be a json formatted list of strptime formats
+                                currentts = None
+                                try:
+                                    strptimelist = json.loads(self.replacement)   
+                                    for currentformat in strptimelist:
+                                        try:
+                                            timeformat = currentformat
+                                            currentts = datetime.datetime.strptime(old, timeformat)
+                                            # logger.debug("Old '%s' Timeformat '%s' currentts '%s'" % (old, timeformat, currentts))
+                                            if type(currentts) == datetime.datetime:
+                                                break
+                                        except ValueError:
+                                            pass
+                                    if type(currentts) != datetime.datetime:
+                                        # Total fail
+                                        logger.error("Can't find strptime format for this timestamp '%s' in the list of formats.  Returning original value" % old)
+                                        return old
+                                except ValueError:
+                                    # Not JSON, try to read as text
+                                    timeformat = self.replacement
+                                    try:
+                                        currentts = datetime.datetime.strptime(old, timeformat)
+                                        # logger.debug("Timeformat '%s' currentts '%s'" % (timeformat, currentts))
+                                    except ValueError:
+                                        # Total fail
+                                        logger.error("Can't find strptime format for this timestamp '%s'.  Returning original value" % old)
+                                        return old
+                                    
+                                    # Can't parse as strptime, try JSON
+                                
+                                # Check to make sure we parsed a year
+                                if currentts.year == 1900:
+                                    currentts = currentts.replace(year=datetime.datetime.now().year)
+                                # We should now know the timeformat and currentts associated with this event
+                                # If we're the first, save those values        
+                                if self._replaytd == None:
+                                    self._replaytd = replacementTime - currentts
+                                
+                                # logger.debug("replaytd %s" % self._replaytd)
+                                replacementTime = currentts + self._replaytd
+                                
+                                # Randomize time a bit between last event and this one
+                                # Note that we'll always end up shortening the time between
+                                # events because we don't know when the next timestamp is going to be
+                                if self.sample.bundlelines:
+                                    if self._lastts == None:
+                                        self._lastts = replacementTime
+                                    oldtd = replacementTime - self._lastts
+                                    randomsecs = random.randint(0, oldtd.seconds)
+                                    if oldtd.seconds > 0:
+                                        randommicrosecs = random.randint(0, 1000000)
+                                    else:
+                                        randommicrosecs = random.randint(0, oldtd.microseconds)
+                                    randomtd = datetime.timedelta(seconds=randomsecs, microseconds=randommicrosecs)
+                                    replacementTime -= randomtd
+                                else:
+                                    randomtd = datetime.timedelta()
+                                self._lastts = replacementTime
+                                replacementTime = replacementTime.strftime(timeformat)
+                                # logger.debug("Old '%s' Timeformat '%s' currentts '%s' replacementTime '%s' replaytd '%s' randomtd '%s'" \
+                                #             % (old, timeformat, currentts, replacementTime, self._replaytd, randomtd))
+                            else:
+                                logger.error("Could not find old value, needed for replaytimestamp")
+                                return old
+                        else:
+                            replacementTime = replacementTime.strftime(self.replacement)
                         ## replacementTime == replacement for invalid strptime specifiers
                         if replacementTime != self.replacement.replace('%', ''):
                             return replacementTime
@@ -451,8 +593,8 @@ class Token:
             ## earliest/latest not proper
             else:
                 logger.error('Earliest or latest specifier were not set; will not replace')
-                return old    
-        elif self.replacementType == 'random':
+                return old
+        elif self.replacementType in ('random', 'rated'):
             ## Validations:
             integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
             integerMatch = integerRE.match(self.replacement)
@@ -507,7 +649,26 @@ class Token:
                 endInt = int(integerMatch.group(2))
 
                 if endInt >= startInt:
-                    replacement = str(random.randint(startInt, endInt))
+                    replacementInt = random.randint(startInt, endInt)
+                    if self.replacementType == 'rated':
+                        rateFactor = 1.0
+                        if type(self.sample.hourOfDayRate) == dict:
+                            try:
+                                rateFactor *= self.sample.hourOfDayRate[str(self._now.hour)]
+                            except KeyError:
+                                logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
+                        if type(self.sample.dayOfWeekRate) == dict:
+                            try:
+                                weekday = datetime.date.weekday(self._now)
+                                if weekday == 6:
+                                    weekday = 0
+                                else:
+                                    weekday += 1
+                                rateFactor *= self.sample.dayOfWeekRate[str(weekday)]
+                            except KeyError:
+                                logger.error("Day of week rate failed.  Stacktrace %s" % stack)
+                        replacementInt = int(round(replacementInt * rateFactor, 0))
+                    replacement = str(replacementInt)
                     return replacement
                 else:
                     logger.error("Start integer %s greater than end integer %s; will not replace" % (startInt, endInt) )
@@ -523,7 +684,27 @@ class Token:
                         endInt = int(round(float(floatMatch.group(3)) * precision,0))
                         
                         randInt = random.randint(startInt, endInt)
-                        floatret = str(round(randInt / precision, len(floatMatch.group(2))))
+                        floatret = round(randInt / precision, len(floatMatch.group(2)))
+                        if self.replacementType == 'rated':
+                            rateFactor = 1.0
+                            now = datetime.datetime.now()
+                            if type(self.sample.hourOfDayRate) == dict:
+                                try:
+                                    rateFactor *= self.sample.hourOfDayRate[str(now.hour)]
+                                except KeyError:
+                                    logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
+                            if type(self.sample.dayOfWeekRate) == dict:
+                                try:
+                                    weekday = datetime.date.weekday(now)
+                                    if weekday == 6:
+                                        weekday = 0
+                                    else:
+                                        weekday += 1
+                                    rateFactor *= self.sample.dayOfWeekRate[str(weekday)]
+                                except KeyError:
+                                    logger.error("Day of week rate failed.  Stacktrace %s" % stack)
+                            floatret = round(floatret * rateFactor, len(floatMatch.group(2)))
+                        floatret = str(floatret)
                         return floatret
                     else:
                         logger.error("Start float %s greater than end float %s; will not replace" % (startFloat, endFloat))
