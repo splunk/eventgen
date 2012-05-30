@@ -408,10 +408,11 @@ class Config:
             # If we're running standalone (and thusly using configParser)
             # only pick up eventgen-standalone.conf.
             conffiles = [ ]
-            if len(sys.argv[1]) > 0:
-                if os.path.exists(sys.argv[1]):
-                    conffiles = [os.path.join(self.grandparentdir, 'lib', 'eventgen_defaults'),
-                                sys.argv[1]]
+            if len(sys.argv) > 1:
+                if len(sys.argv[1]) > 0:
+                    if os.path.exists(sys.argv[1]):
+                        conffiles = [os.path.join(self.grandparentdir, 'lib', 'eventgen_defaults'),
+                                    sys.argv[1]]
             if len(conffiles) == 0:
                 conffiles = [os.path.join(self.grandparentdir, 'lib', 'eventgen_defaults'),
                             os.path.join(self.grandparentdir, 'default', 'eventgen-standalone.conf'),
