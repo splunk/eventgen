@@ -268,6 +268,9 @@ class Output:
             except httplib.HTTPException:
                 logger.error('Error connecting to Splunk for logging for sample %s' % self._sample)
                 raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
-            response = self._splunkhttp.getresponse()
-            data = response.read()
-            logger.debug("Data returned %s" % data)
+            try:
+                response = self._splunkhttp.getresponse()
+                data = response.read()
+                logger.debug("Data returned %s" % data)
+            except BadStatusLine:
+                logger.error("Received bad status from Storm for sample '%s'" % self._sample)
