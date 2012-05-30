@@ -224,7 +224,7 @@ class Output:
                 elif self._outputMode == 'splunkstream':
                     if msg[-1] != '\n':
                         msg += '\n'
-                    logger.debug("Sending %s to self._splunkhttp" % msg)
+                    # logger.debug("Sending %s to self._splunkhttp" % msg)
                     self._splunkhttp.send(msg)
                 elif self._outputMode == 'stormstream':
                     streamout += msg
@@ -258,6 +258,8 @@ class Output:
                     urlparms.append(('sourcetype', self._sourcetype))
                 if self._host != None:
                     urlparms.append(('host', self._host))
+                if self._projectID != None:
+                    urlparms.append(('project', self._projectID))
                 url = '/1/inputs/http?%s' % (urllib.urlencode(urlparms))
                 headers = {'Authorization': "Basic %s" % base64.b64encode(self._accessToken+':')}
                 self._splunkhttp.request("POST", url, streamout, headers)

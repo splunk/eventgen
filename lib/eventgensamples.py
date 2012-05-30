@@ -276,7 +276,7 @@ class Sample:
                         events.append(tempEvents[y])
                         y += 1
 
-            logger.debug("events: %s" % pprint.pformat(events))
+            # logger.debug("events: %s" % pprint.pformat(events))
             logger.debug("Replacing %s tokens in %s events for sample '%s' in app '%s'" % (len(self.tokens), len(events), self.name, self.app))
             
             if self.sampletype == 'csv':

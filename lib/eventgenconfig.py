@@ -1,6 +1,7 @@
 from __future__ import division
 from ConfigParser import ConfigParser
 import os
+import sys
 import re
 import __main__
 import logging, logging.handlers
@@ -406,9 +407,15 @@ class Config:
     
             # If we're running standalone (and thusly using configParser)
             # only pick up eventgen-standalone.conf.
-            conffiles = [os.path.join(self.grandparentdir, 'lib', 'eventgen_defaults'),
-                        os.path.join(self.grandparentdir, 'default', 'eventgen-standalone.conf'),
-                        os.path.join(self.grandparentdir, 'local', 'eventgen-standalone.conf')]
+            conffiles = [ ]
+            if len(sys.argv[1]) > 0:
+                if os.path.exists(sys.argv[1]):
+                    conffiles = [os.path.join(self.grandparentdir, 'lib', 'eventgen_defaults'),
+                                sys.argv[1]]
+            if len(conffiles) == 0:
+                conffiles = [os.path.join(self.grandparentdir, 'lib', 'eventgen_defaults'),
+                            os.path.join(self.grandparentdir, 'default', 'eventgen-standalone.conf'),
+                            os.path.join(self.grandparentdir, 'local', 'eventgen-standalone.conf')]
             # If we don't see SA-Eventgen, then pick up eventgen.conf as well
             if not os.path.exists(os.path.join(self.greatgrandparentdir, 'SA-Eventgen')) \
                     and not os.path.exists(os.path.join(self.greatgrandparentdir, 'eventgen')):
