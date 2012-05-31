@@ -272,5 +272,5 @@ class Output:
                 response = self._splunkhttp.getresponse()
                 data = response.read()
                 logger.debug("Data returned %s" % data)
-            except BadStatusLine:
+            except httplib.BadStatusLine:
                 logger.error("Received bad status from Storm for sample '%s'" % self._sample)
