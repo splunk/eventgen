@@ -234,6 +234,8 @@ class Output:
                 logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
             except IndexError:
                 logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
+        else:
+            streamout = ""
             
         # Cleanup after writing queue
         if self._outputMode == 'spool':
@@ -250,30 +252,31 @@ class Output:
             self._splunkhttp.close()
             self._splunkhttp = None
         elif self._outputMode == 'stormstream':
-            try:
-                self._splunkhttp = httplib.HTTPSConnection('api.splunkstorm.com', 443)
-                urlparms = [ ]
-                if self._source != None:
-                    urlparms.append(('source', self._source))
-                if self._sourcetype != None:
-                    urlparms.append(('sourcetype', self._sourcetype))
-                if self._host != None:
-                    urlparms.append(('host', self._host))
-                if self._projectID != None:
-                    urlparms.append(('project', self._projectID))
-                url = '/1/inputs/http?%s' % (urllib.urlencode(urlparms))
-                headers = {'Authorization': "Basic %s" % base64.b64encode(self._accessToken+':')}
-                self._splunkhttp.request("POST", url, streamout, headers)
-                logger.debug("POSTing to url %s on https://api.splunkstorm.com with accessToken %s" \
-                            % (url, base64.b64encode(self._accessToken+':')))
-            except httplib.HTTPException:
-                logger.error('Error connecting to Splunk for logging for sample %s' % self._sample)
-                raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
-            try:
-                response = self._splunkhttp.getresponse()
-                data = response.read()
-                logger.debug("Data returned %s" % data)
-                self._splunkhttp.close()
-                self._splunkhttp = None
-            except httplib.BadStatusLine:
-                logger.error("Received bad status from Storm for sample '%s'" % self._sample)
+            if len(streamout) > 0:
+                try:
+                    self._splunkhttp = httplib.HTTPSConnection('api.splunkstorm.com', 443)
+                    urlparms = [ ]
+                    if self._source != None:
+                        urlparms.append(('source', self._source))
+                    if self._sourcetype != None:
+                        urlparms.append(('sourcetype', self._sourcetype))
+                    if self._host != None:
+                        urlparms.append(('host', self._host))
+                    if self._projectID != None:
+                        urlparms.append(('project', self._projectID))
+                    url = '/1/inputs/http?%s' % (urllib.urlencode(urlparms))
+                    headers = {'Authorization': "Basic %s" % base64.b64encode(self._accessToken+':')}
+                    self._splunkhttp.request("POST", url, streamout, headers)
+                    logger.debug("POSTing to url %s on https://api.splunkstorm.com with accessToken %s" \
+                                % (url, base64.b64encode(self._accessToken+':')))
+                except httplib.HTTPException:
+                    logger.error('Error connecting to Splunk for logging for sample %s' % self._sample)
+                    raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
+                try:
+                    response = self._splunkhttp.getresponse()
+                    data = response.read()
+                    logger.debug("Data returned %s" % data)
+                    self._splunkhttp.close()
+                    self._splunkhttp = None
+                except httplib.BadStatusLine:
+                    logger.error("Received bad status from Storm for sample '%s'" % self._sample)
