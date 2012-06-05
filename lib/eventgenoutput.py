@@ -209,30 +209,31 @@ class Output:
             except httplib.HTTPException:
                 logger.error('Error connecting to Splunk for logging for sample %s' % self._sample)
                 raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
-        try:
-            msg = self._queue.popleft()
-            streamout = ""
-            while msg:
-                if self._outputMode == 'spool':
-                    self._workingFH.write(msg)
-                elif self._outputMode == 'file':
-                    # 5/9/12 CS We log as error so that even the most restrictive 
-                    # filter will push to file
-                    if msg[-1] == '\n':
-                        msg = msg[:-1]
-                    self._fileLogger.error(msg)
-                elif self._outputMode == 'splunkstream':
-                    if msg[-1] != '\n':
-                        msg += '\n'
-                    # logger.debug("Sending %s to self._splunkhttp" % msg)
-                    self._splunkhttp.send(msg)
-                elif self._outputMode == 'stormstream':
-                    streamout += msg
-                    
+        if len(self._queue) > 0:
+            try:
+                streamout = ""
                 msg = self._queue.popleft()
-            logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
-        except IndexError:
-            logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
+                while msg:
+                    if self._outputMode == 'spool':
+                        self._workingFH.write(msg)
+                    elif self._outputMode == 'file':
+                        # 5/9/12 CS We log as error so that even the most restrictive 
+                        # filter will push to file
+                        if msg[-1] == '\n':
+                            msg = msg[:-1]
+                        self._fileLogger.error(msg)
+                    elif self._outputMode == 'splunkstream':
+                        if msg[-1] != '\n':
+                            msg += '\n'
+                        # logger.debug("Sending %s to self._splunkhttp" % msg)
+                        self._splunkhttp.send(msg)
+                    elif self._outputMode == 'stormstream':
+                        streamout += msg
+                    
+                    msg = self._queue.popleft()
+                logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
+            except IndexError:
+                logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
             
         # Cleanup after writing queue
         if self._outputMode == 'spool':
@@ -272,5 +273,7 @@ class Output:
                 response = self._splunkhttp.getresponse()
                 data = response.read()
                 logger.debug("Data returned %s" % data)
+                self._splunkhttp.close()
+                self._splunkhttp = None
             except httplib.BadStatusLine:
                 logger.error("Received bad status from Storm for sample '%s'" % self._sample)
