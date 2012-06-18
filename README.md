@@ -1,13 +1,30 @@
 # Intro
 
-Welcome to Splunk's configurable Event Generator.  This project was originally started by David Hazekamp (dhazekamp@splunk.com) and then taken over by Clint Sharp (clint@splunk.com).  The goals of this project are ambitious but simple:
+Welcome to Splunk's configurable Event Generator.  This project was originally started by David Hazekamp (dhazekamp@splunk.com) and then enhanced by Clint Sharp (clint@splunk.com).  The goals of this project are ambitious but simple:
 
 * Eliminate the need for hand coded event generators in Splunk apps.
 * Allow for portability of event generators between applications, and allow templates to be quickly adapted
   between use cases.
 * Allow every type of event or transaction to be modeled inside the eventgen.
 
-I believe we've accomplished all those goals.  This version of the eventgen was derived from the original SA-Eventgen, is completely backwards compatible, but nearly completely rewritten. I've made very significant enhancements over that version:
+## Features
+
+I believe we've accomplished all those goals.  This version of the eventgen was derived from the original SA-Eventgen, is completely backwards compatible, but nearly completely rewritten. The original version contains most of the features you would need, including:
+
+* A robust configuration language and specification to define how we should model events for replacement.
+* Overridable defaults, which simplifies the setup of each individual sample.
+* A flattening setup, where the eventgen.conf can be configured using regular expressions with lower entries
+  inheriting from entries above.
+* Support to be deployed as a Splunk app and gather samples and events from all apps installed in that deployment.
+  ES uses this to great effect with its use of Technology Adapters which provide props and transforms for a 
+  variety of data types and also includes the event generators along with them to show sample data in the product.
+* A tokenized approach for modeling data, allowing replacements of timestamps, random data (mac address, ipv4,
+  ipv6, integer, string data), static replacements, and random selections from a line in a file.
+* Random timestamp distribution within a user specified range to allow randomness of events.
+* Replay of a full file or a subset of the first X lines of the file.
+* Generation of events based on a configurable interval.
+
+On top of that, I've made very significant enhancements over that version:
 
 * Added support to rate events and certain replacements by time of day and day of the week to model
   transaction flow inside a normal enterprise.
@@ -32,32 +49,18 @@ I believe we've accomplished all those goals.  This version of the eventgen was 
   will randomly generate the first timestamp and then model the future timestamps based on the seperation
   between timestamps in the source sample file.  Includes support for specifying multiple output time formats
   and input formats (through regex).  This along with CSV sample input files, allows us to basically take an
-  export from a Splunk instance and model it coming back into a new one with replaced timestamps and other tokens,
-  including the original timestamps.
+  export from a Splunk instance and model it coming back into a new one with replaced timestamps and other tokens.
 * Added float and hex random replacement types.
+* Added rated random replacement types, which allow a random value to be generated and then rated by time of
+  day or day of week.
 * Allow the eventgen to be deployed as a Splunk app, as a scripted input inside another app, or run 
   standalone from the command line (with caveats, see Deployment Options below).
 * Wrote new threading code to ensure the Eventgen will stop properly when Splunk stops.
 * Completely rewrote the configuration code to make it much simpler to enhance the eventgen when needed.
 
-The original version was very inspiring as well, as it provided the basis for all the enhancements listed above.  It featured:
-
-* A robust configuration language and specification to define how we should model events for replacement.
-* Overridable defaults, which simplifies the setup of each individual sample.
-* A flattening setup, where the eventgen.conf can be configured using regular expressions with lower entries
-  inheriting from entries above.
-* Support to be deployed as a Splunk app and gather samples and events from all apps installed in that deployment.
-  ES uses this to great effect with its use of Technology Adapters which provide props and transforms for a variety
-  of data types and also includes the event generators along with them to show sample data in the product.
-* A tokenized approach for modeling data, allowing replacements of timestamps, random data (mac address, ipv4,
-  ipv6, integer, string data), static replacements, and random selections from a line in a file.
-* Random timestamp distribution within a user specified range to allow randomness of events.
-* Replay of a full file or a subset of the first X lines of the file.
-* Generation of events based on a configurable interval.
-
 # Deployment Options
 
-This eventgen is designed to be deployed in a variety of different ways.  This also affects workflow quite a bit since it can be a royal pain to develop these inside of Splunk since each iteration requires a restart.  First, an overview of how it can be deployed and caveats to this:
+This eventgen is designed to be deployed in a variety of different ways.  In general, you'll want to build your new eventgen configs in Standalone mode, as being inside Splunk requires us to restart Splunk for every iteration.  First, an overview of how it can be deployed and caveats to this:
 
 ## Standalone
 
@@ -88,13 +91,13 @@ In your app's eventgen.conf file, sample files for file and mvfile substitution 
 
 # Tutorial
 
-Now that we've covered how you can run the Eventgen and the various caveats, lets go through some basic to advanced examples you can use to build upon for your own use cases.  All of these examples assume you are running standalone mode (relative paths for file substitutions, using mainly file output mode, etc).
+Now that we've covered how you can run the Eventgen and the various caveats, lets go through some basic to advanced examples you can use to build upon for your own use cases.  All of these examples assume you are running standalone mode.
 
 ## Basic Example
 
-First, lets build a basic noise generator from a log file.  The full file is located in local/eventgen-standalone.conf.tutorial1, which you can pass as the first parameter to eventgen.py to use if don't want to type all of this out of want to see the finalized product to follow along with.  An example from the root of the eventgen application:
+First, lets build a basic noise generator from a log file.  The full file is located in README/eventgen-standalone.conf.tutorial1, which you can pass as the first parameter to eventgen.py to use if don't want to type all of this out of want to see the finalized product to follow along with.  An example from the root of the eventgen application:
 
-    python bin/eventgen.py local/eventgen-standalone.conf.tutorial1
+    python bin/eventgen.py README/eventgen-standalone.conf.tutorial1
 
 ### Grabbing and rating events
 
@@ -161,7 +164,7 @@ This should now replay random events from the file we have configured.  The full
     token.0.replacementType = timestamp
     token.0.replacement = %b %d %H:%M:%S
     
-Go ahead and cd to $EVENTGEN\_HOME/bin and run python eventgen.py ../local/eventgen-standalone.conf.tutorial1.  In another shell, tail -f /tmp/ciscosample.log and you should see events replaying from the cisco.sample file!  You can reuse this same example to easily replay a customer log file, of course accounting for the different regular expressions and strptime formats you'll need for their timestamps.  If you want a sine-wave like flow of events for the day, you can omit hourOfDayRate, dayOfWeekRate and randomizeCount and leave them at default.  Remember to customize interval, earliest and count for the number of events you want the generator to build as well.
+Go ahead and cd to $EVENTGEN\_HOME/bin and run python eventgen.py ../README/eventgen-standalone.conf.tutorial1.  In another shell, tail -f /tmp/ciscosample.log and you should see events replaying from the cisco.sample file!  You can reuse this same example to easily replay a customer log file, of course accounting for the different regular expressions and strptime formats you'll need for their timestamps.  If you want a sine-wave like flow of events for the day, you can omit hourOfDayRate, dayOfWeekRate and randomizeCount and leave them at default.  Remember to customize interval, earliest and count for the number of events you want the generator to build as well.
 
 ## Second example, building events from scratch
 
@@ -224,7 +227,7 @@ If you look at the sample.businessevent file, you'll see that we took just one s
     token.0.replacementType = timestamp
     token.0.replacement = %Y-%m-%d %H:%M:%S
 
-Now, lets look at some new token substutitions we haven't seen:
+Now, lets look at some new token substitutions we haven't seen:
 
     token.1.token = timestamp=(\d+)
     token.1.replacementType = random
@@ -238,4 +241,73 @@ Now, lets look at some new token substutitions we haven't seen:
     token.3.replacementType = random
     token.3.replacement = hex(8)
 
-There are two types of random substitutions here.  Random supports, integer, float, hex digits, ipv4, ipv6, mac, and string types.  These will just randomly generate digits, etc.  In the case of integer, we also have a unix timestamp in this event we don't use, so we're telling it just to generate a random integer that looks like a timestamp.  
+There are two types of random substitutions here.  Random supports integer, float, hex digits, ipv4, ipv6, mac, and string types.  These will just randomly generate digits.  In the case of integer, we also have a unix timestamp in this event we don't use, so we're telling it just to generate a random integer that looks like a timestamp.  For the two hex tokens, we're saying just generate some hex digits.  Note that where we have more complicated strings, we create a RegEx capture group with parenthesis to indicate the portion of the string we want the eventgen to replace.
+
+Next, lets look at the file substitution:
+
+    token.4.token = orderType=(\w+)
+    token.4.replacementType = file
+    token.4.replacement = ../samples/orderType.sample
+
+If you look in the sample file, you'll see various text values which are Order types for our application.  You'll also notice them repeated multiple times, which may seem curious.  The file based substitution will grab one line from a file, and then replace the RegEx capture group with the text it grabbed from the file.  This is very powerful, and we include many different types of common data with the eventgen, like internal and external IP addresses, usernames, etc, which may be useful for common applications.  Back to why in orderType.sample we see repeated values, because the selection is random, in this case we want the data to appear less than random.  We want a certain percentage of orders to be of type NewActivation, ChangeESN, etc, so we repeat the entries in the file multiple times to have some randomness, but according to the guidelines that a business would normally see!
+
+We'll cover one more substitution type, mvfile:
+
+    token.14.token = marketCity="(\w+)"
+    token.14.replacementType = mvfile
+    token.14.replacement = ../samples/markets.sample:2
+
+    token.15.token = marketState=(\w+)
+    token.15.replacementType = mvfile
+    token.15.replacement = ../samples/markets.sample:3
+
+    token.16.token = marketZip=(\d+)
+    token.16.replacementType = mvfile
+    token.16.replacement = ../samples/markets.sample:1
+    
+Mvfile is a multi-value file.  Because sometimes we need to substitute more than one token based on the same random choice, I implemented the mvfile replacement type.  Mvfile will make a selection per event, and then re-use the same selection for all tokens in the event.  This allows, in the above example as you can see, us to replace City, State and Zip code together.  It can also be used to substitute the same choice into multiple tokens in the same event if that's required, as you can reuse the same file:column notation multiple times if you so choose.
+
+Go take a look at the full file now.  You'll see we've built a very complicated model of 30 tokens we're replacing for every event.  We've modeled a very complicated set of business transactions without needing to write a single line of code.  Go ahead and run the tutorial and take a look at the output in Splunk.
+
+## Third example, Transaction Replay
+
+The last example we'll run through is simpler, from a token perspective, but more complicated to model for a number of reasons.  When I originally shipped the Operational Intelligence demo, I had a second eventgen embedded that was coded by Patrick Ogdin (he built the first use case for the demo before I came onboard).  This eventgen generated the radius and access\_custom logs found in the mobile music portion of the demo.  The difficulty I had as soon as I went to put them into my eventgen was that they were an example of a typical transaction.  Multiple sources and sourcetypes with tokens that needed to match between them.  At the time with the current version of the eventgen, I didn't have time to build in the functionality needed, so I shipped the demo with the second eventgen, but later I added this functionality into the eventgen.
+
+### The first challenge and result: CSV input
+
+The first challenge with modeling transactions is that they often contain multiple hosts, sources and sourcetypes.  In order to work around this, I implemented the sample type directive:
+
+    [sample.mobilemusic.csv]
+    sampletype = csv
+    
+If you look at sample.mobilemusic.csv, you'll see the CSV file has fields for index, host, source and sourcetype.  Just as we can specify those directives with `outputmode = splunkstream`, in `sampletype = csv` we'll pull those values directly from the file.  This allows us to model a transaction with different \_raw events with individual values per event for index, host, source and sourcetype, but define tokens which will work across them.
+
+### The second challenge and result: bundlelines
+
+The second challenge I encountered was that we wanted to rate these transactions by hour of day and day of week like we do any other event type.  Without `sampletype = csv`, we'd create a multi-line event by changing breaker to be something like breaker = `[\r*\n\r*\n]` to say we only want to break the event when there's two newlines.  However, sampletype=csv prevents this because we have one entry per line in the CSV.  So I added a new directive called bundlelines.
+
+    bundlelines = true
+    
+Bundlelines does exactly what we mentioned in the background by changing breaker for this group of events and creating a multiline event out of the CSV lines.  This allows us to rate by time of day and day of week properly with the whole CSV entry.
+
+### The third challenge and result: replaytimestamp
+
+Of course, when you think you've got the problem licked, and I did, but I ran up against my next challenge.  The data I was modeling contained different timestamp formats for each different sourcetype.  This is of course to be expected, and I'm happy I found it on my first transaction replay.
+
+Because of what we went through earlier, inside the eventgen, this three line CSV file is now essentially inside the eventgen one three line event.  This means we can't really define different timestamp formats in different directives because we want the timestamps to look like they looked in the original transaction.  So I built replaytimestamp.  Replaytimestamp differs from timestamp in that its expecting there to be multiple timestamps in one event.  Replaytimestamp is also smart, in that it will read the timestamps in the event as its been generated and then introduce some randomness, but it will never exceed the length of the original transaction.  This means my generated transactions should look something like my original transactions.  However, I need to add some configuration language to support the multiple timestamp formats, so we end up with:
+
+    token.0.token = ((\w+\s+\d+\s+\d{2}:\d{2}:\d{2}:\d{3})|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}))
+    token.0.replacementType = replaytimestamp
+    token.0.replacement = ["%b %d %H:%M:%S:%f", "%Y-%m-%d %H:%M:%S:%f"]
+    
+The first line shows a really complicated RegEx.  This is essentially using RegEx to match both timestamp formats contained in the file.  If you look at the tutorial, you'll see both of these formats as they exist in other sample types, and in this case we bundled two capture groups together with a `|` to have our RegEx parser match both.
+
+Secondly, in the replacement clause, we have a JSON formatted list.  This allows us to pass a user determined number of strptime formats.  Replaytimestamp will use these formats to parse the timestamps it finds with the RegEx.  It will then figure out differences between the events in the original event and introduce some randomness between them and then output them back in the strptime format it matched with.
+
+### Failure Scenario
+
+Lastly, in eventgen-standalone.conf.tutorial3 you'll notice that there are multiple samples referenced which are nearly identical.  This is to model the failure scenario embedded in the demo.  These contain roughly the same original transaction data along with some extra events we wanted to model, including the user searching for a couple of artists and failing.  It also replaces some original text like the HTTP status to indicate errors.  This is a technique you can use to easily re-use work and simulate a few bad transactions along with the good.
+
+## Wrapping up
+
+I hope the tutorial covers most use cases you would need.  If you have something you're struggling to model, please reach out to me.  I believe we can cover just about anything you'd want to model with this eventgen, but if not, I'm happy to add features to the software so that everyone can benefit!

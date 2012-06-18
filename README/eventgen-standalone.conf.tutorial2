@@ -1,0 +1,202 @@
+##### Sample Business Event ######
+[sample.businessevent]
+interval = 3
+earliest = -3s
+latest = now
+count = 10
+hourOfDayRate = { "0": 0.30, "1": 0.10, "2": 0.05, "3": 0.10, "4": 0.15, "5": 0.25, "6": 0.35, "7": 0.50, "8": 0.60, "9": 0.65, "10": 0.70, "11": 0.75, "12": 0.77, "13": 0.80, "14": 0.82, "15": 0.85, "16": 0.87, "17": 0.90, "18": 0.95, "19": 1.0, "20": 0.85, "21": 0.70, "22": 0.60, "23": 0.45 }
+dayOfWeekRate = { "0": 0.97, "1": 0.95, "2": 0.90, "3": 0.97, "4": 1.0, "5": 0.99, "6": 0.55 }
+randomizeCount = 0.2
+
+# outputMode = spool
+# spoolDir = $SPLUNK_HOME/var/spool/splunk
+# spoolFile = <SAMPLE>
+
+# outputMode = file
+# fileName = /tmp/lotsofevents.log
+
+outputMode = splunkstream
+index=main
+host=splunktelbe-01.splunk.com
+source=eventgen
+sourcetype=business_event
+
+# Host/User/pass only necessary if running outside of splunk!
+splunkHost = localhost
+splunkUser = admin
+splunkPass = changeme
+
+# outputMode = stormstream
+# projectID = <projectid>
+# accessToken = <accesstoken>
+# host = localhost
+# source = eventgen
+# sourcetype = business_event
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
+token.0.replacementType = timestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S
+
+token.1.token = timestamp=(\d+)
+token.1.replacementType = random
+token.1.replacement = integer[1337000000:1339000000]
+
+token.2.token = JMSMessageID=ID:ESP-PD.([0-9A-F]{13}):
+token.2.replacementType = random
+token.2.replacement = hex(13)
+
+token.3.token = JMSMessageID=ID:ESP-PD.[0-9A-F]{13}:([0-9A-F]{8})
+token.3.replacementType = random
+token.3.replacement = hex(8)
+
+token.4.token = orderType=(\w+)
+token.4.replacementType = file
+token.4.replacement = ../samples/orderType.sample
+
+token.5.token = ESB~([0-9a-fA-F]{16})
+token.5.replacementType = random
+token.5.replacement = hex(16)
+
+token.6.token = ESB~[0-9a-fA-F]{16}:([0-9a-fA-F]{8})
+token.6.replacementType = random
+token.6.replacement = hex(8)
+
+token.7.token = ESB~[0-9a-fA-F]{16}:[0-9a-fA-F]{8}:([0-9a-fA-F]{12})
+token.7.replacementType = random
+token.7.replacement = hex(12)
+
+token.8.token = ESB~[0-9a-fA-F]{16}:[0-9a-fA-F]{8}:[0-9a-fA-F]{12}:([0-9a-fA-F]{4})
+token.8.replacementType = random
+token.8.replacement = hex(4)
+
+token.9.token = accountNumber=(\d+)
+token.9.replacementType = random
+token.9.replacement = integer[90000000000:90099999999]
+
+token.10.token = orderNumber=(NA)
+token.10.replacementType = random
+token.10.replacement = integer[10000000:99999999]
+
+token.11.token = quoteNumber=(\d+)
+token.11.replacementType = random
+token.11.replacement = integer[10000000:99999999]
+
+token.12.token = userName=(\w+)
+token.12.replacementType = file
+token.12.replacement = ../samples/userName.sample
+
+token.13.token = mdn=(\d{10})
+token.13.replacementType = file
+token.13.replacement = ../samples/mdn.sample
+
+token.14.token = marketCity="(\w+)"
+token.14.replacementType = mvfile
+token.14.replacement = ../samples/markets.sample:2
+
+token.15.token = marketState=(\w+)
+token.15.replacementType = mvfile
+token.15.replacement = ../samples/markets.sample:3
+
+token.16.token = marketZip=(\d+)
+token.16.replacementType = mvfile
+token.16.replacement = ../samples/markets.sample:1
+
+token.17.token = autoBillPayment=(\w)
+token.17.replacementType = file
+token.17.replacement = ../samples/autoBillPayment.sample
+
+token.18.token = phoneCode=(\w+)
+token.18.replacementType = mvfile
+token.18.replacement = ../samples/phones.sample:1
+
+token.19.token = phoneType=(\w+)
+token.19.replacementType = mvfile
+token.19.replacement = ../samples/phones.sample:2
+
+token.20.token = phoneName="([^"]+)"
+token.20.replacementType = mvfile
+token.20.replacement = ../samples/phones.sample:3
+
+token.21.token = planCode=(\w+)
+token.21.replacementType = mvfile
+token.21.replacement = ../samples/plans.sample:1
+
+token.22.token = accountType=(\w+)
+token.22.replacementType = mvfile
+token.22.replacement = ../samples/plans.sample:2
+
+token.23.token = planType=(\w+)
+token.23.replacementType = mvfile
+token.23.replacement = ../samples/plans.sample:2
+
+token.24.token = planPrice=(\w+)
+token.24.replacementType = mvfile
+token.24.replacement = ../samples/plans.sample:3
+
+token.25.token = planName="([^"]+)"
+token.25.replacementType = mvfile
+token.25.replacement = ../samples/plans.sample:4
+
+token.26.token = planDescription="([^"]+)"
+token.26.replacementType = mvfile
+token.26.replacement = ../samples/plans.sample:5
+
+token.27.token = billingCycle=(\d+)
+token.27.replacementType = random
+token.27.replacement = integer[1:28]
+
+token.28.token = esn=(\w+)
+token.28.replacementType = random
+token.28.replacement = hex(14)
+
+token.29.token = networkProviderName=(\w+)
+token.29.replacementType = mvfile
+token.29.replacement = ../samples/markets.sample:7
+
+token.18.token = phoneCode=(\w+)
+token.18.replacementType = mvfile
+token.18.replacement = ../samples/phones.sample:1
+
+token.19.token = phoneType=(\w+)
+token.19.replacementType = mvfile
+token.19.replacement = ../samples/phones.sample:2
+
+token.20.token = phoneName="([^"]+)"
+token.20.replacementType = mvfile
+token.20.replacement = ../samples/phones.sample:3
+
+token.21.token = planCode=(\w+)
+token.21.replacementType = mvfile
+token.21.replacement = ../samples/plans.sample:1
+
+token.22.token = accountType=(\w+)
+token.22.replacementType = mvfile
+token.22.replacement = ../samples/plans.sample:2
+
+token.23.token = planType=(\w+)
+token.23.replacementType = mvfile
+token.23.replacement = ../samples/plans.sample:2
+
+token.24.token = planPrice=(\w+)
+token.24.replacementType = mvfile
+token.24.replacement = ../samples/plans.sample:3
+
+token.25.token = planName="([^"]+)"
+token.25.replacementType = mvfile
+token.25.replacement = ../samples/plans.sample:4
+
+token.26.token = planDescription="([^"]+)"
+token.26.replacementType = mvfile
+token.26.replacement = ../samples/plans.sample:5
+
+token.27.token = billingCycle=(\d+)
+token.27.replacementType = random
+token.27.replacement = integer[1:28]
+
+token.28.token = esn=(\w+)
+token.28.replacementType = random
+token.28.replacement = hex(14)
+
+token.29.token = networkProviderName=(\w+)
+token.29.replacementType = mvfile
+token.29.replacement = ../samples/markets.sample:7
