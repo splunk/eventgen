@@ -56,6 +56,9 @@ class Sample:
     _out = None
     _sampleLines = None
     _sampleDict = None
+    _lockedSettings = None
+    _priority = None
+    _origName = None
     
     def __init__(self, name):
         # Logger already setup by config, just get an instance
@@ -64,6 +67,7 @@ class Sample:
         
         self.name = name
         self.tokens = [ ]
+        self._lockedSettings = [ ]
         
         # Import config
         from eventgenconfig import Config

@@ -176,6 +176,7 @@ class Config:
         del self._confDict['global']
         
         tempsamples = [ ]
+        tempsamples2 = [ ]
         
         # Now iterate for the rest of the samples we've found
         # We'll create Sample objects for each of them
@@ -210,6 +211,10 @@ class Config:
                         setattr(s, 'app', value['app'])         
                     else:
                         setattr(s, key, value)
+                        # 6/22/12 CS Need a way to show a setting was set by the original
+                        # config read
+                        s._lockedSettings.append(key)
+                        # logger.debug("Appending '%s' to locked settings for sample '%s'" % (key, s.name))
                         
                         
                 # Validate all the tokens are fully setup, can't do this in _validateSettings
@@ -245,42 +250,14 @@ class Config:
                 
                 # Append to temporary holding list
                 if not s.disabled:
+                    s._priority = len(tempsamples)+1
                     tempsamples.append(s)
         
-        # We're now going go through the samples and attempt to apply any matches from other stanzas
-        # This allows us to specify a wildcard at the beginning of the file and get more specific as we go on
-        # We're going to reverse the list and work from the bottom up.  Working in reverse also helps us later
-        # as we're going to want to match at the end of the file first (because it should be the most specific)
-        tempsamples.reverse()
-        
-        # Loop through all samples
+        # 6/22/12 CS Rewriting the config matching code yet again to handling flattening better.
+        # In this case, we're now going to match all the files first, create a sample for each of them
+        # and then take the match from the sample seen last in the config file, and apply settings from
+        # every other match to that one.
         for s in tempsamples:
-            # Now loop through the samples we've matched with files to see if we apply to any of them
-            for matchs in self.samples:
-                if re.match(s.name, matchs.name) != None and s.name != matchs.name:
-                    # Now we're going to loop through all valid settings and set them assuming
-                    # the more specific object that we've matched doesn't already have them set
-                    # There's really no penalty for setting defaults again, so don't check if they're
-                    # already default
-                    for settingname in self._validSettings:
-                        if settingname not in ['eai:acl', 'blacklist', 'disabled', 'name']:
-                            sourcesetting = getattr(s, settingname)
-                            destsetting = getattr(matchs, settingname)
-                            # We want to check that the setting we're copying to hasn't been
-                            # set, otherwise keep the more specific value
-                            if (destsetting == None or destsetting == getattr(self, settingname)) \
-                                    and sourcesetting != None and sourcesetting != getattr(self, settingname):
-                                logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to sample '%s' in app '%s'" \
-                                                % (settingname, destsetting, s.name, matchs.name, s.app))
-                                setattr(matchs, settingname, sourcesetting)
-                    
-                    # Now prepend all the tokens to the beginning of the list so they'll be sure to match first
-                    newtokens = copy.deepcopy(s.tokens)
-                    logger.debug("Prepending tokens from sample '%s' to sample '%s' in app '%s': %s" \
-                                % (s.name, matchs.name, s.app, pprint.pformat(newtokens)))
-                    newtokens.extend(matchs.tokens)
-                    matchs.tokens = newtokens
-                    
             # Now we need to match this up to real files.  May generate multiple copies of the sample.
             foundFiles = [ ]
             
@@ -295,7 +272,8 @@ class Config:
                     if results != None:
                         samplePath = os.path.join(sampleDir, sample)
                         if os.path.isfile(samplePath):
-                            logger.debug("Found sample file '%s' for app '%s' using config '%s'; adding to list" % (sample, s.app, stanza) )
+                            logger.debug("Found sample file '%s' for app '%s' using config '%s' with priority '%s'; adding to list" \
+                                % (sample, s.app, s.name, s._priority) )
                             foundFiles.append(samplePath)
             # If we didn't find any files, log about it
             if len(foundFiles) == 0:
@@ -307,18 +285,86 @@ class Config:
                 if s.outputMode == 'spool' and s.spoolFile == self.spoolFile:
                     news.spoolFile = f.split(os.sep)[-1]
                 # Override s.name with file name.  Usually they'll match unless we've been a regex
+                # 6/22/12 CS Save original name for later matching
+                news._origName = news.name
                 news.name = f.split(os.sep)[-1]
-                if not s.disabled:
-                    # Search to make sure we haven't already matched this file
-                    sExists = False
-                    for scheck in self.samples:
-                        if scheck.name == news.name:
-                            sExists = True
-                    if not sExists:
-                        self.samples.append(news)
+                if not news.disabled:
+                    tempsamples2.append(news)
                 else:
                     logger.info("Sample '%s' for app '%s' is marked disabled." % (news.name, news.app))
+
+        # Clear tempsamples, we're going to reuse it
+        tempsamples = [ ]
+
+        # We're now going go through the samples and attempt to apply any matches from other stanzas
+        # This allows us to specify a wildcard at the beginning of the file and get more specific as we go on
         
+        # Loop through all samples, create a list of the master samples
+        for s in tempsamples2:
+            foundHigherPriority = False
+            othermatches = [ ]
+            # If we're an exact match, don't go looking for higher priorities
+            if not s.name == s._origName:
+                for matchs in tempsamples2:
+                    if matchs.filePath == s.filePath and s._origName != matchs._origName:
+                        # We have a match, now determine if we're higher priority or not
+                            # If this is a longer pattern or our match is an exact match
+                            # then we're a higher priority match
+                        if len(matchs._origName) > len(s._origName) or matchs.name == matchs._origName:     
+                            # if s._priority < matchs._priority:
+                            logger.debug("Found higher priority for sample '%s' with priority '%s' from sample '%s' with priority '%s'" \
+                                        % (s._origName, s._priority, matchs._origName, matchs._priority))
+                            foundHigherPriority = True
+                            break
+                        else:
+                            othermatches.append(matchs._origName)
+            if not foundHigherPriority:
+                logger.debug("Chose sample '%s' from samples '%s' for file '%s'" \
+                            % (s._origName, othermatches, s.name))
+                tempsamples.append(s)
+
+        # Now we have two lists, tempsamples which contains only the highest priority matches, and
+        # tempsamples2 which contains all matches.  We need to now flatten the config in order to
+        # take all the configs which might match.
+
+        # Reversing tempsamples2 in order to look from the bottom of the file towards the top
+        # We want entries lower in the file to override entries higher in the file
+
+        tempsamples2.reverse()
+
+        # Loop through all samples
+        for s in tempsamples:
+            # Now loop through the samples we've matched with files to see if we apply to any of them
+            for overridesample in tempsamples2:
+                if s.filePath == overridesample.filePath:
+                    # Now we're going to loop through all valid settings and set them assuming
+                    # the more specific object that we've matched doesn't already have them set
+                    for settingname in self._validSettings:
+                        if settingname not in ['eai:acl', 'blacklist', 'disabled', 'name']:
+                            sourcesetting = getattr(overridesample, settingname)
+                            destsetting = getattr(s, settingname)
+                            # We want to check that the setting we're copying to hasn't been
+                            # set, otherwise keep the more specific value
+                            # 6/22/12 CS Added support for non-overrideable (locked) settings
+                            # logger.debug("Locked settings: %s" % pprint.pformat(matchs._lockedSettings))
+                            # if settingname in matchs._lockedSettings:
+                            #     logger.debug("Matched setting '%s' in sample '%s' lockedSettings" \
+                            #         % (settingname, matchs.name))
+                            if (destsetting == None or destsetting == getattr(self, settingname)) \
+                                    and sourcesetting != None and sourcesetting != getattr(self, settingname) \
+                                    and not settingname in s._lockedSettings:
+                                logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to sample '%s' in app '%s'" \
+                                                % (settingname, sourcesetting, overridesample._origName, s.name, s.app))
+                                setattr(s, settingname, sourcesetting)
+                    
+                    # Now prepend all the tokens to the beginning of the list so they'll be sure to match first
+                    newtokens = copy.deepcopy(s.tokens)
+                    logger.debug("Prepending tokens from sample '%s' to sample '%s' in app '%s': %s" \
+                                % (s.name, overridesample._origName, s.app, pprint.pformat(newtokens)))
+                    newtokens.extend(copy.deepcopy(overridesample.tokens))
+                    s.tokens = newtokens
+        
+        self.samples = tempsamples
         self._confDict = None
         logger.debug("Finished parsing.  Config str:\n%s" % self)
                 
