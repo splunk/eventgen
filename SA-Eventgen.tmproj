@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>README/eventgen.conf.spec</string>
+	<string>README.md</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -18,29 +18,29 @@
 		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
-	<integer>200</integer>
+	<integer>195</integer>
 	<key>metaData</key>
 	<dict>
-		<key>README/eventgen.conf.spec</key>
+		<key>README.md</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>20</integer>
+				<integer>78</integer>
 				<key>line</key>
-				<integer>25</integer>
+				<integer>51</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>55</integer>
+			<integer>26</integer>
 		</dict>
-		<key>local/eventgen-standalone.conf</key>
+		<key>lib/eventgenoutput.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>10</integer>
+				<integer>13</integer>
 				<key>line</key>
 				<integer>6</integer>
 			</dict>
@@ -63,76 +63,15 @@
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
 		</dict>
-		<key>local/eventgen-standalone.conf.tutorial2</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>15</integer>
-				<key>line</key>
-				<integer>173</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>samples/cisco.sample</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>15</integer>
-				<key>line</key>
-				<integer>165</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>158</integer>
-		</dict>
-		<key>samples/sample.businessevent</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>980</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>samples/sample.mobilemusic.csv</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>206</integer>
-				<key>line</key>
-				<integer>1</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
 	</dict>
 	<key>openDocuments</key>
 	<array>
-		<string>local/eventgen-standalone.conf.tutorial1</string>
-		<string>local/eventgen-standalone.conf.tutorial2</string>
-		<string>local/eventgen-standalone.conf</string>
-		<string>README/eventgen.conf.spec</string>
-		<string>samples/sample.mobilemusic.csv</string>
-		<string>samples/sample.businessevent</string>
-		<string>samples/cisco.sample</string>
+		<string>lib/eventgenoutput.py</string>
+		<string>README.md</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{266, 123}, {886, 751}}</string>
+	<string>{{329, 266}, {886, 751}}</string>
 </dict>
 </plist>

@@ -1,0 +1,274 @@
+Mar  1 00:01:50.575: %SYS-5-CONFIG_I: Configured from console by console
+Mar  1 00:01:51.047: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state to up
+Mar  1 00:01:52.047: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/0, changed state to up
+Mar  1 00:02:25.499: %IP-4-DUPADDR: Duplicate address 192.168.1.1 on FastEthernet0/0, sourced by c201.168c.0000
+Mar  1 00:04:37.815: OSPF: Rcv pkt from 192.168.1.2, FastEthernet0/0: Mismatch Authentication type. Input packet specified type 0, we use type 2
+Mar  1 00:04:42.135: OSPF: Send with youngest Key 1
+Mar  1 00:04:47.607: OSPF: Rcv pkt from 192.168.1.2, FastEthernet0/0: Mismatch Authentication type. Input packet specified type 0, we use type 2
+Mar  1 00:04:52.071: OSPF: Send with youngest Key 1
+Mar  1 00:04:57.091: OSPF: Rcv pkt from 192.168.1.2, FastEthernet0/0: Mismatch Authentication type. Input packet specified type 0, we use type 2
+Mar  1 00:05:01.095: OSPF: Send with youngest Key 1
+Mar  5 07:01:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 200 to area 100
+Mar  5 07:02:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 100 to area 200
+Mar  5 07:03:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 200 to area 100
+Mar  5 07:04:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 100 to area 200
+Mar  5 07:05:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 200 to area 100
+Mar  5 07:06:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 100 to area 200
+Mar  7 02:22:01.345: %ENVM-6-PSCHANGE: Power Supply 1 changed from Zytek AC Power Supply to removed
+Mar  7 02:24:01.345: %ENVM-6-PSCHANGE: Power Supply 1 changed from removed to Zytek AC Power Supply
+Mar  7 02:30:01.345: %ENVM-6-PSCHANGE: Power Supply 1 changed from Zytek AC Power Supply to removed
+Mar  7 02:35:01.345: %ENVM-6-PSCHANGE: Power Supply 1 changed from removed to Zytek AC Power Supply
+Mar  8  12:30:00.967: %ENVM-3-BLOWER : Fan 1 may have failed
+Mar  8  12:31:00.967: %ENVM-3-BLOWER : Fan 1 may have failed
+Mar  8  12:32:00.967: %ENVM-3-BLOWER : Fan 1 may have failed
+Mar  8  12:33:00.967: %ENVM-3-BLOWER : Fan 1 may have failed
+Mar  9 19:49:00.000: %SYS-6-CLOCKUPDATE: System clock has been updated from 00:05:06 UTC Fri Mar 1 2002 to 19:49:00 UTC Mon Mar 9 2012, configured from console by console.
+Mar  9 19:49:00.411: OSPF: Rcv pkt from 192.168.1.2, FastEthernet0/0: Mismatch Authentication type. Input packet specified type 0, we use type 2
+Mar  9 19:49:04.483: OSPF: Send with youngest Key 1
+Mar  9 19:49:10.395: OSPF: Rcv pkt from 192.168.1.2, FastEthernet0/0: Mismatch Authentication type. Input packet specified type 0, we use type 2
+Mar  9 19:49:13.723: OSPF: Send with youngest Key 1
+Mar  9 19:49:28.407: %SYS-2-MALLOCFAIL: Memory allocation of 10260 bytes failed from 0x622AC624, alignment 0
+Pool: Processor  Free: 21244  Cause: Memory fragmentation
+Alternate Pool: None  Free: 0  Cause: No Alternate pool
+ -Process= "Exec", ipl= 0, pid= 92,  -Traceback= 0x6144B520 0x60013384 0x600192E4 0x6001993C 0x634B3F08 0x622AC62C 0x622AD9D8 0x622AE560 0x622AFEC4 0x6252CD28 0x6252D120 0x6252E004 0x6252E28C 0x62562FC4 0x6256D75C 0x6255A8F4
+Mar  9 19:49:28.407: %SYS-2-CHUNKEXPANDFAIL: Could not expand chunk pool for regex. No memory available -Process= "Chunk Manager", ipl= 4, pid= 1,  -Traceback= 0x6144B520 0x60024E24 0x6273BAAC 0x6273BA90
+Mar  9 19:49:28.487: %NBAR-2-NOMEMORY: No memory available for StILE lmalloc,  -Traceback= 0x6144B520 0x6254FA1C 0x62551FB0 0x62552584 0x6252C7CC 0x6252DA78 0x6252E014 0x6252E28C 0x62562FC4 0x6256D75C 0x6255A8F4 0x6255DA14 0x6255FBE8 0x6255FED8 0x61497954 0x614BB718
+Mar  9 19:49:37.099: %SYS-5-CONFIG_I: Configured from console by console
+Mar  9 19:50:30.499: %SYS-2-MALLOCFAIL: Memory allocation of 10260 bytes failed from 0x6254F9F8, alignment 0
+Pool: Processor  Free: 29796  Cause: Memory fragmentation
+Alternate Pool: None  Free: 0  Cause: No Alternate pool
+ -Process= "Exec", ipl= 0, pid= 92,  -Traceback= 0x6144B520 0x60013384 0x600192E4 0x6001993C 0x634B3F08 0x6254FA00 0x625319AC 0x62534C08 0x6252F68C 0x62532068 0x6252F68C 0x6252F850 0x62562CE0 0x6256D744 0x6255A8F4 0x6255DA14
+Mar  9 19:50:30.499: %NBAR-2-NOMEMORY: No memory available for StILE lmalloc,  -Traceback= 0x6144B520 0x6254FA1C 0x625319AC 0x62534C08 0x6252F68C 0x62532068 0x6252F68C 0x6252F850 0x62562CE0 0x6256D744 0x6255A8F4 0x6255DA14 0x6255FBE8 0x6255FED8 0x61497954 0x614BB718
+Mar  9 19:50:35.303: %SYS-5-CONFIG_I: Configured from console by console
+Mar  9 19:51:41.523: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  9 19:52:40.419: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  9 19:52:51.295: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  9 19:53:33.831: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  9 19:53:40.747: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  9 19:54:40.419: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  9 19:54:51.295: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  9 19:55:33.831: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  9 19:55:40.747: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  9 19:56:40.419: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  9 19:56:51.295: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  9 19:57:33.831: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  9 19:57:40.747: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  9 19:58:40.419: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  9 19:58:51.295: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  9 19:59:33.831: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  9 19:59:40.747: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  9 20:00:40.419: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  9 20:00:51.295: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  9 20:01:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:01:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:02:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:02:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:03:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:03:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:04:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:04:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:05:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:05:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:06:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:06:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:07:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:07:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:08:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:08:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:09:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:09:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  9 20:30:00.967: %ENVM-3-BLOWER : Fan 1 may have failed
+Mar  9 20:31:00.967: %ENVM-3-BLOWER : Fan 1 may have failed
+Mar  9 20:32:00.967: %ENVM-3-BLOWER : Fan 1 may have failed
+Mar  9 20:33:00.967: %ENVM-3-BLOWER : Fan 1 may have failed
+Mar  9 21:40:01.345: %ENVM-6-PSCHANGE: Power Supply 1 changed from Zytek AC Power Supply to removed
+Mar  9 22:24:01.345: %ENVM-6-PSCHANGE: Power Supply 1 changed from removed to Zytek AC Power Supply
+Mar  9 22:30:01.345: %ENVM-6-PSCHANGE: Power Supply 1 changed from Zytek AC Power Supply to removed
+Mar  9 22:35:01.345: %ENVM-6-PSCHANGE: Power Supply 1 changed from removed to Zytek AC Power Supply
+Mar  9 23:01:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 200 to area 100
+Mar  9 23:02:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 100 to area 200
+Mar  9 23:03:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 200 to area 100
+Mar  9 23:04:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 100 to area 200
+Mar  9 23:05:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 200 to area 100
+Mar  9 23:06:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 100 to area 200
+Mar  10 00:02:25.499: %IP-4-DUPADDR: Duplicate address 192.168.1.1 on FastEthernet0/0, sourced by c201.168c.0000
+Mar  10 00:03:25.499: %IP-4-DUPADDR: Duplicate address 192.168.1.1 on FastEthernet0/0, sourced by c201.168c.0000
+Mar  10 00:04:25.499: %IP-4-DUPADDR: Duplicate address 192.168.1.1 on FastEthernet0/0, sourced by c201.168c.0000
+Mar  10 00:05:25.499: %IP-4-DUPADDR: Duplicate address 192.168.1.1 on FastEthernet0/0, sourced by c201.168c.0000
+Mar  10 00:10:25.499: %IP-4-DUPADDR: Duplicate address 192.168.1.1 on FastEthernet0/0, sourced by c201.168c.0000
+Mar  10 10:30:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar  10 10:40:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar  10 10:50:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar  10 11:30:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar  10 12:30:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar  11 08:13:00.234: %OSPF-4-FLOOD_WAR: Process 200 re-originates LSA ID 10.230.1.0 type-2 adv-rtr 100.100.100.1
+Mar  11 08:15:00.234: %OSPF-4-FLOOD_WAR: Process 200 re-originates LSA ID 10.230.1.0 type-2 adv-rtr 100.100.100.1
+Mar  11 08:15:20.234: %OSPF-4-FLOOD_WAR: Process 200 re-originates LSA ID 10.230.1.0 type-2 adv-rtr 100.100.100.1
+Mar  11 08:16:00.234: %OSPF-4-FLOOD_WAR: Process 200 re-originates LSA ID 10.230.1.0 type-2 adv-rtr 100.100.100.1
+Mar  11 08:17:00.234: %OSPF-4-FLOOD_WAR: Process 200 re-originates LSA ID 10.230.1.0 type-2 adv-rtr 100.100.100.1
+Mar  11 08:18:00.234: %OSPF-4-FLOOD_WAR: Process 200 re-originates LSA ID 10.230.1.0 type-2 adv-rtr 100.100.100.1
+Mar  11 22:30:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar  11 17:30:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar  12 10:30:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar  12 15:30:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar  14 05:30:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar  15 19:50:30.499: %NBAR-2-NOMEMORY: No memory available for StILE lmalloc,  -Traceback= 0x6144B520 0x6254FA1C 0x625319AC 0x62534C08 0x6252F68C 0x62532068 0x6252F68C 0x6252F850 0x62562CE0 0x6256D744 0x6255A8F4 0x6255DA14 0x6255FBE8 0x6255FED8 0x61497954 0x614BB718
+Mar  19 20:01:33.831: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  19 20:01:40.747: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  19 20:02:40.419: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  19 20:02:51.295: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  19 20:03:33.831: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  19 20:03:40.747: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  19 20:04:40.419: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  19 20:04:51.295: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  19 20:05:33.831: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from FULL to DOWN, Neighbor Down: Dead timer expired
+Mar  19 20:05:40.747: %OSPF-5-ADJCHG: Process 100, Nbr 192.168.1.2 on FastEthernet0/0 from LOADING to FULL, Loading Done
+Mar  19 23:01:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 200 to area 100
+Mar  19 23:02:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 100 to area 200
+Mar  19 23:03:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 200 to area 100
+Mar  19 23:04:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 100 to area 200
+Mar  19 23:05:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 200 to area 100
+Mar  19 23:06:23.123: %OSPF-6-AREACHG: 172.16.1.0 255.255.255.0 changed from area 100 to area 200
+Mar  20 20:01:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:01:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:02:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:02:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:03:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:03:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:04:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:04:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:05:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:05:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:06:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:06:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:07:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:07:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:08:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:08:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:09:34.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar  20 20:09:54.301: %OSPF-4-ERRRCV: Received invalid packet: Bad Checksum from 10.10.10.1, FastEthernet0/0
+Mar 21 08:41:38.199: %SYS-5-CONFIG_I: Configured from console by cisco on console
+Mar 21 08:41:47.039: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: sd] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:41:47 UTC Wed Mar 21 2012
+Mar 21 08:41:49.451: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: sd] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:41:49 UTC Wed Mar 21 2012
+Mar 21 08:42:03.715: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:03 UTC Wed Mar 21 2012
+Mar 21 08:42:21.935: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:21 UTC Wed Mar 21 2012
+Mar 21 08:42:26.447: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:26 UTC Wed Mar 21 2012
+Mar 21 08:42:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 08:42:38.027: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: cisco] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadPassword] at 08:42:38 UTC Wed Mar 21 2012
+Mar 21 08:42:45.115: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: cisco] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadPassword] at 08:42:45 UTC Wed Mar 21 2012
+Mar 21 08:42:48.983: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: cisco] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadPassword] at 08:42:48 UTC Wed Mar 21 2012
+Mar 21 08:42:55.475: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: cisco] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadPassword] at 08:42:55 UTC Wed Mar 21 2012
+Mar 21 08:42:59.747: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: cisco] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadPassword] at 08:42:59 UTC Wed Mar 21 2012
+Mar 21 08:46:07.527: %SYS-5-CONFIG_I: Configured from console by cisco on console
+Mar 21 08:46:08.923: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state to up
+Mar 21 08:46:09.923: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/0, changed state to up
+Mar 21 08:46:28.435: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Standby -> Active
+Mar 21 08:47:01.147: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Active -> Init
+Mar 21 08:47:02.203: %SYS-5-CONFIG_I: Configured from console by cisco on console
+Mar 21 08:47:21.659: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Standby -> Active
+Mar 21 08:47:27.587: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 21 08:47:28.587: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 21 08:47:29.591: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 21 08:48:29.595: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 21 08:48:46.283: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state to up
+Mar 21 08:48:50.003: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state to up
+Mar 21 08:49:00.575: %SYS-5-CONFIG_I: Configured from console by cisco on console
+Mar 21 08:49:36.735: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Active -> Speak
+Mar 21 08:49:46.735: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Speak -> Standby
+Mar 21 08:50:20.751: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Standby -> Active
+Mar 21 08:50:41.827: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Active -> Speak
+Mar 21 08:50:51.827: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Speak -> Standby
+Mar 21 08:50:58.871: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Standby -> Active
+Mar 21 08:51:10.943: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Active -> Speak
+Mar 21 08:53:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar 21 09:00:54.371: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 09:02:54.743: %SYS-5-CONFIG_I: Configured from console by cisco on console
+Mar 21 09:03:00.499: %IP-4-DUPADDR: Duplicate address 192.168.1.1 on FastEthernet0/0, sourced by c201.168c.0000
+Mar 21 09:03:10.547: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 21 09:03:10.915: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 09:03:59.615: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 21 09:03:59.907: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 09:04:04.499: %IP-4-DUPADDR: Duplicate address 192.168.1.1 on FastEthernet0/0, sourced by c201.168c.0000
+Mar 21 09:04:05.007: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 21 09:04:05.275: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 09:04:25.631: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 21 09:04:26.243: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 09:04:31.343: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 21 09:04:31.755: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 09:04:37.859: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 21 09:04:39.635: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 09:05:51.255: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 21 09:05:51.419: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 09:06:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar 21 09:08:46.739: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 21 09:08:46.931: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 09:09:47.287: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 21 09:09:47.551: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 09:10:40.983: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 21 09:10:41.307: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 21 10:42:03.715: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:03 UTC Wed Mar 21 2012
+Mar 21 10:42:21.935: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:21 UTC Wed Mar 21 2012
+Mar 21 10:42:26.447: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:26 UTC Wed Mar 21 2012
+Mar 21 10:42:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:43:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:44:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:45:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:46:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:47:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:48:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:49:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:50:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:51:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:52:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:53:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:54:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:55:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:56:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:57:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:58:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 10:59:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:00:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:01:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:02:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:03:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:04:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:05:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:06:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:07:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:08:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:09:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 21 11:10:30.463: %SEC_LOGIN-4-LOGIN_FAILED: Login failed [user: admin] [Source: 0.0.0.0] [localport: 0] [Reason: Login Authentication Failed - BadUser] at 08:42:30 UTC Wed Mar 21 2012
+Mar 22 09:02:25.499: %IP-4-DUPADDR: Duplicate address 192.168.1.1 on FastEthernet0/0, sourced by c201.168c.0000
+Mar 23 08:49:36.735: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Active -> Speak
+Mar 23 08:49:46.735: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Speak -> Standby
+Mar 23 08:50:20.751: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Standby -> Active
+Mar 23 08:50:41.827: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Active -> Speak
+Mar 23 08:50:51.827: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Speak -> Standby
+Mar 23 08:50:58.871: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Standby -> Active
+Mar 23 08:51:10.943: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Active -> Speak
+Mar 23 08:51:36.735: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Active -> Speak
+Mar 23 08:51:46.735: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Speak -> Standby
+Mar 23 08:52:20.751: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Standby -> Active
+Mar 23 08:52:41.827: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Active -> Speak
+Mar 23 08:52:51.827: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Speak -> Standby
+Mar 23 08:52:58.871: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Standby -> Active
+Mar 23 08:53:10.943: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp 1 state Active -> Speak
+Mar 23 08:54:00.245: %SNMP-4-HIGHCPU: Process exceeds 200ms threshold (200ms IOS quantum) for GET of rmon.19.16.0--result rmon.19.16.0
+Mar 23 09:04:37.859: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 23 09:04:39.635: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 23 09:05:51.255: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 23 09:05:51.419: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 23 09:08:46.739: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 23 09:08:46.931: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 23 09:09:47.287: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 23 09:09:47.551: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 23 09:10:40.983: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Down Peer closed the session
+Mar 23 09:10:41.307: %BGP-5-ADJCHANGE: neighbor 192.168.1.3 Up
+Mar 24 08:47:27.587: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 24 08:47:28.587: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 24 08:47:29.591: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 24 08:48:29.595: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 26 08:47:27.587: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 26 08:47:28.587: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 26 08:47:29.591: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
+Mar 26 08:48:29.595: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on FastEthernet0/0 (not full duplex), with Router FastEthernet0/0 (full duplex).
