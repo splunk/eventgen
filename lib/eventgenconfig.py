@@ -117,7 +117,9 @@ class Config:
             
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
-        return 'Config:'+pprint.pformat(self.__dict__)+'\nSamples:\n'+pprint.pformat(self.samples)
+        # Eliminate recursive going back to parent
+        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != 'samples' ])
+        return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
         
     def __repr__(self):
         return self.__str__()
@@ -336,7 +338,7 @@ class Config:
         for s in tempsamples:
             # Now loop through the samples we've matched with files to see if we apply to any of them
             for overridesample in tempsamples2:
-                if s.filePath == overridesample.filePath:
+                if s.filePath == overridesample.filePath and s._origName != overridesample._origName:
                     # Now we're going to loop through all valid settings and set them assuming
                     # the more specific object that we've matched doesn't already have them set
                     for settingname in self._validSettings:
@@ -360,7 +362,7 @@ class Config:
                     # Now prepend all the tokens to the beginning of the list so they'll be sure to match first
                     newtokens = copy.deepcopy(s.tokens)
                     logger.debug("Prepending tokens from sample '%s' to sample '%s' in app '%s': %s" \
-                                % (s.name, overridesample._origName, s.app, pprint.pformat(newtokens)))
+                                % (overridesample._origName, s.name, s.app, pprint.pformat(newtokens)))
                     newtokens.extend(copy.deepcopy(overridesample.tokens))
                     s.tokens = newtokens
         
