@@ -148,7 +148,7 @@ class Sample:
                 # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
                 # hourOfDay, dayOfWeek and randomizeCount configs
                 rateFactor = 1.0
-                if self.randomizeCount != 0:
+                if self.randomizeCount != 0 and self.randomizeCount != None:
                     try:
                         logger.debug("randomizeCount for sample '%s' in app '%s' is %s" \
                                         % (self.name, self.app, self.randomizeCount))
@@ -242,9 +242,12 @@ class Sample:
                         # 5/28/12 CS This may cause a regression defect, but I can't figure out why
                         # you'd want to ignore the first breaker you find.  It's certainly breaking
                         # my current use case.
-                        # if breakersFound != 0:
-                        events.append(event)
-                        event = ''
+
+                        # 6/25/12 CS Definitely caused a regression defect.  I'm going to add
+                        # a check for bundlelines which is where I need this to work every time
+                        if breakersFound != 0 or self.bundlelines:
+                            events.append(event)
+                            event = ''
 
                         breakersFound += 1
                     # else:
