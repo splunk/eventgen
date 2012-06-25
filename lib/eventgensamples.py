@@ -142,6 +142,7 @@ class Sample:
                 logger.debug("Count %s specified as default for sample '%s' in app '%s'; adjusting count to sample length %s; using default breaker" \
                                 % (self.count, self.name, self.app, len(sampleLines)) )
                 count = len(sampleLines)
+                self.breaker = self._c.breaker
             elif self.count > 0:
                 
                 # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
