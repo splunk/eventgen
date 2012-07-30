@@ -92,6 +92,7 @@ class Config:
                             'projectID', 'accessToken']
     
     def __init__(self):
+        """Setup Config object.  Sets up Logging and path related variables."""
         # Rebind the internal datastore of the class to an Instance variable
         self.__dict__ = self.__sharedState
         if self._firsttime:

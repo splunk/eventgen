@@ -3,8 +3,7 @@
 Welcome to Splunk's configurable Event Generator.  This project was originally started by David Hazekamp (dhazekamp@splunk.com) and then enhanced by Clint Sharp (clint@splunk.com).  The goals of this project are ambitious but simple:
 
 * Eliminate the need for hand coded event generators in Splunk apps.
-* Allow for portability of event generators between applications, and allow templates to be quickly adapted
-  between use cases.
+* Allow for portability of event generators between applications, and allow templates to be quickly adapted between use cases.
 * Allow every type of event or transaction to be modeled inside the eventgen.
 
 ## Features
@@ -13,60 +12,36 @@ I believe we've accomplished all those goals.  This version of the eventgen was 
 
 * A robust configuration language and specification to define how we should model events for replacement.
 * Overridable defaults, which simplifies the setup of each individual sample.
-* A flattening setup, where the eventgen.conf can be configured using regular expressions with lower entries
-  inheriting from entries above.
-* Support to be deployed as a Splunk app and gather samples and events from all apps installed in that deployment.
-  ES uses this to great effect with its use of Technology Adapters which provide props and transforms for a 
-  variety of data types and also includes the event generators along with them to show sample data in the product.
-* A tokenized approach for modeling data, allowing replacements of timestamps, random data (mac address, ipv4,
-  ipv6, integer, string data), static replacements, and random selections from a line in a file.
+* A flattening setup, where the eventgen.conf can be configured using regular expressions with lower entries inheriting from entries above.
+* Support to be deployed as a Splunk app and gather samples and events from all apps installed in that deployment.  ES uses this to great effect with its use of Technology Adapters which provide props and transforms for a variety of data types and also includes the event generators along with them to show sample data in the product.
+* A tokenized approach for modeling data, allowing replacements of timestamps, random data (mac address, ipv4, ipv6, integer, string data), static replacements, and random selections from a line in a file.
 * Random timestamp distribution within a user specified range to allow randomness of events.
 * Replay of a full file or a subset of the first X lines of the file.
 * Generation of events based on a configurable interval.
 
 On top of that, I've made very significant enhancements over that version:
 
-* Added support to rate events and certain replacements by time of day and day of the week to model
-  transaction flow inside a normal enterprise.
-* Support to randomize the events coming from a sample file.  This allow us to feed a large sample
-  of a few thousand lines and easily generate varied noise from that file.
-* Added support to allow tokens to refer to the same CSV file, and pull multiple tokens from the same
-  random selection.  This allows, for example, tokens to replace City, State and Zip from the same
-  selection from a file.
+* Added support to rate events and certain replacements by time of day and day of the week to model transaction flow inside a normal enterprise.
+* Support to randomize the events coming from a sample file.  This allow us to feed a large sample of a few thousand lines and easily generate varied noise from that file.
+* Added support to allow tokens to refer to the same CSV file, and pull multiple tokens from the same random selection.  This allows, for example, tokens to replace City, State and Zip from the same selection from a file.
 * Added modular outputs to allow the Eventgen to output to a variety of different formats:
-  1. Output to Splunk's receivers/stream REST endpoint.  This allows for us to configure index, host,
-      source and sourcetype from within the Eventgen's config file!
-  2. Legacy default of outputting to a spool file in $SPLUNK\_HOME/var/spool/splunk (or another directory
-      configured for that particular sample).
-  3. Output to a rotating Log file.  This was added so that the file can be read by a Splunk forwarder but
-      also be read by competing products for our competitive lab.
-  4. Output to Splunk Storm using Storm's REST input API.  Also allows host, source and sourcetype to specified
-      in the config file.
-* Added CSV sample inputs to allow overriding Index, Host, Source and Sourcetype on a per-event basis.
-  With this, we can model complicated sets of data, like VMWare's, or model transactions which may
-  take place across a variety of sources and sourcetypes.
-* Added replay timestamps which instead of randomly generating a timestamp for all timestamps found in a sample
-  will randomly generate the first timestamp and then model the future timestamps based on the seperation
-  between timestamps in the source sample file.  Includes support for specifying multiple output time formats
-  and input formats (through regex).  This along with CSV sample input files, allows us to basically take an
-  export from a Splunk instance and model it coming back into a new one with replaced timestamps and other tokens.
+  1. Output to Splunk's receivers/stream REST endpoint.  This allows for us to configure index, host, source and sourcetype from within the Eventgen's config file!
+  2. Legacy default of outputting to a spool file in $SPLUNK\_HOME/var/spool/splunk (or another directory configured for that particular sample).
+  3. Output to a rotating Log file.  This was added so that the file can be read by a Splunk forwarder but also be read by competing products for our competitive lab.
+  4. Output to Splunk Storm using Storm's REST input API.  Also allows host, source and sourcetype to specified in the config file.
+* Added CSV sample inputs to allow overriding Index, Host, Source and Sourcetype on a per-event basis.  With this, we can model complicated sets of data, like VMWare's, or model transactions which may take place across a variety of sources and sourcetypes.
+* Added replay timestamps which instead of randomly generating a timestamp for all timestamps found in a sample will randomly generate the first timestamp and then model the future timestamps based on the seperation between timestamps in the source sample file.  Includes support for specifying multiple output time formats and input formats (through regex).  This along with CSV sample input files, allows us to basically take an export from a Splunk instance and model it coming back into a new one with replaced timestamps and other tokens.
 * Added float and hex random replacement types.
-* Added rated random replacement types, which allow a random value to be generated and then rated by time of
-  day or day of week.
-* Allow the eventgen to be deployed as a Splunk app, as a scripted input inside another app, or run 
-  standalone from the command line (with caveats, see Deployment Options below).
+* Added rated random replacement types, which allow a random value to be generated and then rated by time of day or day of week.
+* Allow the eventgen to be deployed as a Splunk app, as a scripted input inside another app, or run standalone from the command line (with caveats, see Deployment Options below).
 * Wrote new threading code to ensure the Eventgen will stop properly when Splunk stops.
 * Completely rewrote the configuration code to make it much simpler to enhance the eventgen when needed.
 
 # Deployment Options
 
-This eventgen is designed to be deployed in a variety of different ways.  In general, you'll want to build your new eventgen configs in Standalone mode, as being inside Splunk requires us to restart Splunk for every iteration.  First, an overview of how it can be deployed and caveats to this:
+## Command Line
 
-## Standalone
-
-Running standalone, the eventgen will look for its configuration only in eventgen-standalone.conf found in the default and local directories found in the application home directory.  **It will not flatten these configurations, so the local file will completely override the default**.  It is recommended when deploying standalone, only write one configuration file in the local directory.  Standalone mode is primarily provided for developing new samples, as it allows very quick iteration when developing new configurations without having to restart Splunk after each change.  **Defaults are defined in the lib/eventgen\_defaults file in the [global] stanza**.  To start the eventgen, execute eventgen.py in the bin directory.
-
-In your app's eventgen.conf file, sample files for file and mvfile substitution should be referenced using a relative path, like: `../samples/<file>`.
+This revision of the Eventgen can be run by itself from a command line for testing.  This means you can simply run bin/eventgen.py and start seeing output, which is great for testing.  Please note to do this you'll want to set the SPLUNK\_HOME environment variable properly so your configurations will work.  The tutorials use relative paths to make it simpler, but production configurations should always reference from SPLUNK\_HOME.  **Command Line and Embedded Defaults are defined in the lib/eventgen\_defaults file in the [global] stanza**.
 
 ## Splunk App
 
