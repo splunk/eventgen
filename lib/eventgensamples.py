@@ -210,7 +210,10 @@ class Sample:
                 # 5/8/12 CS Added randomizeEvents config to randomize items from the file
                 # 5/27/12 CS Don't randomize unless we're raw
                 try:
-                    if self.randomizeEvents and self.sampletype == 'raw':
+                    # 7/30/12 CS Can't remember why I wouldn't allow randomize Events for CSV so commenting
+                    # this out and seeing what breaks
+                    #if self.randomizeEvents and self.sampletype == 'raw':
+                    if self.randomizeEvents:
                         logger.debug("Shuffling events for sample '%s' in app '%s'" \
                                         % (self.name, self.app))
                         random.shuffle(sampleLines)
