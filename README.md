@@ -62,4 +62,4 @@ There are a few things we haven't gotten around to yet that are in the plans:
 
 # Tutorial
 
-Please see our [README/Tutorial.md][Tutorial]
+Please see our [README/Tutorial.md](README/Tutorial.md)
