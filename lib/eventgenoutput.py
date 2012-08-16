@@ -82,7 +82,7 @@ class Output:
             self._fileMaxBytes = sample.fileMaxBytes
             self._fileBackupFiles = sample.fileBackupFiles
             
-            self._fileLogger = logging.getLogger('eventgen_realoutput')
+            self._fileLogger = logging.getLogger('eventgen_realoutput_'+self._file)
             formatter = logging.Formatter('%(message)s')
             handler = logging.handlers.RotatingFileHandler(filename=self._file, maxBytes=self._fileMaxBytes,
                                                             backupCount=self._fileBackupFiles)
