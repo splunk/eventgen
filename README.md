@@ -69,4 +69,4 @@ There are a few things we haven't gotten around to yet that are in the plans:
 
 # Tutorial
 
-Please see our [Tutorial in the README directory](https://github.com/coccyx/eventgen/blob/master/README/Tutoral.md).
+Please see our [Tutorial in the README directory](https://github.com/splunk/eventgen/blob/master/README/Tutoral.md).
