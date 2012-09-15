@@ -369,19 +369,19 @@ class Sample:
 
             timeDiffFrac = "%s.%s" % (timeDiff.seconds, timeDiff.microseconds)
             logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" \
-                        % (self.sample.name, self.sample.app, timeDiffFrac) )
+                        % (self.name, self.app, timeDiffFrac) )
 
             timeDiff = timeDelta2secs(timeDiff)
-            wholeIntervals = timeDiff / self.sample.interval
-            partialInterval = timeDiff % self.sample.interval
+            wholeIntervals = timeDiff / self.interval
+            partialInterval = timeDiff % self.interval
 
             if wholeIntervals > 1:
                 logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
-                            % (self.sample.name, self.sample.app, timeDiff, self.sample.interval) )
+                            % (self.name, self.app, timeDiff, self.interval) )
 
-            partialInterval = self.sample.interval - partialInterval
-            logger.debug("Generation of sample '%s' in app '%s' sleeping for %s seconds" \
-                        % (self.sample.name, self.sample.app, partialInterval) )
+            partialInterval = self.interval - partialInterval
+            return partialInterval
+
         else:
             logger.warn("Sample '%s' in app '%s' contains no data" % (self.name, self.app) )
         
