@@ -39,27 +39,10 @@ class Timer(threading.Thread):
             if not self.stopping:
                 if not self.interruptcatcher:
                     if self.countdown <= 0:
-                        startTime = datetime.datetime.now()
-                        self.sample.gen()
-                        endTime = datetime.datetime.now()
-                        timeDiff = endTime - startTime
+                        partialInterval = self.sample.gen()
 
-                        timeDiffFrac = "%s.%s" % (timeDiff.seconds, timeDiff.microseconds)
-                        logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" \
-                                    % (self.sample.name, self.sample.app, timeDiffFrac) )
-
-                        timeDiff = timeDelta2secs(timeDiff)
-                        wholeIntervals = timeDiff / self.sample.interval
-                        partialInterval = timeDiff % self.sample.interval
-
-                        if wholeIntervals > 1:
-                            logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
-                                        % (self.sample.name, self.sample.app, timeDiff, self.sample.interval) )
-
-                        partialInterval = self.sample.interval - partialInterval
                         logger.debug("Generation of sample '%s' in app '%s' sleeping for %s seconds" \
                                     % (self.sample.name, self.sample.app, partialInterval) )
-
                         self.countdown = partialInterval
                         ## Sleep for partial interval
                         time.sleep(self.time)
