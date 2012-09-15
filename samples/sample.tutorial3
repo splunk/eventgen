@@ -1,0 +1,4 @@
+index,host,source,sourcetype,_raw
+main,proxy.splunk.com,/var/log/proxy.log,proxy,"Sep 14 17:28:11:000 Connection inbound from 5.5.5.5 to 10.2.1.35 on 10.12.0.20 open"
+main,www.splunk.com,/var/log/httpd/access_log,access_custom,"2012-09-14 17:29:11:000 10.2.1.35 POST /playhistory/uploadhistory - 80 - 10.12.0.20 ""Mozilla/5.0 (Linux; U; Android 2.3.4; en-us; Sprint APX515CKT Build/GRJ22) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1"" 200 0 0 468 1488"
+main,proxy.splunk.com,/var/log/proxy.log,proxy,"Sep 14 17:30:11:000 Connection inbound from 5.5.5.5 to 10.2.1.35 on 10.12.0.20 closed"

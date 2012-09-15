@@ -82,8 +82,9 @@ class Sample:
     def __repr__(self):
         return self.__str__()
     
-    def gen(self):    
+    def gen(self):
         logger.debug("Generating sample '%s' in app '%s'" % (self.name, self.app))
+        startTime = datetime.datetime.now()
         
         # If this is the first time we're generating, setup out
         if self._out == None:
@@ -362,6 +363,25 @@ class Sample:
             logger.debug("Flushing output for sample '%s' in app '%s'" % (self.name, self.app))
             self._out.flush()
             sampleFH.close()
+
+            endTime = datetime.datetime.now()
+            timeDiff = endTime - startTime
+
+            timeDiffFrac = "%s.%s" % (timeDiff.seconds, timeDiff.microseconds)
+            logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" \
+                        % (self.sample.name, self.sample.app, timeDiffFrac) )
+
+            timeDiff = timeDelta2secs(timeDiff)
+            wholeIntervals = timeDiff / self.sample.interval
+            partialInterval = timeDiff % self.sample.interval
+
+            if wholeIntervals > 1:
+                logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
+                            % (self.sample.name, self.sample.app, timeDiff, self.sample.interval) )
+
+            partialInterval = self.sample.interval - partialInterval
+            logger.debug("Generation of sample '%s' in app '%s' sleeping for %s seconds" \
+                        % (self.sample.name, self.sample.app, partialInterval) )
         else:
             logger.warn("Sample '%s' in app '%s' contains no data" % (self.name, self.app) )
         

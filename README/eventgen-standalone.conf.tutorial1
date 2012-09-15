@@ -1,4 +1,4 @@
-[cisco.sample]
+[sample.tutorial1]
 interval = 15
 earliest = -15s
 latest = now

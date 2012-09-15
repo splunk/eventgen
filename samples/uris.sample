@@ -1,9 +1,5 @@
-GET /browse/search/$sartId$
-GET /browse/tracks/$trackId$
-POST /browse/artist/$artId$
-GET /browse/home
+GET /browse/search
+GET /browse/tracks
 POST /sync/createplaylist
-GET /sync/addtolibrary/$trackId$
 POST /playhistory/uploadhistory
-GET /auth/$mdn$
-GET /ads/showbanner
+POST /auth
