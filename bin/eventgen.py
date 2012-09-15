@@ -13,7 +13,6 @@ import time
 import datetime
 from select import select
 from eventgenconfig import Config
-from timeparser import timeDelta2secs
 
 class Timer(threading.Thread):
     time = None
@@ -44,6 +43,7 @@ class Timer(threading.Thread):
                         logger.debug("Generation of sample '%s' in app '%s' sleeping for %s seconds" \
                                     % (self.sample.name, self.sample.app, partialInterval) )
                         self.countdown = partialInterval
+
                         ## Sleep for partial interval
                         time.sleep(self.time)
                     else:
