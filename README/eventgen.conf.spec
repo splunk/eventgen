@@ -24,6 +24,7 @@ disabled = false
 spoolDir = $SPLUNK_HOME/var/spool/splunk
 spoolFile = <SAMPLE>
 breaker = [^\r\n\s]+
+mode = sample
 sampletype = raw
 interval = 60
 delay = 0
@@ -156,6 +157,10 @@ hostRegex = <hostRegex>
 ## EVENT GENERATION SETTINGS ##
 ###############################
 
+mode = sample | replay
+    * Default is sample, which will generate count (+/- rating) events every configured interval
+    * Replay will instead read the file and leak out events, replacing timestamps, 
+
 sampletype = raw | csv
     * Raw are raw events (default)
     * CSV are from an outputcsv or export from Splunk.
@@ -250,7 +255,8 @@ token.<n>.replacementType = static | timestamp | replaytimestamp | random | rate
       to the timestamp when we started processing the sample.  This allows for replaying events with a
       new timestamp but to look much like the original transaction.  Assumes replacement value is the same
       strptime format as the original token we're replacing, otherwise it will fail.  First timestamp will
-      be the value of earliest.
+      be the value of earliest.  NOT TO BE CONFUSED WITH REPLAY MODE.  Replay mode replays a whole file
+      with timing to look like the original file.  This will allow a single transaction to be replayed with some randomness.
     * For random, the token will be replaced with a type aware value (i.e. valid IPv4 Address).
     * For rated, the token will be replaced with a subset of random types (float, integer), which are
       rated by hourOfDayRate and dayOfWeekRate.

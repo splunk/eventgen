@@ -9,6 +9,7 @@ sys.path.append(path_prepend)
 
 import logging
 import threading
+import multiprocessing
 import time
 import datetime
 from select import select
@@ -40,12 +41,15 @@ class Timer(threading.Thread):
                     if self.countdown <= 0:
                         partialInterval = self.sample.gen()
 
-                        logger.debug("Generation of sample '%s' in app '%s' sleeping for %s seconds" \
+                        logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
                                     % (self.sample.name, self.sample.app, partialInterval) )
-                        self.countdown = partialInterval
+                        if self.sample.mode == 'sample':
+                            self.countdown = partialInterval
 
                         ## Sleep for partial interval
-                        time.sleep(self.time)
+                        if partialInterval > self.time:
+                            self.sample._out.flush(force=True)
+                        time.sleep(partialInterval)
                     else:
                         self.countdown -= self.time
                         time.sleep(self.time)

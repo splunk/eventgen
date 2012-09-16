@@ -1,5 +1,5 @@
-from __future__ import division
-import os
+from __future__ import division, with_statement
+import os, sys
 import logging
 import pprint
 import random
@@ -23,6 +23,7 @@ class Sample:
     spoolFile = None
     breaker = None
     sampletype = None
+    mode = None
     interval = None
     delay = None
     count = None
@@ -59,6 +60,7 @@ class Sample:
     _lockedSettings = None
     _priority = None
     _origName = None
+    _lastts = None
     
     def __init__(self, name):
         # Logger already setup by config, just get an instance
@@ -68,6 +70,9 @@ class Sample:
         self.name = name
         self.tokens = [ ]
         self._lockedSettings = [ ]
+
+        self._currentevent = 0
+        self._rpevents = None
         
         # Import config
         from eventgenconfig import Config
@@ -114,9 +119,40 @@ class Sample:
                 self._sampleDict = copy.deepcopy(sampleDict)
                 self._sampleLines = copy.deepcopy(sampleLines)
             else:
-                sampleDict = copy.deepcopy(self._sampleDict)
-                sampleLines = copy.deepcopy(self._sampleLines)
+                # Possible regression, but it's inefficient to keep copying the array structure
+                # over and over
+                # sampleDict = copy.deepcopy(self._sampleDict)
+                # sampleLines = copy.deepcopy(self._sampleLines)
+                sampleDict = self._sampleDict
+                sampleLines = self._sampleLines
+
+        # Check to see if this is the first time we've run, or if we're at the end of the file
+        # and we're running replay.  If so, we need to parse the whole file and/or setup our counters
+        if self._rpevents == None and self.mode == 'replay':
+            if self.breaker != self._c.breaker:
+                lines = '\n'.join(sampleLines)
+                breaker = re.search(self.breaker, lines)
+                currentchar = 0
+                while breaker:
+                    self._rpevents.append(lines[currentchar:breaker.start(0)])
+                    lines = lines[breaker.end(0):]
+                    currentchar += breaker.start(0)
+                    breaker = re.search(self.breaker, lines)
+            else:
+                self._rpevents = sampleLines
+            self._currentevent = 0
         
+        # If we are replaying then we need to set the current sampleLines to the event
+        # we're currently on
+        if self.mode == 'replay':
+            sampleLines = [ self._rpevents[self._currentevent] ]
+            self._currentevent += 1
+            # If we roll over the max number of lines, roll over the counter and start over
+            if self._currentevent >= len(self._rpevents):
+                logger.debug("At end of the sample file, starting replay from the top")
+                self._currentevent = 0
+                self._lastts = None
+
         # Ensure all lines have a newline
         for i in xrange(0, len(sampleLines)):
             if sampleLines[i][-1] != '\n':
@@ -139,12 +175,12 @@ class Sample:
 
         if len(sampleLines) > 0:
             count = self.count
-            if self.count == 0:
+            if self.count == 0 and self.mode == 'sample':
                 logger.debug("Count %s specified as default for sample '%s' in app '%s'; adjusting count to sample length %s; using default breaker" \
                                 % (self.count, self.name, self.app, len(sampleLines)) )
                 count = len(sampleLines)
                 self.breaker = self._c.breaker
-            elif self.count > 0:
+            elif self.count > 0 or self.mode == 'replay':
                 
                 # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
                 # hourOfDay, dayOfWeek and randomizeCount configs
@@ -190,7 +226,8 @@ class Sample:
                         stack =  traceback.format_exc()
                         logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
                 count = int(round(count * rateFactor, 0))
-                logger.info("Original count: %s Rated count: %s Rate factor: %s" % (self.count, count, rateFactor))
+                if rateFactor != 1.0:
+                    logger.info("Original count: %s Rated count: %s Rate factor: %s" % (self.count, count, rateFactor))
 
             try:
                 breakerRE = re.compile(self.breaker)
@@ -300,6 +337,24 @@ class Sample:
                             % (self.index, self.host, self.source, self.sourcetype))
                 self._out.refreshconfig(self)
                 
+            # Find interval before we muck with the event but after we've done event breaking
+            if self.mode == 'replay':
+                logger.debug("Finding timestamp to compute interval for events")
+                if self._lastts == None:
+                    self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent])
+                if (self._currentevent+1) < len(self._rpevents):
+                    nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1])
+                else:
+                    return 0
+
+                timeDiff = nextts - self._lastts
+                if timeDiff.days >= 0 and timeDiff.seconds >= 0 and timeDiff.microseconds >= 0:
+                    partialInterval = float("%d.%06d" % (timeDiff.seconds, timeDiff.microseconds))
+                else:
+                    partialInterval = 0
+                logger.debug("Setting partialInterval for replay mode: %s %s" % (timeDiff, partialInterval))
+                self._lastts = nextts
+
             ## Iterate events
             for x in range(0, len(events)):
                 event = events[x]
@@ -329,16 +384,16 @@ class Sample:
                                                          sampleDict[lineno]['host'] != self.host or \
                                                          sampleDict[lineno]['source'] != self.source or \
                                                          sampleDict[lineno]['sourcetype'] != self.sourcetype):
-                             # Flush events before we change all the various parameters
-                             logger.debug("Sampletype CSV with bundlelines, parameters changed at event %s.  Flushing output." % lineno)
-                             self._out.flush()
-                             self.index = sampleDict[lineno]['index']
-                             self.host = sampleDict[lineno]['host']
-                             self.source = sampleDict[lineno]['source']
-                             self.sourcetype = sampleDict[lineno]['sourcetype']
-                             logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                            # Flush events before we change all the various parameters
+                            logger.debug("Sampletype CSV with bundlelines, parameters changed at event %s.  Flushing output." % lineno)
+                            self._out.flush()
+                            self.index = sampleDict[lineno]['index']
+                            self.host = sampleDict[lineno]['host']
+                            self.source = sampleDict[lineno]['source']
+                            self.sourcetype = sampleDict[lineno]['sourcetype']
+                            logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                                          % (self.index, self.host, self.source, self.sourcetype))
-                             self._out.refreshconfig(self)
+                            self._out.refreshconfig(self)
                         self._out.send(lines[lineno])
                     logger.debug("Completed bundlelines event.  Flushing.")
                     self._out.flush()
@@ -360,28 +415,28 @@ class Sample:
                     self._out.send(event)
 
             ## Close file handles
-            logger.debug("Flushing output for sample '%s' in app '%s'" % (self.name, self.app))
             self._out.flush()
             sampleFH.close()
 
             endTime = datetime.datetime.now()
             timeDiff = endTime - startTime
 
-            timeDiffFrac = "%s.%s" % (timeDiff.seconds, timeDiff.microseconds)
+            timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
             logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" \
                         % (self.name, self.app, timeDiffFrac) )
 
-            timeDiff = timeDelta2secs(timeDiff)
-            wholeIntervals = timeDiff / self.interval
-            partialInterval = timeDiff % self.interval
+            if self.mode == 'sample':
+                timeDiff = timeDelta2secs(timeDiff)
+                wholeIntervals = timeDiff / self.interval
+                partialInterval = timeDiff % self.interval
 
-            if wholeIntervals > 1:
-                logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
-                            % (self.name, self.app, timeDiff, self.interval) )
+                if wholeIntervals > 1:
+                    logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
+                                % (self.name, self.app, timeDiff, self.interval) )
 
-            partialInterval = self.interval - partialInterval
+                partialInterval = self.interval - partialInterval
+            
             return partialInterval
-
         else:
             logger.warn("Sample '%s' in app '%s' contains no data" % (self.name, self.app) )
         
@@ -417,7 +472,31 @@ class Sample:
         path = os.sep.join(path)
 
         return path
-        
+
+    def _getTSFromEvent(self, event):
+        currentts = None
+        formats = [ ]
+        for token in self.tokens:
+            try:
+                formats.append(token.token)
+                # logger.debug("Searching for token '%s' in event '%s'" % (token.token, event))
+                results = re.search(token.token, event)
+                if results:
+                    timeformat = token.replacement
+                    timestr = event[results.start(0):results.end(0)]
+                    currentts = datetime.datetime.strptime(timestr, timeformat)
+                    logger.debug("Event '%s' Timeformat '%s' currentts '%s'" % (timestr, timeformat, currentts))
+                    if type(currentts) == datetime.datetime:
+                        break
+            except ValueError:
+                logger.debug("Time found but TS parse failed.  Event '%s' Timeformat '%s' currentts '%s'" % (timestr, timeformat, currentts))
+        if type(currentts) != datetime.datetime:
+            # Total fail
+            raise ValueError("Can't find regex format in '%s' for this timestamp '%s'." % (formats, event))
+        # Check to make sure we parsed a year
+        if currentts.year == 1900:
+            currentts = currentts.replace(year=datetime.datetime.now().year)
+        return currentts
         
 class Token:
     token = None
