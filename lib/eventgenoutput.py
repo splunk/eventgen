@@ -1,4 +1,5 @@
 from __future__ import division
+import os, sys
 import logging
 import logging.handlers
 import httplib, httplib2
@@ -8,11 +9,22 @@ import base64
 from xml.dom import minidom
 import time
 from collections import deque
-import os
 import shutil
 import pprint
 import base64
-    
+import threading
+
+class Worker(threading.Thread):
+    func = None
+
+    def __init__(self, func):
+        self.func = func
+        threading.Thread.__init__(self)
+
+    def run(self):
+        self.func()
+        sys.exit(0)
+
 class Output:
     """Output events, abstracting output method"""
     _app = None
@@ -43,6 +55,7 @@ class Output:
     _hostRegex = None
     _projectID = None
     _accessToken = None
+    _executor = None
     
     validOutputModes = ['spool', 'file', 'splunkstream']
     validSplunkMethods = ['http', 'https']
@@ -158,7 +171,7 @@ class Output:
     def send(self, msg):
         """Queues a message for output to configured outputs"""
         self._queue.append(msg)
-        if len(self._queue) > 10000:
+        if len(self._queue) > 1000:
             self.flush()
             
     def refreshconfig(self, sample):
@@ -172,8 +185,17 @@ class Output:
             logger.debug("Refreshed config.  Set Index '%s': Source '%s': Sourcetype: '%s' Host: '%s' HostRegex: '%s'" % \
                         (self._index, self._source, self._sourcetype, self._host, self._hostRegex))
         
-    def flush(self):
+    def flush(self, force=False):
         """Flushes output from the queue out to the specified output"""
+        # Force a flush with a queue bigger than 1000, or unless forced
+        if len(self._queue) >= 1000 or force:
+            w = Worker(self._flush)
+            w.start()
+
+    # 9/15/12 CS Renaming to internal function and wrapping with a future
+    def _flush(self):
+        """Internal function which does the real flush work"""
+        logger.debug("Flushing output for sample '%s' in app '%s'" % (self._sample, self._app))
         if self._outputMode == 'spool':
             nowtime = int(time.mktime(time.gmtime()))
             workingfile = str(nowtime) + '-' + self._sample + '.part'

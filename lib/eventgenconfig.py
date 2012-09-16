@@ -69,18 +69,20 @@ class Config:
     sourcetype = None
     projectID = None
     accessToken = None
+    mode = None
 
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
                     'delay', 'count', 'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate', 
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
-                    'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken']
+                    'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile']
     _validOutputModes = ['spool', 'file', 'splunkstream', 'stormstream']
     _validSplunkMethods = ['http', 'https']
     _validSampleTypes = ['raw', 'csv']
+    _validModes = ['sample', 'replay']
     _intSettings = ['interval', 'count', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort']
     _floatSettings = ['randomizeCount', 'delay']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines']
@@ -89,7 +91,7 @@ class Config:
                             'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate', 
                             'randomizeCount', 'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles',
                             'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
-                            'projectID', 'accessToken']
+                            'projectID', 'accessToken', 'mode']
     
     def __init__(self):
         """Setup Config object.  Sets up Logging and path related variables."""
@@ -367,8 +369,21 @@ class Config:
                     newtokens.extend(copy.deepcopy(overridesample.tokens))
                     s.tokens = newtokens
         
+        # We've added replay mode, so lets loop through the samples again and set the earliest and latest
+        # settings for any samples that were set to replay mode
+        for s in tempsamples:
+            if s.mode == 'replay':
+                logger.debug("Setting defaults for replay samples")
+                s.earliest = 'now'
+                s.latest = 'now'
+                s.count = 1
+                s.randomizeCount = None
+                s.hourOfDayRate = None
+                s.dayOfWeekRate = None
+
         self.samples = tempsamples
         self._confDict = None
+
         logger.debug("Finished parsing.  Config str:\n%s" % self)
                 
             
@@ -435,6 +450,10 @@ class Config:
                 if not value in self._validSampleTypes:
                     logger.error("sampletype is invalid in stanza '%s'" % stanza)
                     raise ValueError("sampletype is invalid in stanza '%s'" % stanza)
+            elif key == 'mode':
+                if not value in self._validModes:
+                    logger.error("mode is invalid in stanza '%s'" % stanza)
+                    raise ValueError("mode is invalid in stanza '%s'" % stanza)
         else:
             # Notifying only if the setting isn't valid and continuing on
             # This will allow future settings to be added and be backwards compatible
