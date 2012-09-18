@@ -83,7 +83,7 @@ class Sample:
         self._currentevent = 0
         self._rpevents = None
         self._backfilldone = False
-        self._timeSinceSleep = 0
+        self._timeSinceSleep = datetime.timedelta()
         
         # Import config
         from eventgenconfig import Config
