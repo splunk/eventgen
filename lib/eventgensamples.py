@@ -69,6 +69,7 @@ class Sample:
     _backfillts = None
     _origEarliest = None
     _origLatest = None
+    _timeSinceSleep = None
     
     def __init__(self, name):
         # Logger already setup by config, just get an instance
@@ -82,6 +83,7 @@ class Sample:
         self._currentevent = 0
         self._rpevents = None
         self._backfilldone = False
+        self._timeSinceSleep = 0
         
         # Import config
         from eventgenconfig import Config
@@ -507,8 +509,12 @@ class Sample:
                 self._backfillts += datetime.timedelta(seconds=incsecs, microseconds=incmicrosecs)
                 partialInterval = 0
 
-            logger.info("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
-                        % (self.name, self.app, timeDiffFrac, partialInterval) )
+            if partialInterval > 0:
+                logger.info("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
+                            % (self.name, self.app, self._timeSinceSleep, partialInterval) )
+                self._timeSinceSleep = 0
+            else:
+                self._timeSinceSleep += partialInterval
             return partialInterval
         else:
             logger.warn("Sample '%s' in app '%s' contains no data" % (self.name, self.app) )

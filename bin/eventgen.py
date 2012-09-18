@@ -41,22 +41,26 @@ class Timer(threading.Thread):
                     if self.countdown <= 0:
                         partialInterval = self.sample.gen()
 
-                        if self.sample.mode == 'sample':
-                            self.countdown = partialInterval
+                        self.countdown = partialInterval
 
                         ## Sleep for partial interval
+                        # If we're going to sleep for longer than the default check for kill interval
+                        # go ahead and flush output so we're not just waiting
                         if partialInterval > self.time:
                             self.sample._out.flush(force=True)
-                        if self.sample.mode == 'replay' or \
-                            (self.sample.backfill != None and not self.sample._backfilldone):
-                            logger.debug("Replay or Backfill Mode Generation of sample '%s' in app '%s' sleeping for %f seconds" \
-                                        % (self.sample.name, self.sample.app, partialInterval) )
-                            time.sleep(partialInterval)
-                        else:
+
+                            # Make sure that we're sleeping an accurate amount of time, including the
+                            # partial seconds.  After the first sleep, we'll sleep in increments of
+                            # self.time to make sure we're checking for kill signals.
                             sleepTime = self.time + (partialInterval % self.time)
-                            logger.debug("Sample Mode Generation of sample '%s' in app '%s' sleeping for %f seconds" \
-                                        % (self.sample.name, self.sample.app, sleepTime) )
-                            time.sleep(sleepTime)
+                            self.countdown -= sleepTime
+                        else:
+                            sleepTime = partialInterval
+                            self.countdown = 0
+                          
+                        logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
+                                    % (self.sample.name, self.sample.app, sleepTime) )    
+                        time.sleep(sleepTime)
                     else:
                         self.countdown -= self.time
                         time.sleep(self.time)
