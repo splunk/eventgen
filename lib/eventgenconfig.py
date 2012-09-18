@@ -104,7 +104,7 @@ class Config:
             # Setup logger
             logger = logging.getLogger('eventgen')
             logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
-            logger.setLevel(logging.DEBUG)
+            logger.setLevel(logging.INFO)
             formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
             streamHandler = logging.StreamHandler()
             streamHandler.setFormatter(formatter)
