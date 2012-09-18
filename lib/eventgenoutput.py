@@ -209,47 +209,46 @@ class Output:
     def flush(self, force=False):
         """Flushes output from the queue out to the specified output"""
         # Force a flush with a queue bigger than 1000, or unless forced
-        if ((len(self._queue) >= 1000 or force) and self._outputMode in ('splunkstream', 'stormstream')) \
-                or len(self._queue) > 10:
-            if self._outputMode in ('splunkstream', 'stormstream'):
-                # For faster processing, we need to break these up by source combos
-                # so they'll each get their own thread.
-                # Fixes a bug where we're losing source and sourcetype with bundlelines type transactions
-                queues = { }
-                for row in self._queue:
-                    if not row['source'] in queues:
-                        queues[row['source']] = deque([])
+        if ((len(self._queue) >= 1000 or force) and self._outputMode in ('splunkstream', 'stormstream')):
+            # For faster processing, we need to break these up by source combos
+            # so they'll each get their own thread.
+            # Fixes a bug where we're losing source and sourcetype with bundlelines type transactions
+            queues = { }
+            for row in self._queue:
+                if not row['source'] in queues:
+                    queues[row['source']] = deque([])
 
-                logger.debug("Queues setup: %s" % pprint.pformat(queues))
-                m = self._queue.popleft()
-                while m:
-                    queues[m['source']].append(m)
-                    try:
-                        m = self._queue.popleft()
-                    except IndexError:
-                        m = False
+            logger.debug("Queues setup: %s" % pprint.pformat(queues))
+            m = self._queue.popleft()
+            while m:
+                queues[m['source']].append(m)
+                try:
+                    m = self._queue.popleft()
+                except IndexError:
+                    m = False
 
-                logger.debug("Creating workers, limited to %s" % MAX_WORKERS)
-                for k, v in queues.items():
-                    # Trying to limit to MAX_WORKERS
-                    w = Worker(self._flush, v)
-                    
-                    while len(self._workers) > MAX_WORKERS:
-                        logger.debug("Waiting for workers")
-                        for i in xrange(0, len(self._workers)):
-                            if not self._workers[i].running:
-                                del self._workers[i]
-                                break
-                        time.sleep(0.5)
-                    self._workers.append(w)
-                    
-                    w.start()
-
-            else:
-                q = copy.deepcopy(self._queue)
-                self._queue.clear()
-                w = Worker(self._flush, q)
+            logger.debug("Creating workers, limited to %s" % MAX_WORKERS)
+            for k, v in queues.items():
+                # Trying to limit to MAX_WORKERS
+                w = Worker(self._flush, v)
+                
+                while len(self._workers) > MAX_WORKERS:
+                    logger.debug("Waiting for workers")
+                    for i in xrange(0, len(self._workers)):
+                        if not self._workers[i].running:
+                            del self._workers[i]
+                            break
+                    time.sleep(0.5)
+                self._workers.append(w)
+                
                 w.start()
+
+        else:
+            q = copy.deepcopy(self._queue)
+            self._queue.clear()
+            self._flush(q)
+            # w = Worker(self._flush, q)
+            # w.start()
 
     # 9/15/12 CS Renaming to internal function and wrapping with a future
     def _flush(self, queue):
@@ -260,12 +259,16 @@ class Output:
             # So therefore, look at the first message in the queue, set based on that
             # and move on
             metamsg = queue.popleft()
-            index = metamsg['index']
-            source = metamsg['source']
-            sourcetype = metamsg['sourcetype']
-            host = metamsg['host']
-            hostRegex = metamsg['hostRegex']
             msg = metamsg['_raw']
+            try:
+                index = metamsg['index']
+                source = metamsg['source']
+                sourcetype = metamsg['sourcetype']
+                host = metamsg['host']
+                hostRegex = metamsg['hostRegex']
+            except KeyError:
+                pass
+                
             logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample, self._app, self._source))
 
             if self._outputMode == 'spool':
