@@ -254,6 +254,7 @@ class Output:
     # 9/15/12 CS Renaming to internal function and wrapping with a future
     def _flush(self, queue):
         """Internal function which does the real flush work"""
+        splunkhttp = None
         if len(queue) > 0:
             streamout = ""
             # SHould now be getting a different output thread for each source
@@ -344,8 +345,9 @@ class Output:
                 logger.error("File '%s' missing" % self._workingFilePath)
         elif self._outputMode == 'splunkstream':
             #logger.debug("Closing self._splunkhttp connection")
-            splunkhttp.close()
-            splunkhttp = None
+            if splunkhttp != None:
+                splunkhttp.close()
+                splunkhttp = None
         elif self._outputMode == 'stormstream':
             if len(streamout) > 0:
                 try:
