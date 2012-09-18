@@ -190,7 +190,9 @@ class Output:
         else:
             self._queue.append({'_raw': msg})
 
-        if len(self._queue) > 1000:
+        if self._outputMode in ('splunkstream', 'stormstream') and len(self._queue) > 1000:
+            self.flush()
+        else len(self._queue) > 10:
             self.flush()
             
     def refreshconfig(self, sample):
