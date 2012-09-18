@@ -488,8 +488,6 @@ class Sample:
             endTime = datetime.datetime.now()
             timeDiff = endTime - startTime
 
-            timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
-
             if self.mode == 'sample':
                 timeDiff = timeDelta2secs(timeDiff)
                 wholeIntervals = timeDiff / self.interval
@@ -510,11 +508,12 @@ class Sample:
                 partialInterval = 0
 
             if partialInterval > 0:
+                timeDiffFrac = "%d.%06d" % (self._timeSinceSleep.seconds, self._timeSinceSleep.microseconds)
                 logger.info("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
-                            % (self.name, self.app, self._timeSinceSleep, partialInterval) )
+                            % (self.name, self.app, timeDiffFrac, partialInterval) )
                 self._timeSinceSleep = 0
             else:
-                self._timeSinceSleep += partialInterval
+                self._timeSinceSleep += timeDiff
             return partialInterval
         else:
             logger.warn("Sample '%s' in app '%s' contains no data" % (self.name, self.app) )
