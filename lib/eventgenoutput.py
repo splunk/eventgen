@@ -209,7 +209,7 @@ class Output:
     def flush(self, force=False):
         """Flushes output from the queue out to the specified output"""
         # Force a flush with a queue bigger than 1000, or unless forced
-        if ((len(self._queue) >= 1000 or force) and self._outputMode in ('splunkstream', 'stormstream'))
+        if ((len(self._queue) >= 1000 or force) and self._outputMode in ('splunkstream', 'stormstream')) \
                 or len.self_queue > 10:
             if self._outputMode in ('splunkstream', 'stormstream'):
                 # For faster processing, we need to break these up by source combos
