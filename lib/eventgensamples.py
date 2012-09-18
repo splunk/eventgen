@@ -487,8 +487,6 @@ class Sample:
             timeDiff = endTime - startTime
 
             timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
-            logger.info("Generation of sample '%s' in app '%s' completed in %s seconds" \
-                        % (self.name, self.app, timeDiffFrac) )
 
             if self.mode == 'sample':
                 timeDiff = timeDelta2secs(timeDiff)
@@ -509,6 +507,8 @@ class Sample:
                 self._backfillts += datetime.timedelta(seconds=incsecs, microseconds=incmicrosecs)
                 partialInterval = 0
 
+            logger.info("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
+                        % (self.name, self.app, timeDiffFrac, partialInterval) )
             return partialInterval
         else:
             logger.warn("Sample '%s' in app '%s' contains no data" % (self.name, self.app) )
