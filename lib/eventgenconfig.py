@@ -70,13 +70,16 @@ class Config:
     projectID = None
     accessToken = None
     mode = None
+    backfill = None
+    backfillSearch = None
 
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
                     'delay', 'count', 'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate', 
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
-                    'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode']
+                    'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
+                    'backfill', 'backfillSearch']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile']
     _validOutputModes = ['spool', 'file', 'splunkstream', 'stormstream']

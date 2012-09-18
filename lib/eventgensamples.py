@@ -10,6 +10,9 @@ import json
 import copy
 from eventgenoutput import Output
 from timeparser import timeParser, timeDelta2secs
+import httplib2, urllib
+from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 
 class Sample:
     # Required fields for Sample
@@ -51,6 +54,8 @@ class Sample:
     tokens = None
     projectID = None
     accessToken = None
+    backfill = None
+    backfillSearch = None
     
     # Internal fields
     _c = None
@@ -61,6 +66,9 @@ class Sample:
     _priority = None
     _origName = None
     _lastts = None
+    _backfillts = None
+    _origEarliest = None
+    _origLatest = None
     
     def __init__(self, name):
         # Logger already setup by config, just get an instance
@@ -73,6 +81,7 @@ class Sample:
 
         self._currentevent = 0
         self._rpevents = None
+        self._backfilldone = False
         
         # Import config
         from eventgenconfig import Config
@@ -95,6 +104,50 @@ class Sample:
         if self._out == None:
             logger.debug("Setting up Output class for sample '%s' in app '%s'" % (self.name, self.app))
             self._out = Output(self)
+
+        # Setup initial backfillts
+        if self._backfillts == None and self.backfill != None and not self._backfilldone:
+            logger.info("Setting up backfill of %s" % self.backfill)
+            self._backfillts = timeParser(self.backfill)
+            self._origEarliest = self.earliest
+            self._origLatest = self.latest
+            if self._out._outputMode == "splunkstream" and self.backfillSearch != None:
+                if not self.backfillSearch.startswith('search'):
+                    self.backfillSearch = 'search ' + self.backfillSearch
+                self.backfillSearch += '| head 1 | table _time'
+
+                logger.debug("Searching Splunk with search '%s' with sessionKey '%s'" % (self.backfillSearch, self._out._c.sessionKey))
+
+                results = httplib2.Http(disable_ssl_certificate_validation=True).request(\
+                            self._out._splunkUrl + '/services/search/jobs',
+                            'POST', headers={'Authorization': 'Splunk %s' % self._out._c.sessionKey}, \
+                            body=urllib.urlencode({'search': self.backfillSearch,
+                                                    'earliest_time': self.backfill,
+                                                    'exec_mode': 'oneshot'}))[1]
+                try:
+                    temptime = minidom.parseString(results).getElementsByTagName('text')[0].childNodes[0].nodeValue
+                    if len(temptime) > 0:
+                        temptime = '-'.join(temptime.split('-')[0:3])
+                    self._backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
+                    logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
+                except ExpatError: 
+                    pass
+
+        # Override earliest and latest during backfill until we're at current time
+        if self.backfill != None and not self._backfilldone:
+            if self._backfillts >= datetime.datetime.now():
+                logger.info("Backfill complete")
+                self._backfilldone = True
+                self.earliest = self._origEarliest
+                self.latest = self._origLatest
+            else:
+                logger.debug("Still backfilling.  Currently at %s" % self._backfillts)
+                self.earliest = datetime.datetime.strftime((self._backfillts - datetime.timedelta(seconds=self.interval)), \
+                                                            "%Y-%m-%d %H:%M:%S.%f")
+                self.latest = datetime.datetime.strftime(self._backfillts, "%Y-%m-%d %H:%M:%S.%f")
+                # if not self.mode == 'replay':
+                #     self._backfillts += datetime.timedelta(seconds=self.interval)
+
         
         logger.debug("Opening sample '%s' in app '%s'" % (self.name, self.app) )
         sampleFH = open(self.filePath, 'rU')
@@ -119,12 +172,17 @@ class Sample:
                 self._sampleDict = copy.deepcopy(sampleDict)
                 self._sampleLines = copy.deepcopy(sampleLines)
             else:
-                # Possible regression, but it's inefficient to keep copying the array structure
-                # over and over
-                # sampleDict = copy.deepcopy(self._sampleDict)
-                # sampleLines = copy.deepcopy(self._sampleLines)
-                sampleDict = self._sampleDict
-                sampleLines = self._sampleLines
+                # If we're set to bundlelines, we'll modify sampleLines regularly.
+                # Since lists in python are referenced rather than copied, we
+                # need to make a fresh copy every time if we're bundlelines.
+                # If not, just used the cached copy, we won't mess with it.
+                if not self.bundlelines:
+                    sampleDict = self._sampleDict
+                    sampleLines = self._sampleLines
+                else:
+                    sampleDict = copy.deepcopy(self._sampleDict)
+                    sampleLines = copy.deepcopy(self._sampleLines)
+
 
         # Check to see if this is the first time we've run, or if we're at the end of the file
         # and we're running replay.  If so, we need to parse the whole file and/or setup our counters
@@ -203,7 +261,10 @@ class Sample:
                         logger.error("Randomize count failed.  Stacktrace %s" % stack)
                 if type(self.hourOfDayRate) == dict:
                     try:
-                        now = datetime.datetime.now()
+                        if self.backfill != None and not self._backfilldone:
+                            now = self._backfillts
+                        else:
+                            now = datetime.datetime.now()
                         rate = self.hourOfDayRate[str(now.hour)]
                         logger.debug("hourOfDayRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
@@ -213,7 +274,11 @@ class Sample:
                         logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
                 if type(self.dayOfWeekRate) == dict:
                     try:
-                        weekday = datetime.date.weekday(datetime.datetime.now())
+                        if self.backfill != None and not self._backfilldone:
+                            now = self._backfillts
+                        else:
+                            now = datetime.datetime.now()
+                        weekday = datetime.date.weekday(now)
                         if weekday == 6:
                             weekday = 0
                         else:
@@ -436,6 +501,14 @@ class Sample:
 
                 partialInterval = self.interval - partialInterval
             
+            # No rest for the wicked!  Or while we're doing backfill
+            if self.backfill != None and not self._backfilldone:
+                # Since we would be sleeping, increment the timestamp by the amount of time we're sleeping
+                incsecs = round(partialInterval / 1, 0)
+                incmicrosecs = partialInterval % 1
+                self._backfillts += datetime.timedelta(seconds=incsecs, microseconds=incmicrosecs)
+                partialInterval = 0
+
             return partialInterval
         else:
             logger.warn("Sample '%s' in app '%s' contains no data" % (self.name, self.app) )

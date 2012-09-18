@@ -13,16 +13,28 @@ import shutil
 import pprint
 import base64
 import threading
+import copy
+
+MAX_WORKERS = 5
 
 class Worker(threading.Thread):
     func = None
+    queue = None
+    running = None
 
-    def __init__(self, func):
+    def __init__(self, func, queue):
         self.func = func
+        self.queue = queue
+        self.running = False
         threading.Thread.__init__(self)
 
     def run(self):
-        self.func()
+        self.running = True
+        try:
+            self.func(self.queue)
+        except:
+            self.running = False
+        self.running = False
         sys.exit(0)
 
 class Output:
@@ -55,7 +67,7 @@ class Output:
     _hostRegex = None
     _projectID = None
     _accessToken = None
-    _executor = None
+    _workers = None
     
     validOutputModes = ['spool', 'file', 'splunkstream']
     validSplunkMethods = ['http', 'https']
@@ -71,6 +83,7 @@ class Output:
         self._outputMode = sample.outputMode
         
         self._queue = deque([])
+        self._workers = [ ]
         
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
@@ -170,7 +183,9 @@ class Output:
             
     def send(self, msg):
         """Queues a message for output to configured outputs"""
-        self._queue.append(msg)
+        self._queue.append({'_raw': msg, 'index': self._index,
+                            'source': self._source, 'sourcetype': self._sourcetype,
+                            'host': self._host, 'hostRegex': self._hostRegex})
         if len(self._queue) > 1000:
             self.flush()
             
@@ -189,52 +204,99 @@ class Output:
         """Flushes output from the queue out to the specified output"""
         # Force a flush with a queue bigger than 1000, or unless forced
         if len(self._queue) >= 1000 or force:
-            w = Worker(self._flush)
-            w.start()
+            if self._outputMode in ('splunkstream', 'stormstream'):
+                # For faster processing, we need to break these up by source combos
+                # so they'll each get their own thread.
+                # Fixes a bug where we're losing source and sourcetype with bundlelines type transactions
+                queues = { }
+                for row in self._queue:
+                    if not row['source'] in queues:
+                        queues[row['source']] = deque([])
+
+                logger.debug("Queues setup: %s" % pprint.pformat(queues))
+                m = self._queue.popleft()
+                while m:
+                    queues[m['source']].append(m)
+                    try:
+                        m = self._queue.popleft()
+                    except IndexError:
+                        m = False
+
+                logger.debug("Creating workers, limited to %s" % MAX_WORKERS)
+                for k, v in queues.items():
+                    # Trying to limit to MAX_WORKERS
+                    w = Worker(self._flush, v)
+                    
+                    while len(self._workers) > MAX_WORKERS:
+                        logger.debug("Waiting for workers")
+                        for i in xrange(0, len(self._workers)):
+                            if not self._workers[i].running:
+                                del self._workers[i]
+                                break
+                        time.sleep(0.5)
+                    self._workers.append(w)
+                    
+                    w.start()
+
+            else:
+                q = copy.deepcopy(self._queue)
+                self._queue.clear()
+                w = Worker(self._flush, q)
+                w.start()
 
     # 9/15/12 CS Renaming to internal function and wrapping with a future
-    def _flush(self):
+    def _flush(self, queue):
         """Internal function which does the real flush work"""
-        logger.debug("Flushing output for sample '%s' in app '%s'" % (self._sample, self._app))
-        if self._outputMode == 'spool':
-            nowtime = int(time.mktime(time.gmtime()))
-            workingfile = str(nowtime) + '-' + self._sample + '.part'
-            self._workingFilePath = os.path.join(self._c.greatgrandparentdir, self._app, 'samples', workingfile)
-            logger.debug("Creating working file '%s' for sample '%s' in app '%s'" % (workingfile, self._sample, self._app))
-            self._workingFH = open(self._workingFilePath, 'w')
-        elif self._outputMode == 'splunkstream':
+        if len(queue) > 0:
+            streamout = ""
+            # SHould now be getting a different output thread for each source
+            # So therefore, look at the first message in the queue, set based on that
+            # and move on
+            metamsg = queue.popleft()
+            index = metamsg['index']
+            source = metamsg['source']
+            sourcetype = metamsg['sourcetype']
+            host = metamsg['host']
+            hostRegex = metamsg['hostRegex']
+            msg = metamsg['_raw']
+            logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample, self._app, self._source))
+
+            if self._outputMode == 'spool':
+                nowtime = int(time.mktime(time.gmtime()))
+                workingfile = str(nowtime) + '-' + self._sample + '.part'
+                self._workingFilePath = os.path.join(self._c.greatgrandparentdir, self._app, 'samples', workingfile)
+                logger.debug("Creating working file '%s' for sample '%s' in app '%s'" % (workingfile, self._sample, self._app))
+                self._workingFH = open(self._workingFilePath, 'w')
+            elif self._outputMode == 'splunkstream':
+                try:
+                    if self._splunkMethod == 'https':
+                        connmethod = httplib.HTTPSConnection
+                    else:
+                        connmethod = httplib.HTTPConnection
+                    splunkhttp = connmethod(self._splunkHost, self._splunkPort)
+                    splunkhttp.connect()
+                    urlparms = [ ]
+                    if index != None:
+                        urlparms.append(('index', index))
+                    if source != None:
+                        urlparms.append(('source', source))
+                    if sourcetype != None:
+                        urlparms.append(('sourcetype', sourcetype))
+                    if hostRegex != None:
+                        urlparms.append(('host_regex', hostRegex))
+                    elif host != None:
+                        urlparms.append(('host', host))
+                    url = '/services/receivers/stream?%s' % (urllib.urlencode(urlparms))
+                    splunkhttp.putrequest("POST", url)
+                    splunkhttp.putheader("Authorization", "Splunk %s" % self._c.sessionKey)
+                    splunkhttp.putheader("x-splunk-input-mode", "streaming")
+                    splunkhttp.endheaders()
+                    logger.debug("POSTing to url %s on %s://%s:%s with sessionKey %s" \
+                                % (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._c.sessionKey))
+                except httplib.HTTPException, e:
+                    logger.error('Error connecting to Splunk for logging for sample %s.  Exception "%s" Config: %s' % (self._sample, e.args, self))
+                    raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
             try:
-                if self._splunkMethod == 'https':
-                    connmethod = httplib.HTTPSConnection
-                else:
-                    connmethod = httplib.HTTPConnection
-                self._splunkhttp = connmethod(self._splunkHost, self._splunkPort)
-                self._splunkhttp.connect()
-                urlparms = [ ]
-                if self._index != None:
-                    urlparms.append(('index', self._index))
-                if self._source != None:
-                    urlparms.append(('source', self._source))
-                if self._sourcetype != None:
-                    urlparms.append(('sourcetype', self._sourcetype))
-                if self._hostRegex != None:
-                    urlparms.append(('host_regex', self._hostRegex))
-                elif self._host != None:
-                    urlparms.append(('host', self._host))
-                url = '/services/receivers/stream?%s' % (urllib.urlencode(urlparms))
-                self._splunkhttp.putrequest("POST", url)
-                self._splunkhttp.putheader("Authorization", "Splunk %s" % self._c.sessionKey)
-                self._splunkhttp.putheader("x-splunk-input-mode", "streaming")
-                self._splunkhttp.endheaders()
-                logger.debug("POSTing to url %s on %s://%s:%s with sessionKey %s" \
-                            % (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._c.sessionKey))
-            except httplib.HTTPException:
-                logger.error('Error connecting to Splunk for logging for sample %s' % self._sample)
-                raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
-        if len(self._queue) > 0:
-            try:
-                streamout = ""
-                msg = self._queue.popleft()
                 while msg:
                     if self._outputMode == 'spool':
                         self._workingFH.write(msg)
@@ -248,11 +310,11 @@ class Output:
                         if msg[-1] != '\n':
                             msg += '\n'
                         # logger.debug("Sending %s to self._splunkhttp" % msg)
-                        self._splunkhttp.send(msg)
+                        splunkhttp.send(msg)
                     elif self._outputMode == 'stormstream':
                         streamout += msg
                     
-                    msg = self._queue.popleft()
+                    msg = queue.popleft()['_raw']
                 logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
             except IndexError:
                 logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
@@ -271,8 +333,8 @@ class Output:
                 logger.error("File '%s' missing" % self._workingFilePath)
         elif self._outputMode == 'splunkstream':
             #logger.debug("Closing self._splunkhttp connection")
-            self._splunkhttp.close()
-            self._splunkhttp = None
+            splunkhttp.close()
+            splunkhttp = None
         elif self._outputMode == 'stormstream':
             if len(streamout) > 0:
                 try:
