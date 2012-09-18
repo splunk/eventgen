@@ -60,10 +60,10 @@ class Output:
     _splunkPass = None
     _splunkUrl = None
     _splunkhttp = None
-    index = None
-    source = None
-    sourcetype = None
-    host = None
+    _index = None
+    _source = None
+    _sourcetype = None
+    _host = None
     _hostRegex = None
     _projectID = None
     _accessToken = None
@@ -183,9 +183,13 @@ class Output:
             
     def send(self, msg):
         """Queues a message for output to configured outputs"""
-        self._queue.append({'_raw': msg, 'index': self._index,
-                            'source': self._source, 'sourcetype': self._sourcetype,
-                            'host': self._host, 'hostRegex': self._hostRegex})
+        if self._outputMode in ('splunkstream', 'stormstream'):
+            self._queue.append({'_raw': msg, 'index': self._index,
+                                'source': self._source, 'sourcetype': self._sourcetype,
+                                'host': self._host, 'hostRegex': self._hostRegex})
+        else:
+            self._queue.append({'_raw': msg})
+
         if len(self._queue) > 1000:
             self.flush()
             
