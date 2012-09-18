@@ -41,15 +41,22 @@ class Timer(threading.Thread):
                     if self.countdown <= 0:
                         partialInterval = self.sample.gen()
 
-                        logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
-                                    % (self.sample.name, self.sample.app, partialInterval) )
                         if self.sample.mode == 'sample':
                             self.countdown = partialInterval
 
                         ## Sleep for partial interval
                         if partialInterval > self.time:
                             self.sample._out.flush(force=True)
-                        time.sleep(partialInterval)
+                        if self.sample.mode == 'replay' or \
+                            (self.sample.backfill != None and not self.sample._backfilldone):
+                            logger.debug("Replay or Backfill Mode Generation of sample '%s' in app '%s' sleeping for %f seconds" \
+                                        % (self.sample.name, self.sample.app, partialInterval) )
+                            time.sleep(partialInterval)
+                        else:
+                            sleepTime = self.time + (partialInterval % self.time)
+                            logger.debug("Sample Mode Generation of sample '%s' in app '%s' sleeping for %f seconds" \
+                                        % (self.sample.name, self.sample.app, sleepTime) )
+                            time.sleep(sleepTime)
                     else:
                         self.countdown -= self.time
                         time.sleep(self.time)

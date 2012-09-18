@@ -172,12 +172,19 @@ sampletype = raw | csv
 interval = <integer>
     * How often to generate sample (in seconds).
     * 0 means disabled.
-    * Defaults to 60 seconds.  
+    * Defaults to 60 seconds.
    
 delay = <integer>
     * Specifies how long to wait until we begin generating events for this sample
     * Primarily this is used so we can stagger sets of samples which similar but slightly different data
     * Defaults to 0 which is disabled.
+
+backfill = <time-str>
+    * Specified in Splunk's relative time language, used to set a time to backfill events
+
+backfillSearch = <splunk search>
+    * If outputMode = splunkstream, this will run this search, appending '| head 1', and narrow the
+      backfill range specified with backfill to when the search has last seen events.
     
 count = <integer>
     * Maximum number of events to generate per sample file
@@ -205,7 +212,7 @@ hourOfDayRate = <json>
 dayOfWeekRate = <json>
     * Takes a JSON hash of 7 days of the week in Splunk format (0 is Sunday)
     * Sample JSON:
-      { "0": 0.97, "1": 0.95, "2": 0.90, "3": 0.97, "4": 1.0, "5": 0.99, "6": 0.55 }
+      { "0": 0.55, "1": 0.97, "2": 0.95, "3": 0.90, "4": 0.97, "5": 1.0, "6": 0.99 }
     * If a match is not found, will default to count events
     * Also multiplied times dayOfWeekRate
     
