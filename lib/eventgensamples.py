@@ -511,7 +511,7 @@ class Sample:
                 timeDiffFrac = "%d.%06d" % (self._timeSinceSleep.seconds, self._timeSinceSleep.microseconds)
                 logger.info("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
                             % (self.name, self.app, timeDiffFrac, partialInterval) )
-                self._timeSinceSleep = 0
+                self._timeSinceSleep = datetime.timedelta()
             else:
                 self._timeSinceSleep += timeDiff
             return partialInterval
