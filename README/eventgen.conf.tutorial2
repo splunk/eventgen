@@ -1,4 +1,4 @@
-[sample.tutorial1]
+[sample.tutorial2]
 interval = 15
 earliest = -15s
 latest = now

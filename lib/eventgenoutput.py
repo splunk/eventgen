@@ -15,8 +15,13 @@ import base64
 import threading
 import copy
 
+# The max number of threads setup for HTTP type outputs
 MAX_WORKERS = 5
 
+
+# This is used only for the HTTP output outputModes
+# This allows us to iowait while we keep on generating events
+# in the background
 class Worker(threading.Thread):
     func = None
     queue = None
@@ -43,7 +48,7 @@ class Output:
     _sample = None
     
     _c = None
-    _outputMode = None
+    _outputMode = None               
     _spoolDir = None
     _spoolFile = None
     _workingFilePath = None

@@ -489,9 +489,9 @@ class Sample:
             timeDiff = endTime - startTime
 
             if self.mode == 'sample':
-                timeDiff = timeDelta2secs(timeDiff)
-                wholeIntervals = timeDiff / self.interval
-                partialInterval = timeDiff % self.interval
+                timeDiffSecs = timeDelta2secs(timeDiff)
+                wholeIntervals = timeDiffSecs / self.interval
+                partialInterval = timeDiffSecs % self.interval
 
                 if wholeIntervals > 1:
                     logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \

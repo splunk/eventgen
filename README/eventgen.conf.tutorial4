@@ -1,7 +1,7 @@
 # Note, these samples assume you're installed as an app or a symbolic link in 
 # $SPLUNK_HOME/etc/apps/eventgen.  If not, please change the paths below.
 
-[sample.tutorial3]
+[sample.tutorial4]
 sampletype = csv
 interval = 3
 earliest = -3s
@@ -34,19 +34,19 @@ token.0.replacement = ["%b %d %H:%M:%S:%f", "%Y-%m-%d %H:%M:%S:%f"]
 
 token.1.token = (5\.5\.5\.5)
 token.1.replacementType = file
-token.1.replacement = $SPLUNK_HOME/etc/apps/eventgen/samples/external_ips.sample
+token.1.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/external_ips.sample
 
 token.2.token = (10\.2\.1\.35)
 token.2.replacementType = file
-token.2.replacement = $SPLUNK_HOME/etc/apps/eventgen/samples/webhosts.sample
+token.2.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/webhosts.sample
 
 token.3.token = (POST /playhistory/uploadhistory)
 token.3.replacementType = file
-token.3.replacement = $SPLUNK_HOME/etc/apps/eventgen/samples/uris.sample
+token.3.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/uris.sample
 
 token.4.token = "(Mozilla/5\.0[^"]+)"
 token.4.replacementType = file
-token.4.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/useragents.sample
+token.4.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/useragents.sample
 
 token.5.token = \s{1}(468)\s{1}
 token.5.replacementType = random
