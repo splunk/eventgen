@@ -113,9 +113,11 @@ class Config:
             # Having logger as a global is just damned convenient
             globals()['logger'] = logger
         
+            # Determine some path names in our environment
             self.grandparentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             self.greatgrandparentdir = os.path.dirname(self.grandparentdir)
             
+            # Determine if we're running as our own Splunk app or embedded in another
             appName = self.grandparentdir.split(os.sep)[-1]
             if appName == 'SA-Eventgen' or appName == 'eventgen':
                 self._isOwnApp = True

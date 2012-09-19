@@ -1,7 +1,7 @@
 # Note, these samples assume you're installed as an app or a symbolic link in 
 # $SPLUNK_HOME/etc/apps/eventgen.  If not, please change the paths below.
 
-[sample.tutorial2]
+[sample.tutorial3]
 interval = 3
 earliest = -3s
 latest = now

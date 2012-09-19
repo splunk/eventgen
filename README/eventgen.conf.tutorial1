@@ -1,4 +1,4 @@
-[sample.tutorial4]
+[sample.tutorial1]
 mode = replay
 sampletype = csv
 backfill = -15m
