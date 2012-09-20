@@ -130,7 +130,7 @@ if __name__ == '__main__':
     t = Timer(1.0, interruptcatcher=True)
 
     for s in c.samples:
-        if s.interval > 0:
+        if s.interval > 0 or s.mode == 'replay':
             if c.debug:
                 s.gen()
             else:
