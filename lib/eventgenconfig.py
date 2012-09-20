@@ -104,9 +104,9 @@ class Config:
             # Setup logger
             logger = logging.getLogger('eventgen')
             logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
-            logger.setLevel(logging.INFO)
+            logger.setLevel(logging.DEBUG)
             formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-            streamHandler = logging.StreamHandler()
+            streamHandler = logging.StreamHandler(sys.stdout)
             streamHandler.setFormatter(formatter)
             logger.addHandler(streamHandler)
         
@@ -385,6 +385,7 @@ class Config:
                 s.randomizeCount = None
                 s.hourOfDayRate = None
                 s.dayOfWeekRate = None
+                s.interval = 0
 
         self.samples = tempsamples
         self._confDict = None

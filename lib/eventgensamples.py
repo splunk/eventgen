@@ -132,7 +132,7 @@ class Sample:
                         temptime = '-'.join(temptime.split('-')[0:3])
                     self._backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
                     logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
-                except ExpatError: 
+                except (ExpatError, IndexError): 
                     pass
 
         # Override earliest and latest during backfill until we're at current time
@@ -189,23 +189,30 @@ class Sample:
         # Check to see if this is the first time we've run, or if we're at the end of the file
         # and we're running replay.  If so, we need to parse the whole file and/or setup our counters
         if self._rpevents == None and self.mode == 'replay':
-            if self.breaker != self._c.breaker:
-                lines = '\n'.join(sampleLines)
-                breaker = re.search(self.breaker, lines)
-                currentchar = 0
-                while breaker:
-                    self._rpevents.append(lines[currentchar:breaker.start(0)])
-                    lines = lines[breaker.end(0):]
-                    currentchar += breaker.start(0)
-                    breaker = re.search(self.breaker, lines)
+            if self.sampletype == 'csv':
+                self._rpevents = sampleDict
             else:
-                self._rpevents = sampleLines
+                if self.breaker != self._c.breaker:
+                    lines = '\n'.join(sampleLines)
+                    breaker = re.search(self.breaker, lines)
+                    currentchar = 0
+                    while breaker:
+                        self._rpevents.append(lines[currentchar:breaker.start(0)])
+                        lines = lines[breaker.end(0):]
+                        currentchar += breaker.start(0)
+                        breaker = re.search(self.breaker, lines)
+                else:
+                    self._rpevents = sampleLines
             self._currentevent = 0
         
         # If we are replaying then we need to set the current sampleLines to the event
         # we're currently on
         if self.mode == 'replay':
-            sampleLines = [ self._rpevents[self._currentevent] ]
+            if self.sampletype == 'csv':
+                sampleDict = [ self._rpevents[self._currentevent] ]
+                sampleLines = [ self._rpevents[self._currentevent]['_raw'] ]
+            else:
+                sampleLines = [ self._rpevents[self._currentevent] ]
             self._currentevent += 1
             # If we roll over the max number of lines, roll over the counter and start over
             if self._currentevent >= len(self._rpevents):
@@ -408,9 +415,15 @@ class Sample:
             if self.mode == 'replay':
                 logger.debug("Finding timestamp to compute interval for events")
                 if self._lastts == None:
-                    self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent])
+                    if self.sampletype == 'csv':
+                        self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent]['_raw'])
+                    else:
+                        self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent])
                 if (self._currentevent+1) < len(self._rpevents):
-                    nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1])
+                    if self.sampletype == 'csv':
+                        nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1]['_raw'])
+                    else:
+                        nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1])
                 else:
                     return 0
 
@@ -465,6 +478,8 @@ class Sample:
                     logger.debug("Completed bundlelines event.  Flushing.")
                     self._out.flush()
                 else:
+                    # logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))
+                    # logger.debug("Event Index: %s Host: %s Source: %s Sourcetype: %s" % (sampleDict[x]['index'], sampleDict[x]['host'], sampleDict[x]['source'], sampleDict[x]['sourcetype']))
                     if self.sampletype == 'csv' and (sampleDict[x]['index'] != self.index or \
                                                     sampleDict[x]['host'] != self.host or \
                                                     sampleDict[x]['source'] != self.source or \
