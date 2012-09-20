@@ -7,7 +7,7 @@ Thanks for checking out the tutorial.  This should hopefully get you through set
 ## Intro Video
 We've recorded a screencast to get you started.  This is definitely the fastest way to learn how to use the Eventgen.  The tutorial docs below will cover all the examples in detail, but if you want to get started quickly, check out the video here:
 
-<iframe width="960" height="720" src="http://www.youtube.com/embed/9S-ZeGEfRKg" frameborder="0" allowfullscreen></iframe>
+<iframe width="960" height="720" src="http://www.youtube.com/embed/9S-ZeGEfRKg" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
 
 ## Replay Example
 
