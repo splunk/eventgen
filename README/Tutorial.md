@@ -4,6 +4,11 @@ Thanks for checking out the tutorial.  This should hopefully get you through set
 
 # Tutorial
 
+## Intro Video
+We've recorded a screencast to get you started.  This is definitely the fastest way to learn how to use the Eventgen.  The tutorial docs below will cover all the examples in detail, but if you want to get started quickly, check out the video here:
+
+<iframe width="960" height="720" src="http://www.youtube.com/embed/9S-ZeGEfRKg" frameborder="0" allowfullscreen></iframe>
+
 ## Replay Example
 
 The first example we'll show you should likely cover you for 90% of the use cases you can imagine.  The eventgen can take an export from another Splunk instance, or just a plain text file, and replay those events while substituting the time stamps.  The eventgen will pause the amount of time between each event just like it happened in the original, so the events will appear to be coming out in real time.  When the eventgen reaches the end of the file, it will automatically start over at the beginning.  Since this allows you to use real data as your eventgen, like we said earlier, it'll cover 9 out of 10 of most people's use cases.
