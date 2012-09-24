@@ -577,7 +577,10 @@ class Sample:
                 if results:
                     timeformat = token.replacement
                     timestr = event[results.start(0):results.end(0)]
-                    currentts = datetime.datetime.strptime(timestr, timeformat)
+                    if timeformat == "%s":
+                        currentts = datetime.fromtimestamp(float(timestr))
+                    else:
+                        currentts = datetime.datetime.strptime(timestr, timeformat)
                     logger.debug("Event '%s' Timeformat '%s' currentts '%s'" % (timestr, timeformat, currentts))
                     if type(currentts) == datetime.datetime:
                         break
@@ -722,7 +725,10 @@ class Token:
                                     for currentformat in strptimelist:
                                         try:
                                             timeformat = currentformat
-                                            currentts = datetime.datetime.strptime(old, timeformat)
+                                            if timeformat == "%s":
+                                                currentts = datetime.fromtimestamp(float(old))
+                                            else:
+                                                currentts = datetime.datetime.strptime(old, timeformat)
                                             # logger.debug("Old '%s' Timeformat '%s' currentts '%s'" % (old, timeformat, currentts))
                                             if type(currentts) == datetime.datetime:
                                                 break
@@ -736,7 +742,10 @@ class Token:
                                     # Not JSON, try to read as text
                                     timeformat = self.replacement
                                     try:
-                                        currentts = datetime.datetime.strptime(old, timeformat)
+                                        if timeformat == "%s":
+                                            currentts = datetime.fromtimestamp(float(old))
+                                        else:
+                                            currentts = datetime.datetime.strptime(old, timeformat)
                                         # logger.debug("Timeformat '%s' currentts '%s'" % (timeformat, currentts))
                                     except ValueError:
                                         # Total fail
