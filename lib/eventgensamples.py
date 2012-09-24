@@ -578,7 +578,7 @@ class Sample:
                     timeformat = token.replacement
                     timestr = event[results.start(0):results.end(0)]
                     if timeformat == "%s":
-                        currentts = datetime.fromtimestamp(float(timestr))
+                        currentts = datetime.datetime.fromtimestamp(float(timestr))
                     else:
                         currentts = datetime.datetime.strptime(timestr, timeformat)
                     logger.debug("Event '%s' Timeformat '%s' currentts '%s'" % (timestr, timeformat, currentts))
@@ -726,7 +726,7 @@ class Token:
                                         try:
                                             timeformat = currentformat
                                             if timeformat == "%s":
-                                                currentts = datetime.fromtimestamp(float(old))
+                                                currentts = datetime.datetime.fromtimestamp(float(old))
                                             else:
                                                 currentts = datetime.datetime.strptime(old, timeformat)
                                             # logger.debug("Old '%s' Timeformat '%s' currentts '%s'" % (old, timeformat, currentts))
@@ -743,7 +743,7 @@ class Token:
                                     timeformat = self.replacement
                                     try:
                                         if timeformat == "%s":
-                                            currentts = datetime.fromtimestamp(float(old))
+                                            currentts = datetime.datetime.fromtimestamp(float(old))
                                         else:
                                             currentts = datetime.datetime.strptime(old, timeformat)
                                         # logger.debug("Timeformat '%s' currentts '%s'" % (timeformat, currentts))
