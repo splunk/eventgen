@@ -181,7 +181,8 @@ class Output:
         """Only used for debugging, outputs a pretty printed representation of this output"""
         # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != '_c'])
-        return pprint.pformat(temp)
+        # return pprint.pformat(temp)
+        return ""
 
     def __repr__(self):
         return self.__str__()
@@ -224,7 +225,7 @@ class Output:
                 if not row['source'] in queues:
                     queues[row['source']] = deque([])
 
-            logger.debug("Queues setup: %s" % pprint.pformat(queues))
+            # logger.debug("Queues setup: %s" % pprint.pformat(queues))
             m = self._queue.popleft()
             while m:
                 queues[m['source']].append(m)
