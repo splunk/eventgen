@@ -93,7 +93,8 @@ class Sample:
         """Only used for debugging, outputs a pretty printed representation of this sample"""
         # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != '_c' ])
-        return pprint.pformat(temp)
+        # return pprint.pformat(temp)
+        return ""
         
     def __repr__(self):
         return self.__str__()
@@ -131,7 +132,7 @@ class Sample:
                     if len(temptime) > 0:
                         temptime = '-'.join(temptime.split('-')[0:3])
                     self._backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
-                    logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
+                    # logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
                 except (ExpatError, IndexError): 
                     pass
 
@@ -573,10 +574,13 @@ class Sample:
             try:
                 formats.append(token.token)
                 # logger.debug("Searching for token '%s' in event '%s'" % (token.token, event))
-                results = re.search(token.token, event)
+                results = token._search(event)
                 if results:
                     timeformat = token.replacement
-                    timestr = event[results.start(0):results.end(0)]
+                    try:
+                        timestr = event[results.start(1):results.end(1)]
+                    except IndexError:
+                        timestr = event[results.start(0):results.end(0)]
                     if timeformat == "%s":
                         currentts = datetime.datetime.fromtimestamp(float(timestr))
                     else:
@@ -604,6 +608,11 @@ class Token:
     _now = None
     _replaytd = None
     _lastts = None
+    _tokenre = None
+    _tokenfile = None
+    _tokents = None
+    _earliestTime = None
+    _latestTime = None
     
     def __init__(self, sample):
         self.sample = sample
@@ -618,22 +627,29 @@ class Token:
         """Only used for debugging, outputs a pretty printed representation of this token"""
         # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != 'sample' ])
-        return pprint.pformat(temp)
+        # return pprint.pformat(temp)
+        return ""
 
     def __repr__(self):
         return self.__str__()
     
     def _match(self, event):
         """Executes regular expression match and returns the re.Match object"""
-        return re.match(self.token, event)
+        if self._tokenre == None:
+            self._tokenre = re.compile(self.token)
+        return self._tokenre.match(event)
         
     def _search(self, event):
         """Executes regular expression search and returns the re.Match object"""
-        return re.search(self.token, event)
+        if self._tokenre == None:
+            self._tokenre = re.compile(self.token)
+        return self._tokenre.search(event)
         
     def _finditer(self, event):
         """Executes regular expression finditer and returns the re.Match object"""
-        return re.finditer(self.token, event)
+        if self._tokenre == None:
+            self._tokenre = re.compile(self.token)
+        return self._tokenre.finditer(event)
         
     def replace(self, event):
         """Replaces all instances of this token in provided event and returns event"""
@@ -697,6 +713,23 @@ class Token:
             return self.replacement
         elif self.replacementType in ('timestamp', 'replaytimestamp'):
             if self.sample.earliest and self.sample.latest:
+                # Optimizing for parsing times during mass event generation and backfill
+                # Call to now() are much cheaper than a call to timeParser
+                # This will make us call parse only at least once per second per timestamp token
+                if self._tokents == None:
+                    self._tokents = datetime.datetime.now()
+
+                if datetime.datetime.now() - self._tokents > datetime.timedelta(seconds=1):
+                    self._tokents = datetime.datetime.now()
+                    earliestTime = timeParser(self.sample.earliest)
+                    latestTime = timeParser(self.sample.latest)
+                    self._earliestTime = earliestTime
+                    self._latestTime = latestTime
+                else:
+                    earliestTime = self._earliestTime
+                    latestTime = self._latestTime
+
+
                 earliestTime = timeParser(self.sample.earliest)
                 latestTime = timeParser(self.sample.latest)        
 
@@ -954,24 +987,23 @@ class Token:
                 logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (replacement, replacementType) )
                 return old
         elif self.replacementType == 'file':
-            replacementFile = self.sample.pathParser(self.replacement)
-            
-            if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
-                replacementFH = open(replacementFile, 'rU')
-                replacementLines = replacementFH.readlines()
-
-                if len(replacementLines) == 0:
-                    logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
-                    return old
-                else:
-                    replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
-
-                replacementFH.close()
-
-                return replacement
+            # Adding caching of the token file to avoid reading it every iteration
+            if self._tokenfile != None:
+                replacementLines = self._tokenfile
             else:
-                logger.error("Replacement file '%s' is invalid or does not exist; will not replace" % (replacementFile) )
-                return old
+                replacementFile = self.sample.pathParser(self.replacement)
+                if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
+                    replacementFH = open(replacementFile, 'rU')
+                    replacementLines = replacementFH.readlines()
+                    replacementFH.close()
+
+                    if len(replacementLines) == 0:
+                        logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
+                        return old
+                    else:
+                        self._tokenfile = replacementLines
+            
+            return replacementLines[random.randint(0, len(replacementLines)-1)].strip()
         elif self.replacementType == 'mvfile':
             try:
                 replacementFile = self.sample.pathParser(self.replacement.split(':')[0])
@@ -989,27 +1021,32 @@ class Token:
                     return self.mvhash[replacementFile][replacementColumn]
             ## Otherwise, lets read the file and build our cached results, pick a result and return it
             else:
-                if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
-                    replacementFH = open(replacementFile, 'rU')
-                    replacementLines = replacementFH.readlines()
-
-                    if len(replacementLines) == 0:
-                        logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
-                        return old
-                    else:
-                        replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
-
-                    replacementFH.close()
-                    self.mvhash[replacementFile] = replacement.split(',')
-
-                    if replacementColumn > len(self.mvhash[replacementFile]):
-                        logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
-                        return old
-                    else:
-                        return self.mvhash[replacementFile][replacementColumn]
+                if self._tokenfile != None:
+                    replacementLines = self._tokenfile
                 else:
-                    logger.error("File '%s' does not exist" % (replacementFile))
+                    if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
+                        replacementFH = open(replacementFile, 'rU')
+                        replacementLines = replacementFH.readlines()
+                        replacementFH.close()
+
+                        if len(replacementLines) == 0:
+                            logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
+                            return old
+                        else:
+                            self._tokenfile = replacementLines
+                    else:
+                        logger.error("File '%s' does not exist" % (replacementFile))
+                        return old
+
+                replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
+
+                self.mvhash[replacementFile] = replacement.split(',')
+
+                if replacementColumn > len(self.mvhash[replacementFile]):
+                    logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
                     return old
+                else:
+                    return self.mvhash[replacementFile][replacementColumn]
         else:
             logger.error("Unknown replacementType '%s'; will not replace" % (replacementType) )
             return old

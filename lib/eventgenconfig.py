@@ -127,7 +127,8 @@ class Config:
         """Only used for debugging, outputs a pretty printed representation of our Config"""
         # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != 'samples' ])
-        return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
+        # return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
+        return ""
         
     def __repr__(self):
         return self.__str__()
@@ -369,8 +370,8 @@ class Config:
                     
                     # Now prepend all the tokens to the beginning of the list so they'll be sure to match first
                     newtokens = copy.deepcopy(s.tokens)
-                    logger.debug("Prepending tokens from sample '%s' to sample '%s' in app '%s': %s" \
-                                % (overridesample._origName, s.name, s.app, pprint.pformat(newtokens)))
+                    # logger.debug("Prepending tokens from sample '%s' to sample '%s' in app '%s': %s" \
+                    #             % (overridesample._origName, s.name, s.app, pprint.pformat(newtokens)))
                     newtokens.extend(copy.deepcopy(overridesample.tokens))
                     s.tokens = newtokens
         
@@ -517,5 +518,5 @@ class Config:
                 #             newitem = self._validSettings[[x.lower() for x in self._validSettings].index(item.lower())]
                 #         ret[section][newitem] = orig[section][item]
             self._confDict = ret
-        logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
+        # logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
             
