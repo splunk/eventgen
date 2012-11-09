@@ -882,12 +882,7 @@ class Token:
                     endFloat = float(floatMatch.group(3)+'.'+floatMatch.group(4))
                     
                     if endFloat >= startFloat:
-                        precision = 10 ** len(floatMatch.group(2))
-                        startInt = int(round(float(floatMatch.group(1)) * precision,0))
-                        endInt = int(round(float(floatMatch.group(3)) * precision,0))
-                        
-                        randInt = random.randint(startInt, endInt)
-                        floatret = round(randInt / precision, len(floatMatch.group(2)))
+                        floatret = round(random.uniform(startFloat,endFloat), len(floatMatch.group(2)))
                         if self.replacementType == 'rated':
                             rateFactor = 1.0
                             now = datetime.datetime.now()
@@ -942,7 +937,7 @@ class Token:
 
                 return replacement
             else:
-                logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (replacement, replacementType) )
+                logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
                 return old
         elif self.replacementType == 'file':
             replacementFile = self.sample.pathParser(self.replacement)
@@ -950,14 +945,13 @@ class Token:
             if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
                 replacementFH = open(replacementFile, 'rU')
                 replacementLines = replacementFH.readlines()
+                replacementFH.close()
 
                 if len(replacementLines) == 0:
                     logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
                     return old
-                else:
-                    replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
 
-                replacementFH.close()
+                replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
 
                 return replacement
             else:
@@ -968,7 +962,7 @@ class Token:
                 replacementFile = self.sample.pathParser(self.replacement.split(':')[0])
                 replacementColumn = int(self.replacement.split(':')[1])-1
             except ValueError, e:
-                logger.error("Replacement string '%s' improperly formatted.  Should be file:column" % (replacement))
+                logger.error("Replacement string '%s' improperly formatted.  Should be file:column" % (self.replacement))
                 return old
 
             ## If we've seen this file before, simply return already read results
@@ -983,14 +977,13 @@ class Token:
                 if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
                     replacementFH = open(replacementFile, 'rU')
                     replacementLines = replacementFH.readlines()
+                    replacementFH.close()
 
                     if len(replacementLines) == 0:
                         logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
                         return old
-                    else:
-                        replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
 
-                    replacementFH.close()
+                    replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
                     self.mvhash[replacementFile] = replacement.split(',')
 
                     if replacementColumn > len(self.mvhash[replacementFile]):
