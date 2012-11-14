@@ -79,7 +79,7 @@ class Config:
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
                     'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
-                    'backfill', 'backfillSearch']
+                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile']
     _validOutputModes = ['spool', 'file', 'splunkstream', 'stormstream']
@@ -138,6 +138,13 @@ class Config:
         If we're not Splunk embedded, we operate simpler.  No rest handler for configurations. We only read configs 
         in our parent app's directory.  In standalone mode, we read eventgen-standalone.conf and will skip eventgen.conf if
         we detect SA-Eventgen is installed. """
+
+        fileHandler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen.log', maxBytes=25000000, backupCount=5)
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+        fileHandler.setFormatter(formatter)
+        fileHandler.setLevel(logging.DEBUG)
+        logger.handlers = [ ] # Remove existing StreamHandler if we're embedded
+        logger.addHandler(fileHandler)
         logger.info("Running as Splunk embedded")
         import splunk.auth as auth
         import splunk.entity as entity
@@ -148,13 +155,7 @@ class Config:
         globals()['entity'] = locals()['entity']
         # globals()['rest'] = locals()['rest']
         # globals()['util'] = locals()['util']
-        
-        fileHandler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen.log', maxBytes=25000000, backupCount=5)
-        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-        fileHandler.setFormatter(formatter)
-        logger.handlers = [ ] # Remove existing StreamHandler if we're embedded
-        logger.addHandler(fileHandler)
-        
+
         if sessionKey == None or debug == True:
             self.debug = True
             self.sessionKey = auth.getSessionKey('admin', 'changeme')
