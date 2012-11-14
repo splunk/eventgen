@@ -170,7 +170,7 @@ class Sample:
                 csvReader = csv.DictReader(sampleFH)
                 for line in csvReader:
                     sampleDict.append(line)
-                    sampleLines.append(line['_raw'])
+                    sampleLines.append(line['_raw'].decode('string_escape'))
                 self._sampleDict = copy.deepcopy(sampleDict)
                 self._sampleLines = copy.deepcopy(sampleLines)
             else:
