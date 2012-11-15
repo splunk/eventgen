@@ -51,6 +51,7 @@ class Sample:
     sourcetype = None
     host = None
     hostRegex = None
+    hostToken = None
     tokens = None
     projectID = None
     accessToken = None
@@ -469,6 +470,10 @@ class Sample:
                             self._out.flush()
                             self.index = sampleDict[lineno]['index']
                             self.host = sampleDict[lineno]['host']
+                            # Allow randomizing the host:
+                            if(self.hostToken):
+                                self.host = self.hostToken.replace(self.host)
+
                             self.source = sampleDict[lineno]['source']
                             self.sourcetype = sampleDict[lineno]['sourcetype']
                             logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
@@ -489,6 +494,10 @@ class Sample:
                         self._out.flush()
                         self.index = sampleDict[x]['index']
                         self.host = sampleDict[x]['host']
+                        # Allow randomizing the host:
+                        if(self.hostToken):
+                            self.host = self.hostToken.replace(self.host)
+
                         self.source = sampleDict[x]['source']
                         self.sourcetype = sampleDict[x]['sourcetype']
                         logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
@@ -939,39 +948,33 @@ class Token:
             else:
                 logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
                 return old
-        elif self.replacementType == 'file':
-            replacementFile = self.sample.pathParser(self.replacement)
-            
-            if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
-                replacementFH = open(replacementFile, 'rU')
-                replacementLines = replacementFH.readlines()
-                replacementFH.close()
-
-                if len(replacementLines) == 0:
-                    logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
-                    return old
-
-                replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
-
-                return replacement
-            else:
-                logger.error("Replacement file '%s' is invalid or does not exist; will not replace" % (replacementFile) )
-                return old
-        elif self.replacementType == 'mvfile':
+        elif self.replacementType == 'file' or self.replacementType == 'mvfile':
             try:
-                replacementFile = self.sample.pathParser(self.replacement.split(':')[0])
-                replacementColumn = int(self.replacement.split(':')[1])-1
+                paths = self.replacement.split(':')
+                if(len(paths) == 1):
+                    replacementColumn = 0
+                else:
+                    try: # When it's not a mvfile, there's no number on the end:
+                        replacementColumn = int(paths[-1])
+                    except (ValueError):
+                        replacementColumn = 0
+
+                if(replacementColumn > 0):
+                    # This supports having a drive-letter colon
+                    replacementFile = self.sample.pathParser(":".join(paths[0:-1]))
+                else:
+                    replacementFile = self.sample.pathParser(self.replacement)
             except ValueError, e:
-                logger.error("Replacement string '%s' improperly formatted.  Should be file:column" % (self.replacement))
+                logger.error("Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column" % (self.replacement))
                 return old
 
             ## If we've seen this file before, simply return already read results
-            if replacementFile in self.mvhash:
+            if replacementColumn > 0 and replacementFile in self.mvhash:
                 if replacementColumn > len(self.mvhash[replacementFile]):
                     logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
                     return old
                 else:
-                    return self.mvhash[replacementFile][replacementColumn]
+                    return self.mvhash[replacementFile][replacementColumn-1]
             ## Otherwise, lets read the file and build our cached results, pick a result and return it
             else:
                 if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
@@ -984,13 +987,14 @@ class Token:
                         return old
 
                     replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
-                    self.mvhash[replacementFile] = replacement.split(',')
+                    if replacementColumn > 0:
+                        self.mvhash[replacementFile] = replacement.split(',')
 
-                    if replacementColumn > len(self.mvhash[replacementFile]):
-                        logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
-                        return old
-                    else:
-                        return self.mvhash[replacementFile][replacementColumn]
+                        if replacementColumn > len(self.mvhash[replacementFile]):
+                            logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
+                            return old
+                        else:
+                            return self.mvhash[replacementFile][replacementColumn-1]
                 else:
                     logger.error("File '%s' does not exist" % (replacementFile))
                     return old
