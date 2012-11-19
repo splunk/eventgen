@@ -110,8 +110,13 @@ class Sample:
 
         # Setup initial backfillts
         if self._backfillts == None and self.backfill != None and not self._backfilldone:
-            logger.info("Setting up backfill of %s" % self.backfill)
-            self._backfillts = timeParser(self.backfill)
+            try:
+                self._backfillts = timeParser(self.backfill)
+                logger.info("Setting up backfill of %s (%s)" % (self.backfill,self._backfillts))
+            except Exception as ex:
+                logger.error("Failed to parse backfill '%s': %s" % (self.backfill, ex))
+                raise
+
             self._origEarliest = self.earliest
             self._origLatest = self.latest
             if self._out._outputMode == "splunkstream" and self.backfillSearch != None:
