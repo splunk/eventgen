@@ -581,32 +581,36 @@ class Sample:
         return path
 
     def _getTSFromEvent(self, event):
-        currentts = None
+        currentTime = None
         formats = [ ]
         for token in self.tokens:
             try:
                 formats.append(token.token)
-                # logger.debug("Searching for token '%s' in event '%s'" % (token.token, event))
+                logger.debug("Searching for token '%s' in event '%s'" % (token.token, event))
                 results = re.search(token.token, event)
                 if results:
-                    timeformat = token.replacement
-                    timestr = event[results.start(0):results.end(0)]
-                    if timeformat == "%s":
-                        currentts = datetime.datetime.fromtimestamp(float(timestr))
+                    timeFormat = token.replacement
+                    group = 0 if len(results.groups()) == 0 else 1
+                    timeString = results.group(group)
+                    logger.debug("Testing '%s' as a time string against '%s'" % (timeString, timeFormat))
+                    if timeFormat == "%s":
+                        ts = float(timeString) if len(timeString) < 10 else float(timeString) / (10**(len(timeString)-10))
+                        currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
-                        currentts = datetime.datetime.strptime(timestr, timeformat)
-                    logger.debug("Event '%s' Timeformat '%s' currentts '%s'" % (timestr, timeformat, currentts))
-                    if type(currentts) == datetime.datetime:
+                        currentTime = datetime.datetime.strptime(timeString, timeFormat)
+                    logger.debug("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
+                    if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
-                logger.debug("Time found but TS parse failed.  Event '%s' Timeformat '%s' currentts '%s'" % (timestr, timeformat, currentts))
-        if type(currentts) != datetime.datetime:
+                logger.debug("Time found but TS parse failed.  Event '%s' Timeformat '%s' currentTime '%s'" % (timeString, timeFormat, currentTime))
+        if type(currentTime) != datetime.datetime:
             # Total fail
+            logger.error("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
             raise ValueError("Can't find regex format in '%s' for this timestamp '%s'." % (formats, event))
         # Check to make sure we parsed a year
-        if currentts.year == 1900:
-            currentts = currentts.replace(year=datetime.datetime.now().year)
-        return currentts
+        if currentTime.year == 1900:
+            currentTime = currentTime.replace(year=datetime.datetime.now().year)
+        return currentTime
         
 class Token:
     token = None
@@ -664,7 +668,9 @@ class Token:
             # # Find old in case of error
             oldMatch = self._search(event)
             if oldMatch:
-                old = event[oldMatch.start(0):oldMatch.end(0)]
+                # old = event[oldMatch.start(group):oldMatch.end(group)]
+                group = 0 if len(oldMatch.groups()) == 0 else 1
+                old = oldMatch.group(group)
             else:
                 old = ""
             
@@ -740,7 +746,8 @@ class Token:
                                         try:
                                             timeformat = currentformat
                                             if timeformat == "%s":
-                                                currentts = datetime.datetime.fromtimestamp(float(old))
+                                                ts = float(old) if  len(old) < 10 else float(old) / (10**(len(old)-10))
+                                                currentts = datetime.datetime.fromtimestamp(ts)
                                             else:
                                                 currentts = datetime.datetime.strptime(old, timeformat)
                                             # logger.debug("Old '%s' Timeformat '%s' currentts '%s'" % (old, timeformat, currentts))
@@ -757,13 +764,14 @@ class Token:
                                     timeformat = self.replacement
                                     try:
                                         if timeformat == "%s":
-                                            currentts = datetime.datetime.fromtimestamp(float(old))
+                                            ts = float(old) if  len(old) < 10 else float(old) / (10**(len(old)-10))
+                                            currentts = datetime.datetime.fromtimestamp(ts)
                                         else:
                                             currentts = datetime.datetime.strptime(old, timeformat)
                                         # logger.debug("Timeformat '%s' currentts '%s'" % (timeformat, currentts))
                                     except ValueError:
                                         # Total fail
-                                        logger.error("Can't find strptime format for this timestamp '%s'.  Returning original value" % old)
+                                        logger.error("Can't match strptime format ('%s') to this timestamp '%s'.  Returning original value" % (timeformat, old))
                                         return old
                                     
                                     # Can't parse as strptime, try JSON
