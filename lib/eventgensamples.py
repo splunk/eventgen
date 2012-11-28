@@ -199,6 +199,7 @@ class Sample:
                 self._rpevents = sampleDict
             else:
                 if self.breaker != self._c.breaker:
+                    self._rpevents = []
                     lines = '\n'.join(sampleLines)
                     breaker = re.search(self.breaker, lines)
                     currentchar = 0
@@ -583,6 +584,8 @@ class Sample:
     def _getTSFromEvent(self, event):
         currentTime = None
         formats = [ ]
+        # JB: 2012/11/20 - Can we optimize this by only testing tokens of type = *timestamp?
+        # JB: 2012/11/20 - Alternatively, documentation should suggest putting timestamp as token.0.
         for token in self.tokens:
             try:
                 formats.append(token.token)
@@ -602,11 +605,11 @@ class Sample:
                     if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
-                logger.debug("Time found but TS parse failed.  Event '%s' Timeformat '%s' currentTime '%s'" % (timeString, timeFormat, currentTime))
+                logger.debug("Match found ('%s') but time parse failed. Timeformat '%s' Event '%s'" % (timeString, timeFormat, event))
         if type(currentTime) != datetime.datetime:
             # Total fail
             logger.error("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
-            raise ValueError("Can't find regex format in '%s' for this timestamp '%s'." % (formats, event))
+            raise ValueError("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
         # Check to make sure we parsed a year
         if currentTime.year == 1900:
             currentTime = currentTime.replace(year=datetime.datetime.now().year)
@@ -980,7 +983,6 @@ class Token:
                         replacementColumn = int(paths[-1])
                     except (ValueError):
                         replacementColumn = 0
-
                 if(replacementColumn > 0):
                     # This supports having a drive-letter colon
                     replacementFile = self.sample.pathParser(":".join(paths[0:-1]))
@@ -1009,6 +1011,7 @@ class Token:
                         return old
 
                     replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
+
                     if replacementColumn > 0:
                         self.mvhash[replacementFile] = replacement.split(',')
 
@@ -1017,6 +1020,8 @@ class Token:
                             return old
                         else:
                             return self.mvhash[replacementFile][replacementColumn-1]
+                    else:
+                        return replacement;
                 else:
                     logger.error("File '%s' does not exist" % (replacementFile))
                     return old
