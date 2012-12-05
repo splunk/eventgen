@@ -61,3 +61,7 @@ token.6.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:3
 token.7.token = zip=(\d+)
 token.7.replacementType = mvfile
 token.7.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:1
+
+token.8.token = value=(\d+)
+token.8.replacementType = random
+token.8.replacement = float[0.000:10.000]

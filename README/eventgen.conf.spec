@@ -185,6 +185,10 @@ backfill = <time-str>
 backfillSearch = <splunk search>
     * If outputMode = splunkstream, this will run this search, appending '| head 1', and narrow the
       backfill range specified with backfill to when the search has last seen events.
+
+backfillSearchUrl = <url>
+    * Defaults to splunkMethod://splunkHost:splunkPort/, can override in case you're running
+      in a cluster.
     
 count = <integer>
     * Maximum number of events to generate per sample file

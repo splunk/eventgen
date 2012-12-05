@@ -56,6 +56,7 @@ class Sample:
     accessToken = None
     backfill = None
     backfillSearch = None
+    backfillSearchUrl = None
     
     # Internal fields
     _c = None
@@ -93,8 +94,7 @@ class Sample:
         """Only used for debugging, outputs a pretty printed representation of this sample"""
         # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != '_c' ])
-        # return pprint.pformat(temp)
-        return ""
+        return pprint.pformat(temp)
         
     def __repr__(self):
         return self.__str__()
@@ -107,6 +107,8 @@ class Sample:
         if self._out == None:
             logger.debug("Setting up Output class for sample '%s' in app '%s'" % (self.name, self.app))
             self._out = Output(self)
+            if self.backfillSearchUrl == None:
+                self.backfillSearchUrl = self._out._splunkUrl
 
         # Setup initial backfillts
         if self._backfillts == None and self.backfill != None and not self._backfilldone:
@@ -122,7 +124,7 @@ class Sample:
                 logger.debug("Searching Splunk with search '%s' with sessionKey '%s'" % (self.backfillSearch, self._out._c.sessionKey))
 
                 results = httplib2.Http(disable_ssl_certificate_validation=True).request(\
-                            self._out._splunkUrl + '/services/search/jobs',
+                            self.backfillSearchUrl + '/services/search/jobs',
                             'POST', headers={'Authorization': 'Splunk %s' % self._out._c.sessionKey}, \
                             body=urllib.urlencode({'search': self.backfillSearch,
                                                     'earliest_time': self.backfill,
@@ -144,7 +146,7 @@ class Sample:
                 self.earliest = self._origEarliest
                 self.latest = self._origLatest
             else:
-                logger.debug("Still backfilling.  Currently at %s" % self._backfillts)
+                logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.name, self._backfillts))
                 self.earliest = datetime.datetime.strftime((self._backfillts - datetime.timedelta(seconds=self.interval)), \
                                                             "%Y-%m-%d %H:%M:%S.%f")
                 self.latest = datetime.datetime.strftime(self._backfillts, "%Y-%m-%d %H:%M:%S.%f")
@@ -505,7 +507,8 @@ class Sample:
             timeDiff = endTime - startTime
 
             if self.mode == 'sample':
-                timeDiffSecs = timeDelta2secs(timeDiff)
+                # timeDiffSecs = timeDelta2secs(timeDiff)
+                timeDiffSecs = float("%d.%06d" % (timeDiff.seconds, timeDiff.microseconds))
                 wholeIntervals = timeDiffSecs / self.interval
                 partialInterval = timeDiffSecs % self.interval
 
@@ -523,13 +526,12 @@ class Sample:
                 self._backfillts += datetime.timedelta(seconds=incsecs, microseconds=incmicrosecs)
                 partialInterval = 0
 
+            self._timeSinceSleep += timeDiff
             if partialInterval > 0:
                 timeDiffFrac = "%d.%06d" % (self._timeSinceSleep.seconds, self._timeSinceSleep.microseconds)
                 logger.info("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
                             % (self.name, self.app, timeDiffFrac, partialInterval) )
                 self._timeSinceSleep = datetime.timedelta()
-            else:
-                self._timeSinceSleep += timeDiff
             return partialInterval
         else:
             logger.warn("Sample '%s' in app '%s' contains no data" % (self.name, self.app) )
@@ -622,13 +624,14 @@ class Token:
         globals()['logger'] = logger
         
         self._now = datetime.datetime.now()
+        self._earliestTime = (None, None)
+        self._latestTime = (None, None)
         
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this token"""
         # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != 'sample' ])
-        # return pprint.pformat(temp)
-        return ""
+        return pprint.pformat(temp)
 
     def __repr__(self):
         return self.__str__()
@@ -713,25 +716,55 @@ class Token:
             return self.replacement
         elif self.replacementType in ('timestamp', 'replaytimestamp'):
             if self.sample.earliest and self.sample.latest:
-                # Optimizing for parsing times during mass event generation and backfill
-                # Call to now() are much cheaper than a call to timeParser
-                # This will make us call parse only at least once per second per timestamp token
+                # Optimizing for parsing times during mass event generation
+                # Cache results to prevent calls to timeParser unless the value changes
+                # Because every second, relative times could change, we can only cache
+                # results for at maximum one second.  This seems not very effective, but we're
+                # we're generating thousands of events per second it optimizes quite a bit.
                 if self._tokents == None:
                     self._tokents = datetime.datetime.now()
 
+                # If we've gone more than a second, invalidate results, calculate
+                # earliest and latest and cache new values
                 if datetime.datetime.now() - self._tokents > datetime.timedelta(seconds=1):
+                    # logger.debug("Token Time Cache invalidated, refreshing")
                     self._tokents = datetime.datetime.now()
                     earliestTime = timeParser(self.sample.earliest)
                     latestTime = timeParser(self.sample.latest)
-                    self._earliestTime = earliestTime
-                    self._latestTime = latestTime
+                    self._earliestTime = (self.sample.earliest, earliestTime)
+                    self._latestTime = (self.sample.latest, latestTime)
                 else:
-                    earliestTime = self._earliestTime
-                    latestTime = self._latestTime
+                    # If we match the text of the earliest and latest config value
+                    # return cached value    
+                    if self.sample.earliest == self._earliestTime[0] \
+                            and self.sample.latest == self._latestTime[0]:
+                        # logger.debug("Updating time from cache")
+                        earliestTime = self._earliestTime[1]
+                        latestTime = self._latestTime[1]
+                    # Otherwise calculate and update the cache
+                    else:
+                        # logger.debug("Earliest and Latest Time Cache invalidated for times '%s' & '%s', refreshing" \
+                        #                 % (self.sample.earliest, self.sample.latest))
+                        earliestTime = timeParser(self.sample.earliest)
+                        self._earlestTime = (self.sample.earliest, earliestTime)
+                        latestTime = timeParser(self.sample.latest)
+                        self._latestTime = (self.sample.latest, latestTime)
 
 
-                earliestTime = timeParser(self.sample.earliest)
-                latestTime = timeParser(self.sample.latest)        
+                # Don't muck with time while we're backfilling
+                # if self.sample.backfill != None and not self.sample._backfilldone:
+                #     earliestTime = timeParser(self.sample.earliest)
+                #     latestTime = timeParser(self.sample.latest)
+                # else:
+                #     if datetime.datetime.now() - self._tokents > datetime.timedelta(seconds=1):
+                #         self._tokents = datetime.datetime.now()
+                #         earliestTime = timeParser(self.sample.earliest)
+                #         latestTime = timeParser(self.sample.latest)
+                #         self._earliestTime = earliestTime
+                #         self._latestTime = latestTime
+                #     else:
+                #         earliestTime = self._earliestTime
+                #         latestTime = self._latestTime
 
                 if earliestTime and latestTime:
                     if latestTime>=earliestTime:
@@ -832,8 +865,8 @@ class Token:
                             return old
                     ## earliestTime/latestTime not proper
                     else:
-                        logger.error("Earliest specifier '%s' is greater than latest specifier '%s'; will not replace" \
-                                    % (self.sample.earliest, self.sample.latest) )
+                        logger.error("Earliest specifier '%s', value '%s' is greater than latest specifier '%s', value '%s' for sample '%s'; will not replace" \
+                                    % (self.sample.earliest, earliestTime, self.sample.latest, latestTime, self.sample.name) )
                         return old
             ## earliest/latest not proper
             else:
@@ -1002,6 +1035,9 @@ class Token:
                         return old
                     else:
                         self._tokenfile = replacementLines
+                else:
+                    logger.error("Cannot find replacement file '%s'" % replacementFile)
+                    return old
             
             return replacementLines[random.randint(0, len(replacementLines)-1)].strip()
         elif self.replacementType == 'mvfile':

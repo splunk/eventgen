@@ -72,6 +72,7 @@ class Config:
     mode = None
     backfill = None
     backfillSearch = None
+    backfillSearchUrl = None
 
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
@@ -79,7 +80,7 @@ class Config:
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
                     'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
-                    'backfill', 'backfillSearch']
+                    'backfill', 'backfillSearch', 'backfillSearchUrl']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile']
     _validOutputModes = ['spool', 'file', 'splunkstream', 'stormstream']
@@ -104,7 +105,7 @@ class Config:
             # Setup logger
             logger = logging.getLogger('eventgen')
             logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
-            logger.setLevel(logging.INFO)
+            logger.setLevel(logging.DEBUG)
             formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
             streamHandler = logging.StreamHandler(sys.stdout)
             streamHandler.setFormatter(formatter)
@@ -127,8 +128,7 @@ class Config:
         """Only used for debugging, outputs a pretty printed representation of our Config"""
         # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != 'samples' ])
-        # return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
-        return ""
+        return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
         
     def __repr__(self):
         return self.__str__()
@@ -518,5 +518,5 @@ class Config:
                 #             newitem = self._validSettings[[x.lower() for x in self._validSettings].index(item.lower())]
                 #         ret[section][newitem] = orig[section][item]
             self._confDict = ret
-        # logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
+        logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
             
