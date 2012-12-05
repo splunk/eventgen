@@ -239,8 +239,13 @@ class Output:
                 # Trying to limit to MAX_WORKERS
                 w = Worker(self._flush, v)
                 
+                for i in xrange(0, len(self._workers)):
+                    if not self._workers[i].running:
+                        del self._workers[i]
+                        break
+
                 while len(self._workers) > MAX_WORKERS:
-                    logger.debug("Waiting for workers")
+                    logger.info("Waiting for workers, limited to %s" % MAX_WORKERS)
                     for i in xrange(0, len(self._workers)):
                         if not self._workers[i].running:
                             del self._workers[i]
@@ -249,11 +254,19 @@ class Output:
                 self._workers.append(w)
                 
                 w.start()
-
-        elif self._outputMode not in ('splunkstream', 'stormstream'):
+        elif (len(self._queue) >= 1000 or (force and len(self._queue) > 0)) \
+                and self._outputMode in ('spool'):
             q = copy.deepcopy(self._queue)
             self._queue.clear()
             self._flush(q)
+
+        elif self._outputMode in ('file'):
+            # q = copy.deepcopy(self._queue)
+            # self._queue.clear()
+            # self._flush(q)
+
+            self._flush(self._queue)
+
             # w = Worker(self._flush, q)
             # w.start()
 
@@ -346,7 +359,11 @@ class Output:
             spoolPath = self._spoolDir + os.sep + self._spoolFile
             logger.debug("Moving '%s' to '%s' for sample '%s' in app '%s'" % (self._workingFilePath, spoolPath, self._sample, self._app))
             if os.path.exists(self._workingFilePath):
-                shutil.move(self._workingFilePath, spoolPath)
+                if os.path.exists(spoolPath):
+                    os.system("cat %s >> %s" % (self._workingFilePath, spoolPath))
+                    os.remove(self._workingFilePath)
+                else:
+                    shutil.move(self._workingFilePath, spoolPath)
             else:
                 logger.error("File '%s' missing" % self._workingFilePath)
         elif self._outputMode == 'splunkstream':

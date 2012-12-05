@@ -14,7 +14,6 @@ import time
 import datetime
 from select import select
 from eventgenconfig import Config
-import cProfile
 
 class Timer(threading.Thread):
     time = None
@@ -59,8 +58,8 @@ class Timer(threading.Thread):
                             sleepTime = partialInterval
                             self.countdown = 0
                           
-                        logger.info("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
-                                    % (self.sample.name, self.sample.app, sleepTime) )    
+                        logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
+                                    % (self.sample.name, self.sample.app, partialInterval) )    
                         if sleepTime > 0:
                             time.sleep(sleepTime)
                     else:
