@@ -95,17 +95,13 @@ def timeParser(ts='now', sessionKey=None):
                 return ret
             
             else:
-                logger.error('Cannot parse relative time string for %s' %(ts))
-                return False
+                raise ValueError('Cannot parse relative time string for %s' %(ts))
         else:
             # The spec says we must be a ISO8601 time.  This parser should be able to handle 
             # more date formats though, so we can be liberal in what we accept
-            try:
-                ret = dateutil_parser.parse(ts)
-            except ValueError:
-                logger.error("Cannot parse date/time for %s" % (ts))
-                return False
-            return ret
+            return dateutil_parser.parse(ts)
+            #except ValueError:
+            #    raise ValueError("Cannot parse date/time for %s" % (ts))
 
 def timeParserTimeMath(plusminus, num, unit, ret):
     try:

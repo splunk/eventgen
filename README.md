@@ -59,4 +59,4 @@ On top of that, we've made very significant enhancements over that version:
 
 # Tutorial
 
-Please see our [Tutorial in the README directory](https://github.com/splunk/eventgen/blob/master/README/Tutorial.md).
+Please see our [Tutorial in the README directory](eventgen/blob/master/README/Tutorial.md).
