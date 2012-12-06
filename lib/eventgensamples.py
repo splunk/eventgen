@@ -51,6 +51,7 @@ class Sample:
     sourcetype = None
     host = None
     hostRegex = None
+    hostToken = None
     tokens = None
     projectID = None
     accessToken = None
@@ -112,8 +113,13 @@ class Sample:
 
         # Setup initial backfillts
         if self._backfillts == None and self.backfill != None and not self._backfilldone:
-            logger.info("Setting up backfill of %s" % self.backfill)
-            self._backfillts = timeParser(self.backfill)
+            try:
+                self._backfillts = timeParser(self.backfill)
+                logger.info("Setting up backfill of %s (%s)" % (self.backfill,self._backfillts))
+            except Exception as ex:
+                logger.error("Failed to parse backfill '%s': %s" % (self.backfill, ex))
+                raise
+
             self._origEarliest = self.earliest
             self._origLatest = self.latest
             if self._out._outputMode == "splunkstream" and self.backfillSearch != None:
@@ -173,7 +179,7 @@ class Sample:
                 csvReader = csv.DictReader(sampleFH)
                 for line in csvReader:
                     sampleDict.append(line)
-                    sampleLines.append(line['_raw'])
+                    sampleLines.append(line['_raw'].decode('string_escape'))
                 self._sampleDict = copy.deepcopy(sampleDict)
                 self._sampleLines = copy.deepcopy(sampleLines)
             else:
@@ -196,6 +202,7 @@ class Sample:
                 self._rpevents = sampleDict
             else:
                 if self.breaker != self._c.breaker:
+                    self._rpevents = []
                     lines = '\n'.join(sampleLines)
                     breaker = re.search(self.breaker, lines)
                     currentchar = 0
@@ -472,6 +479,10 @@ class Sample:
                             self._out.flush()
                             self.index = sampleDict[lineno]['index']
                             self.host = sampleDict[lineno]['host']
+                            # Allow randomizing the host:
+                            if(self.hostToken):
+                                self.host = self.hostToken.replace(self.host)
+
                             self.source = sampleDict[lineno]['source']
                             self.sourcetype = sampleDict[lineno]['sourcetype']
                             logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
@@ -492,6 +503,10 @@ class Sample:
                         self._out.flush()
                         self.index = sampleDict[x]['index']
                         self.host = sampleDict[x]['host']
+                        # Allow randomizing the host:
+                        if(self.hostToken):
+                            self.host = self.hostToken.replace(self.host)
+
                         self.source = sampleDict[x]['source']
                         self.sourcetype = sampleDict[x]['sourcetype']
                         logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
@@ -570,35 +585,38 @@ class Sample:
         return path
 
     def _getTSFromEvent(self, event):
-        currentts = None
+        currentTime = None
         formats = [ ]
+        # JB: 2012/11/20 - Can we optimize this by only testing tokens of type = *timestamp?
+        # JB: 2012/11/20 - Alternatively, documentation should suggest putting timestamp as token.0.
         for token in self.tokens:
             try:
                 formats.append(token.token)
                 # logger.debug("Searching for token '%s' in event '%s'" % (token.token, event))
                 results = token._search(event)
                 if results:
-                    timeformat = token.replacement
-                    try:
-                        timestr = event[results.start(1):results.end(1)]
-                    except IndexError:
-                        timestr = event[results.start(0):results.end(0)]
-                    if timeformat == "%s":
-                        currentts = datetime.datetime.fromtimestamp(float(timestr))
+                    timeFormat = token.replacement
+                    group = 0 if len(results.groups()) == 0 else 1
+                    timeString = results.group(group)
+                    # logger.debug("Testing '%s' as a time string against '%s'" % (timeString, timeFormat))
+                    if timeFormat == "%s":
+                        ts = float(timeString) if len(timeString) < 10 else float(timeString) / (10**(len(timeString)-10))
+                        currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
-                        currentts = datetime.datetime.strptime(timestr, timeformat)
-                    logger.debug("Event '%s' Timeformat '%s' currentts '%s'" % (timestr, timeformat, currentts))
-                    if type(currentts) == datetime.datetime:
+                        currentTime = datetime.datetime.strptime(timeString, timeFormat)
+                    logger.debug("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
+                    if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
-                logger.debug("Time found but TS parse failed.  Event '%s' Timeformat '%s' currentts '%s'" % (timestr, timeformat, currentts))
-        if type(currentts) != datetime.datetime:
+                logger.debug("Match found ('%s') but time parse failed. Timeformat '%s' Event '%s'" % (timeString, timeFormat, event))
+        if type(currentTime) != datetime.datetime:
             # Total fail
-            raise ValueError("Can't find regex format in '%s' for this timestamp '%s'." % (formats, event))
+            logger.error("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
+            raise ValueError("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
         # Check to make sure we parsed a year
-        if currentts.year == 1900:
-            currentts = currentts.replace(year=datetime.datetime.now().year)
-        return currentts
+        if currentTime.year == 1900:
+            currentTime = currentTime.replace(year=datetime.datetime.now().year)
+        return currentTime
         
 class Token:
     token = None
@@ -669,7 +687,9 @@ class Token:
             # # Find old in case of error
             oldMatch = self._search(event)
             if oldMatch:
-                old = event[oldMatch.start(0):oldMatch.end(0)]
+                # old = event[oldMatch.start(group):oldMatch.end(group)]
+                group = 0 if len(oldMatch.groups()) == 0 else 1
+                old = oldMatch.group(group)
             else:
                 old = ""
             
@@ -792,7 +812,8 @@ class Token:
                                         try:
                                             timeformat = currentformat
                                             if timeformat == "%s":
-                                                currentts = datetime.datetime.fromtimestamp(float(old))
+                                                ts = float(old) if  len(old) < 10 else float(old) / (10**(len(old)-10))
+                                                currentts = datetime.datetime.fromtimestamp(ts)
                                             else:
                                                 currentts = datetime.datetime.strptime(old, timeformat)
                                             # logger.debug("Old '%s' Timeformat '%s' currentts '%s'" % (old, timeformat, currentts))
@@ -809,13 +830,14 @@ class Token:
                                     timeformat = self.replacement
                                     try:
                                         if timeformat == "%s":
-                                            currentts = datetime.datetime.fromtimestamp(float(old))
+                                            ts = float(old) if  len(old) < 10 else float(old) / (10**(len(old)-10))
+                                            currentts = datetime.datetime.fromtimestamp(ts)
                                         else:
                                             currentts = datetime.datetime.strptime(old, timeformat)
                                         # logger.debug("Timeformat '%s' currentts '%s'" % (timeformat, currentts))
                                     except ValueError:
                                         # Total fail
-                                        logger.error("Can't find strptime format for this timestamp '%s'.  Returning original value" % old)
+                                        logger.error("Can't match strptime format ('%s') to this timestamp '%s'.  Returning original value" % (timeformat, old))
                                         return old
                                     
                                     # Can't parse as strptime, try JSON
@@ -957,12 +979,7 @@ class Token:
                     endFloat = float(floatMatch.group(3)+'.'+floatMatch.group(4))
                     
                     if endFloat >= startFloat:
-                        precision = 10 ** len(floatMatch.group(2))
-                        startInt = int(round(float(floatMatch.group(1)) * precision,0))
-                        endInt = int(round(float(floatMatch.group(3)) * precision,0))
-                        
-                        randInt = random.randint(startInt, endInt)
-                        floatret = round(randInt / precision, len(floatMatch.group(2)))
+                        floatret = round(random.uniform(startFloat,endFloat), len(floatMatch.group(2)))
                         if self.replacementType == 'rated':
                             rateFactor = 1.0
                             now = datetime.datetime.now()
@@ -1017,48 +1034,41 @@ class Token:
 
                 return replacement
             else:
-                logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (replacement, replacementType) )
+                logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
                 return old
-        elif self.replacementType == 'file':
-            # Adding caching of the token file to avoid reading it every iteration
-            if self._tokenfile != None:
-                replacementLines = self._tokenfile
-            else:
-                replacementFile = self.sample.pathParser(self.replacement)
-                if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
-                    replacementFH = open(replacementFile, 'rU')
-                    replacementLines = replacementFH.readlines()
-                    replacementFH.close()
-
-                    if len(replacementLines) == 0:
-                        logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
-                        return old
-                    else:
-                        self._tokenfile = replacementLines
-                else:
-                    logger.error("Cannot find replacement file '%s'" % replacementFile)
-                    return old
-            
-            return replacementLines[random.randint(0, len(replacementLines)-1)].strip()
-        elif self.replacementType == 'mvfile':
+        elif self.replacementType == 'file' or self.replacementType == 'mvfile':
             try:
-                replacementFile = self.sample.pathParser(self.replacement.split(':')[0])
-                replacementColumn = int(self.replacement.split(':')[1])-1
+                paths = self.replacement.split(':')
+                if(len(paths) == 1):
+                    replacementColumn = 0
+                else:
+                    try: # When it's not a mvfile, there's no number on the end:
+                        replacementColumn = int(paths[-1])
+                    except (ValueError):
+                        replacementColumn = 0
+                if(replacementColumn > 0):
+                    # This supports having a drive-letter colon
+                    replacementFile = self.sample.pathParser(":".join(paths[0:-1]))
+                else:
+                    replacementFile = self.sample.pathParser(self.replacement)
             except ValueError, e:
-                logger.error("Replacement string '%s' improperly formatted.  Should be file:column" % (replacement))
+                logger.error("Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column" % (self.replacement))
                 return old
 
-            ## If we've seen this file before, simply return already read results
-            if replacementFile in self.mvhash:
+            # If we've seen this file before, simply return already read results
+            # This applies only if we're looking at a multivalue file and we want to
+            # return the same random pick on every iteration
+            if replacementColumn > 0 and replacementFile in self.mvhash:
                 if replacementColumn > len(self.mvhash[replacementFile]):
                     logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
                     return old
                 else:
-                    return self.mvhash[replacementFile][replacementColumn]
-            ## Otherwise, lets read the file and build our cached results, pick a result and return it
+                    return self.mvhash[replacementFile][replacementColumn-1]
             else:
+                # Adding caching of the token file to avoid reading it every iteration
                 if self._tokenfile != None:
                     replacementLines = self._tokenfile
+                ## Otherwise, lets read the file and build our cached results, pick a result and return it
                 else:
                     if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
                         replacementFH = open(replacementFile, 'rU')
@@ -1068,21 +1078,22 @@ class Token:
                         if len(replacementLines) == 0:
                             logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
                             return old
+
+                        replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
+
+                        if replacementColumn > 0:
+                            self.mvhash[replacementFile] = replacement.split(',')
+
+                            if replacementColumn > len(self.mvhash[replacementFile]):
+                                logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
+                                return old
+                            else:
+                                return self.mvhash[replacementFile][replacementColumn-1]
                         else:
-                            self._tokenfile = replacementLines
+                            return replacement
                     else:
                         logger.error("File '%s' does not exist" % (replacementFile))
                         return old
-
-                replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
-
-                self.mvhash[replacementFile] = replacement.split(',')
-
-                if replacementColumn > len(self.mvhash[replacementFile]):
-                    logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
-                    return old
-                else:
-                    return self.mvhash[replacementFile][replacementColumn]
         else:
             logger.error("Unknown replacementType '%s'; will not replace" % (replacementType) )
             return old

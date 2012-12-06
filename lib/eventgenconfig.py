@@ -80,8 +80,9 @@ class Config:
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
                     'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
-                    'backfill', 'backfillSearch', 'backfillSearchUrl']
+                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
+    _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile']
     _validOutputModes = ['spool', 'file', 'splunkstream', 'stormstream']
     _validSplunkMethods = ['http', 'https']
@@ -139,6 +140,13 @@ class Config:
         If we're not Splunk embedded, we operate simpler.  No rest handler for configurations. We only read configs 
         in our parent app's directory.  In standalone mode, we read eventgen-standalone.conf and will skip eventgen.conf if
         we detect SA-Eventgen is installed. """
+
+        fileHandler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen.log', maxBytes=25000000, backupCount=5)
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+        fileHandler.setFormatter(formatter)
+        fileHandler.setLevel(logging.DEBUG)
+        logger.handlers = [ ] # Remove existing StreamHandler if we're embedded
+        logger.addHandler(fileHandler)
         logger.info("Running as Splunk embedded")
         import splunk.auth as auth
         import splunk.entity as entity
@@ -149,13 +157,7 @@ class Config:
         globals()['entity'] = locals()['entity']
         # globals()['rest'] = locals()['rest']
         # globals()['util'] = locals()['util']
-        
-        fileHandler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen.log', maxBytes=25000000, backupCount=5)
-        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-        fileHandler.setFormatter(formatter)
-        logger.handlers = [ ] # Remove existing StreamHandler if we're embedded
-        logger.addHandler(fileHandler)
-        
+
         if sessionKey == None or debug == True:
             self.debug = True
             self.sessionKey = auth.getSessionKey('admin', 'changeme')
@@ -209,15 +211,24 @@ class Config:
                         continue
                     # If we're a tuple, then this must be a token
                     if type(value) == tuple:
-                        # Token indices could be out of order, so we must check to 
+                        # Token indices could be out of order, so we must check to
                         # see whether we have enough items in the list to update the token
                         # In general this will keep growing the list by whatever length we need
-                        if len(s.tokens) <= value[0]:
-                            x = (value[0]+1) - len(s.tokens)
-                            s.tokens.extend([None for i in xrange(0, x)])
-                        if not isinstance(s.tokens[value[0]], Token):
-                            s.tokens[value[0]] = Token(s)
-                        setattr(s.tokens[value[0]], value[1], oldvalue)
+                        if(key.find("host.") > -1):
+                            # logger.info("hostToken.{} = {}".format(value[1],oldvalue))
+                            if not isinstance(s.hostToken, Token):
+                                s.hostToken = Token(s)
+                                # default hard-coded for host replacement
+                                s.hostToken.replacementType = 'file'
+                            setattr(s.hostToken, value[0], oldvalue)
+                        else:
+                            if len(s.tokens) <= value[0]:
+                                x = (value[0]+1) - len(s.tokens)
+                                s.tokens.extend([None for i in xrange(0, x)])
+                            if not isinstance(s.tokens[value[0]], Token):
+                                s.tokens[value[0]] = Token(s)
+                            # logger.info("token[{}].{} = {}".format(value[0],value[1],oldvalue))
+                            setattr(s.tokens[value[0]], value[1], oldvalue)
                     elif key == 'eai:acl':
                         setattr(s, 'app', value['app'])         
                     else:
@@ -416,6 +427,14 @@ class Config:
                         raise ValueError("Could not parse token index '%s' token type '%s' in stanza '%s'" % \
                                     (groups[0], groups[1], stanza))
                 return (int(groups[0]), groups[1])
+        elif key.find('host.') > -1:
+            results = re.match('host\.(\w+)', key)
+            if results != None:
+                groups = results.groups()
+                if groups[0] not in self._validHostTokens:
+                    logger.error("Could not parse host token type '%s' in stanza '%s'" % (groups[0], stanza))
+                    raise ValueError("Could not parse host token type '%s' in stanza '%s'" % (groups[0], stanza))
+                return (groups[0], value)
         elif key in self._validSettings:
             if key in self._intSettings:
                 try:

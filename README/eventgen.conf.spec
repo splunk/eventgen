@@ -302,3 +302,21 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | ipv4 
       * Unix separators will work on Windows and vice-versa.
     * Column numbers in mvfile references are indexed at 1, meaning the first column is column 1, not 0.
     * Defaults to None.
+
+################################
+## HOST REPLACEMENT SETTINGS  ##
+################################
+
+host.token = <regular expression>
+    * 'n' is a number starting at 0, and increasing by 1.
+    * PCRE expression used to identify the host name (or partial name) for replacement.
+    * If one or more capture groups are present the replacement will be performed on group 1.
+    * Defaults to None.
+
+host.replacement = <replacement file name> | <replacement file name>:<column number>
+    * For <replacement file name>, the token will be replaced with a random line in the replacement file.
+      * Replacement file name should be a fully qualified path (i.e. $SPLUNK_HOME/etc/apps/windows/samples/users.list).
+      * Windows separators should contain double forward slashes '\\' (i.e. $SPLUNK_HOME\\etc\\apps\\windows\\samples\\users.list).
+      * Unix separators will work on Windows and vice-versa.
+    * Column numbers in mvfile references are indexed at 1, meaning the first column is column 1, not 0.
+    * Defaults to None.
