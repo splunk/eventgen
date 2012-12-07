@@ -442,7 +442,11 @@ class Sample:
                     partialInterval = float("%d.%06d" % (timeDiff.seconds, timeDiff.microseconds))
                 else:
                     partialInterval = 0
-                logger.debug("Setting partialInterval for replay mode: %s %s" % (timeDiff, partialInterval))
+
+                if self.timeMultiple > 0:
+                    partialInterval *= self.timeMultiple
+
+                logger.debug("Setting partialInterval for replay mode with timeMultiple %s: %s %s" % (self.timeMultiple, timeDiff, partialInterval))
                 self._lastts = nextts
 
             ## Iterate events
@@ -617,8 +621,18 @@ class Sample:
         if currentTime.year == 1900:
             currentTime = currentTime.replace(year=datetime.datetime.now().year)
         return currentTime
+    
+    def saveState(self):
+        """Saves state of all integer IDs of this sample to a file so when we restart we'll pick them up"""
+        for token in self.tokens:
+            if token.replacementType == 'integerid':
+                stateFile = open(os.path.join(self._c.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'w')
+                stateFile.write(token.replacement)
+                stateFile.close()
+
         
 class Token:
+    """Contains data and methods for replacing a token in a given sample"""
     token = None
     replacementType = None
     replacement = None
@@ -1094,6 +1108,11 @@ class Token:
                     else:
                         logger.error("File '%s' does not exist" % (replacementFile))
                         return old
+        elif self.replacementType == 'integerid':
+            temp = self.replacement
+            self.replacement = str(int(self.replacement) + 1)
+            return temp
+
         else:
             logger.error("Unknown replacementType '%s'; will not replace" % (replacementType) )
             return old

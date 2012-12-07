@@ -61,6 +61,7 @@ class Timer(threading.Thread):
                         logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
                                     % (self.sample.name, self.sample.app, partialInterval) )    
                         if sleepTime > 0:
+                            self.sample.saveState()
                             time.sleep(sleepTime)
                     else:
                         self.countdown -= self.time
@@ -71,6 +72,7 @@ class Timer(threading.Thread):
                 sys.exit(0)
 
     def stop(self):
+        self.sample.saveState()
         self.stopping = True
                      
             
@@ -115,15 +117,15 @@ if __name__ == '__main__':
         sessionKey = sys.stdin.readline().strip()
     
     if sessionKey == 'debug':
-        c.makeSplunkEmbedded(debug=True)
+        c.makeSplunkEmbedded(runOnce=True)
     elif len(sessionKey) > 0:
         c.makeSplunkEmbedded(sessionKey=sessionKey)
         
     c.parse()
 
     sampleTimers = []
-        
-    if c.debug:
+
+    if c.runOnce:
         logger.info('Entering debug (single iteration) mode')
 
     # Hopefully this will catch interrupts, signals, etc
@@ -132,7 +134,7 @@ if __name__ == '__main__':
 
     for s in c.samples:
         if s.interval > 0 or s.mode == 'replay':
-            if c.debug:
+            if c.runOnce:
                 s.gen()
             else:
                 logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )    
@@ -140,7 +142,7 @@ if __name__ == '__main__':
                 sampleTimers.append(t)
     
     ## Start the timers
-    if not c.debug:
+    if not c.runOnce:
         set_exit_handler(handle_exit)
         first = True
         while (1):
