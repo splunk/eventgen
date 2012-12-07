@@ -37,7 +37,7 @@ class Timer(threading.Thread):
         cProfile.run("threadrun()", "eventgenprof_%s" % self.sample.name)
 
     def real_run(self):
-         if self.sample.delay > 0:
+        if self.sample.delay > 0:
             logger.info("Sample set to delay %s, sleeping." % s.delay)
             time.sleep(self.sample.delay)
         while (1):
