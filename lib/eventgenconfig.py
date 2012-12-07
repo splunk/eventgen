@@ -9,6 +9,7 @@ import json
 import pprint
 import copy
 from eventgensamples import Sample, Token
+import urllib
 
 # 5/10/12 CS Some people consider Singleton to be lazy.  Dunno, I like it for convenience.
 # My general thought on that sort of stuff is if you don't like it, reimplement it.  I'll consider
@@ -29,11 +30,13 @@ class Config:
     
     # Externally used vars
     debug = False
+    runOnce = False
     splunkEmbedded = False
     sessionKey = None
     grandparentdir = None
     greatgrandparentdir = None
     samples = [ ]
+    sampleDir = None
     
     # Config file options.  We do not define defaults here, rather we pull them in
     # from either the eventgen.conf in the SA-Eventgen app (embedded)
@@ -80,16 +83,16 @@ class Config:
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
                     'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
-                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName']
+                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
-    _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile']
+    _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
     _validOutputModes = ['spool', 'file', 'splunkstream', 'stormstream']
     _validSplunkMethods = ['http', 'https']
     _validSampleTypes = ['raw', 'csv']
     _validModes = ['sample', 'replay']
     _intSettings = ['interval', 'count', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort']
-    _floatSettings = ['randomizeCount', 'delay']
+    _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate']
     _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 
@@ -106,7 +109,7 @@ class Config:
             # Setup logger
             logger = logging.getLogger('eventgen')
             logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
-            logger.setLevel(logging.DEBUG)
+            logger.setLevel(logging.INFO)
             formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
             streamHandler = logging.StreamHandler(sys.stdout)
             streamHandler.setFormatter(formatter)
@@ -134,7 +137,7 @@ class Config:
     def __repr__(self):
         return self.__str__()
         
-    def makeSplunkEmbedded(self, sessionKey=None, debug=False):
+    def makeSplunkEmbedded(self, sessionKey=None, runOnce=False):
         """Setup operations for being Splunk Embedded.  This is legacy operations mode, just a little bit obfuscated now.
         We wait 5 seconds for a sessionKey or 'debug' on stdin, and if we time out then we run in standalone mode.
         If we're not Splunk embedded, we operate simpler.  No rest handler for configurations. We only read configs 
@@ -159,7 +162,7 @@ class Config:
         # globals()['util'] = locals()['util']
 
         if sessionKey == None or debug == True:
-            self.debug = True
+            self.runOnce = True
             self.sessionKey = auth.getSessionKey('admin', 'changeme')
         else:
             self.sessionKey = sessionKey
@@ -170,13 +173,7 @@ class Config:
     def parse(self):
         """Parse configs from Splunk REST Handler or from files.
         We get called manually instead of in __init__ because we need find out if we're Splunk embedded before
-        we figure out how to configure ourselves.
-        
-        Note if running as standalone (not splunk embedded) there are the following caveats:
-        * Will by default read eventgen-standalone.conf in the default and local directories and not eventgen.conf
-        * If we we do not see a SA-Eventgen or eventgen directory in the greatgrandparent directory
-                $SPLUNK_HOME/etc/apps/<yourapp>/bin/eventgen.py
-                                 ^^^^  - Great Grandparent dir       
+        we figure out how to configure ourselves.    
         """
         logger.debug("Parsing configuration files.")
         self._buildConfDict()
@@ -187,6 +184,7 @@ class Config:
             setattr(self, key, value)
             
         del self._confDict['global']
+        del self._confDict['default']
         
         tempsamples = [ ]
         tempsamples2 = [ ]
@@ -284,15 +282,29 @@ class Config:
             foundFiles = [ ]
             
             if self.splunkEmbedded and self._isOwnApp:
-                sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
+                self.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
             else:
-                sampleDir = os.path.join(self.grandparentdir, 'samples')
-            if os.path.exists(sampleDir):
-                sampleFiles = os.listdir(sampleDir)
+                self.sampleDir = os.path.join(self.grandparentdir, 'samples')
+
+            # Now that we know where samples will be written, 
+            # Loop through tokens and load state for any that are integerid replacementType
+            for token in s.tokens:
+                if token.replacementType == 'integerid':
+                    try:
+                        stateFile = open(os.path.join(self.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'rU')
+                        token.replacement = stateFile.read()
+                        stateFile.close()
+                    # The file doesn't exist, use the default value in the config
+                    except IOError, ValueError:
+                        token.replacement = token.replacement
+
+
+            if os.path.exists(self.sampleDir):
+                sampleFiles = os.listdir(self.sampleDir)
                 for sample in sampleFiles:
                     results = re.match(s.name, sample)
                     if results != None:
-                        samplePath = os.path.join(sampleDir, sample)
+                        samplePath = os.path.join(self.sampleDir, sample)
                         if os.path.isfile(samplePath):
                             logger.debug("Found sample file '%s' for app '%s' using config '%s' with priority '%s'; adding to list" \
                                 % (sample, s.app, s.name, s._priority) )
@@ -505,17 +517,12 @@ class Config:
             if len(sys.argv) > 1:
                 if len(sys.argv[1]) > 0:
                     if os.path.exists(sys.argv[1]):
-                        conffiles = [os.path.join(self.grandparentdir, 'lib', 'eventgen_defaults'),
+                        conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
                                     sys.argv[1]]
             if len(conffiles) == 0:
-                conffiles = [os.path.join(self.grandparentdir, 'lib', 'eventgen_defaults'),
-                            os.path.join(self.grandparentdir, 'default', 'eventgen-standalone.conf'),
-                            os.path.join(self.grandparentdir, 'local', 'eventgen-standalone.conf')]
-            # If we don't see SA-Eventgen, then pick up eventgen.conf as well
-            if not os.path.exists(os.path.join(self.greatgrandparentdir, 'SA-Eventgen')) \
-                    and not os.path.exists(os.path.join(self.greatgrandparentdir, 'eventgen')):
-                conffiles.append(os.path.join(self.grandparentdir, 'default', 'eventgen.conf'))
-                conffiles.append(os.path.join(self.grandparentdir, 'local', 'eventgen.conf'))
+                conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
+                            os.path.join(self.grandparentdir, 'local', 'eventgen.conf')]
+
             logger.debug('Reading configuration files for non-splunkembedded: %s' % conffiles)
             conf.read(conffiles)
                 
@@ -537,5 +544,8 @@ class Config:
                 #             newitem = self._validSettings[[x.lower() for x in self._validSettings].index(item.lower())]
                 #         ret[section][newitem] = orig[section][item]
             self._confDict = ret
+
+        if self._confDict['global']['debug'].lower() == 'true':
+            logger.setLevel(logging.DEBUG)
         logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
             

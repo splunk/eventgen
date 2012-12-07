@@ -39,8 +39,8 @@ token.1.replacementType = file
 token.1.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/orderType.sample
 
 token.2.token = transID=(\d+)
-token.2.replacementType = random
-token.2.replacement = integer[100000:999999]
+token.2.replacementType = integerid
+token.2.replacement = 100000
 
 token.3.token = transGUID=([0-9a-fA-F]+)
 token.3.replacementType = random

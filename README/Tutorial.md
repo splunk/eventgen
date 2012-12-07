@@ -28,6 +28,7 @@ Eventgen.conf can have one or more stanzas, of which the stanza name is a sample
     [sample.tutorial1]
     mode = replay
     sampletype = csv
+    timeMultiple = 2
     backfill = -15m
     backfillSearch = index=main sourcetype=splunkd
     
@@ -60,6 +61,9 @@ Specify replay mode.  This will leak out events at the same timing as they appea
 
     sampletype = csv
 Specify that the input file is in CSV format, rather than a plain text file.  With CSV input, we'll look for index, host, source, and sourcetype on a per event basis rather than setting them for the file as a whole.
+
+    timeMultiple = 2
+This will slow down the replay by a factor of 2 by multiplying all time between events by 2.
 
     backfill = -15m
 The eventgen will startup and immediately fill in 15 minutes worth of events from this file.  This is in Splunk relative time format, and can be any valid relative time specifier (note, the longer you make this, the longer it will take to get started).
@@ -189,8 +193,8 @@ Replaying random events from a file is an easy way to build an eventgen.  Someti
     token.1.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/orderType.sample
 
     token.2.token = transID=(\d+)
-    token.2.replacementType = random
-    token.2.replacement = integer[100000:999999]
+    token.2.replacementType = integerid
+    token.2.replacement = 100000
 
     token.3.token = transGUID=([0-9a-fA-F]+)
     token.3.replacementType = random
@@ -231,8 +235,8 @@ If you look at the sample.tutorial3 file, you'll see that we took just one sampl
 Now, lets look at some new token substitutions we haven't seen:
 
     token.2.token = transID=(\d+)
-    token.2.replacementType = random
-    token.2.replacement = integer[100000:999999]
+    token.2.replacementType = integerid
+    token.2.replacement = 100000
 
     token.3.token = transGUID=([0-9a-fA-F]+)
     token.3.replacementType = random
@@ -242,7 +246,7 @@ Now, lets look at some new token substitutions we haven't seen:
     token.4.replacementType = file
     token.4.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/userName.sample
 
-There are two types of random substitutions here.  Random supports integer, float, hex digits, ipv4, ipv6, mac, and string types.  These will just randomly generate digits.  In the case of integer, we also have a unix timestamp in this event we don't use, so we're telling it just to generate a random integer that looks like a timestamp.  For the two hex tokens, we're saying just generate some hex digits.  Note that where we have more complicated strings, we create a RegEx capture group with parenthesis to indicate the portion of the string we want the eventgen to replace.
+There are three types of substitutions here.  Integerid is a constantly incrementing integer.  The replacement value is the seed to start with, and state will be saved between runs such that it will always increment.  Random supports integer, float, hex digits, ipv4, ipv6, mac, and string types.  These will just randomly generate digits.  In the case of integer, we also have a unix timestamp in this event we don't use, so we're telling it just to generate a random integer that looks like a timestamp.  For the two hex tokens, we're saying just generate some hex digits.  Note that where we have more complicated strings, we create a RegEx capture group with parenthesis to indicate the portion of the string we want the eventgen to replace.
 
 Next, lets look at the file substitution:
 

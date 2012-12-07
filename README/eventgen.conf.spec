@@ -21,6 +21,7 @@
 
 [global]
 disabled = false
+debug = false
 spoolDir = $SPLUNK_HOME/var/spool/splunk
 spoolFile = <SAMPLE>
 breaker = [^\r\n\s]+
@@ -28,6 +29,7 @@ mode = sample
 sampletype = raw
 interval = 60
 delay = 0
+timeMultiple = 1
 ## 0 means all lines in sample
 count = 0
 ## earliest/latest = now means timestamp replacements default to current time
@@ -170,6 +172,7 @@ sampletype = raw | csv
       OVERRIDES FOR DEFAULT FIELDS WILL ONLY WITH WITH outputMode SPLUNKSTREAM.
 
 interval = <integer>
+    * Only valid in mode = sample
     * How often to generate sample (in seconds).
     * 0 means disabled.
     * Defaults to 60 seconds.
@@ -178,6 +181,12 @@ delay = <integer>
     * Specifies how long to wait until we begin generating events for this sample
     * Primarily this is used so we can stagger sets of samples which similar but slightly different data
     * Defaults to 0 which is disabled.
+
+timeMultiple = <float>
+    * Only valid in mode = replay
+    * Will slow down the replay of events by <float> factor.  For example, allows a 10 minute sample
+      to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6.
+      By the converse, make timeMultiple 0.5 will make the events run twice as fast.
 
 backfill = <time-str>
     * Specified in Splunk's relative time language, used to set a time to backfill events
@@ -256,7 +265,7 @@ token.<n>.token = <regular expression>
     * If one or more capture groups are present the replacement will be performed on group 1.
     * Defaults to None.
     
-token.<n>.replacementType = static | timestamp | replaytimestamp | random | rated | file | mvfile
+token.<n>.replacementType = static | timestamp | replaytimestamp | random | rated | file | mvfile | integerid
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For static, the token will be replaced with the value specified in the replacement setting.
     * For timestamp, the token will be replaced with the strptime specified in the replacement setting
@@ -273,9 +282,10 @@ token.<n>.replacementType = static | timestamp | replaytimestamp | random | rate
       rated by hourOfDayRate and dayOfWeekRate.
     * For file, the token will be replaced with a random value retrieved from a file specified in the replacement setting.
     * For mvfile, the token will be replaced with a random value of a column retrieved from a file specified in the replacement setting.  Multiple files can reference the same source file and receive different columns from the same random line.
+    * For integerid, will use an incrementing integer as the replacement.
     * Defaults to None.
     
-token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | ipv4 | ipv6 | mac | integer[<start>:<end>] | float[<start>:<end>] | string(<i>) | hex(<i>) | <replacement file name> | <replacement file name>:<column number>
+token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | ipv4 | ipv6 | mac | integer[<start>:<end>] | float[<start>:<end>] | string(<i>) | hex(<i>) | <replacement file name> | <replacement file name>:<column number> | <integer>
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For <string>, the token will be replaced with the value specified.
     * For <strptime>, a strptime formatted string to replace the timestamp with
@@ -301,6 +311,7 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | ipv4 
       * Windows separators should contain double forward slashes '\\' (i.e. $SPLUNK_HOME\\etc\\apps\\windows\\samples\\users.list).
       * Unix separators will work on Windows and vice-versa.
     * Column numbers in mvfile references are indexed at 1, meaning the first column is column 1, not 0.
+    * <integer> used as the seed for integerid.
     * Defaults to None.
 
 ################################

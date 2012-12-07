@@ -57,6 +57,19 @@ On top of that, we've made very significant enhancements over that version:
 * Wrote new threading code to ensure the Eventgen will stop properly when Splunk stops.
 * Completely rewrote the configuration code to make it much simpler to enhance the eventgen when needed.
 
+### Version 1.1 Changelog
+* Added half a dozen performance enhancements to increase the performance of sample mode over 6x, and replay mode nearly 4x.  Can generate many thousands of events per second.
+* Added support for using %s as a time format.  This will either read or generate a UNIX epoch timestamp in second since the epoch.
+* Fixed bug not allowing mvfile substitutions on Windows.
+* Added the ability to randomize hosts sent in the metadata to Splunk.using a random selection from a file.
+* Simplified configuration by making file and mvfile the same thing configuration wise.  Using file with a semicolon and a column number will make it perform like mvfile now.  
+* Fixed a bug causing backfill to generate about 20% more events than normal mode when using outputmode SplunkStream.
+* Added support for timeMultiple which will slow down replay mode by <integer> factor, making a 10 minute sample of data play back in 20 minutes, or 60 minutes, etc, depending on the multiple.
+* Allowed DEBUG logging to be turned on from the global config.
+* Added integerid replacementType.  This will use a constantly incrementing ID as a replacement type.  Will update a state file whenever a sample sleeps or the program is shutting down.
+* Removed need to have different defaults file and config file name if you're embedding into a Splunk App instead of shipping the eventgen as its own app.
+
+
 # Tutorial
 
 Please see our [Tutorial in the README directory](eventgen/blob/master/README/Tutorial.md).

@@ -1,6 +1,7 @@
 [sample.tutorial1]
 mode = replay
 sampletype = csv
+timeMultiple = 2
 backfill = -15m
 backfillSearch = index=main sourcetype=splunkd
 
