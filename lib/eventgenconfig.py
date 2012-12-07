@@ -83,7 +83,7 @@ class Config:
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
                     'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
-                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple']
+                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
