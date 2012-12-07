@@ -1092,6 +1092,8 @@ class Token:
                         if len(replacementLines) == 0:
                             logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
                             return old
+                        else:
+                            self._tokenfile = replacementLines
 
                         replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
 
