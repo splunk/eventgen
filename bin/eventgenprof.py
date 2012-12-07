@@ -37,11 +37,10 @@ class Timer(threading.Thread):
         cProfile.run("threadrun()", "eventgenprof_%s" % self.sample.name)
 
     def real_run(self):
-        running = True
-        if self.sample.delay > 0:
+         if self.sample.delay > 0:
             logger.info("Sample set to delay %s, sleeping." % s.delay)
             time.sleep(self.sample.delay)
-        while (running):
+        while (1):
             if not self.stopping:
                 if not self.interruptcatcher:
                     if self.countdown <= 0:
@@ -65,8 +64,9 @@ class Timer(threading.Thread):
                             self.countdown = 0
                           
                         logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
-                                    % (self.sample.name, self.sample.app, sleepTime) )    
+                                    % (self.sample.name, self.sample.app, partialInterval) )    
                         if sleepTime > 0:
+                            self.sample.saveState()
                             time.sleep(sleepTime)
                     else:
                         self.countdown -= self.time
@@ -74,10 +74,10 @@ class Timer(threading.Thread):
                 else:
                     time.sleep(self.time)
             else:
-                running = False
-                # sys.exit(0)
+                sys.exit(0)
 
     def stop(self):
+        self.sample.saveState()
         self.stopping = True
                      
             
