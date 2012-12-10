@@ -1050,7 +1050,7 @@ class Token:
             else:
                 logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
                 return old
-        elif self.replacementType == 'file' or self.replacementType == 'mvfile':
+        elif self.replacementType in ('file', 'mvfile'):
             try:
                 paths = self.replacement.split(':')
                 if(len(paths) == 1):
@@ -1077,6 +1077,7 @@ class Token:
                     logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
                     return old
                 else:
+                    logger.debug("Returning mvhash: %s" % self.mvhash[replacementFile][replacementColumn-1])
                     return self.mvhash[replacementFile][replacementColumn-1]
             else:
                 # Adding caching of the token file to avoid reading it every iteration
@@ -1084,6 +1085,7 @@ class Token:
                     replacementLines = self._tokenfile
                 ## Otherwise, lets read the file and build our cached results, pick a result and return it
                 else:
+                    logger.debug("replacementFile: %s replacementColumn: %s" % (replacementFile, replacementColumn))
                     if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
                         replacementFH = open(replacementFile, 'rU')
                         replacementLines = replacementFH.readlines()
@@ -1094,22 +1096,22 @@ class Token:
                             return old
                         else:
                             self._tokenfile = replacementLines
-
-                        replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
-
-                        if replacementColumn > 0:
-                            self.mvhash[replacementFile] = replacement.split(',')
-
-                            if replacementColumn > len(self.mvhash[replacementFile]):
-                                logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
-                                return old
-                            else:
-                                return self.mvhash[replacementFile][replacementColumn-1]
-                        else:
-                            return replacement
                     else:
                         logger.error("File '%s' does not exist" % (replacementFile))
                         return old
+
+                replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
+
+                if replacementColumn > 0:
+                    self.mvhash[replacementFile] = replacement.split(',')
+
+                    if replacementColumn > len(self.mvhash[replacementFile]):
+                        logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
+                        return old
+                    else:
+                        return self.mvhash[replacementFile][replacementColumn-1]
+                else:
+                    return replacement
         elif self.replacementType == 'integerid':
             temp = self.replacement
             self.replacement = str(int(self.replacement) + 1)
