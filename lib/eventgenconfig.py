@@ -161,7 +161,7 @@ class Config:
         # globals()['rest'] = locals()['rest']
         # globals()['util'] = locals()['util']
 
-        if sessionKey == None or debug == True:
+        if sessionKey == None or runOnce == True:
             self.runOnce = True
             self.sessionKey = auth.getSessionKey('admin', 'changeme')
         else:
@@ -184,7 +184,8 @@ class Config:
             setattr(self, key, value)
             
         del self._confDict['global']
-        del self._confDict['default']
+        if 'default' in self._confDict:
+            del self._confDict['default']
         
         tempsamples = [ ]
         tempsamples2 = [ ]
@@ -545,7 +546,10 @@ class Config:
                 #         ret[section][newitem] = orig[section][item]
             self._confDict = ret
 
-        if self._confDict['global']['debug'].lower() == 'true':
+        # Have to look in the data structure before normalization between what Splunk returns
+        # versus what ConfigParser returns.
+        if self._confDict['global']['debug'].lower() == 'true' \
+                or self._confDict['global']['debug'].lower() == '1':
             logger.setLevel(logging.DEBUG)
         logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
             
