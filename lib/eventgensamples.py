@@ -1077,7 +1077,7 @@ class Token:
                     logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
                     return old
                 else:
-                    logger.debug("Returning mvhash: %s" % self.mvhash[replacementFile][replacementColumn-1])
+                    # logger.debug("Returning mvhash: %s" % self.mvhash[replacementFile][replacementColumn-1])
                     return self.mvhash[replacementFile][replacementColumn-1]
             else:
                 # Adding caching of the token file to avoid reading it every iteration
@@ -1085,7 +1085,7 @@ class Token:
                     replacementLines = self._tokenfile
                 ## Otherwise, lets read the file and build our cached results, pick a result and return it
                 else:
-                    logger.debug("replacementFile: %s replacementColumn: %s" % (replacementFile, replacementColumn))
+                    # logger.debug("replacementFile: %s replacementColumn: %s" % (replacementFile, replacementColumn))
                     if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
                         replacementFH = open(replacementFile, 'rU')
                         replacementLines = replacementFH.readlines()

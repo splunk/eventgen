@@ -385,7 +385,7 @@ class Output:
                     if self._projectID != None:
                         urlparms.append(('project', self._projectID))
                     url = '/1/inputs/http?%s' % (urllib.urlencode(urlparms))
-                    headers = {'Authorization': "Basic %s" % base64.b64encode(self._accessToken+':')}
+                    headers = {'Authorization': "Basic %s" % base64.b64encode(':'+self._accessToken)}
                     self._splunkhttp.request("POST", url, streamout, headers)
                     logger.debug("POSTing to url %s on https://api.splunkstorm.com with accessToken %s" \
                                 % (url, base64.b64encode(self._accessToken+':')))
