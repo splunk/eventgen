@@ -285,7 +285,16 @@ class Config:
             if self.splunkEmbedded and self._isOwnApp:
                 self.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
             else:
-                self.sampleDir = os.path.join(self.grandparentdir, 'samples')
+                self.sampleDir = os.path.join(os.getcwd(), 'samples')
+                if not os.path.exists(self.sampleDir):
+                    newSampleDir = os.path.join(os.sep.join(os.getcwd().split(os.sep)[:-1]), 'samples')
+                    logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
+                    self.sampleDir = newSampleDir
+
+                    if not os.path.exists(self.sampleDir):
+                        newSampleDir = self.sampleDir = os.path.join(self.grandparentdir, 'samples')
+                        logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
+                        self.sampleDir = newSampleDir
 
             # Now that we know where samples will be written, 
             # Loop through tokens and load state for any that are integerid replacementType
@@ -296,7 +305,7 @@ class Config:
                         token.replacement = stateFile.read()
                         stateFile.close()
                     # The file doesn't exist, use the default value in the config
-                    except IOError, ValueError:
+                    except (IOError, ValueError):
                         token.replacement = token.replacement
 
 
