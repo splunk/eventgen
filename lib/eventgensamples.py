@@ -58,6 +58,8 @@ class Sample:
     backfill = None
     backfillSearch = None
     backfillSearchUrl = None
+    minuteOfHourRate = None
+    timeMultiple = None
     
     # Internal fields
     _c = None
@@ -127,7 +129,7 @@ class Sample:
                     self.backfillSearch = 'search ' + self.backfillSearch
                 self.backfillSearch += '| head 1 | table _time'
 
-                logger.debug("Searching Splunk with search '%s' with sessionKey '%s'" % (self.backfillSearch, self._out._c.sessionKey))
+                logger.debug("Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" % (self.backfillSearchUrl, self.backfillSearch, self._out._c.sessionKey))
 
                 results = httplib2.Http(disable_ssl_certificate_validation=True).request(\
                             self.backfillSearchUrl + '/services/search/jobs',
@@ -137,10 +139,15 @@ class Sample:
                                                     'exec_mode': 'oneshot'}))[1]
                 try:
                     temptime = minidom.parseString(results).getElementsByTagName('text')[0].childNodes[0].nodeValue
+                    # logger.debug("Time returned from backfill search: %s" % temptime)
+                    # Results returned look like: 2013-01-16T10:59:15.411-08:00
+                    # But the offset in time can also be +, so make sure we strip that out first
                     if len(temptime) > 0:
+                        if temptime.find('+') > 0:
+                            temptime = temptime.split('+')[0]
                         temptime = '-'.join(temptime.split('-')[0:3])
                     self._backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
-                    # logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
+                    logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
                 except (ExpatError, IndexError): 
                     pass
 
@@ -309,6 +316,19 @@ class Sample:
                         import traceback
                         stack =  traceback.format_exc()
                         logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
+                if type(self.minuteOfHourRate) == dict:
+                    try:
+                        if self.backfill != None and not self._backfilldone:
+                            now = self._backfillts
+                        else:
+                            now = datetime.datetime.now()
+                        rate = self.minuteOfHourRate[str(now.minute)]
+                        logger.debug("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
+                        rateFactor *= rate
+                    except KeyError:
+                        import traceback
+                        stack =  traceback.format_exc()
+                        logger.error("Minute of hour rate failed.  Stacktrace %s" % stack)
                 count = int(round(count * rateFactor, 0))
                 if rateFactor != 1.0:
                     logger.info("Original count: %s Rated count: %s Rate factor: %s" % (self.count, count, rateFactor))
@@ -435,7 +455,10 @@ class Sample:
                     else:
                         nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1])
                 else:
+                    logger.debug("At end of _rpevents")
                     return 0
+
+                logger.debug('Computing timeDiff nextts: "%s" lastts: "%s"' % (nextts, self._lastts))
 
                 timeDiff = nextts - self._lastts
                 if timeDiff.days >= 0 and timeDiff.seconds >= 0 and timeDiff.microseconds >= 0:

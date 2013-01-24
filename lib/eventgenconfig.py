@@ -76,6 +76,7 @@ class Config:
     backfill = None
     backfillSearch = None
     backfillSearchUrl = None
+    minuteOfHourRate = None
 
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
@@ -83,7 +84,8 @@ class Config:
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
                     'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
-                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug']
+                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug', 
+                    'minuteOfHourRate']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -94,12 +96,12 @@ class Config:
     _intSettings = ['interval', 'count', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines']
-    _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate']
+    _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate']
     _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 
                             'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate', 
                             'randomizeCount', 'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles',
                             'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
-                            'projectID', 'accessToken', 'mode']
+                            'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple']
     
     def __init__(self):
         """Setup Config object.  Sets up Logging and path related variables."""
@@ -147,7 +149,7 @@ class Config:
         fileHandler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen.log', maxBytes=25000000, backupCount=5)
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         fileHandler.setFormatter(formatter)
-        fileHandler.setLevel(logging.DEBUG)
+        # fileHandler.setLevel(logging.DEBUG)
         logger.handlers = [ ] # Remove existing StreamHandler if we're embedded
         logger.addHandler(fileHandler)
         logger.info("Running as Splunk embedded")
@@ -419,6 +421,7 @@ class Config:
                 s.randomizeCount = None
                 s.hourOfDayRate = None
                 s.dayOfWeekRate = None
+                s.minuteOfHourRate = None
                 s.interval = 0
 
         self.samples = tempsamples
