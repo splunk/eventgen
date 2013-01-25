@@ -327,7 +327,6 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | ipv4 
 ################################
 
 host.token = <regular expression>
-    * 'n' is a number starting at 0, and increasing by 1.
     * PCRE expression used to identify the host name (or partial name) for replacement.
     * If one or more capture groups are present the replacement will be performed on group 1.
     * Defaults to None.
