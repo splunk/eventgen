@@ -485,7 +485,10 @@ class Sample:
                 for token in self.tokens:
                     token.mvhash = mvhash
                     event = token.replace(event)
-                    
+                if(self.hostToken):
+                    # clear the host mvhash every time, because we need to re-randomize it
+                    self.hostToken.mvhash =  {}
+
                 # Hack for bundle lines to work with sampletype csv
                 # Basically, bundlelines allows us to create copies of a bundled set of
                 # of events as one event, and this splits those back out so that we properly
@@ -733,8 +736,8 @@ class Token:
             # logger.debug("Got match for token: '%s'" % (self.token))
             replacement = self._getReplacement(old)
             
-            if replacement != None:
-                # logger.debug("Replacement: '%s'" % (replacement))
+            if replacement is not None:
+                logger.debug("Replacement: '%s'" % replacement)
                 ## Iterate matches
                 for match in tokenMatch:
                     # logger.debug("Match: %s" % (match))
