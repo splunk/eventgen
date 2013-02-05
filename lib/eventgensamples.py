@@ -227,7 +227,7 @@ class Sample:
         if self.mode == 'replay':
             if self.sampletype == 'csv':
                 sampleDict = [ self._rpevents[self._currentevent] ]
-                sampleLines = [ self._rpevents[self._currentevent]['_raw'] ]
+                sampleLines = [ self._rpevents[self._currentevent]['_raw'].decode('string_escape') ]
             else:
                 sampleLines = [ self._rpevents[self._currentevent] ]
             self._currentevent += 1
