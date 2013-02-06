@@ -61,6 +61,7 @@ class Config:
     randomizeCount = None
     randomizeEvents = None
     outputMode = None
+    fileName = None
     fileMaxBytes = None
     fileBackupFiles = None
     splunkPort = None
@@ -332,6 +333,8 @@ class Config:
                     news.spoolFile = f.split(os.sep)[-1]
                 if s.outputMode == 'file' and s.fileName == None and s.spoolFile == self.spoolFile:
                     news.fileName = os.path.join(s.spoolDir, f.split(os.sep)[-1])
+                elif s.outputMode == 'file' and s.fileName == None and s.spoolFile != None:
+                    news.fileName = os.path.join(s.spoolDir, s.spoolFile)
                 # Override s.name with file name.  Usually they'll match unless we've been a regex
                 # 6/22/12 CS Save original name for later matching
                 news._origName = news.name
