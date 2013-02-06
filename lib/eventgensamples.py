@@ -60,6 +60,7 @@ class Sample:
     backfillSearchUrl = None
     minuteOfHourRate = None
     timeMultiple = None
+    debug = None
     
     # Internal fields
     _c = None
