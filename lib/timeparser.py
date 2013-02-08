@@ -29,12 +29,18 @@ except NameError:
 # 5-5-2012 CS  Replacing TimeParser with our own code to remove Splunk dependency
 # Based off spec for relative time identifiers at http://docs.splunk.com/Documentation/Splunk/latest/SearchReference/SearchTimeModifiers#How_to_specify_relative_time_modifiers
 # If we're not relative, we'll try to parse it as an ISO compliant time
-def timeParser(ts='now', sessionKey=None):
+def timeParser(ts='now', gmt=False):
     if ts == 'now':
-        return datetime.datetime.now()
+        if gmt:
+            return datetime.datetime.utcnow()
+        else:
+            return datetime.datetime.now()
     else:
         if ts[:1] == '+' or ts[:1] == '-':
-            ret = datetime.datetime.now()
+            if gmt:
+                ret = datetime.datetime.utcnow()
+            else:
+                ret = datetime.datetime.now()
             
             unitsre = "(seconds|second|secs|sec|minutes|minute|min|hours|hour|hrs|hr|days|day|weeks|week|w[0-6]|months|month|mon|quarters|quarter|qtrs|qtr|years|year|yrs|yr|s|h|m|d|w|y|w|q)"
             reltimere = "(?i)(?P<plusminus>[+-]*)(?P<num>\d{1,})(?P<unit>"+unitsre+"{1})(([\@](?P<snapunit>"+unitsre+"{1})((?P<snapplusminus>[+-])(?P<snaprelnum>\d+)(?P<snaprelunit>"+unitsre+"{1}))*)*)"

@@ -189,6 +189,9 @@ timeMultiple = <float>
       to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6.
       By the converse, make timeMultiple 0.5 will make the events run twice as fast.
 
+gmt = <boolean>
+    * If set to true, will output time in GMT instead of local time
+
 backfill = <time-str>
     * Specified in Splunk's relative time language, used to set a time to backfill events
 

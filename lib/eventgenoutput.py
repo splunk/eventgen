@@ -222,13 +222,13 @@ class Output:
             # Fixes a bug where we're losing source and sourcetype with bundlelines type transactions
             queues = { }
             for row in self._queue:
-                if not row['source'] in queues:
-                    queues[row['source']] = deque([])
+                if not row['source']+'_'+row['sourcetype'] in queues:
+                    queues[row['source']+'_'+row['sourcetype']] = deque([])
 
             # logger.debug("Queues setup: %s" % pprint.pformat(queues))
             m = self._queue.popleft()
             while m:
-                queues[m['source']].append(m)
+                queues[m['source']+'_'+m['sourcetype']].append(m)
                 try:
                     m = self._queue.popleft()
                 except IndexError:
