@@ -78,6 +78,7 @@ class Config:
     backfillSearch = None
     backfillSearchUrl = None
     minuteOfHourRate = None
+    gmt = None
 
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
@@ -86,7 +87,7 @@ class Config:
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
                     'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
                     'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug', 
-                    'minuteOfHourRate']
+                    'minuteOfHourRate', 'gmt']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -96,7 +97,7 @@ class Config:
     _validModes = ['sample', 'replay']
     _intSettings = ['interval', 'count', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
-    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines']
+    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'gmt']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate']
     _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 
                             'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate', 

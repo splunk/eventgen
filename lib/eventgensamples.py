@@ -61,6 +61,7 @@ class Sample:
     minuteOfHourRate = None
     timeMultiple = None
     debug = None
+    gmt = None
     
     # Internal fields
     _c = None
@@ -117,7 +118,7 @@ class Sample:
         # Setup initial backfillts
         if self._backfillts == None and self.backfill != None and not self._backfilldone:
             try:
-                self._backfillts = timeParser(self.backfill)
+                self._backfillts = timeParser(self.backfill, gmt=self.gmt)
                 logger.info("Setting up backfill of %s (%s)" % (self.backfill,self._backfillts))
             except Exception as ex:
                 logger.error("Failed to parse backfill '%s': %s" % (self.backfill, ex))
@@ -154,7 +155,7 @@ class Sample:
 
         # Override earliest and latest during backfill until we're at current time
         if self.backfill != None and not self._backfilldone:
-            if self._backfillts >= datetime.datetime.now():
+            if self._backfillts >= self.now():
                 logger.info("Backfill complete")
                 self._backfilldone = True
                 self.earliest = self._origEarliest
@@ -291,7 +292,7 @@ class Sample:
                         if self.backfill != None and not self._backfilldone:
                             now = self._backfillts
                         else:
-                            now = datetime.datetime.now()
+                            now = self.now()
                         rate = self.hourOfDayRate[str(now.hour)]
                         logger.debug("hourOfDayRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
@@ -304,7 +305,7 @@ class Sample:
                         if self.backfill != None and not self._backfilldone:
                             now = self._backfillts
                         else:
-                            now = datetime.datetime.now()
+                            now = self.now()
                         weekday = datetime.date.weekday(now)
                         if weekday == 6:
                             weekday = 0
@@ -322,7 +323,7 @@ class Sample:
                         if self.backfill != None and not self._backfilldone:
                             now = self._backfillts
                         else:
-                            now = datetime.datetime.now()
+                            now = self.now()
                         rate = self.minuteOfHourRate[str(now.minute)]
                         logger.debug("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
@@ -646,7 +647,7 @@ class Sample:
             raise ValueError("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
         # Check to make sure we parsed a year
         if currentTime.year == 1900:
-            currentTime = currentTime.replace(year=datetime.datetime.now().year)
+            currentTime = currentTime.replace(year=self.now().year)
         return currentTime
     
     def saveState(self):
@@ -656,6 +657,11 @@ class Sample:
                 stateFile = open(os.path.join(self._c.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'w')
                 stateFile.write(token.replacement)
                 stateFile.close()
+    def now(self):
+        if self.gmt:
+            return datetime.datetime.utcnow()
+        else:
+            return datetime.datetime.now()
 
         
 class Token:
@@ -682,7 +688,7 @@ class Token:
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
         
-        self._now = datetime.datetime.now()
+        self._now = self.sample.now()
         self._earliestTime = (None, None)
         self._latestTime = (None, None)
         
@@ -783,15 +789,15 @@ class Token:
                 # results for at maximum one second.  This seems not very effective, but we're
                 # we're generating thousands of events per second it optimizes quite a bit.
                 if self._tokents == None:
-                    self._tokents = datetime.datetime.now()
+                    self._tokents = self.sample.now()
 
                 # If we've gone more than a second, invalidate results, calculate
                 # earliest and latest and cache new values
-                if datetime.datetime.now() - self._tokents > datetime.timedelta(seconds=1):
+                if self.sample.now() - self._tokents > datetime.timedelta(seconds=1):
                     # logger.debug("Token Time Cache invalidated, refreshing")
-                    self._tokents = datetime.datetime.now()
-                    earliestTime = timeParser(self.sample.earliest)
-                    latestTime = timeParser(self.sample.latest)
+                    self._tokents = self.sample.now()
+                    earliestTime = timeParser(self.sample.earliest, gmt=self.sample.gmt)
+                    latestTime = timeParser(self.sample.latest, gmt=self.sample.gmt)
                     self._earliestTime = (self.sample.earliest, earliestTime)
                     self._latestTime = (self.sample.latest, latestTime)
                 else:
@@ -806,9 +812,9 @@ class Token:
                     else:
                         # logger.debug("Earliest and Latest Time Cache invalidated for times '%s' & '%s', refreshing" \
                         #                 % (self.sample.earliest, self.sample.latest))
-                        earliestTime = timeParser(self.sample.earliest)
+                        earliestTime = timeParser(self.sample.earliest, gmt=self.sample.gmt)
                         self._earlestTime = (self.sample.earliest, earliestTime)
-                        latestTime = timeParser(self.sample.latest)
+                        latestTime = timeParser(self.sample.latest, gmt=self.sample.gmt)
                         self._latestTime = (self.sample.latest, latestTime)
 
 
@@ -885,7 +891,7 @@ class Token:
                                 
                                 # Check to make sure we parsed a year
                                 if currentts.year == 1900:
-                                    currentts = currentts.replace(year=datetime.datetime.now().year)
+                                    currentts = currentts.replace(year=self.sample.now().year)
                                 # We should now know the timeformat and currentts associated with this event
                                 # If we're the first, save those values        
                                 if self._replaytd == None:
@@ -1023,7 +1029,7 @@ class Token:
                         floatret = round(random.uniform(startFloat,endFloat), len(floatMatch.group(2)))
                         if self.replacementType == 'rated':
                             rateFactor = 1.0
-                            now = datetime.datetime.now()
+                            now = self.sample.now()
                             if type(self.sample.hourOfDayRate) == dict:
                                 try:
                                     rateFactor *= self.sample.hourOfDayRate[str(now.hour)]
