@@ -1,6 +1,7 @@
 from __future__ import division
 from ConfigParser import ConfigParser
 import os
+import datetime
 import sys
 import re
 import __main__
@@ -78,7 +79,7 @@ class Config:
     backfillSearch = None
     backfillSearchUrl = None
     minuteOfHourRate = None
-    gmt = None
+    timezone = datetime.timedelta(days=1)
 
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
@@ -87,7 +88,7 @@ class Config:
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
                     'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
                     'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug', 
-                    'minuteOfHourRate', 'gmt']
+                    'minuteOfHourRate', 'timezone']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -97,7 +98,7 @@ class Config:
     _validModes = ['sample', 'replay']
     _intSettings = ['interval', 'count', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
-    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'gmt']
+    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate']
     _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 
                             'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate', 
@@ -511,6 +512,22 @@ class Config:
                 if not value in self._validModes:
                     logger.error("mode is invalid in stanza '%s'" % stanza)
                     raise ValueError("mode is invalid in stanza '%s'" % stanza)
+            elif key == 'timezone':
+                logger.info("Parsing timezone '%s' for stanza '%s'" % (value, stanza))
+                if value.find('local') >= 0:
+                    value = datetime.timedelta(days=1)
+                else:
+                    try:
+                        # Separate the hours and minutes (note: minutes = the int value - the hour portion)
+                        if int(value) > 0:
+                            mod = 100
+                        else:
+                            mod = -100
+                        value = datetime.timedelta(hours=int(int(value) / 100.0), minutes=int(value) % mod )
+                    except:
+                        logger.error("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
+                        raise ValueError("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
+                logger.info("Parsed timezone '%s' for stanza '%s'" % (value, stanza))
         else:
             # Notifying only if the setting isn't valid and continuing on
             # This will allow future settings to be added and be backwards compatible

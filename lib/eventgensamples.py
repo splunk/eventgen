@@ -61,7 +61,7 @@ class Sample:
     minuteOfHourRate = None
     timeMultiple = None
     debug = None
-    gmt = None
+    timezone = datetime.timedelta(days=1)
     
     # Internal fields
     _c = None
@@ -118,7 +118,7 @@ class Sample:
         # Setup initial backfillts
         if self._backfillts == None and self.backfill != None and not self._backfilldone:
             try:
-                self._backfillts = timeParser(self.backfill, gmt=self.gmt)
+                self._backfillts = timeParser(self.backfill, timezone=self.timezone)
                 logger.info("Setting up backfill of %s (%s)" % (self.backfill,self._backfillts))
             except Exception as ex:
                 logger.error("Failed to parse backfill '%s': %s" % (self.backfill, ex))
@@ -657,11 +657,13 @@ class Sample:
                 stateFile = open(os.path.join(self._c.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'w')
                 stateFile.write(token.replacement)
                 stateFile.close()
+
     def now(self):
-        if self.gmt:
-            return datetime.datetime.utcnow()
-        else:
+        logger.info("Getting time (timezone %s)" % (self.timezone))
+        if self.timezone.days > 0:
             return datetime.datetime.now()
+        else:
+            return datetime.datetime.utcnow() + self.timezone
 
         
 class Token:
@@ -796,8 +798,8 @@ class Token:
                 if self.sample.now() - self._tokents > datetime.timedelta(seconds=1):
                     # logger.debug("Token Time Cache invalidated, refreshing")
                     self._tokents = self.sample.now()
-                    earliestTime = timeParser(self.sample.earliest, gmt=self.sample.gmt)
-                    latestTime = timeParser(self.sample.latest, gmt=self.sample.gmt)
+                    earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone)
+                    latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone)
                     self._earliestTime = (self.sample.earliest, earliestTime)
                     self._latestTime = (self.sample.latest, latestTime)
                 else:
@@ -812,9 +814,9 @@ class Token:
                     else:
                         # logger.debug("Earliest and Latest Time Cache invalidated for times '%s' & '%s', refreshing" \
                         #                 % (self.sample.earliest, self.sample.latest))
-                        earliestTime = timeParser(self.sample.earliest, gmt=self.sample.gmt)
+                        earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone)
                         self._earlestTime = (self.sample.earliest, earliestTime)
-                        latestTime = timeParser(self.sample.latest, gmt=self.sample.gmt)
+                        latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone)
                         self._latestTime = (self.sample.latest, latestTime)
 
 
