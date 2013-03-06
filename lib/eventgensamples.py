@@ -659,7 +659,8 @@ class Sample:
                 stateFile.close()
 
     def now(self):
-        logger.info("Getting time (timezone %s)" % (self.timezone))
+        # This can be a very verbose function
+        logger.debug("Getting time (timezone %s)" % (self.timezone))
         if self.timezone.days > 0:
             return datetime.datetime.now()
         else:
