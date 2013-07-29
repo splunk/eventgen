@@ -57,6 +57,7 @@ class Output:
     _fileMaxBytes = None
     _fileBackupFiles = None
     _fileLogger = None
+    _fileLoggerFileNames = []
     _sessionKey = None
     _splunkHost = None
     _splunkPort = None
@@ -114,12 +115,17 @@ class Output:
             self._fileBackupFiles = sample.fileBackupFiles
             
             self._fileLogger = logging.getLogger('eventgen_realoutput_'+self._file)
-            formatter = logging.Formatter('%(message)s')
-            handler = logging.handlers.RotatingFileHandler(filename=self._file, maxBytes=self._fileMaxBytes,
-                                                            backupCount=self._fileBackupFiles)
-            handler.setFormatter(formatter)
-            self._fileLogger.addHandler(handler)
-            self._fileLogger.setLevel(logging.DEBUG)
+            try:
+                self._fileLoggerFileNames.index(self._file)
+            except ValueError:
+                self._fileLoggerFileNames.append(self._file)
+                formatter = logging.Formatter('%(message)s')
+                handler = logging.handlers.RotatingFileHandler(filename=self._file, maxBytes=self._fileMaxBytes,
+                                                                backupCount=self._fileBackupFiles)
+                handler.setFormatter(formatter)
+                self._fileLogger.addHandler(handler)
+                self._fileLogger.setLevel(logging.DEBUG)
+
             logger.debug("Configured to log to '%s' with maxBytes '%s' with backupCount '%s'" % \
                             (self._file, self._fileMaxBytes, self._fileBackupFiles))
         elif self._outputMode == 'splunkstream':
