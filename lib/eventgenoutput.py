@@ -113,13 +113,17 @@ class Output:
             self._fileMaxBytes = sample.fileMaxBytes
             self._fileBackupFiles = sample.fileBackupFiles
             
-            self._fileLogger = logging.getLogger('eventgen_realoutput_'+self._file)
-            formatter = logging.Formatter('%(message)s')
-            handler = logging.handlers.RotatingFileHandler(filename=self._file, maxBytes=self._fileMaxBytes,
-                                                            backupCount=self._fileBackupFiles)
-            handler.setFormatter(formatter)
-            self._fileLogger.addHandler(handler)
-            self._fileLogger.setLevel(logging.DEBUG)
+            # 9/7/12 Replacing python logging with our own logging handler code
+            # self._fileLogger = logging.getLogger('eventgen_realoutput_'+self._file)
+            # formatter = logging.Formatter('%(message)s')
+            # handler = logging.handlers.RotatingFileHandler(filename=self._file, maxBytes=self._fileMaxBytes,
+            #                                                 backupCount=self._fileBackupFiles)
+            # handler.setFormatter(formatter)
+            # self._fileLogger.addHandler(handler)
+            # self._fileLogger.setLevel(logging.DEBUG)
+
+            self._fileHandle = open(self._file, 'a')
+            self._fileLength = os.stat(self._file).st_size
             logger.debug("Configured to log to '%s' with maxBytes '%s' with backupCount '%s'" % \
                             (self._file, self._fileMaxBytes, self._fileBackupFiles))
         elif self._outputMode == 'splunkstream':
@@ -332,11 +336,35 @@ class Output:
                     if self._outputMode == 'spool':
                         self._workingFH.write(msg)
                     elif self._outputMode == 'file':
-                        # 5/9/12 CS We log as error so that even the most restrictive 
-                        # filter will push to file
-                        if msg[-1] == '\n':
-                            msg = msg[:-1]
-                        self._fileLogger.error(msg)
+                        # # 5/9/12 CS We log as error so that even the most restrictive 
+                        # # filter will push to file
+                        # if msg[-1] == '\n':
+                        #     msg = msg[:-1]
+                        # self._fileLogger.error(msg)
+
+                        if msg[-1] != '\n':
+                            msg += '\n'
+
+                        self._fileHandle.write(msg)
+                        self._fileLength += len(msg)
+
+                        # If we're at the end of the max allowable size, shift all files
+                        # up a number and create a new one
+                        if self._fileLength > self._fileMaxBytes:
+                            self._fileHandle.close()
+                            if os.path.exists(self._file+'.'+str(self._fileBackupFiles)):
+                                logger.debug('File Output: Removing file: %s' % self._file+'.'+str(self._fileBackupFiles))
+                                os.unlink(self._file+'.'+str(self._fileBackupFiles))
+                            for x in range(1, self._fileBackupFiles)[::-1]:
+                                logger.debug('File Output: Checking for file: %s' % self._file+'.'+str(x))
+                                if os.path.exists(self._file+'.'+str(x)):
+                                    logger.debug('File Output: Renaming file %s to %s' % (self._file+'.'+str(x), self._file+'.'+str(x+1)))
+                                    os.rename(self._file+'.'+str(x), self._file+'.'+str(x+1))
+                            os.rename(self._file, self._file+'.1')
+                            self._fileHandle = open(self._file, 'w')
+                            self._fileLength = 0
+
+
                     elif self._outputMode == 'splunkstream':
                         if msg[-1] != '\n':
                             msg += '\n'

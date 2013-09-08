@@ -76,6 +76,8 @@ class Sample:
     _origEarliest = None
     _origLatest = None
     _timeSinceSleep = None
+    _earliestParsed = None
+    _latestParsed = None
     
     def __init__(self, name):
         # Logger already setup by config, just get an instance
@@ -157,6 +159,7 @@ class Sample:
         if self.backfill != None and not self._backfilldone:
             if self._backfillts >= self.now():
                 logger.info("Backfill complete")
+                exit(1)  # Added for perf test, REMOVE LATER
                 self._backfilldone = True
                 self.earliest = self._origEarliest
                 self.latest = self._origLatest
@@ -164,7 +167,9 @@ class Sample:
                 logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.name, self._backfillts))
                 self.earliest = datetime.datetime.strftime((self._backfillts - datetime.timedelta(seconds=self.interval)), \
                                                             "%Y-%m-%d %H:%M:%S.%f")
+                self._earliestParsed = self._backfillts - datetime.timedelta(seconds=self.interval)
                 self.latest = datetime.datetime.strftime(self._backfillts, "%Y-%m-%d %H:%M:%S.%f")
+                self._latestParsed = self._backfillts
                 # if not self.mode == 'replay':
                 #     self._backfillts += datetime.timedelta(seconds=self.interval)
 
@@ -343,6 +348,10 @@ class Sample:
                 self.breaker = self._c.breaker
 
             events = []
+            # 9/7/13 CS If we're sampleType CSV and we do an events fill that's greater than the count
+            # we don't have entries in sampleDict to match what index/host/source/sourcetype they are
+            # so creating a new dict to track that metadata
+            eventsDict = []
             event = ''
 
             if self.breaker == self._c.breaker:
@@ -367,8 +376,10 @@ class Sample:
                 
                 if count >= len(sampleLines):
                     events = sampleLines
+                    eventsDict = sampleDict
                 else:
                     events = sampleLines[0:count]
+                    eventsDict = sampleDict[0:count]
             else:
                 logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'; using advanced event fill" \
                                 % (self.breaker, self.name, self.app) ) 
@@ -425,20 +436,22 @@ class Sample:
             if len(events) > 0 and len(events) < count:
                 logger.debug("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (self.name, self.app, len(events), count) )
                 tempEvents = events[:]
+                tempEventsDict = eventsDict[:]
                 while len(events) < count:
                     y = 0
                     while len(events) < count and y < len(tempEvents):
                         events.append(tempEvents[y])
+                        eventsDict.append(tempEventsDict[y])
                         y += 1
 
             # logger.debug("events: %s" % pprint.pformat(events))
             logger.debug("Replacing %s tokens in %s events for sample '%s' in app '%s'" % (len(self.tokens), len(events), self.name, self.app))
             
             if self.sampletype == 'csv':
-                self.index = sampleDict[0]['index']
-                self.host = sampleDict[0]['host']
-                self.source = sampleDict[0]['source']
-                self.sourcetype = sampleDict[0]['sourcetype']
+                self.index = eventsDict[0]['index']
+                self.host = eventsDict[0]['host']
+                self.source = eventsDict[0]['source']
+                self.sourcetype = eventsDict[0]['sourcetype']
                 logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                             % (self.index, self.host, self.source, self.sourcetype))
                 self._out.refreshconfig(self)
@@ -502,21 +515,21 @@ class Sample:
                     lines = event.split('\n')
                     logger.debug("Bundlelines set and sampletype csv, breaking event back apart.  %s lines." % (len(lines)))
                     for lineno in range(0, len(lines)):
-                        if self.sampletype == 'csv' and (sampleDict[lineno]['index'] != self.index or \
-                                                         sampleDict[lineno]['host'] != self.host or \
-                                                         sampleDict[lineno]['source'] != self.source or \
-                                                         sampleDict[lineno]['sourcetype'] != self.sourcetype):
+                        if self.sampletype == 'csv' and (eventsDict[lineno]['index'] != self.index or \
+                                                         eventsDict[lineno]['host'] != self.host or \
+                                                         eventsDict[lineno]['source'] != self.source or \
+                                                         eventsDict[lineno]['sourcetype'] != self.sourcetype):
                             # Flush events before we change all the various parameters
                             logger.debug("Sampletype CSV with bundlelines, parameters changed at event %s.  Flushing output." % lineno)
                             self._out.flush()
-                            self.index = sampleDict[lineno]['index']
-                            self.host = sampleDict[lineno]['host']
+                            self.index = eventsDict[lineno]['index']
+                            self.host = eventsDict[lineno]['host']
                             # Allow randomizing the host:
                             if(self.hostToken):
                                 self.host = self.hostToken.replace(self.host)
 
-                            self.source = sampleDict[lineno]['source']
-                            self.sourcetype = sampleDict[lineno]['sourcetype']
+                            self.source = eventsDict[lineno]['source']
+                            self.sourcetype = eventsDict[lineno]['sourcetype']
                             logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                                          % (self.index, self.host, self.source, self.sourcetype))
                             self._out.refreshconfig(self)
@@ -526,10 +539,10 @@ class Sample:
                 else:
                     # logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))
                     # logger.debug("Event Index: %s Host: %s Source: %s Sourcetype: %s" % (sampleDict[x]['index'], sampleDict[x]['host'], sampleDict[x]['source'], sampleDict[x]['sourcetype']))
-                    if self.sampletype == 'csv' and (sampleDict[x]['index'] != self.index or \
-                                                    sampleDict[x]['host'] != self.host or \
-                                                    sampleDict[x]['source'] != self.source or \
-                                                    sampleDict[x]['sourcetype'] != self.sourcetype):
+                    if self.sampletype == 'csv' and (eventsDict[x]['index'] != self.index or \
+                                                    eventsDict[x]['host'] != self.host or \
+                                                    eventsDict[x]['source'] != self.source or \
+                                                    eventsDict[x]['sourcetype'] != self.sourcetype):
                         # Flush events before we change all the various parameters
                         logger.debug("Sampletype CSV, parameters changed at event %s.  Flushing output." % x)
                         self._out.flush()
@@ -659,7 +672,7 @@ class Sample:
                 stateFile.close()
 
     def now(self):
-        logger.info("Getting time (timezone %s)" % (self.timezone))
+        # logger.info("Getting time (timezone %s)" % (self.timezone))
         if self.timezone.days > 0:
             return datetime.datetime.now()
         else:
@@ -682,6 +695,13 @@ class Token:
     _tokents = None
     _earliestTime = None
     _latestTime = None
+    _replacementFile = None
+    _replacementColumn = None
+    _integerMatch = None
+    _floatMatch = None
+    _hexMatch = None
+    _stringMatch = None
+    _eventCache = None
     
     def __init__(self, sample):
         self.sample = sample
@@ -693,6 +713,8 @@ class Token:
         self._now = self.sample.now()
         self._earliestTime = (None, None)
         self._latestTime = (None, None)
+
+        self._eventCache = { }
         
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this token"""
@@ -720,58 +742,74 @@ class Token:
         if self._tokenre == None:
             self._tokenre = re.compile(self.token)
         return self._tokenre.finditer(event)
+
+    def _findall(self, event):
+        """Executes regular expression finditer and returns the re.Match object"""
+        if self._tokenre == None:
+            self._tokenre = re.compile(self.token)
+        return self._tokenre.findall(event)
         
     def replace(self, event):
         """Replaces all instances of this token in provided event and returns event"""
         offset = 0
-        tokenMatch = self._finditer(event)
+        tokenMatch = list(self._finditer(event))
         # logger.debug("Checking for match for token: '%s'" % (self.token))
 
-        if tokenMatch:
-            # 5/28/12 Changing logic to account for needing old to match
-            # the right token we're actually replacing
-            # This will call getReplacement for every match which is more
-            # expensive, but necessary.
+        if len(tokenMatch) > 0:
+            # 9/7/13  Trying to determine the logic for doing two regex
+            # searches, one to find the list of potential replacements and 
+            # another to find the actual string to replace, so commenting 
+            # out and recoding... may cause regressions.
+
+            # # 5/28/12 Changing logic to account for needing old to match
+            # # the right token we're actually replacing
+            # # This will call getReplacement for every match which is more
+            # # expensive, but necessary.
             
             # # Find old in case of error
-            oldMatch = self._search(event)
-            if oldMatch:
-                # old = event[oldMatch.start(group):oldMatch.end(group)]
-                group = 0 if len(oldMatch.groups()) == 0 else 1
-                old = oldMatch.group(group)
-            else:
-                old = ""
+            # oldMatch = self._search(event)
+
+            # if oldMatch:
+            #     # old = event[oldMatch.start(group):oldMatch.end(group)]
+            #     group = 0 if len(oldMatch.groups()) == 0 else 1
+            #     old = oldMatch.group(group)
+            # else:
+            #     old = ""
             
             # logger.debug("Got match for token: '%s'" % (self.token))
-            replacement = self._getReplacement(old)
+            # replacement = self._getReplacement(old)
+
+            replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)])
             
             if replacement is not None:
-                logger.debug("Replacement: '%s'" % replacement)
+                # logger.debug("Replacement: '%s'" % replacement)
                 ## Iterate matches
                 for match in tokenMatch:
                     # logger.debug("Match: %s" % (match))
-                    try:
-                        matchStart = match.start(1) + offset
-                        matchEnd = match.end(1) + offset
-                        startEvent = event[:matchStart]
-                        endEvent = event[matchEnd:]
-                        # In order to not break legacy which might replace the same timestamp
-                        # with the same value in multiple matches, here we'll include
-                        # ones that need to be replaced for every match
-                        if self.replacementType in ('replaytimestamp'):
-                            replacement = self._getReplacement(event[matchStart:matchEnd])
-                        offset += len(replacement) - len(match.group(1))
-                    except:
-                        matchStart = match.start(0) + offset
-                        matchEnd = match.end(0) + offset
-                        startEvent = event[:matchStart]
-                        endEvent = event[matchEnd:]
-                        # In order to not break legacy which might replace the same timestamp
-                        # with the same value in multiple matches, here we'll include
-                        # ones that need to be replaced for every match
-                        if self.replacementType in ('replaytimestamp'):
-                            replacement = self._getReplacement(event[matchStart:matchEnd])
-                        offset += len(replacement) - len(match.group(0))
+                    # 9/7/12 CS Not sure why we'd ever use match group 1
+                    # MAY CAUSE REGRESSION
+                    # try:
+                    #     matchStart = match.start(1) + offset
+                    #     matchEnd = match.end(1) + offset
+                    #     startEvent = event[:matchStart]
+                    #     endEvent = event[matchEnd:]
+                    #     # In order to not break legacy which might replace the same timestamp
+                    #     # with the same value in multiple matches, here we'll include
+                    #     # ones that need to be replaced for every match
+                    #     if self.replacementType in ('replaytimestamp'):
+                    #         replacement = self._getReplacement(event[matchStart:matchEnd])
+                    #     offset += len(replacement) - len(match.group(1))
+                    # except:
+                    matchStart = match.start(0) + offset
+                    matchEnd = match.end(0) + offset
+                    startEvent = event[:matchStart]
+                    endEvent = event[matchEnd:]
+                    # In order to not break legacy which might replace the same timestamp
+                    # with the same value in multiple matches, here we'll include
+                    # ones that need to be replaced for every match
+                    if self.replacementType in ('replaytimestamp'):
+                        replacement = self._getReplacement(event[matchStart:matchEnd])
+                    offset += len(replacement) - len(match.group(0))
                     # logger.debug("matchStart %d matchEnd %d offset %d" % (matchStart, matchEnd, offset))
                     event = startEvent + replacement + endEvent
                 
@@ -780,7 +818,7 @@ class Token:
                 self._lastts = None
         return event
                     
-    def _getReplacement(self, old=None, event=None):
+    def _getReplacement(self, old=None):
         if self.replacementType == 'static':
             return self.replacement
         elif self.replacementType in ('timestamp', 'replaytimestamp'):
@@ -810,6 +848,12 @@ class Token:
                         # logger.debug("Updating time from cache")
                         earliestTime = self._earliestTime[1]
                         latestTime = self._latestTime[1]
+                    # 9/7/13 CS If we're backfilling, the sample contains an already parsed time 
+                    # for us to use
+                    elif self.sample._earliestParsed != None \
+                             and self.sample._latestParsed != None:
+                        earliestTime = self.sample._earliestParsed
+                        latestTime = self.sample._latestParsed
                     # Otherwise calculate and update the cache
                     else:
                         # logger.debug("Earliest and Latest Time Cache invalidated for times '%s' & '%s', refreshing" \
@@ -945,17 +989,33 @@ class Token:
                 return old
         elif self.replacementType in ('random', 'rated'):
             ## Validations:
-            integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
-            integerMatch = integerRE.match(self.replacement)
+            if self._integerMatch != None:
+                integerMatch = self._integerMatch
+            else:
+                integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
+                integerMatch = integerRE.match(self.replacement)
+                self._integerMatch = integerMatch
             
-            floatRE = re.compile('float\[(\d+)\.(\d+):(\d+)\.(\d+)\]', re.I)
-            floatMatch = floatRE.match(self.replacement)
+            if self._floatMatch != None:
+                floatMatch = self._floatMatch
+            else:
+                floatRE = re.compile('float\[(\d+)\.(\d+):(\d+)\.(\d+)\]', re.I)
+                floatMatch = floatRE.match(self.replacement)
+                self._floatMatch = floatMatch
 
-            stringRE = re.compile('string\((\d+)\)', re.I)
-            stringMatch = stringRE.match(self.replacement)
+            if self._stringMatch != None:
+                stringMatch = self._stringMatch
+            else:
+                stringRE = re.compile('string\((\d+)\)', re.I)
+                stringMatch = stringRE.match(self.replacement)
+                self._stringMatch = stringMatch
 
-            hexRE = re.compile('hex\((\d+)\)', re.I)
-            hexMatch = hexRE.match(self.replacement)
+            if self._hexMatch != None:
+                hexMatch = self._hexMatch
+            else:       
+                hexRE = re.compile('hex\((\d+)\)', re.I)
+                hexMatch = hexRE.match(self.replacement)
+                self._hexMatch = hexMatch
 
             ## Valid replacements: ipv4 | ipv6 | integer[<start>:<end>] | string(<i>)
             if self.replacement.lower() == 'ipv4':
@@ -1086,23 +1146,29 @@ class Token:
                 logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
                 return old
         elif self.replacementType in ('file', 'mvfile'):
-            try:
-                paths = self.replacement.split(':')
-                if(len(paths) == 1):
-                    replacementColumn = 0
-                else:
-                    try: # When it's not a mvfile, there's no number on the end:
-                        replacementColumn = int(paths[-1])
-                    except (ValueError):
+            if self._replacementFile != None:
+                replacementFile = self._replacementFile
+                replacementColumn = self._replacementColumn
+            else:
+                try:
+                    paths = self.replacement.split(':')
+                    if(len(paths) == 1):
                         replacementColumn = 0
-                if(replacementColumn > 0):
-                    # This supports having a drive-letter colon
-                    replacementFile = self.sample.pathParser(":".join(paths[0:-1]))
-                else:
-                    replacementFile = self.sample.pathParser(self.replacement)
-            except ValueError, e:
-                logger.error("Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column" % (self.replacement))
-                return old
+                    else:
+                        try: # When it's not a mvfile, there's no number on the end:
+                            replacementColumn = int(paths[-1])
+                        except (ValueError):
+                            replacementColumn = 0
+                    if(replacementColumn > 0):
+                        # This supports having a drive-letter colon
+                        replacementFile = self.sample.pathParser(":".join(paths[0:-1]))
+                    else:
+                        replacementFile = self.sample.pathParser(self.replacement)
+                except ValueError, e:
+                    logger.error("Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column" % (self.replacement))
+                    return old
+                self._replacementFile = replacementFile
+                self._replacementColumn = replacementColumn
 
             # If we've seen this file before, simply return already read results
             # This applies only if we're looking at a multivalue file and we want to
