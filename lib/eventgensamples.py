@@ -196,7 +196,7 @@ class Sample:
                     try:
                         sampleLines.append(line['_raw'].decode('string_escape'))
                     except ValueError:
-                        logger.error(“Error in Sample at line ‘%d’ – did you quote your backslashes?” % (csvReader.line_num))
+                        logger.error("Error in Sample at line ‘%d’ – did you quote your backslashes?" % (csvReader.line_num))
                 self._sampleDict = copy.deepcopy(sampleDict)
                 self._sampleLines = copy.deepcopy(sampleLines)
             else:
