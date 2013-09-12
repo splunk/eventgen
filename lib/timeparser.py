@@ -105,6 +105,7 @@ def timeParser(ts='now', timezone=datetime.timedelta(days=1)):
         else:
             # The spec says we must be a ISO8601 time.  This parser should be able to handle 
             # more date formats though, so we can be liberal in what we accept
+
             return dateutil_parser.parse(ts)
             #except ValueError:
             #    raise ValueError("Cannot parse date/time for %s" % (ts))

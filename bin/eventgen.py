@@ -143,7 +143,8 @@ if __name__ == '__main__':
     
     ## Start the timers
     if not c.runOnce:
-        set_exit_handler(handle_exit)
+        if os.name != "nt":
+            set_exit_handler(handle_exit)
         first = True
         while (1):
             try:
