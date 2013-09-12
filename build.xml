@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="SA-eventgen" default="package">
+	<property name="build.dir" value="build"/>
+	<property name="build.version" value="2.0.3"/>
+	
+	<property name="dist.file" value="${build.dir}/dist/${ant.project.name}-${build.version}.tar.gz"/>
+	
+	<property name="mainapp.dir" value="${build.dir}/${ant.project.name}"/>
+	
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+	</target>
+	
+	<target name="mainapp">
+		<mkdir dir="${mainapp.dir}"/>
+		<copy todir="${mainapp.dir}">
+			<fileset dir=".">
+				<exclude name="**/.*"/>
+				<exclude name="local/**"/>
+				<exclude name="build/**"/>
+				<exclude name="**/*-gist"/>
+				<exclude name="**/*.xcf"/>
+				<exclude name="build.*"/>
+				<!-- <exclude name="default/app.conf"/> -->
+			</fileset>
+		</copy>
+		
+		<!-- If you want to update the app.conf with the version in this file, then -->
+		<!-- uncomment the exclusion for default/app.conf above and the lines below -->
+		<!--
+		<copy todir="${mainapp.dir}/default" file="default/app.conf" verbose="on">
+			<filterset>
+				<filter token="VERSION" value="${build.version}"/>
+			</filterset>
+		</copy>
+		-->
+		<!-- You will also need to update default/app.conf so that version=@VERSION@ -->
+	</target>
+	
+	<target name="package" depends="mainapp">
+		<mkdir dir="${build.dir}/dist"/>
+		<tar destfile="${dist.file}" longfile="gnu" compression="gzip">
+			<tarfileset dir="${build.dir}" filemode="755" username="splunk" group="splunk">
+				<include name="SA-eventgen/**"/>
+			</tarfileset>
+		</tar>
+	</target>
+</project>
