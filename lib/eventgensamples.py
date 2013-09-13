@@ -182,6 +182,7 @@ class Sample:
                 logger.debug("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
                 sampleLines = sampleFH.readlines()
                 self._sampleLines = sampleLines
+                sampleDict = [ ]
             else:
                 sampleLines = self._sampleLines
         elif self.sampletype == 'csv':
@@ -380,12 +381,10 @@ class Sample:
                 
                 if count >= len(sampleLines):
                     events = sampleLines
-                    if self.sampletype == 'csv':
-                        eventsDict = sampleDict
+                    eventsDict = sampleDict
                 else:
                     events = sampleLines[0:count]
-                    if self.sampletype == 'csv':
-                        eventsDict = sampleDict[0:count]
+                    eventsDict = sampleDict[0:count]
             else:
                 logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'; using advanced event fill" \
                                 % (self.breaker, self.name, self.app) ) 
