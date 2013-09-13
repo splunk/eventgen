@@ -266,7 +266,6 @@ class Sample:
             for i in range(0, self.count-1):
                 sampleLines.extend(origSampleLines)
                 sampleLines.append(self.breaker)
-                sampleDict.extend(origSampleDict)
             
 
         if len(sampleLines) > 0:
