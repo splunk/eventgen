@@ -381,10 +381,12 @@ class Sample:
                 
                 if count >= len(sampleLines):
                     events = sampleLines
-                    eventsDict = sampleDict
+                    if self.sampletype == 'csv':
+                        eventsDict = sampleDict
                 else:
                     events = sampleLines[0:count]
-                    eventsDict = sampleDict[0:count]
+                    if self.sampletype == 'csv':
+                        eventsDict = sampleDict[0:count]
             else:
                 logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'; using advanced event fill" \
                                 % (self.breaker, self.name, self.app) ) 
