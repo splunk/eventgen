@@ -444,12 +444,14 @@ class Sample:
             if len(events) > 0 and len(events) < count:
                 logger.debug("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (self.name, self.app, len(events), count) )
                 tempEvents = events[:]
-                tempEventsDict = eventsDict[:]
+                if self.sampletype == 'csv':
+                    tempEventsDict = eventsDict[:]
                 while len(events) < count:
                     y = 0
                     while len(events) < count and y < len(tempEvents):
                         events.append(tempEvents[y])
-                        eventsDict.append(tempEventsDict[y])
+                        if self.sampletype == 'csv':
+                            eventsDict.append(tempEventsDict[y])
                         y += 1
 
             # logger.debug("events: %s" % pprint.pformat(events))
