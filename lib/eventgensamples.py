@@ -194,9 +194,9 @@ class Sample:
                 for line in csvReader:
                     sampleDict.append(line)
                     try:
-                        sampleLines.append(line['_raw'].decode('string_escape'))
+                        sampleLines.append(line['_raw'].decode('string_escape').replace('\n', 'NEWLINEREPLACEDHERE!!!'))
                     except ValueError:
-                        logger.error("Error in Sample at line ‘%d’ – did you quote your backslashes?" % (csvReader.line_num))
+                        logger.error("Error in sample at line '%d' - did you quote your backslashes?" % (csvReader.line_num))
                 self._sampleDict = copy.deepcopy(sampleDict)
                 self._sampleLines = copy.deepcopy(sampleLines)
             else:
@@ -261,10 +261,12 @@ class Sample:
             logger.debug("Bundlelines set.  Creating %s copies of original sample lines and setting breaker." % (self.count-1))
             self.breaker = '\n------\n'
             origSampleLines = copy.deepcopy(sampleLines)
+            origSampleDict = copy.deepcopy(sampleDict)
             sampleLines.append(self.breaker)
             for i in range(0, self.count-1):
                 sampleLines.extend(origSampleLines)
                 sampleLines.append(self.breaker)
+                sampleDict.extend(origSampleDict)
             
 
         if len(sampleLines) > 0:
@@ -423,6 +425,9 @@ class Sample:
                 if len(events) < count:
                     events.append(event + '\n')
 
+                if self.bundlelines:
+                    eventsDict = sampleDict
+
                 ## If breaker wasn't found in sample
                 ## events = sample
                 if breakersFound == 0:
@@ -516,7 +521,7 @@ class Sample:
                     if event[-1] == '\n':
                         event = event[:-1]
                     lines = event.split('\n')
-                    logger.debug("Bundlelines set and sampletype csv, breaking event back apart.  %s lines." % (len(lines)))
+                    logger.debug("Bundlelines set and sampletype csv, breaking event back apart.  %d lines %d eventsDict." % (len(lines), len(eventsDict)))
                     for lineno in range(0, len(lines)):
                         if self.sampletype == 'csv' and (eventsDict[lineno]['index'] != self.index or \
                                                          eventsDict[lineno]['host'] != self.host or \
@@ -536,7 +541,7 @@ class Sample:
                             logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                                          % (self.index, self.host, self.source, self.sourcetype))
                             self._out.refreshconfig(self)
-                        self._out.send(lines[lineno])
+                        self._out.send(lines[lineno].replace('NEWLINEREPLACEDHERE!!!', '\n'))
                     logger.debug("Completed bundlelines event.  Flushing.")
                     self._out.flush()
                 else:
