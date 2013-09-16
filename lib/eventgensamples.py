@@ -73,8 +73,6 @@ class Sample:
     _origName = None
     _lastts = None
     _backfillts = None
-    _origEarliest = None
-    _origLatest = None
     _timeSinceSleep = None
     _earliestParsed = None
     _latestParsed = None
@@ -126,8 +124,6 @@ class Sample:
                 logger.error("Failed to parse backfill '%s': %s" % (self.backfill, ex))
                 raise
 
-            self._origEarliest = self.earliest
-            self._origLatest = self.latest
             if self._out._outputMode == "splunkstream" and self.backfillSearch != None:
                 if not self.backfillSearch.startswith('search'):
                     self.backfillSearch = 'search ' + self.backfillSearch
@@ -157,19 +153,12 @@ class Sample:
 
         # Override earliest and latest during backfill until we're at current time
         if self.backfill != None and not self._backfilldone:
-            if self._backfillts >= self.now():
+            if self._backfillts >= datetime.datetime.now():
                 logger.info("Backfill complete")
-                exit(1)  # Added for perf test, REMOVE LATER
+                # exit(1)  # Added for perf test, REMOVE LATER
                 self._backfilldone = True
-                self.earliest = self._origEarliest
-                self.latest = self._origLatest
             else:
                 logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.name, self._backfillts))
-                self.earliest = datetime.datetime.strftime((self._backfillts - datetime.timedelta(seconds=self.interval)), \
-                                                            "%Y-%m-%d %H:%M:%S.%f")
-                self._earliestParsed = self._backfillts - datetime.timedelta(seconds=self.interval)
-                self.latest = datetime.datetime.strftime(self._backfillts, "%Y-%m-%d %H:%M:%S.%f")
-                self._latestParsed = self._backfillts
                 # if not self.mode == 'replay':
                 #     self._backfillts += datetime.timedelta(seconds=self.interval)
 
@@ -299,11 +288,7 @@ class Sample:
                         logger.error("Randomize count failed.  Stacktrace %s" % stack)
                 if type(self.hourOfDayRate) == dict:
                     try:
-                        if self.backfill != None and not self._backfilldone:
-                            now = self._backfillts
-                        else:
-                            now = self.now()
-                        rate = self.hourOfDayRate[str(now.hour)]
+                        rate = self.hourOfDayRate[str(self.now().hour)]
                         logger.debug("hourOfDayRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
                     except KeyError:
@@ -312,11 +297,7 @@ class Sample:
                         logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
                 if type(self.dayOfWeekRate) == dict:
                     try:
-                        if self.backfill != None and not self._backfilldone:
-                            now = self._backfillts
-                        else:
-                            now = self.now()
-                        weekday = datetime.date.weekday(now)
+                        weekday = datetime.date.weekday(self.now())
                         if weekday == 6:
                             weekday = 0
                         else:
@@ -330,11 +311,7 @@ class Sample:
                         logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
                 if type(self.minuteOfHourRate) == dict:
                     try:
-                        if self.backfill != None and not self._backfilldone:
-                            now = self._backfillts
-                        else:
-                            now = self.now()
-                        rate = self.minuteOfHourRate[str(now.minute)]
+                        rate = self.minuteOfHourRate[str(self.now().minute)]
                         logger.debug("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
                     except KeyError:
@@ -683,12 +660,17 @@ class Sample:
                 stateFile.write(token.replacement)
                 stateFile.close()
 
-    def now(self):
+    def now(self, utcnow=False):
         # logger.info("Getting time (timezone %s)" % (self.timezone))
-        if self.timezone.days > 0:
+        if not self._backfilldone:
+            return self._backfillts
+        elif self.timezone.days > 0:
             return datetime.datetime.now()
         else:
             return datetime.datetime.utcnow() + self.timezone
+
+    def utcnow(self):
+        return self.now(utcnow=True)
 
         
 class Token:
@@ -699,7 +681,6 @@ class Token:
     sample = None
     mvhash = { }
     
-    _now = None
     _replaytd = None
     _lastts = None
     _tokenre = None
@@ -722,7 +703,6 @@ class Token:
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
         
-        self._now = self.sample.now()
         self._earliestTime = (None, None)
         self._latestTime = (None, None)
 
@@ -848,8 +828,8 @@ class Token:
                 if self.sample.now() - self._tokents > datetime.timedelta(seconds=1):
                     # logger.debug("Token Time Cache invalidated, refreshing")
                     self._tokents = self.sample.now()
-                    earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone)
-                    latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone)
+                    earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                    latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
                     self._earliestTime = (self.sample.earliest, earliestTime)
                     self._latestTime = (self.sample.latest, latestTime)
                 else:
@@ -860,19 +840,13 @@ class Token:
                         # logger.debug("Updating time from cache")
                         earliestTime = self._earliestTime[1]
                         latestTime = self._latestTime[1]
-                    # 9/7/13 CS If we're backfilling, the sample contains an already parsed time 
-                    # for us to use
-                    elif self.sample._earliestParsed != None \
-                             and self.sample._latestParsed != None:
-                        earliestTime = self.sample._earliestParsed
-                        latestTime = self.sample._latestParsed
                     # Otherwise calculate and update the cache
                     else:
                         # logger.debug("Earliest and Latest Time Cache invalidated for times '%s' & '%s', refreshing" \
                         #                 % (self.sample.earliest, self.sample.latest))
-                        earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone)
+                        earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
                         self._earlestTime = (self.sample.earliest, earliestTime)
-                        latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone)
+                        latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
                         self._latestTime = (self.sample.latest, latestTime)
 
 
@@ -904,6 +878,8 @@ class Token:
 
                         ## Compute replacmentTime
                         replacementTime = latestTime - randomDelta
+
+                        logger.debug("Generating timestamp for sample '%s' with randomDelta %s, minDelta %s, maxDelta %s, earliestTime %s, latestTime %s, earliest: %s, latest: %s" % (self.sample.name, randomDelta, minDelta, maxDelta, earliestTime, latestTime, self.sample.earliest, self.sample.latest))
                         
                         if self.replacementType == 'replaytimestamp':
                             if old != None and len(old) > 0:
@@ -1075,12 +1051,12 @@ class Token:
                         rateFactor = 1.0
                         if type(self.sample.hourOfDayRate) == dict:
                             try:
-                                rateFactor *= self.sample.hourOfDayRate[str(self._now.hour)]
+                                rateFactor *= self.sample.hourOfDayRate[str(self.sample.now())]
                             except KeyError:
                                 logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
                         if type(self.sample.dayOfWeekRate) == dict:
                             try:
-                                weekday = datetime.date.weekday(self._now)
+                                weekday = datetime.date.weekday(self.sample.now())
                                 if weekday == 6:
                                     weekday = 0
                                 else:
