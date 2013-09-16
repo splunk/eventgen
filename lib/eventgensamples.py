@@ -405,7 +405,7 @@ class Sample:
                     events.append(event + '\n')
 
                 if self.bundlelines:
-                    eventsDict = sampleDict
+                    eventsDict = copy.deepcopy(sampleDict)
 
                 ## If breaker wasn't found in sample
                 ## events = sample
@@ -778,30 +778,28 @@ class Token:
                 ## Iterate matches
                 for match in tokenMatch:
                     # logger.debug("Match: %s" % (match))
-                    # 9/7/12 CS Not sure why we'd ever use match group 1
-                    # MAY CAUSE REGRESSION
-                    # try:
-                    #     matchStart = match.start(1) + offset
-                    #     matchEnd = match.end(1) + offset
-                    #     startEvent = event[:matchStart]
-                    #     endEvent = event[matchEnd:]
-                    #     # In order to not break legacy which might replace the same timestamp
-                    #     # with the same value in multiple matches, here we'll include
-                    #     # ones that need to be replaced for every match
-                    #     if self.replacementType in ('replaytimestamp'):
-                    #         replacement = self._getReplacement(event[matchStart:matchEnd])
-                    #     offset += len(replacement) - len(match.group(1))
-                    # except:
-                    matchStart = match.start(0) + offset
-                    matchEnd = match.end(0) + offset
-                    startEvent = event[:matchStart]
-                    endEvent = event[matchEnd:]
-                    # In order to not break legacy which might replace the same timestamp
-                    # with the same value in multiple matches, here we'll include
-                    # ones that need to be replaced for every match
-                    if self.replacementType in ('replaytimestamp'):
-                        replacement = self._getReplacement(event[matchStart:matchEnd])
-                    offset += len(replacement) - len(match.group(0))
+                    try:
+                        matchStart = match.start(1) + offset
+                        matchEnd = match.end(1) + offset
+                        startEvent = event[:matchStart]
+                        endEvent = event[matchEnd:]
+                        # In order to not break legacy which might replace the same timestamp
+                        # with the same value in multiple matches, here we'll include
+                        # ones that need to be replaced for every match
+                        if self.replacementType in ('replaytimestamp'):
+                            replacement = self._getReplacement(event[matchStart:matchEnd])
+                        offset += len(replacement) - len(match.group(1))
+                    except:
+                        matchStart = match.start(0) + offset
+                        matchEnd = match.end(0) + offset
+                        startEvent = event[:matchStart]
+                        endEvent = event[matchEnd:]
+                        # In order to not break legacy which might replace the same timestamp
+                        # with the same value in multiple matches, here we'll include
+                        # ones that need to be replaced for every match
+                        if self.replacementType in ('replaytimestamp'):
+                            replacement = self._getReplacement(event[matchStart:matchEnd])
+                        offset += len(replacement) - len(match.group(0))
                     # logger.debug("matchStart %d matchEnd %d offset %d" % (matchStart, matchEnd, offset))
                     event = startEvent + replacement + endEvent
                 
@@ -815,39 +813,58 @@ class Token:
             return self.replacement
         elif self.replacementType in ('timestamp', 'replaytimestamp'):
             if self.sample.earliest and self.sample.latest:
-                # Optimizing for parsing times during mass event generation
-                # Cache results to prevent calls to timeParser unless the value changes
-                # Because every second, relative times could change, we can only cache
-                # results for at maximum one second.  This seems not very effective, but we're
-                # we're generating thousands of events per second it optimizes quite a bit.
-                if self._tokents == None:
-                    self._tokents = self.sample.now()
-
-                # If we've gone more than a second, invalidate results, calculate
-                # earliest and latest and cache new values
-                if self.sample.now() - self._tokents > datetime.timedelta(seconds=1):
-                    # logger.debug("Token Time Cache invalidated, refreshing")
-                    self._tokents = self.sample.now()
-                    earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
-                    latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
-                    self._earliestTime = (self.sample.earliest, earliestTime)
-                    self._latestTime = (self.sample.latest, latestTime)
+                # First optimization, we need only store earliest and latest
+                # as an offset of now if they're relative times
+                if self.sample._earliestParsed != None:
+                    earliestTime = self.sample.now() - self.sample._earliestParsed
                 else:
-                    # If we match the text of the earliest and latest config value
-                    # return cached value    
-                    if self.sample.earliest == self._earliestTime[0] \
-                            and self.sample.latest == self._latestTime[0]:
-                        # logger.debug("Updating time from cache")
-                        earliestTime = self._earliestTime[1]
-                        latestTime = self._latestTime[1]
-                    # Otherwise calculate and update the cache
-                    else:
-                        # logger.debug("Earliest and Latest Time Cache invalidated for times '%s' & '%s', refreshing" \
-                        #                 % (self.sample.earliest, self.sample.latest))
+                    if self.sample.earliest.strip()[0:1] == '+' or \
+                            self.sample.earliest.strip()[0:1] == '-':
+                        self.sample._earliestParsed = self.sample.now() - timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                        earliestTime = self.sample.now() - self.sample._earliestParsed
+
+                if self.sample._latestParsed != None:
+                    latestTime = self.sample.now() - self.sample._latestParsed
+                else:
+                    if self.sample.latest.strip()[0:1] == '+' or \
+                            self.sample.latest.strip()[0:1] == '-':
+                        self.sample._latestParsed = self.sample.now() - timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                        latestTime = self.sample.now() - self.sample._latestParsed
+
+                if earliestTime == None or latestTime == None:
+                    # Optimizing for parsing times during mass event generation
+                    # Cache results to prevent calls to timeParser unless the value changes
+                    # Because every second, relative times could change, we can only cache
+                    # results for at maximum one second.  This seems not very effective, but we're
+                    # we're generating thousands of events per second it optimizes quite a bit.
+                    if self._tokents == None:
+                        self._tokents = self.sample.now()
+
+                    # If we've gone more than a second, invalidate results, calculate
+                    # earliest and latest and cache new values
+                    if self.sample.now() - self._tokents > datetime.timedelta(seconds=1):
+                        # logger.debug("Token Time Cache invalidated, refreshing")
+                        self._tokents = self.sample.now()
                         earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
-                        self._earlestTime = (self.sample.earliest, earliestTime)
                         latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                        self._earliestTime = (self.sample.earliest, earliestTime)
                         self._latestTime = (self.sample.latest, latestTime)
+                    else:
+                        # If we match the text of the earliest and latest config value
+                        # return cached value    
+                        if self.sample.earliest == self._earliestTime[0] \
+                                and self.sample.latest == self._latestTime[0]:
+                            # logger.debug("Updating time from cache")
+                            earliestTime = self._earliestTime[1]
+                            latestTime = self._latestTime[1]
+                        # Otherwise calculate and update the cache
+                        else:
+                            # logger.debug("Earliest and Latest Time Cache invalidated for times '%s' & '%s', refreshing" \
+                            #                 % (self.sample.earliest, self.sample.latest))
+                            earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                            self._earlestTime = (self.sample.earliest, earliestTime)
+                            latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                            self._latestTime = (self.sample.latest, latestTime)
 
 
                 # Don't muck with time while we're backfilling
