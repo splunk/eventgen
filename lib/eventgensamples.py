@@ -359,7 +359,7 @@ class Sample:
                 if count >= len(sampleLines):
                     events = sampleLines
                     if self.sampletype == 'csv':
-                        eventsDict = sampleDict
+                        eventsDict = sampleDict[:]
                 else:
                     events = sampleLines[0:count]
                     if self.sampletype == 'csv':
@@ -405,7 +405,7 @@ class Sample:
                     events.append(event + '\n')
 
                 if self.bundlelines:
-                    eventsDict = copy.deepcopy(sampleDict)
+                    eventsDict = sampleDict[:]
 
                 ## If breaker wasn't found in sample
                 ## events = sample
@@ -435,8 +435,8 @@ class Sample:
 
             # logger.debug("events: %s" % pprint.pformat(events))
             logger.debug("Replacing %s tokens in %s events for sample '%s' in app '%s'" % (len(self.tokens), len(events), self.name, self.app))
-            
-            if self.sampletype == 'csv':
+
+            if self.sampletype == 'csv' and len(eventsDict) > 0:
                 self.index = eventsDict[0]['index']
                 self.host = eventsDict[0]['host']
                 self.source = eventsDict[0]['source']
