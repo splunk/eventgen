@@ -62,6 +62,8 @@ class Sample:
     timeMultiple = None
     debug = None
     timezone = datetime.timedelta(days=1)
+    dayOfMonthRate = None
+    monthOfYearRate = None
     
     # Internal fields
     _c = None
@@ -318,6 +320,24 @@ class Sample:
                         import traceback
                         stack =  traceback.format_exc()
                         logger.error("Minute of hour rate failed.  Stacktrace %s" % stack)
+                if type(self.dayOfMonthRate) == dict:
+                    try:
+                        rate = self.dayOfMonthRate[str(self.now().day)]
+                        logger.debug("dayOfMonthRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
+                        rateFactor *= rate
+                    except KeyError:
+                        import traceback
+                        stack =  traceback.format_exc()
+                        logger.error("Day of Month rate failed.  Stacktrace %s" % stack)
+                if type(self.monthOfYearRate) == dict:
+                    try:
+                        rate = self.monthOfYearRate[str(self.now().month)]
+                        logger.debug("monthOfYearRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
+                        rateFactor *= rate
+                    except KeyError:
+                        import traceback
+                        stack =  traceback.format_exc()
+                        logger.error("Month Of Year rate failed.  Stacktrace %s" % stack)
                 count = int(round(count * rateFactor, 0))
                 if rateFactor != 1.0:
                     logger.info("Original count: %s Rated count: %s Rate factor: %s" % (self.count, count, rateFactor))
@@ -662,7 +682,7 @@ class Sample:
 
     def now(self, utcnow=False):
         # logger.info("Getting time (timezone %s)" % (self.timezone))
-        if not self._backfilldone:
+        if not self._backfilldone and not self._backfillts == None:
             return self._backfillts
         elif self.timezone.days > 0:
             return datetime.datetime.now()
@@ -832,7 +852,7 @@ class Token:
                     if self.sample.latest.strip()[0:1] == '+' or \
                             self.sample.latest.strip()[0:1] == '-' or \
                             self.sample.latest == 'now':
-                        self.sample._latestParsed = self.sample.now() - timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                        self.sample._latestParsed = self.sample.now() - timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
                         latestTime = self.sample.now() - self.sample._latestParsed
                     else:
                         latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
