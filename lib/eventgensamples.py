@@ -188,7 +188,9 @@ class Sample:
                     try:
                         sampleLines.append(line['_raw'].decode('string_escape').replace('\n', 'NEWLINEREPLACEDHERE!!!'))
                     except ValueError:
-                        logger.error("Error in sample at line '%d' - did you quote your backslashes?" % (csvReader.line_num))
+                        logger.error("Error in sample at line '%d' in sample '%s' in app '%s' - did you quote your backslashes?" % (csvReader.line_num, self.name, self.app))
+                    except AttributeError:
+                        logger.error("Missing _raw at line '%d' in sample '%s' in app '%s'" % (csvReader.line_num, self.name, self.app))
                 self._sampleDict = copy.deepcopy(sampleDict)
                 self._sampleLines = copy.deepcopy(sampleLines)
             else:
