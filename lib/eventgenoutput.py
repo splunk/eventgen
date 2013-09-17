@@ -394,6 +394,9 @@ class Output:
                     shutil.move(self._workingFilePath, spoolPath)
             else:
                 logger.error("File '%s' missing" % self._workingFilePath)
+        elif self._outputMode == 'file':
+            if not self._fileHandle.closed:
+                self._fileHandle.flush()
         elif self._outputMode == 'splunkstream':
             #logger.debug("Closing self._splunkhttp connection")
             if splunkhttp != None:
