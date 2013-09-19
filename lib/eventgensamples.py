@@ -186,7 +186,10 @@ class Sample:
                 for line in csvReader:
                     sampleDict.append(line)
                     try:
-                        sampleLines.append(line['_raw'].decode('string_escape').replace('\n', 'NEWLINEREPLACEDHERE!!!'))
+                        tempstr = line['_raw'].decode('string_escape')
+                        if self.bundlelines:
+                            tempstr.replace('\n', 'NEWLINEREPLACEDHERE!!!')
+                        sampleLines.append(tempstr)
                     except ValueError:
                         logger.error("Error in sample at line '%d' in sample '%s' in app '%s' - did you quote your backslashes?" % (csvReader.line_num, self.name, self.app))
                     except AttributeError:
@@ -312,7 +315,7 @@ class Sample:
                     except KeyError:
                         import traceback
                         stack =  traceback.format_exc()
-                        logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
+                        logger.error("Hour of day rate failed for sample '%s'.  Stacktrace %s" % (self.name, stack))
                 if type(self.minuteOfHourRate) == dict:
                     try:
                         rate = self.minuteOfHourRate[str(self.now().minute)]
@@ -321,7 +324,7 @@ class Sample:
                     except KeyError:
                         import traceback
                         stack =  traceback.format_exc()
-                        logger.error("Minute of hour rate failed.  Stacktrace %s" % stack)
+                        logger.error("Minute of hour rate failed for sample '%s'.  Stacktrace %s" % (self.name, stack))
                 if type(self.dayOfMonthRate) == dict:
                     try:
                         rate = self.dayOfMonthRate[str(self.now().day)]
@@ -330,7 +333,7 @@ class Sample:
                     except KeyError:
                         import traceback
                         stack =  traceback.format_exc()
-                        logger.error("Day of Month rate failed.  Stacktrace %s" % stack)
+                        logger.error("Day of Month rate for sample '%s' failed.  Stacktrace %s" % (self.name, stack))
                 if type(self.monthOfYearRate) == dict:
                     try:
                         rate = self.monthOfYearRate[str(self.now().month)]
@@ -339,7 +342,7 @@ class Sample:
                     except KeyError:
                         import traceback
                         stack =  traceback.format_exc()
-                        logger.error("Month Of Year rate failed.  Stacktrace %s" % stack)
+                        logger.error("Month Of Year rate failed for sample '%s'.  Stacktrace %s" % (self.name, stack))
                 count = int(round(count * rateFactor, 0))
                 if rateFactor != 1.0:
                     logger.info("Original count: %s Rated count: %s Rate factor: %s" % (self.count, count, rateFactor))
