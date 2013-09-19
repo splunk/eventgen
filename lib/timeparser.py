@@ -161,8 +161,8 @@ def timeParserTimeMath(plusminus, num, unit, ret):
                 else:
                     ret = datetime.datetime(ret.year, ret.month+monthnum, ret.day,
                                             ret.hour, ret.minute, ret.second, ret.microsecond)
-            elif monthnum < 0:
-                if ret.month + monthnum < 0:
+            elif monthnum <= 0:
+                if ret.month + monthnum <= 0:
                     ret = datetime.datetime(ret.year-1, (12-abs(ret.month+monthnum)),
                                             ret.day, ret.hour, ret.minute, ret.second, ret.microsecond)
                 else:
