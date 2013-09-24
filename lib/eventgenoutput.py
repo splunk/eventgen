@@ -351,6 +351,7 @@ class Output:
                         # If we're at the end of the max allowable size, shift all files
                         # up a number and create a new one
                         if self._fileLength > self._fileMaxBytes:
+                            self._fileHandle.flush()
                             self._fileHandle.close()
                             if os.path.exists(self._file+'.'+str(self._fileBackupFiles)):
                                 logger.debug('File Output: Removing file: %s' % self._file+'.'+str(self._fileBackupFiles))
@@ -394,6 +395,8 @@ class Output:
                     shutil.move(self._workingFilePath, spoolPath)
             else:
                 logger.error("File '%s' missing" % self._workingFilePath)
+        elif self._outputMode == 'file':
+            self._fileHandle.flush()
         elif self._outputMode == 'splunkstream':
             #logger.debug("Closing self._splunkhttp connection")
             if splunkhttp != None:
