@@ -185,6 +185,8 @@ class Sample:
                 logger.debug("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
                 sampleDict = [ ]
                 sampleLines = [ ]
+                # Fix to load large csv files, work with python 2.5 onwards
+                csv.field_size_limit(sys.maxint)
                 csvReader = csv.DictReader(sampleFH)
                 for line in csvReader:
                     sampleDict.append(line)
