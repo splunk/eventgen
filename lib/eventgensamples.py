@@ -190,7 +190,7 @@ class Sample:
                     try:
                         tempstr = line['_raw'].decode('string_escape')
                         if self.bundlelines:
-                            tempstr.replace('\n', 'NEWLINEREPLACEDHERE!!!')
+                            tempstr = tempstr.replace('\n', 'NEWLINEREPLACEDHERE!!!')
                         sampleLines.append(tempstr)
                     except ValueError:
                         logger.error("Error in sample at line '%d' in sample '%s' in app '%s' - did you quote your backslashes?" % (csvReader.line_num, self.name, self.app))
@@ -198,6 +198,7 @@ class Sample:
                         logger.error("Missing _raw at line '%d' in sample '%s' in app '%s'" % (csvReader.line_num, self.name, self.app))
                 self._sampleDict = copy.deepcopy(sampleDict)
                 self._sampleLines = copy.deepcopy(sampleLines)
+                logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(sampleLines), len(sampleDict)))
             else:
                 # If we're set to bundlelines, we'll modify sampleLines regularly.
                 # Since lists in python are referenced rather than copied, we
@@ -1052,6 +1053,8 @@ class Token:
                             try:
                                 rateFactor *= self.sample.hourOfDayRate[str(self.sample.now())]
                             except KeyError:
+                                import traceback
+                                stack =  traceback.format_exc()
                                 logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
                         if type(self.sample.dayOfWeekRate) == dict:
                             try:
@@ -1062,6 +1065,8 @@ class Token:
                                     weekday += 1
                                 rateFactor *= self.sample.dayOfWeekRate[str(weekday)]
                             except KeyError:
+                                import traceback
+                                stack =  traceback.format_exc()
                                 logger.error("Day of week rate failed.  Stacktrace %s" % stack)
                         replacementInt = int(round(replacementInt * rateFactor, 0))
                     replacement = str(replacementInt)
@@ -1083,6 +1088,8 @@ class Token:
                                 try:
                                     rateFactor *= self.sample.hourOfDayRate[str(now.hour)]
                                 except KeyError:
+                                    import traceback
+                                    stack =  traceback.format_exc()
                                     logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
                             if type(self.sample.dayOfWeekRate) == dict:
                                 try:
@@ -1093,6 +1100,8 @@ class Token:
                                         weekday += 1
                                     rateFactor *= self.sample.dayOfWeekRate[str(weekday)]
                                 except KeyError:
+                                    import traceback
+                                    stack =  traceback.format_exc()
                                     logger.error("Day of week rate failed.  Stacktrace %s" % stack)
                             floatret = round(floatret * rateFactor, len(floatMatch.group(2)))
                         floatret = str(floatret)

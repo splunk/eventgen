@@ -15,7 +15,10 @@ import datetime
 from select import select
 from eventgenconfig import Config
 
-class Timer(threading.Thread):
+# 11/24/13 CS Replacing with multiproces finally in order to provide better isolation from crashes
+#             and also to improve performance with many samples
+# class Timer(threading.Thread):
+class Timer(multiprocessing.Process):
     time = None
     stopping = None
     interruptcatcher = None
@@ -29,7 +32,8 @@ class Timer(threading.Thread):
         self.countdown = 0
         
         self.sample = sample
-        threading.Thread.__init__(self)
+        # threading.Thread.__init__(self)
+        multiprocessing.Process.__init__(self)
 
     def run(self):
         if self.sample.delay > 0:
@@ -39,7 +43,21 @@ class Timer(threading.Thread):
             if not self.stopping:
                 if not self.interruptcatcher:
                     if self.countdown <= 0:
-                        partialInterval = self.sample.gen()
+                        try:
+                            partialInterval = self.sample.gen()
+                        # 11/24/13 CS Blanket catch for any errors
+                        # If we've gotten here, all error correction has failed and we
+                        # need to gracefully exit providing some error context like what sample
+                        # we came from
+                        except (KeyboardInterrupt, SystemExit):
+                            raise
+                        except:
+                            import traceback
+                            logger.error('Exception in sample: %s\n%s' % (self.sample.name, \
+                                    traceback.format_exc()))
+                            sys.stderr.write('Exception in sample: %s\n%s' % (self.sample.name, \
+                                    traceback.format_exc()))
+                            sys.exit(1)
 
                         self.countdown = partialInterval
 
