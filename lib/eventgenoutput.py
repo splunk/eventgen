@@ -226,6 +226,10 @@ class Output:
             # Fixes a bug where we're losing source and sourcetype with bundlelines type transactions
             queues = { }
             for row in self._queue:
+                if row['source'] is None:
+                    row['source'] = ''
+                if row['sourcetype'] is None:
+                    row['sourcetype'] = ''
                 if not row['source']+'_'+row['sourcetype'] in queues:
                     queues[row['source']+'_'+row['sourcetype']] = deque([])
 
