@@ -57,13 +57,11 @@ class Output:
     _fileMaxBytes = None
     _fileBackupFiles = None
     _fileLogger = None
-    _sessionKey = None
     _splunkHost = None
     _splunkPort = None
     _splunkMethod = None
     _splunkUser = None
     _splunkPass = None
-    _splunkUrl = None
     _splunkhttp = None
     _index = None
     _source = None
@@ -84,7 +82,7 @@ class Output:
         from eventgenconfig import Config
         self._c = Config()
         self._app = sample.app
-        self._sample = sample.name
+        self._sample = sample
         self._outputMode = sample.outputMode
         
         self._queue = deque([])
@@ -106,8 +104,8 @@ class Output:
             self._spoolFile = sample.spoolFile
         elif self._outputMode == 'file':
             if sample.fileName == None:
-                logger.error('outputMode file but file not specified for sample %s' % self._sample)
-                raise ValueError('outputMode file but file not specified for sample %s' % self._sample)
+                logger.error('outputMode file but file not specified for sample %s' % self._sample.name)
+                raise ValueError('outputMode file but file not specified for sample %s' % self._sample.name)
                 
             self._file = sample.fileName
             self._fileMaxBytes = sample.fileMaxBytes
@@ -130,51 +128,51 @@ class Output:
             if self._c.splunkEmbedded:
                 try:
                     import splunk.auth
-                    self._splunkUrl = splunk.auth.splunk.getLocalServerInfo()
-                    results = re.match('(http|https)://([^:/]+):(\d+).*', self._splunkUrl)
+                    self._sample.splunkUrl = splunk.auth.splunk.getLocalServerInfo()
+                    results = re.match('(http|https)://([^:/]+):(\d+).*', self._sample.splunkUrl)
                     self._splunkMethod = results.groups()[0]
                     self._splunkHost = results.groups()[1]
                     self._splunkPort = results.groups()[2]
                 except:
                     import traceback
                     trace = traceback.format_exc()
-                    logger.error('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s.  Stacktrace: %s' % (self._sample, trace))
-                    raise ValueError('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s' % self._sample)
+                    logger.error('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s.  Stacktrace: %s' % (self._sample.name, trace))
+                    raise ValueError('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s' % self._sample.name)
             else:
                 if sample.splunkHost == None:
-                    logger.error('outputMode splunkstream but splunkHost not specified for sample %s' % self._sample)
-                    raise ValueError('outputMode splunkstream but splunkHost not specified for sample %s' % self._sample)  
+                    logger.error('outputMode splunkstream but splunkHost not specified for sample %s' % self._sample.name)
+                    raise ValueError('outputMode splunkstream but splunkHost not specified for sample %s' % self._sample.name)  
                 elif sample.splunkHost == '[':
                     try:
                         sample.splunkHost = json.loads(sample.splunkHost)
                     except:
-                        logger.error('splunkHost configured as JSON, but unparseable for sample %s' % self._sample)
-                        raise ValueError('splunkHost configured as JSON, but unparseable for sample %s' % self._sample)
+                        logger.error('splunkHost configured as JSON, but unparseable for sample %s' % self._sample.name)
+                        raise ValueError('splunkHost configured as JSON, but unparseable for sample %s' % self._sample.name)
                 if sample.splunkUser == None:
-                    logger.error('outputMode splunkstream but splunkUser not specified for sample %s' % self._sample)
-                    raise ValueError('outputMode splunkstream but splunkUser not specified for sample %s' % self._sample)            
+                    logger.error('outputMode splunkstream but splunkUser not specified for sample %s' % self._sample.name)
+                    raise ValueError('outputMode splunkstream but splunkUser not specified for sample %s' % self._sample.name)     
                 if sample.splunkPass == None:
-                    logger.error('outputMode splunkstream but splunkPass not specified for sample %s' % self._sample)
-                    raise ValueError('outputMode splunkstream but splunkPass not specified for sample %s' % self._sample)
+                    logger.error('outputMode splunkstream but splunkPass not specified for sample %s' % self._sample.name)
+                    raise ValueError('outputMode splunkstream but splunkPass not specified for sample %s' % self._sample.name)
                         
                 self._splunkHost = sample.splunkHost
                 self._splunkPort = sample.splunkPort
                 self._splunkMethod = sample.splunkMethod
                 self._splunkUser = sample.splunkUser
                 self._splunkPass = sample.splunkPass
-                self._splunkUrl = '%s://%s:%s' % (self._splunkMethod, self._splunkHost, self._splunkPort)
+                self._sample.splunkUrl = '%s://%s:%s' % (self._splunkMethod, self._splunkHost, self._splunkPort)
                 
                 try:
                     myhttp = httplib2.Http(disable_ssl_certificate_validation=True)
-                    response = myhttp.request(self._splunkUrl + '/services/auth/login', 'POST',
+                    response = myhttp.request(self._sample.splunkUrl + '/services/auth/login', 'POST',
                                                 headers = {}, body=urllib.urlencode({'username': self._splunkUser, 
                                                                                     'password': self._splunkPass}))[1]
-                    self._c.sessionKey = minidom.parseString(response).getElementsByTagName('sessionKey')[0].childNodes[0].nodeValue
+                    self._sample.sessionKey = minidom.parseString(response).getElementsByTagName('sessionKey')[0].childNodes[0].nodeValue
                 except:
-                    logger.error('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample)
-                    raise IOError('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample)
+                    logger.error('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample.name)
+                    raise IOError('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample.name)
                     
-            logging.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._c.sessionKey, self._sample))    
+            logging.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._sample.sessionKey, self._sample.name))    
         elif self._outputMode == 'stormstream':        
             self._accessToken = sample.accessToken
             self._projectID = sample.projectID
@@ -298,13 +296,13 @@ class Output:
             except KeyError:
                 pass
                 
-            logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample, self._app, self._source))
+            logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample.name, self._app, self._source))
 
             if self._outputMode == 'spool':
                 nowtime = int(time.mktime(time.gmtime()))
                 workingfile = str(nowtime) + '-' + self._sample + '.part'
                 self._workingFilePath = os.path.join(self._c.greatgrandparentdir, self._app, 'samples', workingfile)
-                logger.debug("Creating working file '%s' for sample '%s' in app '%s'" % (workingfile, self._sample, self._app))
+                logger.debug("Creating working file '%s' for sample '%s' in app '%s'" % (workingfile, self._sample.name, self._app))
                 self._workingFH = open(self._workingFilePath, 'w')
             elif self._outputMode == 'splunkstream':
                 try:
@@ -327,13 +325,13 @@ class Output:
                         urlparms.append(('host', host))
                     url = '/services/receivers/stream?%s' % (urllib.urlencode(urlparms))
                     splunkhttp.putrequest("POST", url)
-                    splunkhttp.putheader("Authorization", "Splunk %s" % self._c.sessionKey)
+                    splunkhttp.putheader("Authorization", "Splunk %s" % self._sample.sessionKey)
                     splunkhttp.putheader("x-splunk-input-mode", "streaming")
                     splunkhttp.endheaders()
                     logger.debug("POSTing to url %s on %s://%s:%s with sessionKey %s" \
-                                % (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._c.sessionKey))
+                                % (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._sample.sessionKey))
                 except httplib.HTTPException, e:
-                    logger.error('Error connecting to Splunk for logging for sample %s.  Exception "%s" Config: %s' % (self._sample, e.args, self))
+                    logger.error('Error connecting to Splunk for logging for sample %s.  Exception "%s" Config: %s' % (self._sample.name, e.args, self))
                     raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
             try:
                 while msg:
@@ -379,9 +377,9 @@ class Output:
                         streamout += msg
                     
                     msg = queue.popleft()['_raw']
-                logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
+                logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
             except IndexError:
-                logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample))
+                logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
         else:
             streamout = ""
             
@@ -390,7 +388,7 @@ class Output:
             ## Move file to spool
             self._workingFH.close()
             spoolPath = self._spoolDir + os.sep + self._spoolFile
-            logger.debug("Moving '%s' to '%s' for sample '%s' in app '%s'" % (self._workingFilePath, spoolPath, self._sample, self._app))
+            logger.debug("Moving '%s' to '%s' for sample '%s' in app '%s'" % (self._workingFilePath, spoolPath, self._sample.name, self._app))
             if os.path.exists(self._workingFilePath):
                 if os.path.exists(spoolPath):
                     os.system("cat %s >> %s" % (self._workingFilePath, spoolPath))
@@ -426,8 +424,8 @@ class Output:
                     logger.debug("POSTing to url %s on https://api.splunkstorm.com with accessToken %s" \
                                 % (url, base64.b64encode(self._accessToken+':')))
                 except httplib.HTTPException:
-                    logger.error('Error connecting to Splunk for logging for sample %s' % self._sample)
-                    raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
+                    logger.error('Error connecting to Splunk for logging for sample %s' % self._sample.name)
+                    raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample.name)
                 try:
                     response = self._splunkhttp.getresponse()
                     data = response.read()
@@ -435,4 +433,4 @@ class Output:
                     self._splunkhttp.close()
                     self._splunkhttp = None
                 except httplib.BadStatusLine:
-                    logger.error("Received bad status from Storm for sample '%s'" % self._sample)
+                    logger.error("Received bad status from Storm for sample '%s'" % self._sample.name)
