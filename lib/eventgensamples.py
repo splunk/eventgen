@@ -13,6 +13,7 @@ from timeparser import timeParser, timeDelta2secs
 import httplib2, urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
+import uuid
 
 class Sample:
     # Required fields for Sample
@@ -722,7 +723,7 @@ class Token:
     _floatMatch = None
     _hexMatch = None
     _stringMatch = None
-    _eventCache = None
+    _listMatch = None
     
     def __init__(self, sample):
         self.sample = sample
@@ -733,8 +734,6 @@ class Token:
         
         self._earliestTime = (None, None)
         self._latestTime = (None, None)
-
-        self._eventCache = { }
         
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this token"""
@@ -1005,6 +1004,13 @@ class Token:
                 hexMatch = hexRE.match(self.replacement)
                 self._hexMatch = hexMatch
 
+            if self._listMatch != None:
+                listMatch = self._listMatch
+            else:
+                listRE = re.compile('list(\[[^\]]+\])', re.I)
+                listMatch = listRE.match(self.replacement)
+                self._listMatch = listMatch
+
             ## Valid replacements: ipv4 | ipv6 | integer[<start>:<end>] | string(<i>)
             if self.replacement.lower() == 'ipv4':
                 x = 0
@@ -1041,6 +1047,8 @@ class Token:
 
                 replacement = replacement.strip(':')
                 return replacement
+            elif self.replacement.lower() == 'guid':
+                return str(uuid.uuid4())
             elif integerMatch:
                 startInt = int(integerMatch.group(1))
                 endInt = int(integerMatch.group(2))
@@ -1138,6 +1146,14 @@ class Token:
                     replacement += hexList[random.randint(0, 15)]
 
                 return replacement
+            elif listMatch:
+                try:
+                    value = json.loads(listMatch.group(1))
+                except:
+                    logger.error("Could not parse json for '%s' in sample '%s'" % (listMatch.group(1), self.sample.name))
+                    return old
+                return random.choice(value)
+
             else:
                 logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
                 return old

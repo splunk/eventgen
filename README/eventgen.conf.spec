@@ -315,12 +315,13 @@ token.<n>.replacementType = static | timestamp | replaytimestamp | random | rate
     * For integerid, will use an incrementing integer as the replacement.
     * Defaults to None.
     
-token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | ipv4 | ipv6 | mac | integer[<start>:<end>] | float[<start>:<end>] | string(<i>) | hex(<i>) | <replacement file name> | <replacement file name>:<column number> | <integer>
+token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid | ipv4 | ipv6 | mac | integer[<start>:<end>] | float[<start>:<end>] | string(<i>) | hex(<i>) | list["list", "of", "values"] | <replacement file name> | <replacement file name>:<column number> | <integer>
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For <string>, the token will be replaced with the value specified.
     * For <strptime>, a strptime formatted string to replace the timestamp with
     * For ["list","of","strptime"], only used with replaytimestamp, a JSON formatted list of strptime
       formats to try.  Will find the replace with the same format which matches the replayed timestamp.
+    * For guid, the token will be replaced with a random GUID value.
     * For ipv4, the token will be replaced with a random valid IPv4 Address (i.e. 10.10.200.1).
     * For ipv6, the token will be replaced with a random valid IPv6 Address (i.e. c436:4a57:5dea:1035:7194:eebb:a210:6361).
     * For mac, the token will be replaced with a random valid MAC Address (i.e. 6e:0c:51:c6:c6:3a).
@@ -336,6 +337,7 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | ipv4 
       1.0000, precision will be four digits. If rated, will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For string(<i>), the token will be replaced with i number(s) of ASCII characters where 'i' is a number greater than 0.
     * For hex(<i>), the token will be replaced with i number of Hexadecimal characters [0-9A-F] where 'i' is a number greater than 0.
+    * For list, the token will be replaced with a random member of the JSON list provided.
     * For <replacement file name>, the token will be replaced with a random line in the replacement file.
       * Replacement file name should be a fully qualified path (i.e. $SPLUNK_HOME/etc/apps/windows/samples/users.list).
       * Windows separators should contain double forward slashes '\\' (i.e. $SPLUNK_HOME\\etc\\apps\\windows\\samples\\users.list).
