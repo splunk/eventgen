@@ -65,6 +65,8 @@ class Sample:
     timezone = datetime.timedelta(days=1)
     dayOfMonthRate = None
     monthOfYearRate = None
+    sessionKey = None
+    splunkUrl = None
     
     # Internal fields
     _c = None
@@ -116,7 +118,7 @@ class Sample:
             logger.debug("Setting up Output class for sample '%s' in app '%s'" % (self.name, self.app))
             self._out = Output(self)
             if self.backfillSearchUrl == None:
-                self.backfillSearchUrl = self._out._splunkUrl
+                self.backfillSearchUrl = self.splunkUrl
 
         # Setup initial backfillts
         if self._backfillts == None and self.backfill != None and not self._backfilldone:
@@ -127,16 +129,16 @@ class Sample:
                 logger.error("Failed to parse backfill '%s': %s" % (self.backfill, ex))
                 raise
 
-            if self._out._outputMode == "splunkstream" and self.backfillSearch != None:
+            if self.outputMode == "splunkstream" and self.backfillSearch != None:
                 if not self.backfillSearch.startswith('search'):
                     self.backfillSearch = 'search ' + self.backfillSearch
                 self.backfillSearch += '| head 1 | table _time'
 
-                logger.debug("Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" % (self.backfillSearchUrl, self.backfillSearch, self._out._c.sessionKey))
+                logger.debug("Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" % (self.backfillSearchUrl, self.backfillSearch, self.sessionKey))
 
                 results = httplib2.Http(disable_ssl_certificate_validation=True).request(\
                             self.backfillSearchUrl + '/services/search/jobs',
-                            'POST', headers={'Authorization': 'Splunk %s' % self._out._c.sessionKey}, \
+                            'POST', headers={'Authorization': 'Splunk %s' % self.sessionKey}, \
                             body=urllib.urlencode({'search': self.backfillSearch,
                                                     'earliest_time': self.backfill,
                                                     'exec_mode': 'oneshot'}))[1]

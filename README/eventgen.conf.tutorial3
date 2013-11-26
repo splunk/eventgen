@@ -28,7 +28,7 @@ sourcetype=be_log
 # Host/User/pass only necessary if running outside of splunk!
 splunkHost = localhost
 splunkUser = admin
-splunkPass = changeme
+splunkPass = changed
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
 token.0.replacementType = timestamp
