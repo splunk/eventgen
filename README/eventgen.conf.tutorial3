@@ -16,14 +16,14 @@ backfillSearch = sourcetype=be_log
 # spoolDir = $SPLUNK_HOME/var/spool/splunk
 # spoolFile = <SAMPLE>
 
-# outputMode = file
-# fileName = /tmp/lotsofevents.log
+outputMode = file
+fileName = /tmp/lotsofevents.log
 
-outputMode = splunkstream
-index=main
-host=be-01.splunk.com
-source=/var/log/be/event.log
-sourcetype=be_log
+# outputMode = splunkstream
+# index=main
+# host=be-01.splunk.com
+# source=/var/log/be/event.log
+# sourcetype=be_log
 
 # Host/User/pass only necessary if running outside of splunk!
 splunkHost = localhost
@@ -35,8 +35,8 @@ token.0.replacementType = timestamp
 token.0.replacement = %Y-%m-%d %H:%M:%S
 
 token.1.token = transType=(\w+)
-token.1.replacementType = file
-token.1.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/orderType.sample
+token.1.replacementType = random
+token.1.replacement = list[ "New", "New", "Change", "Change", "Change", "Delete" ]
 
 token.2.token = transID=(\d+)
 token.2.replacementType = integerid
@@ -44,7 +44,7 @@ token.2.replacement = 100000
 
 token.3.token = transGUID=([0-9a-fA-F]+)
 token.3.replacementType = random
-token.3.replacement = hex(24)
+token.3.replacement = guid
 
 token.4.token = userName=(\w+)
 token.4.replacementType = file
