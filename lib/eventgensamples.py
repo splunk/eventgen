@@ -155,7 +155,7 @@ class Sample:
 
         # Override earliest and latest during backfill until we're at current time
         if self.backfill != None and not self._backfilldone:
-            if self._backfillts >= datetime.datetime.now():
+            if self._backfillts >= self.now(realnow=True):
                 logger.info("Backfill complete")
                 # exit(1)  # Added for perf test, REMOVE LATER
                 self._backfilldone = True
@@ -688,9 +688,9 @@ class Sample:
                 stateFile.write(token.replacement)
                 stateFile.close()
 
-    def now(self, utcnow=False):
+    def now(self, utcnow=False, realnow=False):
         # logger.info("Getting time (timezone %s)" % (self.timezone))
-        if not self._backfilldone and not self._backfillts == None:
+        if not self._backfilldone and not self._backfillts == None and not realnow:
             return self._backfillts
         elif self.timezone.days > 0:
             return datetime.datetime.now()
@@ -849,7 +849,7 @@ class Token:
                     if self.sample.earliest.strip()[0:1] == '+' or \
                             self.sample.earliest.strip()[0:1] == '-' or \
                             self.sample.earliest == 'now':
-                        self.sample._earliestParsed = self.sample.now() - timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                        self.sample._earliestParsed = self.sample.now() - timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=datetime.datetime.utcnow)
                         earliestTime = self.sample.now() - self.sample._earliestParsed
                     else:
                         earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
@@ -860,7 +860,7 @@ class Token:
                     if self.sample.latest.strip()[0:1] == '+' or \
                             self.sample.latest.strip()[0:1] == '-' or \
                             self.sample.latest == 'now':
-                        self.sample._latestParsed = self.sample.now() - timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                        self.sample._latestParsed = self.sample.now() - timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=datetime.datetime.utcnow)
                         latestTime = self.sample.now() - self.sample._latestParsed
                     else:
                         latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
