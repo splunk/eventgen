@@ -16,14 +16,14 @@ backfillSearch = sourcetype=be_log
 # spoolDir = $SPLUNK_HOME/var/spool/splunk
 # spoolFile = <SAMPLE>
 
-outputMode = file
-fileName = /tmp/lotsofevents.log
+# outputMode = file
+# fileName = /tmp/lotsofevents.log
 
-# outputMode = splunkstream
-# index=main
-# host=be-01.splunk.com
-# source=/var/log/be/event.log
-# sourcetype=be_log
+outputMode = splunkstream
+index=main
+host=be-01.splunk.com
+source=/var/log/be/event.log
+sourcetype=be_log
 
 # Host/User/pass only necessary if running outside of splunk!
 splunkHost = localhost
