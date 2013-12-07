@@ -325,7 +325,7 @@ class Output:
                         urlparms.append(('host_regex', hostRegex))
                     elif host != None:
                         urlparms.append(('host', host))
-                    url = '/services/receivers/stream?%s' % (urllib.urlencode(urlparms))
+                    url = '/services/receivers/simple?%s' % (urllib.urlencode(urlparms))
                     splunkhttp.putrequest("POST", url)
                     splunkhttp.putheader("Authorization", "Splunk %s" % self._c.sessionKey)
                     splunkhttp.putheader("x-splunk-input-mode", "streaming")
