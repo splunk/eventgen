@@ -53,7 +53,7 @@ class Timer(threading.Thread):
                         # If we're going to sleep for longer than the default check for kill interval
                         # go ahead and flush output so we're not just waiting
                         if partialInterval > self.time:
-                            self.sample._out.flush(force=True)
+                            self.sample._out.flush()
 
                             # Make sure that we're sleeping an accurate amount of time, including the
                             # partial seconds.  After the first sleep, we'll sleep in increments of

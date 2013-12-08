@@ -1,3 +1,5 @@
+# TODO Add guid and sample name to logging output for each sample
+
 from __future__ import division
 from ConfigParser import ConfigParser
 import os
@@ -11,6 +13,8 @@ import pprint
 import copy
 from eventgensamples import Sample, Token
 import urllib
+from Queue import Queue
+import types
 
 # 5/10/12 CS Some people consider Singleton to be lazy.  Dunno, I like it for convenience.
 # My general thought on that sort of stuff is if you don't like it, reimplement it.  I'll consider
@@ -38,10 +42,10 @@ class Config:
     greatgrandparentdir = None
     samples = [ ]
     sampleDir = None
+    outputWorkers = None
 
     # Config file options.  We do not define defaults here, rather we pull them in
-    # from either the eventgen.conf in the SA-Eventgen app (embedded)
-    # or the eventgen_defaults file in the lib directory (standalone)
+    # from eventgen.conf.
     # These are only options which are valid in the 'global' stanza
     # 5/22 CS Except for blacklist, we define that in code, since splunk complains about it in
     # the config files
@@ -84,22 +88,22 @@ class Config:
     dayOfMonthRate = None
     monthOfYearRate = None
 
+    __outputPlugins = { }
+    __plugins = { }
+    outputQueue = None
+
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
                     'delay', 'count', 'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate',
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes',
-                    'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
-                    'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
-                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
-                    'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate']
+                    'fileBackupFiles', 'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 
+                    'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
+                    'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
-    _validOutputModes = ['spool', 'file', 'splunkstream', 'stormstream']
-    _validSplunkMethods = ['http', 'https']
-    _validSampleTypes = ['raw', 'csv']
-    _validModes = ['sample', 'replay']
-    _intSettings = ['interval', 'count', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort']
+    _validOutputModes = [ ]
+    _intSettings = ['interval', 'count', 'outputWorkers']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate']
@@ -109,6 +113,8 @@ class Config:
                             'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
                             'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
                             'monthOfYearRate']
+    _complexSettings = { 'sampletype': ['raw', 'csv'], 
+                         'mode': ['sample', 'replay'] }
 
     def __init__(self):
         """Setup Config object.  Sets up Logging and path related variables."""
@@ -116,11 +122,21 @@ class Config:
         self.__dict__ = self.__sharedState
         if self._firsttime:
             # Setup logger
+            # 12/8/13 CS Adding new verbose log level to make this a big more manageable
+            DEBUG_LEVELV_NUM = 9 
+            logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
+            logging.__dict__['DEBUGV'] = DEBUG_LEVELV_NUM
+            def debugv(self, message, *args, **kws):
+                # Yes, logger takes its '*args' as 'args'.
+                if self.isEnabledFor(DEBUG_LEVELV_NUM):
+                    self._log(DEBUG_LEVELV_NUM, message, args, **kws) 
+            logging.Logger.debugv = debugv
+
             logger = logging.getLogger('eventgen')
             logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
             logger.setLevel(logging.INFO)
             formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-            streamHandler = logging.StreamHandler(sys.stdout)
+            streamHandler = logging.StreamHandler(sys.stderr)
             streamHandler.setFormatter(formatter)
             logger.addHandler(streamHandler)
 
@@ -135,6 +151,12 @@ class Config:
             appName = self.grandparentdir.split(os.sep)[-1].lower()
             if appName == 'sa-eventgen' or appName == 'eventgen':
                 self._isOwnApp = True
+
+            # Initialize plugins
+            self.__initializePlugins()
+
+            self._complexSettings['timezone'] = self._validateTimezone 
+
             self._firsttime = False
 
     def __str__(self):
@@ -145,6 +167,63 @@ class Config:
 
     def __repr__(self):
         return self.__str__()
+
+    def __initializePlugins(self):
+        # Automatically set the __all__ variable with all
+        # the available plugins.
+         
+        outputPluginDir = os.path.join(self.grandparentdir, 'lib', 'plugins', 'output')
+        if not outputPluginDir in sys.path:
+            sys.path.append(outputPluginDir)
+         
+        self.__outputPlugins = { }
+        for filename in os.listdir(outputPluginDir):
+            filename = outputPluginDir + "/" + filename
+            if os.path.isfile(filename):
+                basename = os.path.basename(filename)
+                base, extension = os.path.splitext(basename)
+                if extension == ".py" and not basename.startswith("_"):
+                    module = __import__(base, fromlist=["plugins.output."])
+                    plugin = module.load()
+                    self.__outputPlugins[base] = plugin
+
+                    # 12/3/13 If we haven't loaded a plugin right or we haven't initialized all the variables
+                    # in the plugin, we will get an exception and the plan is to not handle it
+                    self._validOutputModes.append(base)
+                    if 'validSettings' in dir(plugin):
+                        self._validSettings.extend(plugin.validSettings)
+                    if 'defaultableSettings' in dir(plugin):
+                        self._defaultableSettings.extend(plugin.defaultableSettings)
+                    if 'intSettings' in dir(plugin):
+                        self._intSettings.extend(plugin.intSettings)
+                    if 'floatSettings' in dir(plugin):
+                        self._floatSettings.extend(plugin.floatSettings)
+                    if 'boolSettings' in dir(plugin):
+                        self._boolSettings.extend(plugin.boolSettings)
+                    if 'jsonSettings' in dir(plugin):
+                        self._jsonSettings.extend(plugin.jsonSettings)
+                    if 'complexSettings' in dir(plugin):
+                        self._complexSettings.update(plugin.complexSettings)
+
+
+        self.outputQueue = Queue()
+        # Hard code the worker plugin mapping which we expect to be there and will never have a sample associated with it
+        self.__plugins['OutputWorker'] = self.__outputPlugins['worker']
+
+
+    def getPlugin(self, name):
+        if not name in self.__plugins:
+            raise KeyError('Output plugin for sample ' + name + ' not found')
+        return self.__plugins[name]
+
+    def __setPlugin(self, s):
+        # 12/2/13 CS Adding pluggable output modules, need to set array to map sample name to output plugin
+        # module instances
+        try:
+            self.__plugins[s.name] = self.__outputPlugins[s.outputMode.lower()](s)
+            plugin = self.__plugins[s.name]
+        except KeyError:
+            raise KeyError('Output plugin %s does not exist' % s.outputMode.lower())
 
     def makeSplunkEmbedded(self, sessionKey=None, runOnce=False):
         """Setup operations for being Splunk Embedded.  This is legacy operations mode, just a little bit obfuscated now.
@@ -334,6 +413,9 @@ class Config:
             for f in foundFiles:
                 news = copy.deepcopy(s)
                 news.filePath = f
+                # 12/3/13 CS TODO These are hard coded but should be handled via the modular config system
+                # Maybe a generic callback for all plugins which will modify sample based on the filename
+                # found?
                 # Override <SAMPLE> with real name
                 if s.outputMode == 'spool' and s.spoolFile == self.spoolFile:
                     news.spoolFile = f.split(os.sep)[-1]
@@ -435,12 +517,12 @@ class Config:
                 s.minuteOfHourRate = None
                 s.interval = 0
 
+            self.__setPlugin(s)
+
         self.samples = tempsamples
         self._confDict = None
 
         logger.debug("Finished parsing.  Config str:\n%s" % self)
-
-
 
     def _validateSetting(self, stanza, key, value):
         """Validates settings to ensure they won't cause errors further down the line.
@@ -500,42 +582,45 @@ class Config:
                 except:
                     logger.error("Could not parse json for '%s' in stanza '%s'" % (key, stanza))
                     raise ValueError("Could not parse json for '%s' in stanza '%s'" % (key, stanza))
+            # 12/3/13 CS Adding complex settings, which is a dictionary with the key containing
+            # the config item name and the value is a list of valid values or a callback function
+            # which will parse the value or raise a ValueError if it is unparseable
+            elif key in self._complexSettings:
+                complexSetting = self._complexSettings[key]
+                # Set value to result of callback, e.g. parsed, or the function should raise an error
+                if isinstance(complexSetting, types.FunctionType):
+                    value = complexSetting(value)
+                elif isinstance(complexSetting, list):
+                    if not value in complexSetting:
+                        logger.error("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
+                        raiseValueError("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
             elif key == 'outputMode':
                 if not value in self._validOutputModes:
                     logger.error("outputMode invalid in stanza '%s'" % stanza)
                     raise ValueError("outputMode invalid in stanza '%s'" % stanza)
-            elif key == 'splunkMethod':
-                if not value in self._validSplunkMethods:
-                    logger.error("splunkMethod invalid in stanza '%s'" % stanza)
-                    raise ValueError("splunkMethod invalid in stanza '%s'" % stanza)
-            elif key == 'sampletype':
-                if not value in self._validSampleTypes:
-                    logger.error("sampletype is invalid in stanza '%s'" % stanza)
-                    raise ValueError("sampletype is invalid in stanza '%s'" % stanza)
-            elif key == 'mode':
-                if not value in self._validModes:
-                    logger.error("mode is invalid in stanza '%s'" % stanza)
-                    raise ValueError("mode is invalid in stanza '%s'" % stanza)
-            elif key == 'timezone':
-                logger.info("Parsing timezone '%s' for stanza '%s'" % (value, stanza))
-                if value.find('local') >= 0:
-                    value = datetime.timedelta(days=1)
-                else:
-                    try:
-                        # Separate the hours and minutes (note: minutes = the int value - the hour portion)
-                        if int(value) > 0:
-                            mod = 100
-                        else:
-                            mod = -100
-                        value = datetime.timedelta(hours=int(int(value) / 100.0), minutes=int(value) % mod )
-                    except:
-                        logger.error("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
-                        raise ValueError("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
-                logger.info("Parsed timezone '%s' for stanza '%s'" % (value, stanza))
         else:
             # Notifying only if the setting isn't valid and continuing on
             # This will allow future settings to be added and be backwards compatible
             logger.warn("Key '%s' in stanza '%s' is not a valid setting" % (key, stanza))
+        return value
+
+    def _validateTimezone(self, value):
+        """Callback for complexSetting timezone which will parse and validate the timezone"""
+        logger.info("Parsing timezone '%s' for stanza '%s'" % (value, stanza))
+        if value.find('local') >= 0:
+            value = datetime.timedelta(days=1)
+        else:
+            try:
+                # Separate the hours and minutes (note: minutes = the int value - the hour portion)
+                if int(value) > 0:
+                    mod = 100
+                else:
+                    mod = -100
+                value = datetime.timedelta(hours=int(int(value) / 100.0), minutes=int(value) % mod )
+            except:
+                logger.error("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
+                raise ValueError("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
+        logger.info("Parsed timezone '%s' for stanza '%s'" % (value, stanza))
         return value
 
     def _buildConfDict(self):

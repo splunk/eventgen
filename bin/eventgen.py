@@ -15,10 +15,8 @@ import datetime
 from select import select
 from eventgenconfig import Config
 
-# 11/24/13 CS Replacing with multiproces finally in order to provide better isolation from crashes
-#             and also to improve performance with many samples
-# class Timer(threading.Thread):
-class Timer(multiprocessing.Process):
+class Timer(threading.Thread):
+# class Timer(multiprocessing.Process):
     time = None
     stopping = None
     interruptcatcher = None
@@ -32,8 +30,8 @@ class Timer(multiprocessing.Process):
         self.countdown = 0
         
         self.sample = sample
-        # threading.Thread.__init__(self)
-        multiprocessing.Process.__init__(self)
+        threading.Thread.__init__(self)
+        # multiprocessing.Process.__init__(self)
 
     def run(self):
         if self.sample.delay > 0:
@@ -65,7 +63,8 @@ class Timer(multiprocessing.Process):
                         # If we're going to sleep for longer than the default check for kill interval
                         # go ahead and flush output so we're not just waiting
                         if partialInterval > self.time:
-                            self.sample._out.flush(force=True)
+                            logger.debugv("Flushing because we're sleeping longer than a polling interval")
+                            self.sample._out.flush()
 
                             # Make sure that we're sleeping an accurate amount of time, including the
                             # partial seconds.  After the first sleep, we'll sleep in increments of
@@ -77,7 +76,8 @@ class Timer(multiprocessing.Process):
                             self.countdown = 0
                           
                         logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
-                                    % (self.sample.name, self.sample.app, partialInterval) )    
+                                    % (self.sample.name, self.sample.app, partialInterval) ) 
+                        logger.debug("Queue depth for sample '%s' in app '%s': %d" % (self.sample.name, self.sample.app, c.outputQueue.qsize()))   
                         if sleepTime > 0:
                             self.sample.saveState()
                             time.sleep(sleepTime)
@@ -112,6 +112,8 @@ def handle_exit(sig=None, func=None):
     print '\n\nCaught kill, exiting...'
     for sampleTimer in sampleTimers:
         sampleTimer.stop()
+    for worker in workers:
+        worker.stop()
     sys.exit(0)
     		
 
@@ -142,6 +144,7 @@ if __name__ == '__main__':
     c.parse()
 
     sampleTimers = []
+    workers = []
 
     if c.runOnce:
         logger.info('Entering debug (single iteration) mode')
@@ -171,7 +174,12 @@ if __name__ == '__main__':
                     logger.info('Starting timers')
                     for sampleTimer in sampleTimers:
                         sampleTimer.start()
+                    for x in xrange(0, c.outputWorkers):
+                        worker = c.getPlugin('OutputWorker')()
+                        worker.start()
+                        workers.append(worker)
                     first = False
+                logger.info('Queue depth: %d' % c.outputQueue.qsize())
                 time.sleep(5)
             except KeyboardInterrupt:
                 handle_exit()
