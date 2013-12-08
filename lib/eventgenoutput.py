@@ -1,3 +1,18 @@
+# TODO Make output thread count configurable
+# TODO Make output thread or process configurable
+# TODO Plugins define lists which contains a list of key value pairs, of which the key is the config
+#      parameter and the value is either a list of acceptable values or a callback function to parse the value
+# TODO Plugins define a name and a max queue length as variables
+# TODO Move config validation from config object to splunkstream plugin
+# TODO Main output object puts items into the queue.  There will be at least one of these per sample thread/process
+#      so it doesn't make sense to multithread this, it's already multithreaded putting items in the queue.  Flush
+#      method is what puts jobs on the work queue for the workers to pick up.  Main output object knows when to flush
+#      based on plugin type and provides a manual flush method which puts the jobs on the queue.
+# TODO Main eventgen.py creates a configurable number of output workers, which will keep popping items off the
+#      queue until its empty, each instantiating a copy of the plugin object for each worker exection time (copies
+#      of worker objects should be cached to avoid creating them on every execution) and then processing the items
+#      according to the given plugin type.
+
 from __future__ import division
 import os, sys
 import logging
@@ -14,6 +29,53 @@ import pprint
 import base64
 import threading
 import copy
+
+
+class Output:
+    """Base class which loads output plugins in BASE_DIR/lib/plugins/output and handles queueing"""
+
+    def __init__(self, sample):
+        """ Initialize the plugin list """
+        self.__plugins = {}
+
+        # Logger already setup by config, just get an instance
+        logger = logging.getLogger('eventgen')
+        globals()['logger'] = logger
+
+        from eventgenconfig import Config
+        globals()['c'] = Config()
+        self._app = sample.app
+        self._sample = sample
+        self._outputMode = sample.outputMode
+        
+        self._queue = deque([])
+        self._workers = [ ]
+
+    def __str__(self):
+        """Only used for debugging, outputs a pretty printed representation of this output"""
+        # Eliminate recursive going back to parent
+        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != '_c'])
+        # return pprint.pformat(temp)
+        return ""
+
+    def __repr__(self):
+        return self.__str__()
+
+    def send(self, msg):
+        self._queue.append({'_raw': msg, 'index': self._sample.index,
+                        'source': self._sample.source, 'sourcetype': self._sample.sourcetype,
+                        'host': self._sample.host, 'hostRegex': self._sample.hostRegex})
+
+        if len(self._queue) >= c.getPlugin(self._sample.name).MAXQUEUELENGTH:
+            self.flush()
+
+    def flush(self):
+        q = copy.deepcopy(self._queue)
+        logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
+        self._queue.clear()
+        c.outputQueue.put((self._sample.name, q))
+
+
 
 # The max number of threads setup for HTTP type outputs
 MAX_WORKERS = 5
@@ -38,11 +100,13 @@ class Worker(threading.Thread):
         try:
             self.func(self.queue)
         except:
+            import traceback
+            sys.stderr.write(traceback.format_exc())
             self.running = False
         self.running = False
         sys.exit(0)
 
-class Output:
+class OutputOrig:
     """Output events, abstracting output method"""
     _app = None
     _sample = None
@@ -63,11 +127,6 @@ class Output:
     _splunkUser = None
     _splunkPass = None
     _splunkhttp = None
-    _index = None
-    _source = None
-    _sourcetype = None
-    _host = None
-    _hostRegex = None
     _projectID = None
     _accessToken = None
     _workers = None
@@ -91,13 +150,6 @@ class Output:
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
-                
-        if self._outputMode in ('splunkstream', 'stormstream'):
-            self._index = sample.index
-            self._source = sample.source
-            self._sourcetype = sample.sourcetype
-            self._host = sample.host
-            self._hostRegex = sample.hostRegex
             
         if self._outputMode == 'spool':
             self._spoolDir = sample.pathParser(sample.spoolDir)
@@ -125,7 +177,7 @@ class Output:
             logger.debug("Configured to log to '%s' with maxBytes '%s' with backupCount '%s'" % \
                             (self._file, self._fileMaxBytes, self._fileBackupFiles))
         elif self._outputMode == 'splunkstream':
-            if self._c.splunkEmbedded:
+            if c.splunkEmbedded:
                 try:
                     import splunk.auth
                     self._sample.splunkUrl = splunk.auth.splunk.getLocalServerInfo()
@@ -192,9 +244,9 @@ class Output:
     def send(self, msg):
         """Queues a message for output to configured outputs"""
         if self._outputMode in ('splunkstream', 'stormstream'):
-            self._queue.append({'_raw': msg, 'index': self._index,
-                                'source': self._source, 'sourcetype': self._sourcetype,
-                                'host': self._host, 'hostRegex': self._hostRegex})
+                self._queue.append({'_raw': msg, 'index': self._sample.index,
+                                    'source': self._sample.source, 'sourcetype': self._sample.sourcetype,
+                                    'host': self._sample.host, 'hostRegex': self._sample.hostRegex})
         else:
             self._queue.append({'_raw': msg})
 
@@ -202,17 +254,6 @@ class Output:
             self.flush()
         elif len(self._queue) > 10:
             self.flush()
-            
-    def refreshconfig(self, sample):
-        """Refreshes output config based on sample"""
-        if self._outputMode in ('splunkstream', 'stormstream'):
-            self._index = sample.index
-            self._source = sample.source
-            self._sourcetype = sample.sourcetype
-            self._host = sample.host
-            self._hostRegex = sample.hostRegex
-            logger.debug("Refreshed config.  Set Index '%s': Source '%s': Sourcetype: '%s' Host: '%s' HostRegex: '%s'" % \
-                        (self._index, self._source, self._sourcetype, self._host, self._hostRegex))
         
     def flush(self, force=False):
         """Flushes output from the queue out to the specified output"""
@@ -296,12 +337,12 @@ class Output:
             except KeyError:
                 pass
                 
-            logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample.name, self._app, self._source))
+            logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample.name, self._app, self._sample.source))
 
             if self._outputMode == 'spool':
                 nowtime = int(time.mktime(time.gmtime()))
                 workingfile = str(nowtime) + '-' + self._sample + '.part'
-                self._workingFilePath = os.path.join(self._c.greatgrandparentdir, self._app, 'samples', workingfile)
+                self._workingFilePath = os.path.join(c.greatgrandparentdir, self._app, 'samples', workingfile)
                 logger.debug("Creating working file '%s' for sample '%s' in app '%s'" % (workingfile, self._sample.name, self._app))
                 self._workingFH = open(self._workingFilePath, 'w')
             elif self._outputMode == 'splunkstream':
@@ -410,14 +451,14 @@ class Output:
                 try:
                     self._splunkhttp = httplib.HTTPSConnection('api.splunkstorm.com', 443)
                     urlparms = [ ]
-                    if self._source != None:
-                        urlparms.append(('source', self._source))
-                    if self._sourcetype != None:
-                        urlparms.append(('sourcetype', self._sourcetype))
-                    if self._host != None:
-                        urlparms.append(('host', self._host))
-                    if self._projectID != None:
-                        urlparms.append(('project', self._projectID))
+                    if self._sample.source != None:
+                        urlparms.append(('source', self._sample.source))
+                    if self._sample.sourcetype != None:
+                        urlparms.append(('sourcetype', self._sample.sourcetype))
+                    if self._sample.host != None:
+                        urlparms.append(('host', self._sample.host))
+                    if self._sample.projectID != None:
+                        urlparms.append(('project', self._sample.projectID))
                     url = '/1/inputs/http?%s' % (urllib.urlencode(urlparms))
                     headers = {'Authorization': "Basic %s" % base64.b64encode(':'+self._accessToken)}
                     self._splunkhttp.request("POST", url, streamout, headers)

@@ -49,6 +49,7 @@ index = main
 source = eventgen
 sourcetype = eventgen
 host = 127.0.0.1
+outputWorkers = 1
 
 
 [<sample file name>]
@@ -77,6 +78,11 @@ disabled = true | false
 #############################
 ## OUTPUT RELATED SETTINGS ##
 #############################
+
+outputWorkers = <number of worker threads>
+    * Specifies how many threads or processes to stand up to handle output
+    * Generally if using TCP based outputs like splunkstream, more could be required
+    * Defaults to 1
 
 outputMode = spool | file | splunkstream | stormstream
     * Specifies how to output log data.  Spool is default (for legacy reasons).

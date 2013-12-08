@@ -20,15 +20,18 @@ backfillSearch = sourcetype=be_log
 # fileName = /tmp/lotsofevents.log
 
 outputMode = splunkstream
+
 index=main
 host=be-01.splunk.com
 source=/var/log/be/event.log
 sourcetype=be_log
 
 # Host/User/pass only necessary if running outside of splunk!
-splunkHost = localhost
+splunkHost = wimpy.splunk.com
+splunkPort = 10089
+#splunkHost = localhost
 splunkUser = admin
-splunkPass = changed
+splunkPass = changeme
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
 token.0.replacementType = timestamp
@@ -48,19 +51,23 @@ token.3.replacement = guid
 
 token.4.token = userName=(\w+)
 token.4.replacementType = file
-token.4.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/userName.sample
+#token.4.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/userName.sample
+token.4.replacement = /Users/csharp/local/projects/eventgen/samples/userName.sample
 
 token.5.token = city="(\w+)"
 token.5.replacementType = mvfile
-token.5.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:2
+#token.5.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:2
+token.5.replacement = /Users/csharp/local/projects/eventgen/samples/markets.sample:2
 
 token.6.token = state=(\w+)
 token.6.replacementType = mvfile
-token.6.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:3
+#token.6.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:3
+token.6.replacement = /Users/csharp/local/projects/eventgen/samples/markets.sample:3
 
 token.7.token = zip=(\d+)
 token.7.replacementType = mvfile
-token.7.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:1
+#token.7.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:1
+token.7.replacement = /Users/csharp/local/projects/eventgen/samples/markets.sample:1
 
 token.8.token = value=(\d+)
 token.8.replacementType = random

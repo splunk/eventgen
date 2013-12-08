@@ -98,7 +98,7 @@ class Sample:
         
         # Import config
         from eventgenconfig import Config
-        self._c = Config()
+        globals()['c'] = Config()
         
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this sample"""
@@ -168,7 +168,7 @@ class Sample:
                 #     self._backfillts += datetime.timedelta(seconds=self.interval)
 
         
-        logger.debug("Opening sample '%s' in app '%s'" % (self.name, self.app) )
+        logger.debugv("Opening sample '%s' in app '%s'" % (self.name, self.app) )
         sampleFH = open(self.filePath, 'rU')
         if self.sampletype == 'raw':
             # 5/27/12 CS Added caching of the sample file
@@ -221,7 +221,7 @@ class Sample:
             if self.sampletype == 'csv':
                 self._rpevents = sampleDict
             else:
-                if self.breaker != self._c.breaker:
+                if self.breaker != c.breaker:
                     self._rpevents = []
                     lines = '\n'.join(sampleLines)
                     breaker = re.search(self.breaker, lines)
@@ -277,7 +277,7 @@ class Sample:
                 logger.debug("Count %s specified as default for sample '%s' in app '%s'; adjusting count to sample length %s; using default breaker" \
                                 % (self.count, self.name, self.app, len(sampleLines)) )
                 count = len(sampleLines)
-                self.breaker = self._c.breaker
+                self.breaker = c.breaker
             elif self.count > 0 or self.mode == 'replay':
                 
                 # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
@@ -285,7 +285,7 @@ class Sample:
                 rateFactor = 1.0
                 if self.randomizeCount != 0 and self.randomizeCount != None:
                     try:
-                        logger.debug("randomizeCount for sample '%s' in app '%s' is %s" \
+                        logger.debugv("randomizeCount for sample '%s' in app '%s' is %s" \
                                         % (self.name, self.app, self.randomizeCount))
                         # If we say we're going to be 20% variable, then that means we
                         # can be .1% high or .1% low.  Math below does that.
@@ -302,7 +302,7 @@ class Sample:
                 if type(self.hourOfDayRate) == dict:
                     try:
                         rate = self.hourOfDayRate[str(self.now().hour)]
-                        logger.debug("hourOfDayRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
+                        logger.debugv("hourOfDayRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
                     except KeyError:
                         import traceback
@@ -316,7 +316,7 @@ class Sample:
                         else:
                             weekday += 1
                         rate = self.dayOfWeekRate[str(weekday)]
-                        logger.debug("dayOfWeekRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
+                        logger.debugv("dayOfWeekRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
                     except KeyError:
                         import traceback
@@ -325,7 +325,7 @@ class Sample:
                 if type(self.minuteOfHourRate) == dict:
                     try:
                         rate = self.minuteOfHourRate[str(self.now().minute)]
-                        logger.debug("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
+                        logger.debugv("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
                     except KeyError:
                         import traceback
@@ -334,7 +334,7 @@ class Sample:
                 if type(self.dayOfMonthRate) == dict:
                     try:
                         rate = self.dayOfMonthRate[str(self.now().day)]
-                        logger.debug("dayOfMonthRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
+                        logger.debugv("dayOfMonthRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
                     except KeyError:
                         import traceback
@@ -343,7 +343,7 @@ class Sample:
                 if type(self.monthOfYearRate) == dict:
                     try:
                         rate = self.monthOfYearRate[str(self.now().month)]
-                        logger.debug("monthOfYearRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
+                        logger.debugv("monthOfYearRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
                     except KeyError:
                         import traceback
@@ -358,7 +358,7 @@ class Sample:
             except:
                 logger.error("Line breaker '%s' for sample '%s' in app '%s' could not be compiled; using default breaker" \
                             % (self.breaker, self.name, self.app) )
-                self.breaker = self._c.breaker
+                self.breaker = c.breaker
 
             events = []
             # 9/7/13 CS If we're sampleType CSV and we do an events fill that's greater than the count
@@ -367,8 +367,8 @@ class Sample:
             eventsDict = []
             event = ''
 
-            if self.breaker == self._c.breaker:
-                logger.debug("Default breaker detected for sample '%s' in app '%s'; using simple event fill" \
+            if self.breaker == c.breaker:
+                logger.debugv("Default breaker detected for sample '%s' in app '%s'; using simple event fill" \
                                 % (self.name, self.app) )
                 logger.debug("Filling events array for sample '%s' in app '%s'; count=%s, sampleLines=%s" \
                                 % (self.name, self.app, count, len(sampleLines)) )
@@ -380,7 +380,7 @@ class Sample:
                     # this out and seeing what breaks
                     #if self.randomizeEvents and self.sampletype == 'raw':
                     if self.randomizeEvents:
-                        logger.debug("Shuffling events for sample '%s' in app '%s'" \
+                        logger.debugv("Shuffling events for sample '%s' in app '%s'" \
                                         % (self.name, self.app))
                         random.shuffle(sampleLines)
                 except:
@@ -396,7 +396,7 @@ class Sample:
                     if self.sampletype == 'csv':
                         eventsDict = sampleDict[0:count]
             else:
-                logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'; using advanced event fill" \
+                logger.debugv("Non-default breaker '%s' detected for sample '%s' in app '%s'; using advanced event fill" \
                                 % (self.breaker, self.name, self.app) ) 
 
                 ## Fill events array from breaker and sampleLines
@@ -448,11 +448,11 @@ class Sample:
                     else:
                         events = sampleLines[0:count]
                 else:
-                    logger.debug("Found '%s' breakers for sample '%s' in app '%s'" % (breakersFound, self.name, self.app) )
+                    logger.debugv("Found '%s' breakers for sample '%s' in app '%s'" % (breakersFound, self.name, self.app) )
 
             ## Continue to fill events array until len(events) == count
             if len(events) > 0 and len(events) < count:
-                logger.debug("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (self.name, self.app, len(events), count) )
+                logger.debugv("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (self.name, self.app, len(events), count) )
                 tempEvents = events[:]
                 if self.sampletype == 'csv':
                     tempEventsDict = eventsDict[:]
@@ -472,13 +472,12 @@ class Sample:
                 self.host = eventsDict[0]['host']
                 self.source = eventsDict[0]['source']
                 self.sourcetype = eventsDict[0]['sourcetype']
-                logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                logger.debugv("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                             % (self.index, self.host, self.source, self.sourcetype))
-                self._out.refreshconfig(self)
                 
             # Find interval before we muck with the event but after we've done event breaking
             if self.mode == 'replay':
-                logger.debug("Finding timestamp to compute interval for events")
+                logger.debugv("Finding timestamp to compute interval for events")
                 if self._lastts == None:
                     if self.sampletype == 'csv':
                         self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent]['_raw'])
@@ -493,7 +492,7 @@ class Sample:
                     logger.debug("At end of _rpevents")
                     return 0
 
-                logger.debug('Computing timeDiff nextts: "%s" lastts: "%s"' % (nextts, self._lastts))
+                logger.debugv('Computing timeDiff nextts: "%s" lastts: "%s"' % (nextts, self._lastts))
 
                 timeDiff = nextts - self._lastts
                 if timeDiff.days >= 0 and timeDiff.seconds >= 0 and timeDiff.microseconds >= 0:
@@ -504,7 +503,7 @@ class Sample:
                 if self.timeMultiple > 0:
                     partialInterval *= self.timeMultiple
 
-                logger.debug("Setting partialInterval for replay mode with timeMultiple %s: %s %s" % (self.timeMultiple, timeDiff, partialInterval))
+                logger.debugv("Setting partialInterval for replay mode with timeMultiple %s: %s %s" % (self.timeMultiple, timeDiff, partialInterval))
                 self._lastts = nextts
 
             ## Iterate events
@@ -533,15 +532,16 @@ class Sample:
                     if event[-1] == '\n':
                         event = event[:-1]
                     lines = event.split('\n')
-                    logger.debug("Bundlelines set and sampletype csv, breaking event back apart.  %d lines %d eventsDict." % (len(lines), len(eventsDict)))
+                    logger.debugv("Bundlelines set and sampletype csv, breaking event back apart.  %d lines %d eventsDict." % (len(lines), len(eventsDict)))
                     for lineno in range(0, len(lines)):
                         if self.sampletype == 'csv' and (eventsDict[lineno]['index'] != self.index or \
                                                          eventsDict[lineno]['host'] != self.host or \
                                                          eventsDict[lineno]['source'] != self.source or \
                                                          eventsDict[lineno]['sourcetype'] != self.sourcetype):
-                            # Flush events before we change all the various parameters
-                            logger.debug("Sampletype CSV with bundlelines, parameters changed at event %s.  Flushing output." % lineno)
-                            self._out.flush()
+                            # 12/8/13 CS No longer required because we keep a copy of the sample referenced by the output object
+                            # # Flush events before we change all the various parameters
+                            # logger.debugv("Sampletype CSV with bundlelines, parameters changed at event %s.  Flushing output." % lineno)
+                            # self._out.flush()
                             self.index = eventsDict[lineno]['index']
                             self.host = eventsDict[lineno]['host']
                             # Allow randomizing the host:
@@ -550,12 +550,12 @@ class Sample:
 
                             self.source = eventsDict[lineno]['source']
                             self.sourcetype = eventsDict[lineno]['sourcetype']
-                            logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                            logger.debugv("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                                          % (self.index, self.host, self.source, self.sourcetype))
-                            self._out.refreshconfig(self)
                         self._out.send(lines[lineno].replace('NEWLINEREPLACEDHERE!!!', '\n'))
-                    logger.debug("Completed bundlelines event.  Flushing.")
-                    self._out.flush()
+                    # 12/8/13 CS No longer required because we keep a copy of the sample referenced by the output object
+                    # logger.debugv("Completed bundlelines event.  Flushing.")
+                    # self._out.flush()
                 else:
                     # logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))
                     # logger.debug("Event Index: %s Host: %s Source: %s Sourcetype: %s" % (sampleDict[x]['index'], sampleDict[x]['host'], sampleDict[x]['source'], sampleDict[x]['sourcetype']))
@@ -563,9 +563,10 @@ class Sample:
                                                     eventsDict[x]['host'] != self.host or \
                                                     eventsDict[x]['source'] != self.source or \
                                                     eventsDict[x]['sourcetype'] != self.sourcetype):
-                        # Flush events before we change all the various parameters
-                        logger.debug("Sampletype CSV, parameters changed at event %s.  Flushing output." % x)
-                        self._out.flush()
+                        # 12/8/13 CS No longer required because we keep a copy of the sample referenced by the output object
+                        # # Flush events before we change all the various parameters
+                        # logger.debugv("Sampletype CSV, parameters changed at event %s.  Flushing output." % x)
+                        # self._out.flush()
                         self.index = sampleDict[x]['index']
                         self.host = sampleDict[x]['host']
                         # Allow randomizing the host:
@@ -574,13 +575,13 @@ class Sample:
 
                         self.source = sampleDict[x]['source']
                         self.sourcetype = sampleDict[x]['sourcetype']
-                        logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                        logger.debugv("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                                     % (self.index, self.host, self.source, self.sourcetype))
-                        self._out.refreshconfig(self)
                     self._out.send(event)
 
             ## Close file handles
-            self._out.flush()
+            # 12/8/13 CS Flushing should be handled by each individual output plugin to determine when to flush
+            # self._out.flush()
             sampleFH.close()
 
             endTime = datetime.datetime.now()
@@ -618,7 +619,7 @@ class Sample:
         
     ## Replaces $SPLUNK_HOME w/ correct pathing
     def pathParser(self, path):
-        greatgreatgrandparentdir = os.path.dirname(os.path.dirname(self._c.grandparentdir)) 
+        greatgreatgrandparentdir = os.path.dirname(os.path.dirname(c.grandparentdir)) 
         sharedStorage = ['$SPLUNK_HOME/etc/apps', '$SPLUNK_HOME/etc/users/', '$SPLUNK_HOME/var/run/splunk']
 
         ## Replace windows os.sep w/ nix os.sep
@@ -687,7 +688,7 @@ class Sample:
         """Saves state of all integer IDs of this sample to a file so when we restart we'll pick them up"""
         for token in self.tokens:
             if token.replacementType == 'integerid':
-                stateFile = open(os.path.join(self._c.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'w')
+                stateFile = open(os.path.join(c.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'w')
                 stateFile.write(token.replacement)
                 stateFile.close()
 
