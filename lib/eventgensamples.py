@@ -13,7 +13,6 @@ from timeparser import timeParser, timeDelta2secs
 import httplib2, urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
-import uuid
 
 class Sample:
     # Required fields for Sample
@@ -62,9 +61,6 @@ class Sample:
     minuteOfHourRate = None
     timeMultiple = None
     debug = None
-    timezone = datetime.timedelta(days=1)
-    dayOfMonthRate = None
-    monthOfYearRate = None
     
     # Internal fields
     _c = None
@@ -76,9 +72,9 @@ class Sample:
     _origName = None
     _lastts = None
     _backfillts = None
+    _origEarliest = None
+    _origLatest = None
     _timeSinceSleep = None
-    _earliestParsed = None
-    _latestParsed = None
     
     def __init__(self, name):
         # Logger already setup by config, just get an instance
@@ -121,12 +117,14 @@ class Sample:
         # Setup initial backfillts
         if self._backfillts == None and self.backfill != None and not self._backfilldone:
             try:
-                self._backfillts = timeParser(self.backfill, timezone=self.timezone)
+                self._backfillts = timeParser(self.backfill)
                 logger.info("Setting up backfill of %s (%s)" % (self.backfill,self._backfillts))
             except Exception as ex:
                 logger.error("Failed to parse backfill '%s': %s" % (self.backfill, ex))
                 raise
 
+            self._origEarliest = self.earliest
+            self._origLatest = self.latest
             if self._out._outputMode == "splunkstream" and self.backfillSearch != None:
                 if not self.backfillSearch.startswith('search'):
                     self.backfillSearch = 'search ' + self.backfillSearch
@@ -150,18 +148,22 @@ class Sample:
                             temptime = temptime.split('+')[0]
                         temptime = '-'.join(temptime.split('-')[0:3])
                     self._backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
-                    logger.info("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
+                    logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
                 except (ExpatError, IndexError): 
                     pass
 
         # Override earliest and latest during backfill until we're at current time
         if self.backfill != None and not self._backfilldone:
-            if self._backfillts >= self.now(realnow=True):
+            if self._backfillts >= datetime.datetime.now():
                 logger.info("Backfill complete")
-                # exit(1)  # Added for perf test, REMOVE LATER
                 self._backfilldone = True
+                self.earliest = self._origEarliest
+                self.latest = self._origLatest
             else:
-                logger.info("Still backfilling for sample '%s'.  Currently at %s" % (self.name, self._backfillts))
+                logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.name, self._backfillts))
+                self.earliest = datetime.datetime.strftime((self._backfillts - datetime.timedelta(seconds=self.interval)), \
+                                                            "%Y-%m-%d %H:%M:%S.%f")
+                self.latest = datetime.datetime.strftime(self._backfillts, "%Y-%m-%d %H:%M:%S.%f")
                 # if not self.mode == 'replay':
                 #     self._backfillts += datetime.timedelta(seconds=self.interval)
 
@@ -174,7 +176,6 @@ class Sample:
                 logger.debug("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
                 sampleLines = sampleFH.readlines()
                 self._sampleLines = sampleLines
-                sampleDict = [ ]
             else:
                 sampleLines = self._sampleLines
         elif self.sampletype == 'csv':
@@ -183,23 +184,13 @@ class Sample:
                 logger.debug("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
                 sampleDict = [ ]
                 sampleLines = [ ]
-                # Fix to load large csv files, work with python 2.5 onwards
                 csv.field_size_limit(sys.maxint)
                 csvReader = csv.DictReader(sampleFH)
                 for line in csvReader:
                     sampleDict.append(line)
-                    try:
-                        tempstr = line['_raw'].decode('string_escape')
-                        if self.bundlelines:
-                            tempstr = tempstr.replace('\n', 'NEWLINEREPLACEDHERE!!!')
-                        sampleLines.append(tempstr)
-                    except ValueError:
-                        logger.error("Error in sample at line '%d' in sample '%s' in app '%s' - did you quote your backslashes?" % (csvReader.line_num, self.name, self.app))
-                    except AttributeError:
-                        logger.error("Missing _raw at line '%d' in sample '%s' in app '%s'" % (csvReader.line_num, self.name, self.app))
+                    sampleLines.append(line['_raw'].decode('string_escape'))
                 self._sampleDict = copy.deepcopy(sampleDict)
                 self._sampleLines = copy.deepcopy(sampleLines)
-                logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(sampleLines), len(sampleDict)))
             else:
                 # If we're set to bundlelines, we'll modify sampleLines regularly.
                 # Since lists in python are referenced rather than copied, we
@@ -250,8 +241,8 @@ class Sample:
 
         # Ensure all lines have a newline
         for i in xrange(0, len(sampleLines)):
-            if sampleLines[i][-1] != '\n':
-                sampleLines[i] += '\n'
+            if sampleLines[i][-1] != '\r':
+                sampleLines[i] += '\r'
 
         # If we've set bundlelines, then we want count copies of all of the lines in the file
         # And we'll set breaker to be a weird delimiter so that we'll end up with an events 
@@ -262,7 +253,6 @@ class Sample:
             logger.debug("Bundlelines set.  Creating %s copies of original sample lines and setting breaker." % (self.count-1))
             self.breaker = '\n------\n'
             origSampleLines = copy.deepcopy(sampleLines)
-            origSampleDict = copy.deepcopy(sampleDict)
             sampleLines.append(self.breaker)
             for i in range(0, self.count-1):
                 sampleLines.extend(origSampleLines)
@@ -299,7 +289,11 @@ class Sample:
                         logger.error("Randomize count failed.  Stacktrace %s" % stack)
                 if type(self.hourOfDayRate) == dict:
                     try:
-                        rate = self.hourOfDayRate[str(self.now().hour)]
+                        if self.backfill != None and not self._backfilldone:
+                            now = self._backfillts
+                        else:
+                            now = datetime.datetime.now()
+                        rate = self.hourOfDayRate[str(now.hour)]
                         logger.debug("hourOfDayRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
                     except KeyError:
@@ -308,7 +302,11 @@ class Sample:
                         logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
                 if type(self.dayOfWeekRate) == dict:
                     try:
-                        weekday = datetime.date.weekday(self.now())
+                        if self.backfill != None and not self._backfilldone:
+                            now = self._backfillts
+                        else:
+                            now = datetime.datetime.now()
+                        weekday = datetime.date.weekday(now)
                         if weekday == 6:
                             weekday = 0
                         else:
@@ -319,34 +317,20 @@ class Sample:
                     except KeyError:
                         import traceback
                         stack =  traceback.format_exc()
-                        logger.error("Hour of day rate failed for sample '%s'.  Stacktrace %s" % (self.name, stack))
+                        logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
                 if type(self.minuteOfHourRate) == dict:
                     try:
-                        rate = self.minuteOfHourRate[str(self.now().minute)]
+                        if self.backfill != None and not self._backfilldone:
+                            now = self._backfillts
+                        else:
+                            now = datetime.datetime.now()
+                        rate = self.minuteOfHourRate[str(now.minute)]
                         logger.debug("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
                         rateFactor *= rate
                     except KeyError:
                         import traceback
                         stack =  traceback.format_exc()
-                        logger.error("Minute of hour rate failed for sample '%s'.  Stacktrace %s" % (self.name, stack))
-                if type(self.dayOfMonthRate) == dict:
-                    try:
-                        rate = self.dayOfMonthRate[str(self.now().day)]
-                        logger.debug("dayOfMonthRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
-                        rateFactor *= rate
-                    except KeyError:
-                        import traceback
-                        stack =  traceback.format_exc()
-                        logger.error("Day of Month rate for sample '%s' failed.  Stacktrace %s" % (self.name, stack))
-                if type(self.monthOfYearRate) == dict:
-                    try:
-                        rate = self.monthOfYearRate[str(self.now().month)]
-                        logger.debug("monthOfYearRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
-                        rateFactor *= rate
-                    except KeyError:
-                        import traceback
-                        stack =  traceback.format_exc()
-                        logger.error("Month Of Year rate failed for sample '%s'.  Stacktrace %s" % (self.name, stack))
+                        logger.error("Minute of hour rate failed.  Stacktrace %s" % stack)
                 count = int(round(count * rateFactor, 0))
                 if rateFactor != 1.0:
                     logger.info("Original count: %s Rated count: %s Rate factor: %s" % (self.count, count, rateFactor))
@@ -359,10 +343,6 @@ class Sample:
                 self.breaker = self._c.breaker
 
             events = []
-            # 9/7/13 CS If we're sampleType CSV and we do an events fill that's greater than the count
-            # we don't have entries in sampleDict to match what index/host/source/sourcetype they are
-            # so creating a new dict to track that metadata
-            eventsDict = []
             event = ''
 
             if self.breaker == self._c.breaker:
@@ -387,12 +367,8 @@ class Sample:
                 
                 if count >= len(sampleLines):
                     events = sampleLines
-                    if self.sampletype == 'csv':
-                        eventsDict = sampleDict[:]
                 else:
                     events = sampleLines[0:count]
-                    if self.sampletype == 'csv':
-                        eventsDict = sampleDict[0:count]
             else:
                 logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'; using advanced event fill" \
                                 % (self.breaker, self.name, self.app) ) 
@@ -433,9 +409,6 @@ class Sample:
                 if len(events) < count:
                     events.append(event + '\n')
 
-                if self.bundlelines:
-                    eventsDict = sampleDict[:]
-
                 ## If breaker wasn't found in sample
                 ## events = sample
                 if breakersFound == 0:
@@ -452,24 +425,20 @@ class Sample:
             if len(events) > 0 and len(events) < count:
                 logger.debug("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (self.name, self.app, len(events), count) )
                 tempEvents = events[:]
-                if self.sampletype == 'csv':
-                    tempEventsDict = eventsDict[:]
                 while len(events) < count:
                     y = 0
                     while len(events) < count and y < len(tempEvents):
                         events.append(tempEvents[y])
-                        if self.sampletype == 'csv':
-                            eventsDict.append(tempEventsDict[y])
                         y += 1
 
             # logger.debug("events: %s" % pprint.pformat(events))
             logger.debug("Replacing %s tokens in %s events for sample '%s' in app '%s'" % (len(self.tokens), len(events), self.name, self.app))
-
-            if self.sampletype == 'csv' and len(eventsDict) > 0:
-                self.index = eventsDict[0]['index']
-                self.host = eventsDict[0]['host']
-                self.source = eventsDict[0]['source']
-                self.sourcetype = eventsDict[0]['sourcetype']
+            
+            if self.sampletype == 'csv':
+                self.index = sampleDict[0]['index']
+                self.host = sampleDict[0]['host']
+                self.source = sampleDict[0]['source']
+                self.sourcetype = sampleDict[0]['sourcetype']
                 logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                             % (self.index, self.host, self.source, self.sourcetype))
                 self._out.refreshconfig(self)
@@ -479,12 +448,12 @@ class Sample:
                 logger.debug("Finding timestamp to compute interval for events")
                 if self._lastts == None:
                     if self.sampletype == 'csv':
-                        self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent]['_raw'])
+                        self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent]['time'])
                     else:
                         self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent])
                 if (self._currentevent+1) < len(self._rpevents):
                     if self.sampletype == 'csv':
-                        nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1]['_raw'])
+                        nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1]['time'])
                     else:
                         nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1])
                 else:
@@ -531,36 +500,36 @@ class Sample:
                     if event[-1] == '\n':
                         event = event[:-1]
                     lines = event.split('\n')
-                    logger.debug("Bundlelines set and sampletype csv, breaking event back apart.  %d lines %d eventsDict." % (len(lines), len(eventsDict)))
+                    logger.debug("Bundlelines set and sampletype csv, breaking event back apart.  %s lines." % (len(lines)))
                     for lineno in range(0, len(lines)):
-                        if self.sampletype == 'csv' and (eventsDict[lineno]['index'] != self.index or \
-                                                         eventsDict[lineno]['host'] != self.host or \
-                                                         eventsDict[lineno]['source'] != self.source or \
-                                                         eventsDict[lineno]['sourcetype'] != self.sourcetype):
+                        if self.sampletype == 'csv' and (sampleDict[lineno]['index'] != self.index or \
+                                                         sampleDict[lineno]['host'] != self.host or \
+                                                         sampleDict[lineno]['source'] != self.source or \
+                                                         sampleDict[lineno]['sourcetype'] != self.sourcetype):
                             # Flush events before we change all the various parameters
                             logger.debug("Sampletype CSV with bundlelines, parameters changed at event %s.  Flushing output." % lineno)
                             self._out.flush()
-                            self.index = eventsDict[lineno]['index']
-                            self.host = eventsDict[lineno]['host']
+                            self.index = sampleDict[lineno]['index']
+                            self.host = sampleDict[lineno]['host']
                             # Allow randomizing the host:
                             if(self.hostToken):
                                 self.host = self.hostToken.replace(self.host)
 
-                            self.source = eventsDict[lineno]['source']
-                            self.sourcetype = eventsDict[lineno]['sourcetype']
+                            self.source = sampleDict[lineno]['source']
+                            self.sourcetype = sampleDict[lineno]['sourcetype']
                             logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                                          % (self.index, self.host, self.source, self.sourcetype))
                             self._out.refreshconfig(self)
-                        self._out.send(lines[lineno].replace('NEWLINEREPLACEDHERE!!!', '\n'))
+                        self._out.send(lines[lineno])
                     logger.debug("Completed bundlelines event.  Flushing.")
                     self._out.flush()
                 else:
                     # logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))
                     # logger.debug("Event Index: %s Host: %s Source: %s Sourcetype: %s" % (sampleDict[x]['index'], sampleDict[x]['host'], sampleDict[x]['source'], sampleDict[x]['sourcetype']))
-                    if self.sampletype == 'csv' and (eventsDict[x]['index'] != self.index or \
-                                                    eventsDict[x]['host'] != self.host or \
-                                                    eventsDict[x]['source'] != self.source or \
-                                                    eventsDict[x]['sourcetype'] != self.sourcetype):
+                    if self.sampletype == 'csv' and (sampleDict[x]['index'] != self.index or \
+                                                    sampleDict[x]['host'] != self.host or \
+                                                    sampleDict[x]['source'] != self.source or \
+                                                    sampleDict[x]['sourcetype'] != self.sourcetype):
                         # Flush events before we change all the various parameters
                         logger.debug("Sampletype CSV, parameters changed at event %s.  Flushing output." % x)
                         self._out.flush()
@@ -678,7 +647,7 @@ class Sample:
             raise ValueError("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
         # Check to make sure we parsed a year
         if currentTime.year == 1900:
-            currentTime = currentTime.replace(year=self.now().year)
+            currentTime = currentTime.replace(year=datetime.datetime.now().year)
         return currentTime
     
     def saveState(self):
@@ -689,18 +658,6 @@ class Sample:
                 stateFile.write(token.replacement)
                 stateFile.close()
 
-    def now(self, utcnow=False, realnow=False):
-        # logger.info("Getting time (timezone %s)" % (self.timezone))
-        if not self._backfilldone and not self._backfillts == None and not realnow:
-            return self._backfillts
-        elif self.timezone.days > 0:
-            return datetime.datetime.now()
-        else:
-            return datetime.datetime.utcnow() + self.timezone
-
-    def utcnow(self):
-        return self.now(utcnow=True)
-
         
 class Token:
     """Contains data and methods for replacing a token in a given sample"""
@@ -710,6 +667,7 @@ class Token:
     sample = None
     mvhash = { }
     
+    _now = None
     _replaytd = None
     _lastts = None
     _tokenre = None
@@ -717,13 +675,6 @@ class Token:
     _tokents = None
     _earliestTime = None
     _latestTime = None
-    _replacementFile = None
-    _replacementColumn = None
-    _integerMatch = None
-    _floatMatch = None
-    _hexMatch = None
-    _stringMatch = None
-    _listMatch = None
     
     def __init__(self, sample):
         self.sample = sample
@@ -732,6 +683,7 @@ class Token:
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
         
+        self._now = datetime.datetime.now()
         self._earliestTime = (None, None)
         self._latestTime = (None, None)
         
@@ -761,47 +713,33 @@ class Token:
         if self._tokenre == None:
             self._tokenre = re.compile(self.token)
         return self._tokenre.finditer(event)
-
-    def _findall(self, event):
-        """Executes regular expression finditer and returns the re.Match object"""
-        if self._tokenre == None:
-            self._tokenre = re.compile(self.token)
-        return self._tokenre.findall(event)
         
     def replace(self, event):
         """Replaces all instances of this token in provided event and returns event"""
         offset = 0
-        tokenMatch = list(self._finditer(event))
+        tokenMatch = self._finditer(event)
         # logger.debug("Checking for match for token: '%s'" % (self.token))
 
-        if len(tokenMatch) > 0:
-            # 9/7/13  Trying to determine the logic for doing two regex
-            # searches, one to find the list of potential replacements and 
-            # another to find the actual string to replace, so commenting 
-            # out and recoding... may cause regressions.
-
-            # # 5/28/12 Changing logic to account for needing old to match
-            # # the right token we're actually replacing
-            # # This will call getReplacement for every match which is more
-            # # expensive, but necessary.
+        if tokenMatch:
+            # 5/28/12 Changing logic to account for needing old to match
+            # the right token we're actually replacing
+            # This will call getReplacement for every match which is more
+            # expensive, but necessary.
             
             # # Find old in case of error
-            # oldMatch = self._search(event)
-
-            # if oldMatch:
-            #     # old = event[oldMatch.start(group):oldMatch.end(group)]
-            #     group = 0 if len(oldMatch.groups()) == 0 else 1
-            #     old = oldMatch.group(group)
-            # else:
-            #     old = ""
+            oldMatch = self._search(event)
+            if oldMatch:
+                # old = event[oldMatch.start(group):oldMatch.end(group)]
+                group = 0 if len(oldMatch.groups()) == 0 else 1
+                old = oldMatch.group(group)
+            else:
+                old = ""
             
             # logger.debug("Got match for token: '%s'" % (self.token))
-            # replacement = self._getReplacement(old)
-
-            replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)])
+            replacement = self._getReplacement(old)
             
             if replacement is not None:
-                # logger.debug("Replacement: '%s'" % replacement)
+                logger.debug("Replacement: '%s'" % replacement)
                 ## Iterate matches
                 for match in tokenMatch:
                     # logger.debug("Match: %s" % (match))
@@ -835,35 +773,61 @@ class Token:
                 self._lastts = None
         return event
                     
-    def _getReplacement(self, old=None):
+    def _getReplacement(self, old=None, event=None):
         if self.replacementType == 'static':
             return self.replacement
         elif self.replacementType in ('timestamp', 'replaytimestamp'):
             if self.sample.earliest and self.sample.latest:
-                # First optimization, we need only store earliest and latest
-                # as an offset of now if they're relative times
-                if self.sample._earliestParsed != None:
-                    earliestTime = self.sample.now() - self.sample._earliestParsed
-                else:
-                    if self.sample.earliest.strip()[0:1] == '+' or \
-                            self.sample.earliest.strip()[0:1] == '-' or \
-                            self.sample.earliest == 'now':
-                        self.sample._earliestParsed = self.sample.now(realnow=True) - timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=datetime.datetime.utcnow)
-                        earliestTime = self.sample.now() - self.sample._earliestParsed
-                    else:
-                        earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                # Optimizing for parsing times during mass event generation
+                # Cache results to prevent calls to timeParser unless the value changes
+                # Because every second, relative times could change, we can only cache
+                # results for at maximum one second.  This seems not very effective, but we're
+                # we're generating thousands of events per second it optimizes quite a bit.
+                if self._tokents == None:
+                    self._tokents = datetime.datetime.now()
 
-                if self.sample._latestParsed != None:
-                    latestTime = self.sample.now() - self.sample._latestParsed
+                # If we've gone more than a second, invalidate results, calculate
+                # earliest and latest and cache new values
+                if datetime.datetime.now() - self._tokents > datetime.timedelta(seconds=1):
+                    # logger.debug("Token Time Cache invalidated, refreshing")
+                    self._tokents = datetime.datetime.now()
+                    earliestTime = timeParser(self.sample.earliest)
+                    latestTime = timeParser(self.sample.latest)
+                    self._earliestTime = (self.sample.earliest, earliestTime)
+                    self._latestTime = (self.sample.latest, latestTime)
                 else:
-                    if self.sample.latest.strip()[0:1] == '+' or \
-                            self.sample.latest.strip()[0:1] == '-' or \
-                            self.sample.latest == 'now':
-                        self.sample._latestParsed = self.sample.now(realnow=True) - timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=datetime.datetime.utcnow)
-                        latestTime = self.sample.now() - self.sample._latestParsed
+                    # If we match the text of the earliest and latest config value
+                    # return cached value    
+                    if self.sample.earliest == self._earliestTime[0] \
+                            and self.sample.latest == self._latestTime[0]:
+                        # logger.debug("Updating time from cache")
+                        earliestTime = self._earliestTime[1]
+                        latestTime = self._latestTime[1]
+                    # Otherwise calculate and update the cache
                     else:
-                        latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
-                
+                        # logger.debug("Earliest and Latest Time Cache invalidated for times '%s' & '%s', refreshing" \
+                        #                 % (self.sample.earliest, self.sample.latest))
+                        earliestTime = timeParser(self.sample.earliest)
+                        self._earlestTime = (self.sample.earliest, earliestTime)
+                        latestTime = timeParser(self.sample.latest)
+                        self._latestTime = (self.sample.latest, latestTime)
+
+
+                # Don't muck with time while we're backfilling
+                # if self.sample.backfill != None and not self.sample._backfilldone:
+                #     earliestTime = timeParser(self.sample.earliest)
+                #     latestTime = timeParser(self.sample.latest)
+                # else:
+                #     if datetime.datetime.now() - self._tokents > datetime.timedelta(seconds=1):
+                #         self._tokents = datetime.datetime.now()
+                #         earliestTime = timeParser(self.sample.earliest)
+                #         latestTime = timeParser(self.sample.latest)
+                #         self._earliestTime = earliestTime
+                #         self._latestTime = latestTime
+                #     else:
+                #         earliestTime = self._earliestTime
+                #         latestTime = self._latestTime
+
                 if earliestTime and latestTime:
                     if latestTime>=earliestTime:
                         minDelta = 0
@@ -877,8 +841,6 @@ class Token:
 
                         ## Compute replacmentTime
                         replacementTime = latestTime - randomDelta
-
-                        # logger.debug("Generating timestamp for sample '%s' with randomDelta %s, minDelta %s, maxDelta %s, earliestTime %s, latestTime %s, earliest: %s, latest: %s" % (self.sample.name, randomDelta, minDelta, maxDelta, earliestTime, latestTime, self.sample.earliest, self.sample.latest))
                         
                         if self.replacementType == 'replaytimestamp':
                             if old != None and len(old) > 0:
@@ -924,7 +886,7 @@ class Token:
                                 
                                 # Check to make sure we parsed a year
                                 if currentts.year == 1900:
-                                    currentts = currentts.replace(year=self.sample.now().year)
+                                    currentts = currentts.replace(year=datetime.datetime.now().year)
                                 # We should now know the timeformat and currentts associated with this event
                                 # If we're the first, save those values        
                                 if self._replaytd == None:
@@ -976,40 +938,17 @@ class Token:
                 return old
         elif self.replacementType in ('random', 'rated'):
             ## Validations:
-            if self._integerMatch != None:
-                integerMatch = self._integerMatch
-            else:
-                integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
-                integerMatch = integerRE.match(self.replacement)
-                self._integerMatch = integerMatch
+            integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
+            integerMatch = integerRE.match(self.replacement)
             
-            if self._floatMatch != None:
-                floatMatch = self._floatMatch
-            else:
-                floatRE = re.compile('float\[(\d+)\.(\d+):(\d+)\.(\d+)\]', re.I)
-                floatMatch = floatRE.match(self.replacement)
-                self._floatMatch = floatMatch
+            floatRE = re.compile('float\[(\d+)\.(\d+):(\d+)\.(\d+)\]', re.I)
+            floatMatch = floatRE.match(self.replacement)
 
-            if self._stringMatch != None:
-                stringMatch = self._stringMatch
-            else:
-                stringRE = re.compile('string\((\d+)\)', re.I)
-                stringMatch = stringRE.match(self.replacement)
-                self._stringMatch = stringMatch
+            stringRE = re.compile('string\((\d+)\)', re.I)
+            stringMatch = stringRE.match(self.replacement)
 
-            if self._hexMatch != None:
-                hexMatch = self._hexMatch
-            else:       
-                hexRE = re.compile('hex\((\d+)\)', re.I)
-                hexMatch = hexRE.match(self.replacement)
-                self._hexMatch = hexMatch
-
-            if self._listMatch != None:
-                listMatch = self._listMatch
-            else:
-                listRE = re.compile('list(\[[^\]]+\])', re.I)
-                listMatch = listRE.match(self.replacement)
-                self._listMatch = listMatch
+            hexRE = re.compile('hex\((\d+)\)', re.I)
+            hexMatch = hexRE.match(self.replacement)
 
             ## Valid replacements: ipv4 | ipv6 | integer[<start>:<end>] | string(<i>)
             if self.replacement.lower() == 'ipv4':
@@ -1047,8 +986,6 @@ class Token:
 
                 replacement = replacement.strip(':')
                 return replacement
-            elif self.replacement.lower() == 'guid':
-                return str(uuid.uuid4())
             elif integerMatch:
                 startInt = int(integerMatch.group(1))
                 endInt = int(integerMatch.group(2))
@@ -1059,22 +996,18 @@ class Token:
                         rateFactor = 1.0
                         if type(self.sample.hourOfDayRate) == dict:
                             try:
-                                rateFactor *= self.sample.hourOfDayRate[str(self.sample.now())]
+                                rateFactor *= self.sample.hourOfDayRate[str(self._now.hour)]
                             except KeyError:
-                                import traceback
-                                stack =  traceback.format_exc()
                                 logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
                         if type(self.sample.dayOfWeekRate) == dict:
                             try:
-                                weekday = datetime.date.weekday(self.sample.now())
+                                weekday = datetime.date.weekday(self._now)
                                 if weekday == 6:
                                     weekday = 0
                                 else:
                                     weekday += 1
                                 rateFactor *= self.sample.dayOfWeekRate[str(weekday)]
                             except KeyError:
-                                import traceback
-                                stack =  traceback.format_exc()
                                 logger.error("Day of week rate failed.  Stacktrace %s" % stack)
                         replacementInt = int(round(replacementInt * rateFactor, 0))
                     replacement = str(replacementInt)
@@ -1091,13 +1024,11 @@ class Token:
                         floatret = round(random.uniform(startFloat,endFloat), len(floatMatch.group(2)))
                         if self.replacementType == 'rated':
                             rateFactor = 1.0
-                            now = self.sample.now()
+                            now = datetime.datetime.now()
                             if type(self.sample.hourOfDayRate) == dict:
                                 try:
                                     rateFactor *= self.sample.hourOfDayRate[str(now.hour)]
                                 except KeyError:
-                                    import traceback
-                                    stack =  traceback.format_exc()
                                     logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
                             if type(self.sample.dayOfWeekRate) == dict:
                                 try:
@@ -1108,8 +1039,6 @@ class Token:
                                         weekday += 1
                                     rateFactor *= self.sample.dayOfWeekRate[str(weekday)]
                                 except KeyError:
-                                    import traceback
-                                    stack =  traceback.format_exc()
                                     logger.error("Day of week rate failed.  Stacktrace %s" % stack)
                             floatret = round(floatret * rateFactor, len(floatMatch.group(2)))
                         floatret = str(floatret)
@@ -1146,41 +1075,27 @@ class Token:
                     replacement += hexList[random.randint(0, 15)]
 
                 return replacement
-            elif listMatch:
-                try:
-                    value = json.loads(listMatch.group(1))
-                except:
-                    logger.error("Could not parse json for '%s' in sample '%s'" % (listMatch.group(1), self.sample.name))
-                    return old
-                return random.choice(value)
-
             else:
                 logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
                 return old
         elif self.replacementType in ('file', 'mvfile'):
-            if self._replacementFile != None:
-                replacementFile = self._replacementFile
-                replacementColumn = self._replacementColumn
-            else:
-                try:
-                    paths = self.replacement.split(':')
-                    if(len(paths) == 1):
+            try:
+                paths = self.replacement.split(':')
+                if(len(paths) == 1):
+                    replacementColumn = 0
+                else:
+                    try: # When it's not a mvfile, there's no number on the end:
+                        replacementColumn = int(paths[-1])
+                    except (ValueError):
                         replacementColumn = 0
-                    else:
-                        try: # When it's not a mvfile, there's no number on the end:
-                            replacementColumn = int(paths[-1])
-                        except (ValueError):
-                            replacementColumn = 0
-                    if(replacementColumn > 0):
-                        # This supports having a drive-letter colon
-                        replacementFile = self.sample.pathParser(":".join(paths[0:-1]))
-                    else:
-                        replacementFile = self.sample.pathParser(self.replacement)
-                except ValueError, e:
-                    logger.error("Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column" % (self.replacement))
-                    return old
-                self._replacementFile = replacementFile
-                self._replacementColumn = replacementColumn
+                if(replacementColumn > 0):
+                    # This supports having a drive-letter colon
+                    replacementFile = self.sample.pathParser(":".join(paths[0:-1]))
+                else:
+                    replacementFile = self.sample.pathParser(self.replacement)
+            except ValueError, e:
+                logger.error("Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column" % (self.replacement))
+                return old
 
             # If we've seen this file before, simply return already read results
             # This applies only if we're looking at a multivalue file and we want to
