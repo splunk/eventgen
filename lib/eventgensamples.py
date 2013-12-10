@@ -152,7 +152,7 @@ class Sample:
                             temptime = temptime.split('+')[0]
                         temptime = '-'.join(temptime.split('-')[0:3])
                     self._backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
-                    logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
+                    logger.info("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
                 except (ExpatError, IndexError): 
                     pass
 
@@ -163,7 +163,7 @@ class Sample:
                 # exit(1)  # Added for perf test, REMOVE LATER
                 self._backfilldone = True
             else:
-                logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.name, self._backfillts))
+                logger.info("Still backfilling for sample '%s'.  Currently at %s" % (self.name, self._backfillts))
                 # if not self.mode == 'replay':
                 #     self._backfillts += datetime.timedelta(seconds=self.interval)
 
@@ -851,7 +851,7 @@ class Token:
                     if self.sample.earliest.strip()[0:1] == '+' or \
                             self.sample.earliest.strip()[0:1] == '-' or \
                             self.sample.earliest == 'now':
-                        self.sample._earliestParsed = self.sample.now() - timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=datetime.datetime.utcnow)
+                        self.sample._earliestParsed = self.sample.now(realnow=True) - timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=datetime.datetime.utcnow)
                         earliestTime = self.sample.now() - self.sample._earliestParsed
                     else:
                         earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
@@ -862,7 +862,7 @@ class Token:
                     if self.sample.latest.strip()[0:1] == '+' or \
                             self.sample.latest.strip()[0:1] == '-' or \
                             self.sample.latest == 'now':
-                        self.sample._latestParsed = self.sample.now() - timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=datetime.datetime.utcnow)
+                        self.sample._latestParsed = self.sample.now(realnow=True) - timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=datetime.datetime.utcnow)
                         latestTime = self.sample.now() - self.sample._latestParsed
                     else:
                         latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
