@@ -43,6 +43,8 @@ class Config:
     samples = [ ]
     sampleDir = None
     outputWorkers = None
+    sampleTimers = [ ]
+    workers = [ ]
 
     # Config file options.  We do not define defaults here, rather we pull them in
     # from eventgen.conf.
@@ -112,7 +114,7 @@ class Config:
                             'randomizeCount', 'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles',
                             'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
                             'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
-                            'monthOfYearRate']
+                            'monthOfYearRate', 'sessionKey']
     _complexSettings = { 'sampletype': ['raw', 'csv'], 
                          'mode': ['sample', 'replay'] }
 
@@ -162,7 +164,7 @@ class Config:
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
         # Eliminate recursive going back to parent
-        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != 'samples' ])
+        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != 'samples' and key != 'sampleTimers' and key != 'workers' ])
         return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
 
     def __repr__(self):
@@ -676,3 +678,35 @@ class Config:
                 or self._confDict['global']['debug'].lower() == '1':
             logger.setLevel(logging.DEBUG)
         logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
+
+
+    # Copied from http://danielkaes.wordpress.com/2009/06/04/how-to-catch-kill-events-with-python/
+    def set_exit_handler(self, func):
+        if os.name == "nt":
+            try:
+                import win32api
+                win32api.SetConsoleCtrlHandler(func, True)
+            except ImportError:
+                version = ".".join(map(str, sys.version_info[:2]))
+                raise Exception("pywin32 not installed for Python " + version)
+        else:
+            import signal
+            signal.signal(signal.SIGTERM, func)
+            signal.signal(signal.SIGINT, func)
+        
+    def handle_exit(self, sig=None, func=None):
+        print '\n\nCaught kill, exiting...'
+        for sampleTimer in self.sampleTimers:
+            sampleTimer.stop()
+        for worker in self.workers:
+            worker.stop()
+        sys.exit(0)
+
+    def start(self):
+        logger.info('Starting timers')
+        for sampleTimer in self.sampleTimers:
+            sampleTimer.start()
+        for x in xrange(0, self.outputWorkers):
+            worker = self.getPlugin('OutputWorker')()
+            worker.start()
+            self.workers.append(worker)
