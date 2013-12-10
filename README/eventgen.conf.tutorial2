@@ -7,7 +7,6 @@ hourOfDayRate = { "0": 0.8, "1": 1.0, "2": 0.9, "3": 0.7, "4": 0.5, "5": 0.4, "6
 dayOfWeekRate = { "0": 0.7, "1": 0.7, "2": 0.7, "3": 0.5, "4": 0.5, "5": 1.0, "6": 1.0 }
 randomizeCount = 0.2
 randomizeEvents = true
-timezone = +0000
 
 outputMode = file
 fileName = /tmp/ciscosample.log

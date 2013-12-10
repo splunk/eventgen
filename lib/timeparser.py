@@ -29,30 +29,12 @@ except NameError:
 # 5-5-2012 CS  Replacing TimeParser with our own code to remove Splunk dependency
 # Based off spec for relative time identifiers at http://docs.splunk.com/Documentation/Splunk/latest/SearchReference/SearchTimeModifiers#How_to_specify_relative_time_modifiers
 # If we're not relative, we'll try to parse it as an ISO compliant time
-def timeParser(ts='now', timezone=datetime.timedelta(days=1), now=None, utcnow=None):
+def timeParser(ts='now', sessionKey=None):
     if ts == 'now':
-        if timezone.days > 0:
-            if now == None:
-                return datetime.datetime.now()
-            else:
-                return now()
-        else:
-            if utcnow  == None:
-                return datetime.datetime.now()
-            else:
-                return utcnow() + timezone
+        return datetime.datetime.now()
     else:
         if ts[:1] == '+' or ts[:1] == '-':
-            if timezone.days > 0:
-                if now == None:
-                    ret = datetime.datetime.now()
-                else:
-                    ret = now()
-            else:
-                if utcnow == None:
-                    ret = datetime.datetime.utcnow() + timezone
-                else:
-                    ret = utcnow() + timezone
+            ret = datetime.datetime.now()
             
             unitsre = "(seconds|second|secs|sec|minutes|minute|min|hours|hour|hrs|hr|days|day|weeks|week|w[0-6]|months|month|mon|quarters|quarter|qtrs|qtr|years|year|yrs|yr|s|h|m|d|w|y|w|q)"
             reltimere = "(?i)(?P<plusminus>[+-]*)(?P<num>\d{1,})(?P<unit>"+unitsre+"{1})(([\@](?P<snapunit>"+unitsre+"{1})((?P<snapplusminus>[+-])(?P<snaprelnum>\d+)(?P<snaprelunit>"+unitsre+"{1}))*)*)"
@@ -117,7 +99,6 @@ def timeParser(ts='now', timezone=datetime.timedelta(days=1), now=None, utcnow=N
         else:
             # The spec says we must be a ISO8601 time.  This parser should be able to handle 
             # more date formats though, so we can be liberal in what we accept
-
             return dateutil_parser.parse(ts)
             #except ValueError:
             #    raise ValueError("Cannot parse date/time for %s" % (ts))
@@ -161,8 +142,8 @@ def timeParserTimeMath(plusminus, num, unit, ret):
                 else:
                     ret = datetime.datetime(ret.year, ret.month+monthnum, ret.day,
                                             ret.hour, ret.minute, ret.second, ret.microsecond)
-            elif monthnum <= 0:
-                if ret.month + monthnum <= 0:
+            elif monthnum < 0:
+                if ret.month + monthnum < 0:
                     ret = datetime.datetime(ret.year-1, (12-abs(ret.month+monthnum)),
                                             ret.day, ret.hour, ret.minute, ret.second, ret.microsecond)
                 else:

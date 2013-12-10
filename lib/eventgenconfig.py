@@ -1,7 +1,6 @@
 from __future__ import division
 from ConfigParser import ConfigParser
 import os
-import datetime
 import sys
 import re
 import __main__
@@ -23,12 +22,12 @@ class Config:
     # This implements a Borg patterns, similar to Singleton
     # It allows numerous instantiations but always shared state
     __sharedState = {}
-
+    
     # Internal vars
     _firsttime = True
     _confDict = None
     _isOwnApp = False
-
+    
     # Externally used vars
     debug = False
     runOnce = False
@@ -38,7 +37,7 @@ class Config:
     greatgrandparentdir = None
     samples = [ ]
     sampleDir = None
-
+    
     # Config file options.  We do not define defaults here, rather we pull them in
     # from either the eventgen.conf in the SA-Eventgen app (embedded)
     # or the eventgen_defaults file in the lib directory (standalone)
@@ -65,7 +64,6 @@ class Config:
     fileName = None
     fileMaxBytes = None
     fileBackupFiles = None
-    splunkHost = None
     splunkPort = None
     splunkMethod = None
     index = None
@@ -80,18 +78,15 @@ class Config:
     backfillSearch = None
     backfillSearchUrl = None
     minuteOfHourRate = None
-    timezone = datetime.timedelta(days=1)
-    dayOfMonthRate = None
-    monthOfYearRate = None
 
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
-                    'delay', 'count', 'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate',
-                    'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes',
+                    'delay', 'count', 'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate', 
+                    'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 
                     'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'splunkUser', 'splunkPass',
                     'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 'mode',
-                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
-                    'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate']
+                    'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug', 
+                    'minuteOfHourRate']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -102,14 +97,13 @@ class Config:
     _intSettings = ['interval', 'count', 'fileMaxBytes', 'fileBackupFiles', 'splunkPort']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines']
-    _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate']
-    _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay',
-                            'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate',
+    _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate']
+    _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 
+                            'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate', 
                             'randomizeCount', 'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles',
-                            'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
-                            'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
-                            'monthOfYearRate']
-
+                            'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
+                            'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple']
+    
     def __init__(self):
         """Setup Config object.  Sets up Logging and path related variables."""
         # Rebind the internal datastore of the class to an Instance variable
@@ -123,33 +117,33 @@ class Config:
             streamHandler = logging.StreamHandler(sys.stdout)
             streamHandler.setFormatter(formatter)
             logger.addHandler(streamHandler)
-
+        
             # Having logger as a global is just damned convenient
             globals()['logger'] = logger
-
+        
             # Determine some path names in our environment
             self.grandparentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             self.greatgrandparentdir = os.path.dirname(self.grandparentdir)
-
+            
             # Determine if we're running as our own Splunk app or embedded in another
-            appName = self.grandparentdir.split(os.sep)[-1].lower()
-            if appName == 'sa-eventgen' or appName == 'eventgen':
+            appName = self.grandparentdir.split(os.sep)[-1]
+            if appName == 'SA-Eventgen' or appName == 'eventgen':
                 self._isOwnApp = True
             self._firsttime = False
-
+            
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
         # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != 'samples' ])
         return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
-
+        
     def __repr__(self):
         return self.__str__()
-
+        
     def makeSplunkEmbedded(self, sessionKey=None, runOnce=False):
         """Setup operations for being Splunk Embedded.  This is legacy operations mode, just a little bit obfuscated now.
         We wait 5 seconds for a sessionKey or 'debug' on stdin, and if we time out then we run in standalone mode.
-        If we're not Splunk embedded, we operate simpler.  No rest handler for configurations. We only read configs
+        If we're not Splunk embedded, we operate simpler.  No rest handler for configurations. We only read configs 
         in our parent app's directory.  In standalone mode, we read eventgen-standalone.conf and will skip eventgen.conf if
         we detect SA-Eventgen is installed. """
 
@@ -175,14 +169,14 @@ class Config:
             self.sessionKey = auth.getSessionKey('admin', 'changeme')
         else:
             self.sessionKey = sessionKey
-
+        
         self.splunkEmbedded = True
-
+        
 
     def parse(self):
         """Parse configs from Splunk REST Handler or from files.
         We get called manually instead of in __init__ because we need find out if we're Splunk embedded before
-        we figure out how to configure ourselves.
+        we figure out how to configure ourselves.    
         """
         logger.debug("Parsing configuration files.")
         self._buildConfDict()
@@ -191,14 +185,14 @@ class Config:
         for key, value in self._confDict['global'].items():
             value = self._validateSetting('global', key, value)
             setattr(self, key, value)
-
+            
         del self._confDict['global']
         if 'default' in self._confDict:
             del self._confDict['default']
-
+        
         tempsamples = [ ]
         tempsamples2 = [ ]
-
+        
         # Now iterate for the rest of the samples we've found
         # We'll create Sample objects for each of them
         for stanza, settings in self._confDict.items():
@@ -206,8 +200,8 @@ class Config:
             for sample in self.samples:
                 if sample.name == stanza:
                     sampleexists = True
-
-            # If we see the sample in two places, use the first and ignore the second
+            
+            # If we see the sample in two places, use the first and ignore the second     
             if not sampleexists:
                 s = Sample(stanza)
                 for key, value in settings.items():
@@ -238,15 +232,15 @@ class Config:
                             # logger.info("token[{}].{} = {}".format(value[0],value[1],oldvalue))
                             setattr(s.tokens[value[0]], value[1], oldvalue)
                     elif key == 'eai:acl':
-                        setattr(s, 'app', value['app'])
+                        setattr(s, 'app', value['app'])         
                     else:
                         setattr(s, key, value)
                         # 6/22/12 CS Need a way to show a setting was set by the original
                         # config read
                         s._lockedSettings.append(key)
                         # logger.debug("Appending '%s' to locked settings for sample '%s'" % (key, s.name))
-
-
+                        
+                        
                 # Validate all the tokens are fully setup, can't do this in _validateSettings
                 # because they come over multiple lines
                 # Don't error out at this point, just log it and remove the token and move on
@@ -267,22 +261,22 @@ class Config:
                     if i not in deleteidx:
                         newtokens.append(s.tokens[i])
                 s.tokens = newtokens
-
+                
                 # Must have eai:acl key to determine app name which determines where actual files are
                 if s.app == None:
                     logger.error("App not set for sample '%s' in stanza '%s'" % (s.name, stanza))
                     raise ValueError("App not set for sample '%s' in stanza '%s'" % (s.name, stanza))
-
+                
                 # Set defaults for items not included in the config file
                 for setting in self._defaultableSettings:
                     if getattr(s, setting) == None:
                         setattr(s, setting, getattr(self, setting))
-
+                
                 # Append to temporary holding list
                 if not s.disabled:
                     s._priority = len(tempsamples)+1
                     tempsamples.append(s)
-
+        
         # 6/22/12 CS Rewriting the config matching code yet again to handling flattening better.
         # In this case, we're now going to match all the files first, create a sample for each of them
         # and then take the match from the sample seen last in the config file, and apply settings from
@@ -290,7 +284,7 @@ class Config:
         for s in tempsamples:
             # Now we need to match this up to real files.  May generate multiple copies of the sample.
             foundFiles = [ ]
-
+            
             if self.splunkEmbedded and self._isOwnApp:
                 self.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
             else:
@@ -305,7 +299,7 @@ class Config:
                         logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
                         self.sampleDir = newSampleDir
 
-            # Now that we know where samples will be written,
+            # Now that we know where samples will be written, 
             # Loop through tokens and load state for any that are integerid replacementType
             for token in s.tokens:
                 if token.replacementType == 'integerid':
@@ -355,7 +349,7 @@ class Config:
 
         # We're now going go through the samples and attempt to apply any matches from other stanzas
         # This allows us to specify a wildcard at the beginning of the file and get more specific as we go on
-
+        
         # Loop through all samples, create a list of the master samples
         for s in tempsamples2:
             foundHigherPriority = False
@@ -367,7 +361,7 @@ class Config:
                         # We have a match, now determine if we're higher priority or not
                             # If this is a longer pattern or our match is an exact match
                             # then we're a higher priority match
-                        if len(matchs._origName) > len(s._origName) or matchs.name == matchs._origName:
+                        if len(matchs._origName) > len(s._origName) or matchs.name == matchs._origName:     
                             # if s._priority < matchs._priority:
                             logger.debug("Found higher priority for sample '%s' with priority '%s' from sample '%s' with priority '%s'" \
                                         % (s._origName, s._priority, matchs._origName, matchs._priority))
@@ -413,14 +407,14 @@ class Config:
                                 logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to sample '%s' in app '%s'" \
                                                 % (settingname, sourcesetting, overridesample._origName, s.name, s.app))
                                 setattr(s, settingname, sourcesetting)
-
+                    
                     # Now prepend all the tokens to the beginning of the list so they'll be sure to match first
                     newtokens = copy.deepcopy(s.tokens)
                     # logger.debug("Prepending tokens from sample '%s' to sample '%s' in app '%s': %s" \
                     #             % (overridesample._origName, s.name, s.app, pprint.pformat(newtokens)))
                     newtokens.extend(copy.deepcopy(overridesample.tokens))
                     s.tokens = newtokens
-
+        
         # We've added replay mode, so lets loop through the samples again and set the earliest and latest
         # settings for any samples that were set to replay mode
         for s in tempsamples:
@@ -439,9 +433,9 @@ class Config:
         self._confDict = None
 
         logger.debug("Finished parsing.  Config str:\n%s" % self)
-
-
-
+                
+            
+        
     def _validateSetting(self, stanza, key, value):
         """Validates settings to ensure they won't cause errors further down the line.
         Returns a parsed value (if the value is something other than a string).
@@ -516,28 +510,12 @@ class Config:
                 if not value in self._validModes:
                     logger.error("mode is invalid in stanza '%s'" % stanza)
                     raise ValueError("mode is invalid in stanza '%s'" % stanza)
-            elif key == 'timezone':
-                logger.info("Parsing timezone '%s' for stanza '%s'" % (value, stanza))
-                if value.find('local') >= 0:
-                    value = datetime.timedelta(days=1)
-                else:
-                    try:
-                        # Separate the hours and minutes (note: minutes = the int value - the hour portion)
-                        if int(value) > 0:
-                            mod = 100
-                        else:
-                            mod = -100
-                        value = datetime.timedelta(hours=int(int(value) / 100.0), minutes=int(value) % mod )
-                    except:
-                        logger.error("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
-                        raise ValueError("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
-                logger.info("Parsed timezone '%s' for stanza '%s'" % (value, stanza))
         else:
             # Notifying only if the setting isn't valid and continuing on
             # This will allow future settings to be added and be backwards compatible
             logger.warn("Key '%s' in stanza '%s' is not a valid setting" % (key, stanza))
         return value
-
+    
     def _buildConfDict(self):
         """Build configuration dictionary that we will use """
         if self.splunkEmbedded and self._isOwnApp:
@@ -550,7 +528,7 @@ class Config:
             # Make case sensitive
             conf.optionxform = str
             currentdir = os.getcwd()
-
+    
             # If we're running standalone (and thusly using configParser)
             # only pick up eventgen-standalone.conf.
             conffiles = [ ]
@@ -565,7 +543,7 @@ class Config:
 
             logger.debug('Reading configuration files for non-splunkembedded: %s' % conffiles)
             conf.read(conffiles)
-
+                
             sections = conf.sections()
             ret = { }
             orig = { }
@@ -591,3 +569,4 @@ class Config:
                 or self._confDict['global']['debug'].lower() == '1':
             logger.setLevel(logging.DEBUG)
         logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
+            

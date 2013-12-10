@@ -46,7 +46,7 @@ token.3.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/uris.sample
 
 token.4.token = "(Mozilla/5\.0[^"]+)"
 token.4.replacementType = file
-token.4.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/useragents_mobile.sample
+token.4.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/useragents.sample
 
 token.5.token = \s{1}(468)\s{1}
 token.5.replacementType = random
