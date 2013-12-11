@@ -1,3 +1,4 @@
+# -*-  indent-tabs-mode:nil;  -*- 
 from __future__ import division, with_statement
 import os, sys
 import logging
@@ -13,6 +14,19 @@ from timeparser import timeParser, timeDelta2secs
 import httplib2, urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
+from collections import deque
+
+class CircularBuffer(deque):
+    def __init__(self):
+        self.capacity = 100
+        super(CircularBuffer, self).__init__(maxlen=self.capacity)
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, copy.deepcopy(v, memo))
+        return result
 
 class Sample:
     # Required fields for Sample
@@ -89,6 +103,8 @@ class Sample:
         self._rpevents = None
         self._backfilldone = False
         self._timeSinceSleep = datetime.timedelta()
+        self._eventIntervals = CircularBuffer()
+
         
         # Import config
         from eventgenconfig import Config
@@ -238,6 +254,11 @@ class Sample:
                 logger.debug("At end of the sample file, starting replay from the top")
                 self._currentevent = 0
                 self._lastts = None
+                if len(self._eventIntervals) > 0:
+                    sleep_time = self._eventIntervals[-1]
+                    logger.info("Sleeping for %f seconds" % sleep_time)
+                    self._timeSinceSleep = datetime.timedelta()
+                    return sleep_time
 
         # Ensure all lines have a newline
         for i in xrange(0, len(sampleLines)):
@@ -558,6 +579,8 @@ class Sample:
                 timeDiffSecs = float("%d.%06d" % (timeDiff.seconds, timeDiff.microseconds))
                 wholeIntervals = timeDiffSecs / self.interval
                 partialInterval = timeDiffSecs % self.interval
+                if partialInterval > 0:
+                    self._eventIntervals.append(partialInterval)
 
                 if wholeIntervals > 1:
                     logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
