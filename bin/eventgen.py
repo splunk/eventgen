@@ -60,6 +60,7 @@ class Timer(multiprocessing.Process):
                             sys.exit(1)
 
                         self.countdown = partialInterval
+                        self.sample._out.flush(force=True)
 
                         ## Sleep for partial interval
                         # If we're going to sleep for longer than the default check for kill interval
