@@ -40,14 +40,13 @@ class Timer(threading.Thread):
                 if not self.interruptcatcher:
                     if self.countdown <= 0:
                         partialInterval = self.sample.gen()
+                        self.sample._out.flush(force=True)
 
                         self.countdown = partialInterval
 
                         ## Sleep for partial interval
                         # If we're going to sleep for longer than the default check for kill interval
-                        # go ahead and flush output so we're not just waiting
                         if partialInterval > self.time:
-                            self.sample._out.flush(force=True)
 
                             # Make sure that we're sleeping an accurate amount of time, including the
                             # partial seconds.  After the first sleep, we'll sleep in increments of
@@ -63,6 +62,9 @@ class Timer(threading.Thread):
                         if sleepTime > 0:
                             self.sample.saveState()
                             time.sleep(sleepTime)
+                        else:
+                            pass
+                            # time.sleep(0)
                     else:
                         self.countdown -= self.time
                         time.sleep(self.time)
