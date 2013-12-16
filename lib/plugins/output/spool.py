@@ -4,7 +4,7 @@
 # from eventgenoutputtemplates import OutputTemplate
 
 from __future__ import division
-from plugin import OutputPlugin
+from outputplugin import OutputPlugin
 import shutil
 import logging
 

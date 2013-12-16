@@ -4,7 +4,7 @@
 # from eventgenoutputtemplates import OutputTemplate
 
 from __future__ import division
-from plugin import OutputPlugin
+from outputplugin import OutputPlugin
 from xml.dom import minidom
 import re
 import httplib, httplib2

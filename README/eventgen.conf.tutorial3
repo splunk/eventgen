@@ -2,10 +2,10 @@
 # $SPLUNK_HOME/etc/apps/eventgen.  If not, please change the paths below.
 
 [sample.tutorial3]
-interval = 3
-earliest = -3s
+interval = 1
+earliest = -1s
 latest = now
-count = 10
+count = 100000
 hourOfDayRate = { "0": 0.30, "1": 0.10, "2": 0.05, "3": 0.10, "4": 0.15, "5": 0.25, "6": 0.35, "7": 0.50, "8": 0.60, "9": 0.65, "10": 0.70, "11": 0.75, "12": 0.77, "13": 0.80, "14": 0.82, "15": 0.85, "16": 0.87, "17": 0.90, "18": 0.95, "19": 1.0, "20": 0.85, "21": 0.70, "22": 0.60, "23": 0.45 }
 dayOfWeekRate = { "0": 0.55, "1": 0.97, "2": 0.95, "3": 0.90, "4": 0.97, "5": 1.0, "6": 0.99 }
 randomizeCount = 0.2
@@ -19,7 +19,8 @@ backfillSearch = sourcetype=be_log
 # outputMode = file
 # fileName = /tmp/lotsofevents.log
 
-outputMode = splunkstream
+# outputMode = splunkstream
+outputMode = stdout
 
 index=main
 host=be-01.splunk.com
