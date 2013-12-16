@@ -11,7 +11,8 @@ import logging, logging.handlers
 import json
 import pprint
 import copy
-from eventgensamples import Sample, Token
+from eventgensamples import Sample
+from eventgentoken import Token
 import urllib
 from Queue import Queue
 import types
@@ -43,6 +44,7 @@ class Config:
     samples = [ ]
     sampleDir = None
     outputWorkers = None
+    generatorWorkers = None
     sampleTimers = [ ]
     workers = [ ]
 
@@ -93,6 +95,8 @@ class Config:
     __outputPlugins = { }
     __plugins = { }
     outputQueue = None
+    generatorQueue = None
+    raterQueue = None
 
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
@@ -100,12 +104,13 @@ class Config:
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes',
                     'fileBackupFiles', 'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
-                    'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers']
+                    'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers', 'generator', 'rater',
+                    'generatorWorkers']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
     _validOutputModes = [ ]
-    _intSettings = ['interval', 'count', 'outputWorkers']
+    _intSettings = ['interval', 'count', 'outputWorkers', 'generatorWorkers']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate']
@@ -114,7 +119,7 @@ class Config:
                             'randomizeCount', 'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles',
                             'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
                             'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
-                            'monthOfYearRate', 'sessionKey']
+                            'monthOfYearRate', 'sessionKey', 'generator', 'rater']
     _complexSettings = { 'sampletype': ['raw', 'csv'], 
                          'mode': ['sample', 'replay'] }
 
@@ -155,7 +160,21 @@ class Config:
                 self._isOwnApp = True
 
             # Initialize plugins
-            self.__initializePlugins()
+            self.__outputPlugins = { }
+            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'output'), self.__outputPlugins)
+            self.outputQueue = Queue()
+            # Hard code the worker plugin mapping which we expect to be there and will never have a sample associated with it
+            self.__plugins['OutputWorker'] = self.__outputPlugins['output.worker']
+            self._validOutputModes.extend(plugins)
+
+            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins)
+            self.generatorQueue = Queue()
+            self.__plugins['GeneratorWorker'] = self.__plugins['generator.worker']
+            self._complexSettings['generator'] = plugins
+
+            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'rater'), self.__plugins)
+            self._complexSettings['rater'] = plugins
+
 
             self._complexSettings['timezone'] = self._validateTimezone 
 
@@ -170,28 +189,36 @@ class Config:
     def __repr__(self):
         return self.__str__()
 
-    def __initializePlugins(self):
+    def __initializePlugins(self, dirname, plugins):
         # Automatically set the __all__ variable with all
         # the available plugins.
+
+        ret = [ ]
+        
+        if not dirname in sys.path:
+            sys.path.append(dirname)
          
-        outputPluginDir = os.path.join(self.grandparentdir, 'lib', 'plugins', 'output')
-        if not outputPluginDir in sys.path:
-            sys.path.append(outputPluginDir)
-         
-        self.__outputPlugins = { }
-        for filename in os.listdir(outputPluginDir):
-            filename = outputPluginDir + "/" + filename
+        for filename in os.listdir(dirname):
+            filename = dirname + "/" + filename
             if os.path.isfile(filename):
                 basename = os.path.basename(filename)
                 base, extension = os.path.splitext(basename)
                 if extension == ".py" and not basename.startswith("_"):
-                    module = __import__(base, fromlist=["plugins.output."])
+                    # module = __import__(base, fromlist=["plugins.output.", "plugins.rater.", "plugins.generator."])
+                    module = __import__(base)
                     plugin = module.load()
-                    self.__outputPlugins[base] = plugin
+
+                    # set plugin to something like output.file
+                    pluginname = filename.split(os.sep)[-2] + '.' + base 
+                    plugins[pluginname] = plugin
+
+                    # Return is used to determine valid configs, so only return the base name of the plugin
+                    ret.append(base)
+
+                    logger.debug("Loading module '%s' from '%s'" % (pluginname, basename))
 
                     # 12/3/13 If we haven't loaded a plugin right or we haven't initialized all the variables
                     # in the plugin, we will get an exception and the plan is to not handle it
-                    self._validOutputModes.append(base)
                     if 'validSettings' in dir(plugin):
                         self._validSettings.extend(plugin.validSettings)
                     if 'defaultableSettings' in dir(plugin):
@@ -207,22 +234,21 @@ class Config:
                     if 'complexSettings' in dir(plugin):
                         self._complexSettings.update(plugin.complexSettings)
 
-
-        self.outputQueue = Queue()
-        # Hard code the worker plugin mapping which we expect to be there and will never have a sample associated with it
-        self.__plugins['OutputWorker'] = self.__outputPlugins['worker']
+        # Chop off the path we added
+        sys.path = sys.path[0:-1]
+        return ret
 
 
     def getPlugin(self, name):
         if not name in self.__plugins:
-            raise KeyError('Output plugin for sample ' + name + ' not found')
+            raise KeyError('Plugin ' + name + ' not found')
         return self.__plugins[name]
 
     def __setPlugin(self, s):
         # 12/2/13 CS Adding pluggable output modules, need to set array to map sample name to output plugin
         # module instances
         try:
-            self.__plugins[s.name] = self.__outputPlugins[s.outputMode.lower()](s)
+            self.__plugins[s.name] = self.__outputPlugins['output.'+s.outputMode.lower()](s)
             plugin = self.__plugins[s.name]
         except KeyError:
             raise KeyError('Output plugin %s does not exist' % s.outputMode.lower())
@@ -595,7 +621,7 @@ class Config:
                 elif isinstance(complexSetting, list):
                     if not value in complexSetting:
                         logger.error("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
-                        raiseValueError("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
+                        raise ValueError("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
             elif key == 'outputMode':
                 if not value in self._validOutputModes:
                     logger.error("outputMode invalid in stanza '%s'" % stanza)
@@ -708,5 +734,9 @@ class Config:
             sampleTimer.start()
         for x in xrange(0, self.outputWorkers):
             worker = self.getPlugin('OutputWorker')()
+            worker.start()
+            self.workers.append(worker)
+        for x in xrange(0, self.generatorWorkers):
+            worker = self.getPlugin('GeneratorWorker')()
             worker.start()
             self.workers.append(worker)

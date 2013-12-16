@@ -15,6 +15,7 @@ import datetime
 from select import select
 from eventgenconfig import Config
 from eventgentimer import Timer
+from eventgenoutput import Output
 
 if __name__ == '__main__':
     debug = False
@@ -54,6 +55,10 @@ if __name__ == '__main__':
             if c.runOnce:
                 s.gen()
             else:
+                logger.info("Setting up Output class for sample '%s' in app '%s'" % (s.name, s.app))
+                s.out = Output(s)
+                if s.backfillSearchUrl == None:
+                    s.backfillSearchUrl = s.splunkUrl
                 logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )    
                 t = Timer(1.0, s) 
                 c.sampleTimers.append(t)

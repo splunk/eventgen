@@ -25,6 +25,8 @@ class Timer(threading.Thread):
         self.countdown = 0
         
         self.sample = sample
+        if self.sample != None:
+            self.rater = c.getPlugin('rater.'+self.sample.rater)(self.sample)
         threading.Thread.__init__(self)
         # multiprocessing.Process.__init__(self)
 
@@ -36,8 +38,11 @@ class Timer(threading.Thread):
             if not self.stopping:
                 if not self.interruptcatcher:
                     if self.countdown <= 0:
+                        # 12/15/13 CS Moving the rating to a separate plugin architecture
+                        count = self.rater.rate()
+
                         try:
-                            partialInterval = self.sample.gen()
+                            partialInterval = self.sample.gen(count, None, None)
                         # 11/24/13 CS Blanket catch for any errors
                         # If we've gotten here, all error correction has failed and we
                         # need to gracefully exit providing some error context like what sample
@@ -59,7 +64,7 @@ class Timer(threading.Thread):
                         # go ahead and flush output so we're not just waiting
                         if partialInterval > self.time:
                             logger.debugv("Flushing because we're sleeping longer than a polling interval")
-                            self.sample._out.flush()
+                            self.sample.out.flush()
 
                             # Make sure that we're sleeping an accurate amount of time, including the
                             # partial seconds.  After the first sleep, we'll sleep in increments of

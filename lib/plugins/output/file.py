@@ -1,7 +1,7 @@
 # Note as implemented this plugin is not threadsafe, file should only be used with one output worker
 
 from __future__ import division
-from plugin import OutputPlugin
+from outputplugin import OutputPlugin
 import os
 import logging
 
