@@ -70,6 +70,7 @@ class Sample:
     generator = None
     rater = None
     out = None
+    timeField = None
     
     # Internal fields
     _sampleLines = None
@@ -400,12 +401,12 @@ class Sample:
                 logger.debugv("Finding timestamp to compute interval for events")
                 if self._lastts == None:
                     if self.sampletype == 'csv':
-                        self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent]['_raw'])
+                        self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent][self.timeField])
                     else:
                         self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent])
                 if (self._currentevent+1) < len(self._rpevents):
                     if self.sampletype == 'csv':
-                        nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1]['_raw'])
+                        nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1][self.timeField])
                     else:
                         nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1])
                 else:
@@ -610,4 +611,3 @@ class Sample:
 
     def utcnow(self):
         return self.now(utcnow=True)
-
