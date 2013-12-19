@@ -67,6 +67,7 @@ class Sample:
     monthOfYearRate = None
     sessionKey = None
     splunkUrl = None
+    timeField = None
     
     # Internal fields
     _c = None
@@ -480,12 +481,12 @@ class Sample:
                 logger.debugv("Finding timestamp to compute interval for events")
                 if self._lastts == None:
                     if self.sampletype == 'csv':
-                        self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent]['_raw'])
+                        self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent][self.timeField])
                     else:
                         self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent])
                 if (self._currentevent+1) < len(self._rpevents):
                     if self.sampletype == 'csv':
-                        nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1]['_raw'])
+                        nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1][self.timeField])
                     else:
                         nextts = self._getTSFromEvent(self._rpevents[self._currentevent+1])
                 else:
@@ -847,26 +848,36 @@ class Token:
                 # as an offset of now if they're relative times
                 if self.sample._earliestParsed != None:
                     earliestTime = self.sample.now() - self.sample._earliestParsed
+                    logger.debug("Using cached earliest time: %s" % earliestTime)
                 else:
                     if self.sample.earliest.strip()[0:1] == '+' or \
                             self.sample.earliest.strip()[0:1] == '-' or \
                             self.sample.earliest == 'now':
-                        self.sample._earliestParsed = self.sample.now() - timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=datetime.datetime.utcnow)
+                        tempearliest = timeParser(self.sample.earliest, timezone=self.sample.timezone)
+                        temptd = self.sample.now(realnow=True) - tempearliest
+                        self.sample._earliestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
                         earliestTime = self.sample.now() - self.sample._earliestParsed
+                        logger.debug("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self.sample._earliestParsed, earliestTime, tempearliest))
                     else:
-                        earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
+                        earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone)
+                        logger.debug("earliestTime as absolute time '%s'" % earliestTime)
 
                 if self.sample._latestParsed != None:
                     latestTime = self.sample.now() - self.sample._latestParsed
+                    logger.debug("Using cached latestTime: %s" % latestTime)
                 else:
                     if self.sample.latest.strip()[0:1] == '+' or \
                             self.sample.latest.strip()[0:1] == '-' or \
                             self.sample.latest == 'now':
-                        self.sample._latestParsed = self.sample.now() - timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=datetime.datetime.utcnow)
+                        templatest = timeParser(self.sample.latest, timezone=self.sample.timezone)
+                        temptd = self.sample.now(realnow=True) - templatest
+                        self.sample._latestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
                         latestTime = self.sample.now() - self.sample._latestParsed
+                        logger.debug("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self.sample._latestParsed, latestTime, templatest))
                     else:
-                        latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone, now=self.sample.now, utcnow=self.sample.utcnow)
-                
+                        latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone)
+                        logger.debug("latstTime as absolute time '%s'" % latestTime)
+
                 if earliestTime and latestTime:
                     if latestTime>=earliestTime:
                         minDelta = 0
