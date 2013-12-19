@@ -50,7 +50,7 @@ source = eventgen
 sourcetype = eventgen
 host = 127.0.0.1
 outputWorkers = 1
-
+timeField = _raw
 
 [<sample file name>]
     * This stanza defines a given sample file contained within the samples directory.
@@ -194,6 +194,11 @@ timeMultiple = <float>
     * Will slow down the replay of events by <float> factor.  For example, allows a 10 minute sample
       to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6.
       By the converse, make timeMultiple 0.5 will make the events run twice as fast.
+
+timeField = <field name>
+    * Only valid in mode = replay
+    * Will select the field to find the timestamp in.  In many cases, time will come from a different
+      field in the CSV.
 
 timezone = local | <integer>
     * If set to 'local', will output local time, if set to '0000' will output UTC time
