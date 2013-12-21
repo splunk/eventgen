@@ -62,9 +62,13 @@ class Output:
         return self.__str__()
 
     def send(self, msg):
+        if not self._sample.timestamp:
+            logger.debugv("Setting timestamp at output")
+            self._sample.timestamp = self._sample.now()
         self._queue.append({'_raw': msg, 'index': self._sample.index,
                         'source': self._sample.source, 'sourcetype': self._sample.sourcetype,
-                        'host': self._sample.host, 'hostRegex': self._sample.hostRegex})
+                        'host': self._sample.host, 'hostRegex': self._sample.hostRegex,
+                        '_time': self._sample.timestamp})
 
         if len(self._queue) >= c.getPlugin(self._sample.name).MAXQUEUELENGTH:
             self.flush()

@@ -68,6 +68,7 @@ class Sample:
     sessionKey = None
     splunkUrl = None
     timeField = None
+    timestamp = None
     
     # Internal fields
     _c = None
@@ -113,6 +114,8 @@ class Sample:
     def gen(self):
         logger.debug("Generating sample '%s' in app '%s'" % (self.name, self.app))
         startTime = datetime.datetime.now()
+
+        self.timestamp = None
         
         # If this is the first time we're generating, setup out
         if self._out == None:
@@ -880,19 +883,23 @@ class Token:
 
                 if earliestTime and latestTime:
                     if latestTime>=earliestTime:
-                        minDelta = 0
+                        if self.sample.timestamp:
+                            replacementTime = self.sample.timestamp
+                        else:
+                            minDelta = 0
 
-                        ## Compute timeDelta as total_seconds
-                        td = latestTime - earliestTime
-                        maxDelta = timeDelta2secs(td)
+                            ## Compute timeDelta as total_seconds
+                            td = latestTime - earliestTime
+                            maxDelta = timeDelta2secs(td)
 
-                        ## Get random timeDelta
-                        randomDelta = datetime.timedelta(seconds=random.randint(minDelta, maxDelta))
+                            ## Get random timeDelta
+                            randomDelta = datetime.timedelta(seconds=random.randint(minDelta, maxDelta))
 
-                        ## Compute replacmentTime
-                        replacementTime = latestTime - randomDelta
+                            ## Compute replacmentTime
+                            replacementTime = latestTime - randomDelta
+                            self.sample.timestamp = replacementTime
 
-                        # logger.debug("Generating timestamp for sample '%s' with randomDelta %s, minDelta %s, maxDelta %s, earliestTime %s, latestTime %s, earliest: %s, latest: %s" % (self.sample.name, randomDelta, minDelta, maxDelta, earliestTime, latestTime, self.sample.earliest, self.sample.latest))
+                            # logger.debug("Generating timestamp for sample '%s' with randomDelta %s, minDelta %s, maxDelta %s, earliestTime %s, latestTime %s, earliest: %s, latest: %s" % (self.sample.name, randomDelta, minDelta, maxDelta, earliestTime, latestTime, self.sample.earliest, self.sample.latest))
                         
                         if self.replacementType == 'replaytimestamp':
                             if old != None and len(old) > 0:
