@@ -71,6 +71,7 @@ class Sample:
     rater = None
     out = None
     timeField = None
+    timestamp = None
     
     # Internal fields
     _sampleLines = None
@@ -115,6 +116,8 @@ class Sample:
         ret = [ ]
         logger.debug("Generating sample '%s' in app '%s'" % (self.name, self.app))
         startTime = datetime.datetime.now()
+
+        self.timestamp = None
 
         # Setup initial backfillts
         if self._backfillts == None and self.backfill != None and not self._backfilldone:

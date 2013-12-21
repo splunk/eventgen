@@ -9,6 +9,7 @@ randomizeCount = 0.2
 randomizeEvents = true
 
 outputMode = stdout
+# outputMode = file
 fileName = /tmp/ciscosample.log
 
 ## Replace timestamp Feb  4 07:52:53
