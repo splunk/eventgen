@@ -5,6 +5,7 @@
 
 from __future__ import division
 from outputplugin import OutputPlugin
+import datetime
 
 class ModInputOutputPlugin(OutputPlugin):
     name = 'modinput'
@@ -19,19 +20,20 @@ class ModInputOutputPlugin(OutputPlugin):
             m = q.popleft()
             while m:
                 out += '  <event>\n'
-                out += '    <index>%s</index>' % m['index']
-                out += '    <source>%s</source>' % m['source']
-                out += '    <sourcetype>%s</sourcetype>' % m['sourcetype']
-                out += '    <host>%s</host>' % m['host']
-                out += '    <data>%s</data>' % m['_raw']
-                out += '  </event>'
+                out += '    <time>%s</time>\n' % datetime.datetime.strftime(m['_time'], '%s')
+                out += '    <index>%s</index>\n' % m['index']
+                out += '    <source>%s</source>\n' % m['source']
+                out += '    <sourcetype>%s</sourcetype>\n' % m['sourcetype']
+                out += '    <host>%s</host>\n' % m['host']
+                out += '    <data>%s</data>\n' % m['_raw']
+                out += '  </event>\n'
 
                 try:
                     m = q.popleft()
                 except IndexError:
                     m = False
         
-        out += '</stream>\n'
+        out += '</stream>'
         print out
 
 def load():

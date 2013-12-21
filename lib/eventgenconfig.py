@@ -703,7 +703,7 @@ class Config:
         # versus what ConfigParser returns.
         if self._confDict['global']['debug'].lower() == 'true' \
                 or self._confDict['global']['debug'].lower() == '1':
-            logger.setLevel(logging.DEBUG)
+            logger.setLevel(logging.DEBUGV)
         logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
 
 
