@@ -12,6 +12,15 @@ class OutputPlugin:
 		self._sample = sample
 		self._outputMode = sample.outputMode
 		
+		# Logger already setup by config, just get an instance
+		logger = logging.getLogger('eventgen')
+		globals()['logger'] = logger
+
+		from eventgenconfig import Config
+		globals()['c'] = Config()
+
+		logger.debug("Starting OutputPlugin for sample '%s' with output '%s'" % (self._sample.name, self._sample.outputMode))
+
 		self._queue = deque([])
 
 	def __str__(self):

@@ -18,6 +18,8 @@ class GeneratorWorker(threading.Thread):
         from eventgenconfig import Config
         globals()['c'] = Config()
 
+        logger.debug("Starting GeneratorWorker")
+
         threading.Thread.__init__(self)
 
     def __str__(self):
@@ -33,14 +35,16 @@ class GeneratorWorker(threading.Thread):
     def run(self):
         while not self.stopping:
             try:
+                # Grab item from the queue to generate, grab an instance of the plugin, then generate
                 sample, count, earliest, latest = c.generatorQueue.get(block=True, timeout=1.0)
-                plugin = c.getPlugin(sample.generator)(sample)
+                plugin = c.getPlugin('generator.'+sample.generator)(sample)
                 plugin.gen(count, earliest, latest)
             except Empty:
+                # Queue empty, do nothing... basically here to catch interrupts
                 pass
 
     def stop(self):
         self.stopping = True
 
 def load():
-    return OutputWorker
+    return GeneratorWorker

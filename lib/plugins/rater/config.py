@@ -20,6 +20,8 @@ class ConfigRater:
         from eventgenconfig import Config
         globals()['c'] = Config()
 
+        logger.debug('Starting ConfigRater for %s' % sample.name if sample is not None else "None")
+
         self._sample = sample
 
     def __str__(self):

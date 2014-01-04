@@ -142,7 +142,7 @@ class Config:
 
             logger = logging.getLogger('eventgen')
             logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
-            logger.setLevel(logging.INFO)
+            logger.setLevel(logging.DEBUGV)
             formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
             streamHandler = logging.StreamHandler(sys.stderr)
             streamHandler.setFormatter(formatter)
@@ -165,12 +165,12 @@ class Config:
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'output'), self.__outputPlugins)
             self.outputQueue = Queue()
             # Hard code the worker plugin mapping which we expect to be there and will never have a sample associated with it
-            self.__plugins['OutputWorker'] = self.__outputPlugins['output.worker']
+            self.__plugins['OutputWorker'] = self.__outputPlugins['output.outputworker']
             self._validOutputModes.extend(plugins)
 
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins)
             self.generatorQueue = Queue()
-            self.__plugins['GeneratorWorker'] = self.__plugins['generator.worker']
+            self.__plugins['GeneratorWorker'] = self.__plugins['generator.generatorworker']
             self._complexSettings['generator'] = plugins
 
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'rater'), self.__plugins)
@@ -545,6 +545,8 @@ class Config:
                 s.dayOfWeekRate = None
                 s.minuteOfHourRate = None
                 s.interval = 0
+                # 12/29/13 CS Moved replay generation to a new replay generator plugin
+                s.generator = 'replay'
 
             self.__setPlugin(s)
 
@@ -733,11 +735,14 @@ class Config:
         logger.info('Starting timers')
         for sampleTimer in self.sampleTimers:
             sampleTimer.start()
+            logger.debug("Starting timer for sample '%s'" % sampleTimer.sample.name)
         for x in xrange(0, self.outputWorkers):
+            logger.debug("Starting OutputWorker %d" % x)
             worker = self.getPlugin('OutputWorker')()
             worker.start()
             self.workers.append(worker)
         for x in xrange(0, self.generatorWorkers):
+            logger.debug("Starting GeneratorWorker %d" % x)
             worker = self.getPlugin('GeneratorWorker')()
             worker.start()
             self.workers.append(worker)
