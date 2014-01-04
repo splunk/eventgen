@@ -75,7 +75,9 @@ class Sample:
     
     # Internal fields
     _sampleLines = None
+    sampleLines = None
     _sampleDict = None
+    sampleDict = None
     _lockedSettings = None
     _priority = None
     _origName = None
@@ -561,7 +563,7 @@ class Sample:
 
         return path
 
-    def _getTSFromEvent(self, event):
+    def getTSFromEvent(self, event):
         currentTime = None
         formats = [ ]
         # JB: 2012/11/20 - Can we optimize this by only testing tokens of type = *timestamp?
