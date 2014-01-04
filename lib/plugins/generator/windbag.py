@@ -17,7 +17,7 @@ class WindbagGenerator(GeneratorPlugin):
 
     def gen(self, count, earliest, latest):
         for i in xrange(count):
-            self._sample.out.send(datetime.datetime.strftime(latest, "%Y-%m-%dT%H:%M:%S"))
+            self._sample.out.send("%s WINDBAG Event %d of %d" % (datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S"), i+1, count))
 
 
 def load():
