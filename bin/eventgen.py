@@ -1,6 +1,9 @@
 '''
 Copyright (C) 2005-2012 Splunk Inc. All Rights Reserved.
 '''
+
+# TODO Allow override of any configuration variable from the command line
+
 from __future__ import division
 
 import sys, os

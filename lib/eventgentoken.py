@@ -1,3 +1,5 @@
+# TODO Handle timestamp generation for modular input output where we set sample.timestamp properly when we do a timestamp replacement
+
 from __future__ import division, with_statement
 import os
 import logging
@@ -81,7 +83,7 @@ class Token:
         """Replaces all instances of this token in provided event and returns event"""
         offset = 0
         tokenMatch = list(self._finditer(event))
-        # logger.debug("Checking for match for token: '%s'" % (self.token))
+        logger.debugv("Found %d matches for token: '%s' of type '%s'" % (len(tokenMatch), self.token, self.replacementType))
 
         if len(tokenMatch) > 0:
             # 9/7/13  Trying to determine the logic for doing two regex
@@ -122,7 +124,7 @@ class Token:
                         # In order to not break legacy which might replace the same timestamp
                         # with the same value in multiple matches, here we'll include
                         # ones that need to be replaced for every match
-                        if self.replacementType in ('replaytimestamp'):
+                        if self.replacementType == 'replaytimestamp':
                             replacement = self._getReplacement(event[matchStart:matchEnd])
                         offset += len(replacement) - len(match.group(1))
                     except:
@@ -133,7 +135,7 @@ class Token:
                         # In order to not break legacy which might replace the same timestamp
                         # with the same value in multiple matches, here we'll include
                         # ones that need to be replaced for every match
-                        if self.replacementType in ('replaytimestamp'):
+                        if self.replacementType == 'replaytimestamp':
                             replacement = self._getReplacement(event[matchStart:matchEnd])
                         offset += len(replacement) - len(match.group(0))
                     # logger.debug("matchStart %d matchEnd %d offset %d" % (matchStart, matchEnd, offset))

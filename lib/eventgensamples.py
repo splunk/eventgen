@@ -72,6 +72,7 @@ class Sample:
     out = None
     timeField = None
     timestamp = None
+    sampleDir = None
     
     # Internal fields
     _sampleLines = None

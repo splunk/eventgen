@@ -2,6 +2,8 @@ from __future__ import division
 from generatorplugin import GeneratorPlugin
 import os
 import logging
+import datetime
+import random
 
 class DefaultGenerator(GeneratorPlugin):
     def __init__(self, sample):
@@ -15,48 +17,58 @@ class DefaultGenerator(GeneratorPlugin):
         globals()['c'] = Config()
 
     def gen(self, count, earliest, latest):
-        try:
-            partialInterval = self._sample.gen(count)
-        # 11/24/13 CS Blanket catch for any errors
-        # If we've gotten here, all error correction has failed and we
-        # need to gracefully exit providing some error context like what sample
-        # we came from
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
-            import traceback
-            logger.error('Exception in sample: %s\n%s' % (self._sample.name, \
-                    traceback.format_exc()))
-            sys.stderr.write('Exception in sample: %s\n%s' % (self._sample.name, \
-                    traceback.format_exc()))
-            sys.exit(1)
+        # For shortness sake, we're going to call the sample s
+        s = self._sample
 
-        self.countdown = partialInterval
+        logger.debug("Generating sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
+        startTime = datetime.datetime.now()
+        # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
+        self.loadSample()
 
-        ## Sleep for partial interval
-        # If we're going to sleep for longer than the default check for kill interval
-        # go ahead and flush output so we're not just waiting
-        if partialInterval > self.time:
-            logger.debugv("Flushing because we're sleeping longer than a polling interval")
-            self._sample._out.flush()
-
-            # Make sure that we're sleeping an accurate amount of time, including the
-            # partial seconds.  After the first sleep, we'll sleep in increments of
-            # self.time to make sure we're checking for kill signals.
-            sleepTime = self.time + (partialInterval % self.time)
-            self.countdown -= sleepTime
+        if s.randomizeEvents:
+            eventsDict = [ ]
+            sdlen = len(self.sampleDict)
+            while len(eventsDict) < count:
+                eventsDict.append(self.sampleDict[random.randint(0, sdlen-1)])
         else:
-            sleepTime = partialInterval
-            self.countdown = 0
-          
-        logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
-                    % (self._sample.name, self._sample.app, partialInterval) ) 
-        logger.debug("Queue depth for sample '%s' in app '%s': %d" % (self._sample.name, self._sample.app, c.outputQueue.qsize()))   
-        if sleepTime > 0:
-            self._sample.saveState()
-            time.sleep(sleepTime)
-        self._sample.gen(count)
+            eventsDict = self.sampleDict[0:count if count < len(self.sampleDict) else len(self.sampleDict)]
 
+            ## Continue to fill events array until len(events) == count
+            if len(eventsDict) < count:
+                logger.debugv("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (s.name, s.app, len(eventsDict), count) )
+                tempEventsDict = eventsDict[:]
+                while len(eventsDict) < count:
+                    y = 0
+                    while len(eventsDict) < count and y < len(tempEventsDict):
+                        eventsDict.append(tempEventsDict[y])
+                        y += 1
+                logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" % (s.name, s.app, len(eventsDict)))
+
+        for x in range(len(eventsDict)):
+            event = eventsDict[x]['_raw']
+
+            # Maintain state for every token in a given event
+            # Hash contains keys for each file name which is assigned a list of values
+            # picked from a random line in that file
+            mvhash = { }
+
+            ## Iterate tokens
+            for token in s.tokens:
+                token.mvhash = mvhash
+                logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
+                event = token.replace(event)
+            if(s.hostToken):
+                # clear the host mvhash every time, because we need to re-randomize it
+                s.hostToken.mvhash =  {}
+
+            self.setOutputMetadata(eventsDict[x])
+
+            s.out.send(event)
+
+        endTime = datetime.datetime.now()
+        timeDiff = endTime - startTime
+        timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
+        logger.info("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
 
 def load():
     return DefaultGenerator
