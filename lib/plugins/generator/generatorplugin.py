@@ -7,6 +7,7 @@ from eventgenoutput import Output
 import multiprocessing
 import csv
 import copy
+import re
 
 class GeneratorPlugin(multiprocessing.Process):
     queueable = True
@@ -51,26 +52,62 @@ class GeneratorPlugin(multiprocessing.Process):
         """Load sample from disk into self._sample.sampleLines and self._sample.sampleDict, 
         using cached copy if possible"""
         # Making a copy of self._sample in a short name to save typing
-        sample = self._sample
+        s = self._sample
 
-        if sample.sampletype == 'raw':
+        if s.sampletype == 'raw':
             # 5/27/12 CS Added caching of the sample file
-            if sample.sampleLines == None or sample.sampleDict == None:
+            if s.sampleLines == None or s.sampleDict == None:
                 self._openSampleFile()
-                logger.debugv("Reading raw sample '%s' in app '%s'" % (sample.name, sample.app))
-                self.sampleLines = self._sampleFH.readlines()
+                if s.breaker == c.breaker:
+                    logger.debugv("Reading raw sample '%s' in app '%s'" % (s.name, s.app))
+                    sampleLines = self._sampleFH.readlines()
+                # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time instead of on every generation
+                else:
+                    logger.debugv("Non-default breaker '%s' detected for sample '%s' in app '%s'" \
+                                    % (s.breaker, s.name, s.app) ) 
+
+                    sampleData = self._sampleFH.read()
+                    sampleLines = [ ]
+
+                    logger.debug("Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s" \
+                                    % (s.name, s.app, len(sampleData), s.breaker))
+
+                    try:
+                        breakerRE = re.compile(s.breaker, re.M)
+                    except:
+                        logger.error("Line breaker '%s' for sample '%s' in app '%s' could not be compiled; using default breaker" \
+                                    % (s.breaker, s.name, s.app) )
+                        s.breaker = c.breaker
+
+                    # Loop through data, finding matches of the regular expression and breaking them up into
+                    # "lines".  Each match includes the breaker itself.
+                    extractpos = 0
+                    searchpos = 0
+                    breakerMatch = breakerRE.search(sampleData, searchpos)
+                    while breakerMatch:
+                        logger.debugv("Breaker found at: %d, %d" % (breakerMatch.span()[0], breakerMatch.span()[1]))
+                        # Ignore matches at the beginning of the file
+                        if breakerMatch.span()[0] != 0:
+                            sampleLines.append(sampleData[extractpos:breakerMatch.span()[0]])
+                            extractpos = breakerMatch.span()[0]
+                        searchpos = breakerMatch.span()[1]
+                        breakerMatch = breakerRE.search(sampleData, searchpos)
+                    sampleLines.append(sampleData[extractpos:])
+
+
+
                 self._closeSampleFile()
-                sample.sampleLines = self.sampleLines
-                self.sampleDict = [ { '_raw': line } for line in self.sampleLines ]
-                sample.sampleDict = self.sampleDict
-                logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(self.sampleLines), len(self.sampleDict)))
+
+                self.sampleDict = [ { '_raw': line, 'index': s.index, 'host': s.host, 'source': s.source, 'sourcetype': s.sourcetype } for line in sampleLines ]
+                s.sampleDict = self.sampleDict
+                logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(sampleLines), len(self.sampleDict)))
             else:
-                self.sampleLines = sample.sampleLines
-                self.sampleDict = sample.sampleDict
-        elif sample.sampletype == 'csv':
-            if sample.sampleLines == None or sample.sampleDict == None:
+                self.sampleLines = s.sampleLines
+                self.sampleDict = s.sampleDict
+        elif s.sampletype == 'csv':
+            if s.sampleLines == None or s.sampleDict == None:
                 self._openSampleFile()
-                logger.debugv("Reading csv sample '%s' in app '%s'" % (sample.name, sample.app))
+                logger.debugv("Reading csv sample '%s' in app '%s'" % (s.name, s.app))
                 self.sampleDict = [ ]
                 self.sampleLines = [ ]
                 # Fix to load large csv files, work with python 2.5 onwards
@@ -81,7 +118,7 @@ class GeneratorPlugin(multiprocessing.Process):
                     try:
                         tempstr = line['_raw'].decode('string_escape')
                         # Hack for bundlelines
-                        if sample.bundlelines:
+                        if s.bundlelines:
                             tempstr = tempstr.replace('\n', 'NEWLINEREPLACEDHERE!!!')
                         self.sampleLines.append(tempstr)
                     except ValueError:
@@ -89,20 +126,25 @@ class GeneratorPlugin(multiprocessing.Process):
                     except AttributeError:
                         logger.error("Missing _raw at line '%d' in sample '%s' in app '%s'" % (csvReader.line_num, self.name, self.app))
                 self._closeSampleFile()
-                sample.sampleDict = copy.deepcopy(self.sampleDict)
-                sample.sampleLines = copy.deepcopy(self.sampleLines)
+                s.sampleDict = copy.deepcopy(self.sampleDict)
+                s.sampleLines = copy.deepcopy(self.sampleLines)
                 logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(self.sampleLines), len(self.sampleDict)))
             else:
                 # If we're set to bundlelines, we'll modify sampleLines regularly.
                 # Since lists in python are referenced rather than copied, we
                 # need to make a fresh copy every time if we're bundlelines.
                 # If not, just used the cached copy, we won't mess with it.
-                if not sample.bundlelines:
-                    self.sampleDict = sample.sampleDict
-                    self.sampleLines = sample.sampleLines
+                if not s.bundlelines:
+                    self.sampleDict = s.sampleDict
+                    self.sampleLines = s.sampleLines
                 else:
-                    self.sampleDict = copy.deepcopy(sample.sampleDict)
-                    self.sampleLines = copy.deepcopy(sample.sampleLines)
+                    self.sampleDict = copy.deepcopy(s.sampleDict)
+                    self.sampleLines = copy.deepcopy(s.sampleLines)
+
+        # Ensure all lines have a newline
+        for i in xrange(0, len(self.sampleDict)):
+            if self.sampleDict[i]['_raw'][-1] != '\n':
+                self.sampleDict[i]['_raw'] += '\n'
 
     def setOutputMetadata(self, event):
         # logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))

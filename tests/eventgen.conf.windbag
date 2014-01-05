@@ -1,7 +1,0 @@
-[windbag]
-generator = windbag
-earliest = -3s
-latest = now
-interval = 3
-count = 5
-outputMode = stdout

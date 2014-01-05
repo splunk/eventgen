@@ -77,6 +77,9 @@ timeField = _raw
         
 disabled = true | false
     * Like what it looks like.  Will disable event generation for this sample.
+
+sampleDir = <dir>
+    * Set a different directory to look for samples in
         
 #############################
 ## OUTPUT RELATED SETTINGS ##

@@ -1,4 +1,5 @@
 # TODO Add guid and sample name to logging output for each sample
+# TODO Allow configurable sample directory besides the hard coded "samples" directory in the eventgen app or another app
 
 from __future__ import division
 from ConfigParser import ConfigParser
@@ -106,7 +107,7 @@ class Config:
                     'fileBackupFiles', 'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers', 'generator',
-                    'rater', 'generatorWorkers', 'timeField']
+                    'rater', 'generatorWorkers', 'timeField', 'sampleDir']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -399,19 +400,31 @@ class Config:
             # Now we need to match this up to real files.  May generate multiple copies of the sample.
             foundFiles = [ ]
 
-            if self.splunkEmbedded and self._isOwnApp:
-                self.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
-            else:
-                self.sampleDir = os.path.join(os.getcwd(), 'samples')
-                if not os.path.exists(self.sampleDir):
-                    newSampleDir = os.path.join(os.sep.join(os.getcwd().split(os.sep)[:-1]), 'samples')
-                    logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
-                    self.sampleDir = newSampleDir
-
+            # 1/5/14 Adding a config setting to override sample directory, primarily so I can put tests in their own
+            # directories
+            if s.sampleDir == None:
+                logger.debug("Sample directory not specified in config, setting based on standard")
+                if self.splunkEmbedded and self._isOwnApp:
+                    self.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
+                else:
+                    self.sampleDir = os.path.join(os.getcwd(), 'samples')
                     if not os.path.exists(self.sampleDir):
-                        newSampleDir = self.sampleDir = os.path.join(self.grandparentdir, 'samples')
+                        newSampleDir = os.path.join(os.sep.join(os.getcwd().split(os.sep)[:-1]), 'samples')
                         logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
                         self.sampleDir = newSampleDir
+
+                        if not os.path.exists(self.sampleDir):
+                            newSampleDir = self.sampleDir = os.path.join(self.grandparentdir, 'samples')
+                            logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
+                            self.sampleDir = newSampleDir
+            else:
+                logger.debug("Sample directory specified in config, checking for relative")
+                # Allow for relative paths to the base directory
+                if not os.path.exists(s.sampleDir):
+                    self.sampleDir = os.path.join(self.grandparentdir, s.sampleDir)
+                else:
+                    self.sampleDir = s.sampleDir
+
 
             # Now that we know where samples will be written,
             # Loop through tokens and load state for any that are integerid replacementType

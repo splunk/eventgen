@@ -28,7 +28,10 @@ class ReplayGenerator(GeneratorPlugin):
         self._times = [ ]
 
     def gen(self, count, earliest, latest):
-        logger.debug("Generating sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
+        # For shortness sake, we're going to call the sample s
+        s = self._sample
+
+        logger.debug("Generating sample '%s' in app '%s'" % (s.name, s.app))
         startTime = datetime.datetime.now()
         # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
         self.loadSample()
@@ -43,28 +46,18 @@ class ReplayGenerator(GeneratorPlugin):
         # we're currently on
         self.sampleDict = [ self._rpevents[self._currentevent] ]
 
-        # Ensure all lines have a newline
-        for i in xrange(0, len(self.sampleDict)):
-            if self.sampleDict[i]['_raw'][-1] != '\n':
-                self.sampleDict[i]['_raw'] += '\n'
-
-        try:
-            self.setOutputMetadata(self.sampleDict[0])
-        except IndexError:
-            # If we dont have a dictionary entry for it, ignore it we're probably not sampletype csv
-            pass
-
+        self.setOutputMetadata(self.sampleDict[0])
 
         logger.debugv("Finding timestamp to compute interval for events")
         if self._lastts == None:
-            self._lastts = self._sample.getTSFromEvent(self._rpevents[self._currentevent][self._sample.timeField])
+            self._lastts = s.getTSFromEvent(self._rpevents[self._currentevent][s.timeField])
         if (self._currentevent+1) < len(self._rpevents):
-            nextts = self._sample.getTSFromEvent(self._rpevents[self._currentevent+1][self._sample.timeField])
+            nextts = s.getTSFromEvent(self._rpevents[self._currentevent+1][s.timeField])
         else:
             logger.debugv("At end of _rpevents")
             # At the end of the buffer, we sould wait the average amount of time at the end 
             # return 0
-            avgtimes = sum(list(self._times)) / len(self._times) / self._sample.timeMultiple
+            avgtimes = sum(list(self._times)) / len(self._times) / s.timeMultiple
             interval = datetime.timedelta(seconds=int(math.modf(avgtimes)[1]), microseconds=int(round(math.modf(avgtimes)[0] * 1000000, 0)))
             nextts = self._lastts + interval
             logger.debugv("Setting nextts to '%s' with avgtimes '%d' and interval '%s'" % (nextts, avgtimes, interval))
@@ -78,10 +71,10 @@ class ReplayGenerator(GeneratorPlugin):
         else:
             partialInterval = 0
 
-        if self._sample.timeMultiple > 0:
-            partialInterval *= self._sample.timeMultiple
+        if s.timeMultiple > 0:
+            partialInterval *= s.timeMultiple
 
-        logger.debugv("Setting partialInterval for replay mode with timeMultiple %s: %s %s" % (self._sample.timeMultiple, timeDiff, partialInterval))
+        logger.debugv("Setting partialInterval for replay mode with timeMultiple %s: %s %s" % (s.timeMultiple, timeDiff, partialInterval))
         self._lastts = nextts
 
         for x in range(len(self.sampleDict)):
@@ -93,20 +86,16 @@ class ReplayGenerator(GeneratorPlugin):
             mvhash = { }
 
             ## Iterate tokens
-            for token in self._sample.tokens:
+            for token in s.tokens:
                 token.mvhash = mvhash
                 event = token.replace(event)
-            if(self._sample.hostToken):
+            if(s.hostToken):
                 # clear the host mvhash every time, because we need to re-randomize it
-                self._sample.hostToken.mvhash =  {}
+                s.hostToken.mvhash =  {}
 
-            try:
-                self.setOutputMetadata(self.sampleDict[x])
-            except IndexError:
-                # If we dont have a dictionary entry for it, ignore it we're probably not sampletype csv
-                pass
+            self.setOutputMetadata(self.sampleDict[x])
 
-            self._sample.out.send(event)
+            s.out.send(event)
 
 
         # If we roll over the max number of lines, roll over the counter and start over
@@ -126,7 +115,7 @@ class ReplayGenerator(GeneratorPlugin):
         if partialInterval > 0:
             timeDiffFrac = "%d.%06d" % (self._timeSinceSleep.seconds, self._timeSinceSleep.microseconds)
             logger.info("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
-                        % (self._sample.name, self._sample.app, timeDiffFrac, partialInterval) )
+                        % (s.name, s.app, timeDiffFrac, partialInterval) )
             self._timeSinceSleep = datetime.timedelta()
 
             # Add for average sleep time calculation when we're at the end of the events
