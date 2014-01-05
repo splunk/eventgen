@@ -36,6 +36,20 @@ class Timer(threading.Thread):
         if self.sample.delay > 0:
             logger.info("Sample set to delay %s, sleeping." % s.delay)
             time.sleep(self.sample.delay)
+
+        # 12/29/13 CS Queueable plugins pull from the worker queue as soon as items
+        # are in it and farm it out to a pool of workers to generate.
+        # Non-Queueable plugins will run as a seperate process all on their own generating
+        # events, and is the same as we used to operate.
+
+        # 12/29/13 Non Queueable, same as before
+        plugin = c.getPlugin('generator.'+self.sample.generator)
+        logger.debugv("Generating for class '%s' for generator '%s' queueable: %s" % (plugin.__name__, self.sample.generator, plugin.queueable))
+
+        if not plugin.queueable:
+            # Get an instance of the plugin instead of the class itself
+            plugin = plugin(self.sample)
+            
         while (1):
             if not self.stopping:
                 if not self.interruptcatcher:
@@ -43,13 +57,6 @@ class Timer(threading.Thread):
                         # 12/15/13 CS Moving the rating to a separate plugin architecture
                         count = self.rater.rate()
 
-                        # 12/29/13 CS Queueable plugins pull from the worker queue as soon as items
-                        # are in it and farm it out to a pool of workers to generate.
-                        # Non-Queueable plugins will run as a seperate process all on their own generating
-                        # events, and is the same as we used to operate.
-
-                        # 12/29/13 Non Queueable, same as before
-                        plugin = c.getPlugin('generator.'+self.sample.generator)
                         if not plugin.queueable:
                             try:
                                 partialInterval = plugin.gen(count, None, None)

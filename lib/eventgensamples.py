@@ -583,7 +583,7 @@ class Sample:
                         currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
                         currentTime = datetime.datetime.strptime(timeString, timeFormat)
-                    logger.debug("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
+                    logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
                     if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
