@@ -6,6 +6,7 @@ from collections import deque
 from eventgenoutput import Output
 import multiprocessing
 import csv
+import copy
 
 class GeneratorPlugin(multiprocessing.Process):
     queueable = True
@@ -38,32 +39,43 @@ class GeneratorPlugin(multiprocessing.Process):
     def __repr__(self):
         return self.__str__()
 
+    def _openSampleFile(self):
+        logger.debugv("Opening sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
+        self._sampleFH = open(self._sample.filePath, 'rU')
+
+    def _closeSampleFile(self):
+        logger.debugv("Closing sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
+        self._sampleFH.close()
+
     def loadSample(self):
         """Load sample from disk into self._sample.sampleLines and self._sample.sampleDict, 
         using cached copy if possible"""
         # Making a copy of self._sample in a short name to save typing
         sample = self._sample
 
-        logger.debugv("Opening sample '%s' in app '%s'" % (sample.name, sample.app) )
-        sampleFH = open(sample.filePath, 'rU')
         if sample.sampletype == 'raw':
             # 5/27/12 CS Added caching of the sample file
-            if sample.sampleLines == None:
-                logger.debug("Reading raw sample '%s' in app '%s'" % (sample.name, sample.app))
-                self.sampleLines = sampleFH.readlines()
+            if sample.sampleLines == None or sample.sampleDict == None:
+                self._openSampleFile()
+                logger.debugv("Reading raw sample '%s' in app '%s'" % (sample.name, sample.app))
+                self.sampleLines = self._sampleFH.readlines()
+                self._closeSampleFile()
                 sample.sampleLines = self.sampleLines
-                self.sampleDict = [ ]
+                self.sampleDict = [ { '_raw': line } for line in self.sampleLines ]
+                sample.sampleDict = self.sampleDict
+                logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(self.sampleLines), len(self.sampleDict)))
             else:
                 self.sampleLines = sample.sampleLines
-        elif self.sampletype == 'csv':
-            logger.debug("Reading csv sample '%s' in app '%s'" % (sample.name, sample.app))
-            if sample.sampleLines == None:
-                logger.debug("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
+                self.sampleDict = sample.sampleDict
+        elif sample.sampletype == 'csv':
+            if sample.sampleLines == None or sample.sampleDict == None:
+                self._openSampleFile()
+                logger.debugv("Reading csv sample '%s' in app '%s'" % (sample.name, sample.app))
                 self.sampleDict = [ ]
                 self.sampleLines = [ ]
                 # Fix to load large csv files, work with python 2.5 onwards
                 csv.field_size_limit(sys.maxint)
-                csvReader = csv.DictReader(sampleFH)
+                csvReader = csv.DictReader(self._sampleFH)
                 for line in csvReader:
                     self.sampleDict.append(line)
                     try:
@@ -76,9 +88,10 @@ class GeneratorPlugin(multiprocessing.Process):
                         logger.error("Error in sample at line '%d' in sample '%s' in app '%s' - did you quote your backslashes?" % (csvReader.line_num, self.name, self.app))
                     except AttributeError:
                         logger.error("Missing _raw at line '%d' in sample '%s' in app '%s'" % (csvReader.line_num, self.name, self.app))
-                sample.sampleDict = copy.deepcopy(sampleDict)
-                sample.sampleLines = copy.deepcopy(sampleLines)
-                logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(sampleLines), len(sampleDict)))
+                self._closeSampleFile()
+                sample.sampleDict = copy.deepcopy(self.sampleDict)
+                sample.sampleLines = copy.deepcopy(self.sampleLines)
+                logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(self.sampleLines), len(self.sampleDict)))
             else:
                 # If we're set to bundlelines, we'll modify sampleLines regularly.
                 # Since lists in python are referenced rather than copied, we
@@ -90,6 +103,24 @@ class GeneratorPlugin(multiprocessing.Process):
                 else:
                     self.sampleDict = copy.deepcopy(sample.sampleDict)
                     self.sampleLines = copy.deepcopy(sample.sampleLines)
+
+    def setOutputMetadata(self, event):
+        # logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))
+        # logger.debug("Event Index: %s Host: %s Source: %s Sourcetype: %s" % (sampleDict[x]['index'], sampleDict[x]['host'], sampleDict[x]['source'], sampleDict[x]['sourcetype']))
+        if self._sample.sampletype == 'csv' and (event['index'] != self._sample.index or \
+                                        event['host'] != self._sample.host or \
+                                        event['source'] != self._sample.source or \
+                                        event['sourcetype'] != self._sample.sourcetype):
+            self._sample.index = event['index']
+            self._sample.host = event['host']
+            # Allow randomizing the host:
+            if(self._sample.hostToken):
+                self.host = self._sample.hostToken.replace(self.host)
+
+            self._sample.source = event['source']
+            self._sample.sourcetype = event['sourcetype']
+            logger.debugv("Sampletype CSV.  Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                        % (self._sample.index, self._sample.host, self._sample.source, self._sample.sourcetype))
 
 
 def load():
