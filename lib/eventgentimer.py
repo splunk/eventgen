@@ -3,6 +3,8 @@ import time
 import logging
 from eventgenconfig import Config
 import sys
+import datetime
+import copy
 
 class Timer(threading.Thread):
 # class Timer(multiprocessing.Process):
@@ -33,6 +35,15 @@ class Timer(threading.Thread):
         # multiprocessing.Process.__init__(self)
 
     def run(self):
+        # TODO hide this behind a config setting
+        if True:
+            import cProfile
+            globals()['threadrun'] = self.real_run
+            cProfile.runctx("threadrun()", globals(), locals(), "eventgen_timer_%s" % self.sample.name)
+        else:
+            self.real_run()
+
+    def real_run(self):
         if self.sample.delay > 0:
             logger.info("Sample set to delay %s, sleeping." % s.delay)
             time.sleep(self.sample.delay)
@@ -49,13 +60,24 @@ class Timer(threading.Thread):
         if not plugin.queueable:
             # Get an instance of the plugin instead of the class itself
             plugin = plugin(self.sample)
-            
+            plugin.setupBackfill()
+        else:
+            plugin(self.sample).setupBackfill()
+
         while (1):
             if not self.stopping:
                 if not self.interruptcatcher:
                     if self.countdown <= 0:
                         # 12/15/13 CS Moving the rating to a separate plugin architecture
                         count = self.rater.rate()
+
+                        # Override earliest and latest during backfill until we're at current time
+                        if self.sample.backfill != None and not self.sample.backfilldone:
+                            if self.sample.backfillts >= self.sample.now(realnow=True):
+                                logger.info("Backfill complete")
+                                self.sample.backfilldone = True
+                            else:
+                                logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.sample.name, self.sample.backfillts))
 
                         if not plugin.queueable:
                             try:
@@ -86,18 +108,18 @@ class Timer(threading.Thread):
                                 # Make sure that we're sleeping an accurate amount of time, including the
                                 # partial seconds.  After the first sleep, we'll sleep in increments of
                                 # self.time to make sure we're checking for kill signals.
-                                sleepTime = self.time + (partialInterval % self.time)
-                                self.countdown -= sleepTime
-                            else:
-                                sleepTime = partialInterval
-                                self.countdown = 0
+                                # sleepTime = self.time + (partialInterval % self.time)
+                                # self.countdown -= sleepTime
+                            # else:
+                            #     sleepTime = partialInterval
+                            #     self.countdown = 0
                               
                             logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
                                         % (self.sample.name, self.sample.app, partialInterval) ) 
                             logger.debug("Queue depth for sample '%s' in app '%s': %d" % (self.sample.name, self.sample.app, c.outputQueue.qsize()))   
-                            if sleepTime > 0:
+                            # if sleepTime > 0:
+                            if self.countdown > 0:
                                 self.sample.saveState()
-                                time.sleep(sleepTime)
                         else:
                             # Check for if we're backfilling still
 
@@ -106,11 +128,22 @@ class Timer(threading.Thread):
                             # Put into the queue to be generated
                             # TODO Temporary, just gnerate counte events for now
                             logger.debug("Putting %d events in queue for sample '%s'" % (count, self.sample.name))
-                            c.generatorQueue.put((self.sample, count, self.sample.now(realnow=True), self.sample.now(realnow=True)))
+                            c.generatorQueue.put((copy.copy(self.sample), count, self.sample.earliestTime(), self.sample.latestTime()))
                             # c.generatorQueue.put(self.sample, count, earliestTime, latestTime)
 
                             # Sleep until we're supposed to wake up and generate more events
                             self.countdown = self.sample.interval
+
+                        # Clear cache for timestamp
+                        self.sample.timestamp = None
+
+                        # No rest for the wicked!  Or while we're doing backfill
+                        if self.sample.backfill != None and not self.sample.backfilldone:
+                            # Since we would be sleeping, increment the timestamp by the amount of time we're sleeping
+                            incsecs = round(self.countdown / 1, 0)
+                            incmicrosecs = self.countdown % 1
+                            self.sample.backfillts += datetime.timedelta(seconds=incsecs, microseconds=incmicrosecs)
+                            self.countdown = 0
                     else:
                         self.countdown -= self.time
                         time.sleep(self.time)

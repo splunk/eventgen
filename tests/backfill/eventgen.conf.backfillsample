@@ -1,0 +1,13 @@
+[sample]
+sampleDir = tests/sample
+outputMode = stdout
+count = 10
+earliest = now
+latest = now
+interval = 1
+randomizeEvents = true
+backfill = -15m
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+token.0.replacementType = timestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S

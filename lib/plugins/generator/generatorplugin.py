@@ -9,6 +9,7 @@ import csv
 import copy
 import re
 import pprint
+from timeparser import timeParser
 
 class GeneratorPlugin(multiprocessing.Process):
     queueable = True
@@ -41,6 +42,9 @@ class GeneratorPlugin(multiprocessing.Process):
     def __repr__(self):
         return self.__str__()
 
+    def updateSample(self, sample):
+        self._sample = sample
+
     def _openSampleFile(self):
         logger.debugv("Opening sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
         self._sampleFH = open(self._sample.filePath, 'rU')
@@ -57,7 +61,7 @@ class GeneratorPlugin(multiprocessing.Process):
 
         if s.sampletype == 'raw':
             # 5/27/12 CS Added caching of the sample file
-            if s.sampleLines == None or s.sampleDict == None:
+            if s.sampleDict == None:
                 self._openSampleFile()
                 if s.breaker == c.breaker:
                     logger.debugv("Reading raw sample '%s' in app '%s'" % (s.name, s.app))
@@ -95,8 +99,6 @@ class GeneratorPlugin(multiprocessing.Process):
                         breakerMatch = breakerRE.search(sampleData, searchpos)
                     sampleLines.append(sampleData[extractpos:])
 
-
-
                 self._closeSampleFile()
 
                 self.sampleDict = [ { '_raw': line, 'index': s.index, 'host': s.host, 'source': s.source, 'sourcetype': s.sourcetype } for line in sampleLines ]
@@ -106,7 +108,7 @@ class GeneratorPlugin(multiprocessing.Process):
                 self.sampleLines = s.sampleLines
                 self.sampleDict = s.sampleDict
         elif s.sampletype == 'csv':
-            if s.sampleLines == None or s.sampleDict == None:
+            if s.sampleDict == None:
                 self._openSampleFile()
                 logger.debugv("Reading csv sample '%s' in app '%s'" % (s.name, s.app))
                 self.sampleDict = [ ]
@@ -147,6 +149,44 @@ class GeneratorPlugin(multiprocessing.Process):
             self._sample.sourcetype = event['sourcetype']
             logger.debugv("Sampletype CSV.  Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                         % (self._sample.index, self._sample.host, self._sample.source, self._sample.sourcetype))
+
+    def setupBackfill(self):
+        """Called by non-queueable plugins or by the timer to setup backfill times per config or based on a Splunk Search"""
+        s = self._sample
+        if s.backfill != None:
+            try:
+                s.backfillts = timeParser(s.backfill, timezone=s.timezone)
+                logger.info("Setting up backfill of %s (%s)" % (s.backfill,s.backfillts))
+            except Exception as ex:
+                logger.error("Failed to parse backfill '%s': %s" % (s.backfill, ex))
+                raise
+
+            if s.backfillSearch != None:
+                if not s.backfillSearch.startswith('search'):
+                    s.backfillSearch = 'search ' + self.backfillSearch
+                self.backfillSearch += '| head 1 | table _time'
+
+                logger.debug("Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" % (s.backfillSearchUrl, s.backfillSearch, s.sessionKey))
+
+                results = httplib2.Http(disable_ssl_certificate_validation=True).request(\
+                            s.backfillSearchUrl + '/services/search/jobs',
+                            'POST', headers={'Authorization': 'Splunk %s' % self.sessionKey}, \
+                            body=urllib.urlencode({'search': self.backfillSearch,
+                                                    'earliest_time': self.backfill,
+                                                    'exec_mode': 'oneshot'}))[1]
+                try:
+                    temptime = minidom.parseString(results).getElementsByTagName('text')[0].childNodes[0].nodeValue
+                    # logger.debug("Time returned from backfill search: %s" % temptime)
+                    # Results returned look like: 2013-01-16T10:59:15.411-08:00
+                    # But the offset in time can also be +, so make sure we strip that out first
+                    if len(temptime) > 0:
+                        if temptime.find('+') > 0:
+                            temptime = temptime.split('+')[0]
+                        temptime = '-'.join(temptime.split('-')[0:3])
+                    s.backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
+                    logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, s.backfillts))
+                except (ExpatError, IndexError): 
+                    pass
 
 
 def load():

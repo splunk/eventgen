@@ -27,20 +27,20 @@ class ReplayGenerator(GeneratorPlugin):
         self._timeSinceSleep = datetime.timedelta()
         self._times = [ ]
 
+        # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
+        self.loadSample()
+        self._rpevents = self.sampleDict
+        self._currentevent = 0
+
+        self.setupBackfill()
+
+
     def gen(self, count, earliest, latest):
         # For shortness sake, we're going to call the sample s
         s = self._sample
 
         logger.debug("Generating sample '%s' in app '%s'" % (s.name, s.app))
         startTime = datetime.datetime.now()
-        # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
-        self.loadSample()
-
-        # Check to see if this is the first time we've run, or if we're at the end of the file
-        # and we're running replay.  If so, we need to parse the whole file and/or setup our counters
-        if self._rpevents == None:
-            self._rpevents = self.sampleDict
-            self._currentevent = 0
 
         # If we are replaying then we need to set the current sampleLines to the event
         # we're currently on

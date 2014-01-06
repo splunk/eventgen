@@ -143,7 +143,7 @@ class Config:
 
             logger = logging.getLogger('eventgen')
             logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
-            logger.setLevel(logging.DEBUGV)
+            logger.setLevel(logging.INFO)
             formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
             streamHandler = logging.StreamHandler(sys.stderr)
             streamHandler.setFormatter(formatter)
@@ -718,7 +718,7 @@ class Config:
         # versus what ConfigParser returns.
         if self._confDict['global']['debug'].lower() == 'true' \
                 or self._confDict['global']['debug'].lower() == '1':
-            logger.setLevel(logging.DEBUGV)
+            logger.setLevel(logging.DEBUG)
         logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
 
 
@@ -751,11 +751,11 @@ class Config:
             logger.debug("Starting timer for sample '%s'" % sampleTimer.sample.name)
         for x in xrange(0, self.outputWorkers):
             logger.debug("Starting OutputWorker %d" % x)
-            worker = self.getPlugin('OutputWorker')()
+            worker = self.getPlugin('OutputWorker')(x)
             worker.start()
             self.workers.append(worker)
         for x in xrange(0, self.generatorWorkers):
             logger.debug("Starting GeneratorWorker %d" % x)
-            worker = self.getPlugin('GeneratorWorker')()
+            worker = self.getPlugin('GeneratorWorker')(x)
             worker.start()
             self.workers.append(worker)
