@@ -8,7 +8,7 @@ from outputplugin import OutputPlugin
 
 class StdOutOutputPlugin(OutputPlugin):
 	name = 'stdout'
-	MAXQUEUELENGTH = 10
+	MAXQUEUELENGTH = 1
 
 	def __init__(self, sample):
 		OutputPlugin.__init__(self, sample)

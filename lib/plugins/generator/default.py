@@ -20,16 +20,24 @@ class DefaultGenerator(GeneratorPlugin):
         # For shortness sake, we're going to call the sample s
         s = self._sample
 
-        logger.debug("Generating sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
+        logger.debug("Generating sample '%s' in app '%s' with count %d" % (s.name, s.app, count))
         startTime = datetime.datetime.now()
         # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
         self.loadSample()
 
+        # If we're random, fill random events from sampleDict into eventsDict
         if s.randomizeEvents:
             eventsDict = [ ]
             sdlen = len(self.sampleDict)
             while len(eventsDict) < count:
                 eventsDict.append(self.sampleDict[random.randint(0, sdlen-1)])
+        # If we're bundlelines, create count copies of the sampleDict
+        elif s.bundlelines:
+            eventsDict = [ ]
+            for x in xrange(count):
+                eventsDict.extend(self.sampleDict)
+        # Otherwise fill count events into eventsDict or keep making copies of events out of sampleDict until
+        # eventsDict is as big as count
         else:
             eventsDict = self.sampleDict[0:count if count < len(self.sampleDict) else len(self.sampleDict)]
 
@@ -43,6 +51,7 @@ class DefaultGenerator(GeneratorPlugin):
                         eventsDict.append(tempEventsDict[y])
                         y += 1
                 logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" % (s.name, s.app, len(eventsDict)))
+
 
         for x in range(len(eventsDict)):
             event = eventsDict[x]['_raw']
