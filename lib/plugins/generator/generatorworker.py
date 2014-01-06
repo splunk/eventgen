@@ -10,7 +10,7 @@ class GeneratorWorker(threading.Thread):
     name = 'GeneratorWorker'
     stopping = False
 
-    def __init__(self):
+    def __init__(self, num):
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
@@ -19,6 +19,10 @@ class GeneratorWorker(threading.Thread):
         globals()['c'] = Config()
 
         logger.debug("Starting GeneratorWorker")
+
+        self._pluginCache = { }
+
+        self.num = num
 
         threading.Thread.__init__(self)
 
@@ -33,11 +37,25 @@ class GeneratorWorker(threading.Thread):
         return self.__str__()
 
     def run(self):
+        # TODO hide this behind a config setting
+        if True:
+            import cProfile
+            globals()['threadrun'] = self.real_run
+            cProfile.runctx("threadrun()", globals(), locals(), "eventgen_generatorworker_%s" % self.num)
+        else:
+            self.real_run()
+
+    def real_run(self):
         while not self.stopping:
             try:
                 # Grab item from the queue to generate, grab an instance of the plugin, then generate
                 sample, count, earliest, latest = c.generatorQueue.get(block=True, timeout=1.0)
-                plugin = c.getPlugin('generator.'+sample.generator)(sample)
+                if sample.name in self._pluginCache:
+                    plugin = self._pluginCache[sample.name]
+                    plugin.updateSample(sample)
+                else:
+                    plugin = c.getPlugin('generator.'+sample.generator)(sample)
+                    self._pluginCache[sample.name] = plugin
                 plugin.gen(count, earliest, latest)
             except Empty:
                 # Queue empty, do nothing... basically here to catch interrupts

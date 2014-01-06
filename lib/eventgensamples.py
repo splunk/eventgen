@@ -77,6 +77,8 @@ class Sample:
     timeField = None
     timestamp = None
     sampleDir = None
+    backfillts = None
+    backfilldone = None
     
     # Internal fields
     _sampleLines = None
@@ -87,7 +89,6 @@ class Sample:
     _priority = None
     _origName = None
     _lastts = None
-    _backfillts = None
     _timeSinceSleep = None
     _earliestParsed = None
     _latestParsed = None
@@ -103,7 +104,7 @@ class Sample:
 
         self._currentevent = 0
         self._rpevents = None
-        self._backfilldone = False
+        self.backfilldone = False
         self._timeSinceSleep = datetime.timedelta()
         
         # Import config
@@ -612,12 +613,53 @@ class Sample:
 
     def now(self, utcnow=False, realnow=False):
         # logger.info("Getting time (timezone %s)" % (self.timezone))
-        if not self._backfilldone and not self._backfillts == None and not realnow:
-            return self._backfillts
+        if not self.backfilldone and not self.backfillts == None and not realnow:
+            return self.backfillts
         elif self.timezone.days > 0:
             return datetime.datetime.now()
         else:
             return datetime.datetime.utcnow() + self.timezone
+
+    def earliestTime(self):
+        # First optimization, we need only store earliest and latest
+        # as an offset of now if they're relative times
+        if self._earliestParsed != None:
+            earliestTime = self.now() - self._earliestParsed
+            logger.debugv("Using cached earliest time: %s" % earliestTime)
+        else:
+            if self.earliest.strip()[0:1] == '+' or \
+                    self.earliest.strip()[0:1] == '-' or \
+                    self.earliest == 'now':
+                tempearliest = timeParser(self.earliest, timezone=self.timezone)
+                temptd = self.now(realnow=True) - tempearliest
+                self._earliestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
+                earliestTime = self.now() - self._earliestParsed
+                logger.debugv("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self._earliestParsed, earliestTime, tempearliest))
+            else:
+                earliestTime = timeParser(self.earliest, timezone=self.timezone)
+                logger.debugv("earliestTime as absolute time '%s'" % earliestTime)
+
+        return earliestTime
+
+
+    def latestTime(self):
+        if self._latestParsed != None:
+            latestTime = self.now() - self._latestParsed
+            logger.debugv("Using cached latestTime: %s" % latestTime)
+        else:
+            if self.latest.strip()[0:1] == '+' or \
+                    self.latest.strip()[0:1] == '-' or \
+                    self.latest == 'now':
+                templatest = timeParser(self.latest, timezone=self.timezone)
+                temptd = self.now(realnow=True) - templatest
+                self._latestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
+                latestTime = self.now() - self._latestParsed
+                logger.debugv("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self._latestParsed, latestTime, templatest))
+            else:
+                latestTime = timeParser(self.latest, timezone=self.timezone)
+                logger.debugv("latstTime as absolute time '%s'" % latestTime)
+
+        return latestTime
 
     def utcnow(self):
         return self.now(utcnow=True)

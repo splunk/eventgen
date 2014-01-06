@@ -86,29 +86,6 @@ class Token:
         logger.debugv("Found %d matches for token: '%s' of type '%s'" % (len(tokenMatch), self.token, self.replacementType))
 
         if len(tokenMatch) > 0:
-            # 9/7/13  Trying to determine the logic for doing two regex
-            # searches, one to find the list of potential replacements and 
-            # another to find the actual string to replace, so commenting 
-            # out and recoding... may cause regressions.
-
-            # # 5/28/12 Changing logic to account for needing old to match
-            # # the right token we're actually replacing
-            # # This will call getReplacement for every match which is more
-            # # expensive, but necessary.
-            
-            # # Find old in case of error
-            # oldMatch = self._search(event)
-
-            # if oldMatch:
-            #     # old = event[oldMatch.start(group):oldMatch.end(group)]
-            #     group = 0 if len(oldMatch.groups()) == 0 else 1
-            #     old = oldMatch.group(group)
-            # else:
-            #     old = ""
-            
-            # logger.debug("Got match for token: '%s'" % (self.token))
-            # replacement = self._getReplacement(old)
-
             replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)])
             
             if replacement is not None:
@@ -151,53 +128,26 @@ class Token:
             return self.replacement
         elif self.replacementType in ('timestamp', 'replaytimestamp'):
             if self.sample.earliest and self.sample.latest:
-                # First optimization, we need only store earliest and latest
-                # as an offset of now if they're relative times
-                if self.sample._earliestParsed != None:
-                    earliestTime = self.sample.now() - self.sample._earliestParsed
-                    logger.debugv("Using cached earliest time: %s" % earliestTime)
-                else:
-                    if self.sample.earliest.strip()[0:1] == '+' or \
-                            self.sample.earliest.strip()[0:1] == '-' or \
-                            self.sample.earliest == 'now':
-                        tempearliest = timeParser(self.sample.earliest, timezone=self.sample.timezone)
-                        temptd = self.sample.now(realnow=True) - tempearliest
-                        self.sample._earliestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
-                        earliestTime = self.sample.now() - self.sample._earliestParsed
-                        logger.debugv("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self.sample._earliestParsed, earliestTime, tempearliest))
-                    else:
-                        earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone)
-                        logger.debugv("earliestTime as absolute time '%s'" % earliestTime)
-
-                if self.sample._latestParsed != None:
-                    latestTime = self.sample.now() - self.sample._latestParsed
-                    logger.debugv("Using cached latestTime: %s" % latestTime)
-                else:
-                    if self.sample.latest.strip()[0:1] == '+' or \
-                            self.sample.latest.strip()[0:1] == '-' or \
-                            self.sample.latest == 'now':
-                        templatest = timeParser(self.sample.latest, timezone=self.sample.timezone)
-                        temptd = self.sample.now(realnow=True) - templatest
-                        self.sample._latestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
-                        latestTime = self.sample.now() - self.sample._latestParsed
-                        logger.debugv("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self.sample._latestParsed, latestTime, templatest))
-                    else:
-                        latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone)
-                        logger.debugv("latstTime as absolute time '%s'" % latestTime)
+                earliestTime = self.sample.earliestTime()
+                latestTime = self.sample.latestTime()
                 
                 if earliestTime and latestTime:
                     if latestTime>=earliestTime:
-                        minDelta = 0
+                        if self.sample.timestamp == None:
+                            minDelta = 0
 
-                        ## Compute timeDelta as total_seconds
-                        td = latestTime - earliestTime
-                        maxDelta = timeDelta2secs(td)
+                            ## Compute timeDelta as total_seconds
+                            td = latestTime - earliestTime
+                            maxDelta = timeDelta2secs(td)
 
-                        ## Get random timeDelta
-                        randomDelta = datetime.timedelta(seconds=random.randint(minDelta, maxDelta))
+                            ## Get random timeDelta
+                            randomDelta = datetime.timedelta(seconds=random.randint(minDelta, maxDelta))
 
-                        ## Compute replacmentTime
-                        replacementTime = latestTime - randomDelta
+                            ## Compute replacmentTime
+                            replacementTime = latestTime - randomDelta
+                            self.sample.timestamp = replacementTime
+                        else:
+                            replacementTime = self.sample.timestamp
 
                         # logger.debug("Generating timestamp for sample '%s' with randomDelta %s, minDelta %s, maxDelta %s, earliestTime %s, latestTime %s, earliest: %s, latest: %s" % (self.sample.name, randomDelta, minDelta, maxDelta, earliestTime, latestTime, self.sample.earliest, self.sample.latest))
                         

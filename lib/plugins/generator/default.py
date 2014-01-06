@@ -16,24 +16,27 @@ class DefaultGenerator(GeneratorPlugin):
         from eventgenconfig import Config
         globals()['c'] = Config()
 
+        # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
+        self.loadSample()
+
     def gen(self, count, earliest, latest):
         # For shortness sake, we're going to call the sample s
         s = self._sample
 
         logger.debug("Generating sample '%s' in app '%s' with count %d" % (s.name, s.app, count))
         startTime = datetime.datetime.now()
-        # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
-        self.loadSample()
 
         # If we're random, fill random events from sampleDict into eventsDict
         if s.randomizeEvents:
             eventsDict = [ ]
             sdlen = len(self.sampleDict)
+            logger.debugv("Random filling eventsDict for sample '%s' in app '%s' with %d events" % (s.name, s.app, count))
             while len(eventsDict) < count:
                 eventsDict.append(self.sampleDict[random.randint(0, sdlen-1)])
         # If we're bundlelines, create count copies of the sampleDict
         elif s.bundlelines:
             eventsDict = [ ]
+            logger.debugv("Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" % (s.name, s.app, count))
             for x in xrange(count):
                 eventsDict.extend(self.sampleDict)
         # Otherwise fill count events into eventsDict or keep making copies of events out of sampleDict until

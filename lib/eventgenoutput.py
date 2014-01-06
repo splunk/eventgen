@@ -51,6 +51,8 @@ class Output:
         self._queue = deque([])
         self._workers = [ ]
 
+        self.MAXQUEUELENGTH = c.getPlugin(self._sample.name).MAXQUEUELENGTH
+
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
         # Eliminate recursive going back to parent
@@ -62,20 +64,24 @@ class Output:
         return self.__str__()
 
     def send(self, msg):
-        if not self._sample.timestamp:
-            logger.debugv("Setting timestamp at output")
-            self._sample.timestamp = self._sample.now()
+        ts = self._sample.timestamp if self._sample.timestamp != None else self._sample.now()
         self._queue.append({'_raw': msg, 'index': self._sample.index,
                         'source': self._sample.source, 'sourcetype': self._sample.sourcetype,
                         'host': self._sample.host, 'hostRegex': self._sample.hostRegex,
                         '_time': self._sample.timestamp})
 
-        if len(self._queue) >= c.getPlugin(self._sample.name).MAXQUEUELENGTH:
+        if len(self._queue) >= self.MAXQUEUELENGTH:
+            self.flush()
+
+    def bulksend(self, msglist):
+        self._queue.extend(msglist)
+
+        if len(self._queue) >= self.MAXQUEUELENGTH:
             self.flush()
 
     def flush(self):
-        q = copy.deepcopy(self._queue)
-        logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
+        q = deque(list(self._queue)[:])
+        logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
         self._queue.clear()
         c.outputQueue.put((self._sample.name, q))
 

@@ -10,7 +10,7 @@ class OutputWorker(threading.Thread):
 	name = 'OutputWorker'
 	stopping = False
 
-	def __init__(self):
+	def __init__(self, num):
 		# Logger already setup by config, just get an instance
 		logger = logging.getLogger('eventgen')
 		globals()['logger'] = logger
@@ -18,7 +18,9 @@ class OutputWorker(threading.Thread):
 		from eventgenconfig import Config
 		globals()['c'] = Config()
 
-		logger.debug("Starting OutputWorker")
+		logger.debug("Starting OutputWorker %d" % num)
+
+		self.num = num
 
 		threading.Thread.__init__(self)
 
@@ -33,6 +35,15 @@ class OutputWorker(threading.Thread):
 	    return self.__str__()
 
 	def run(self):
+		# TODO hide this behind a config setting
+		if True:
+		    import cProfile
+		    globals()['threadrun'] = self.real_run
+		    cProfile.runctx("threadrun()", globals(), locals(), "eventgen_outputworker_%s" % self.num)
+		else:
+		    self.real_run()
+
+	def real_run(self):
 		while not self.stopping:
 			try:
 				# Grab a queue to be written for plugin name, get an instance of the plugin, and call the flush method

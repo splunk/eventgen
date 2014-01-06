@@ -1,0 +1,8 @@
+[windbag]
+generator = windbag
+earliest = now
+latest = now
+interval = 1
+count = 20000
+outputMode = stdout
+backfill = -10m
