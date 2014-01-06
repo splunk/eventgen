@@ -8,6 +8,7 @@ import multiprocessing
 import csv
 import copy
 import re
+import pprint
 
 class GeneratorPlugin(multiprocessing.Process):
     queueable = True
@@ -109,37 +110,20 @@ class GeneratorPlugin(multiprocessing.Process):
                 self._openSampleFile()
                 logger.debugv("Reading csv sample '%s' in app '%s'" % (s.name, s.app))
                 self.sampleDict = [ ]
-                self.sampleLines = [ ]
                 # Fix to load large csv files, work with python 2.5 onwards
                 csv.field_size_limit(sys.maxint)
                 csvReader = csv.DictReader(self._sampleFH)
                 for line in csvReader:
-                    self.sampleDict.append(line)
-                    try:
-                        tempstr = line['_raw'].decode('string_escape')
-                        # Hack for bundlelines
-                        if s.bundlelines:
-                            tempstr = tempstr.replace('\n', 'NEWLINEREPLACEDHERE!!!')
-                        self.sampleLines.append(tempstr)
-                    except ValueError:
-                        logger.error("Error in sample at line '%d' in sample '%s' in app '%s' - did you quote your backslashes?" % (csvReader.line_num, self.name, self.app))
-                    except AttributeError:
-                        logger.error("Missing _raw at line '%d' in sample '%s' in app '%s'" % (csvReader.line_num, self.name, self.app))
+                    if '_raw' in line:
+                        self.sampleDict.append(line)
+                    else:
+                        logger.error("Missing _raw in line '%s'" % pprint.pformat(line))
                 self._closeSampleFile()
                 s.sampleDict = copy.deepcopy(self.sampleDict)
-                s.sampleLines = copy.deepcopy(self.sampleLines)
-                logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(self.sampleLines), len(self.sampleDict)))
+                logger.debug('Finished creating sampleDict & sampleLines.  Len sampleDict: %d' % (len(self.sampleDict)))
             else:
-                # If we're set to bundlelines, we'll modify sampleLines regularly.
-                # Since lists in python are referenced rather than copied, we
-                # need to make a fresh copy every time if we're bundlelines.
-                # If not, just used the cached copy, we won't mess with it.
-                if not s.bundlelines:
-                    self.sampleDict = s.sampleDict
-                    self.sampleLines = s.sampleLines
-                else:
-                    self.sampleDict = copy.deepcopy(s.sampleDict)
-                    self.sampleLines = copy.deepcopy(s.sampleLines)
+                self.sampleDict = s.sampleDict
+                self.sampleLines = s.sampleLines
 
         # Ensure all lines have a newline
         for i in xrange(0, len(self.sampleDict)):

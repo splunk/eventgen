@@ -1,3 +1,7 @@
+# TODO Move config settings to plugins
+# TODO Remove old gen method
+# TODO 
+
 from __future__ import division, with_statement
 import os, sys
 import logging
