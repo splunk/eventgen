@@ -16,17 +16,18 @@ class WindbagGenerator(GeneratorPlugin):
         globals()['c'] = Config()
 
     def gen(self, count, earliest, latest):
-        # for i in xrange(count):
-        #     self._sample.out.send("%s WINDBAG Event %d of %d" % (datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S"), i+1, count))
-        l = [ ]
         for i in xrange(count):
-            l.append({ '_raw': "%s WINDBAG Event %d of %d" % (datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S"), i+1, count),
-                        'index': self._sample.index,
-                        'host': self._sample.host,
-                        'source': self._sample.source,
-                        'sourcetype': self._sample.sourcetype,
-                        '_time': latest})
-        self._sample.out.bulksend(l)
+            # self._sample.timestamp = latest
+            self._sample.out.send("%s WINDBAG Event %d of %d" % (datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S"), i+1, count), latest)
+        # l = [ ]
+        # for i in xrange(count):
+        #     l.append({ '_raw': "%s WINDBAG Event %d of %d" % (datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S"), i+1, count),
+        #                 'index': self._sample.index,
+        #                 'host': self._sample.host,
+        #                 'source': self._sample.source,
+        #                 'sourcetype': self._sample.sourcetype,
+        #                 '_time': latest})
+        # self._sample.out.bulksend(l)
 
 
 def load():

@@ -4,14 +4,13 @@ import logging
 import logging.handlers
 from collections import deque
 from eventgenoutput import Output
-import multiprocessing
 import csv
 import copy
 import re
 import pprint
 from timeparser import timeParser
 
-class GeneratorPlugin(multiprocessing.Process):
+class GeneratorPlugin:
     queueable = True
     sampleLines = None
     sampleDict = None
@@ -30,7 +29,7 @@ class GeneratorPlugin(multiprocessing.Process):
 
         logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
 
-        multiprocessing.Process.__init__(self)
+        # multiprocessing.Process.__init__(self)
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""

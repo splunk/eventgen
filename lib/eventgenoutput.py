@@ -29,7 +29,7 @@ import pprint
 import base64
 import threading
 import copy
-
+from Queue import Full
 
 class Output:
     """Base class which loads output plugins in BASE_DIR/lib/plugins/output and handles queueing"""
@@ -64,7 +64,7 @@ class Output:
         return self.__str__()
 
     def send(self, msg):
-        ts = self._sample.timestamp if self._sample.timestamp != None else self._sample.now()
+        # ts = self._sample.timestamp if self._sample.timestamp != None else self._sample.now()
         self._queue.append({'_raw': msg, 'index': self._sample.index,
                         'source': self._sample.source, 'sourcetype': self._sample.sourcetype,
                         'host': self._sample.host, 'hostRegex': self._sample.hostRegex,
@@ -83,7 +83,14 @@ class Output:
         q = deque(list(self._queue)[:])
         logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
         self._queue.clear()
-        c.outputQueue.put((self._sample.name, q))
+        while not self._sample.stopping:
+            try:
+                c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
+                # logger.info("Outputting queue")
+                break
+            except Full:
+                logger.warn("Output Queue full, looping again")
+                pass
 
 
 
