@@ -5,6 +5,7 @@ from eventgenconfig import Config
 import sys
 import datetime
 import copy
+from Queue import Full
 
 class Timer(threading.Thread):
 # class Timer(multiprocessing.Process):
@@ -128,7 +129,16 @@ class Timer(threading.Thread):
                             # Put into the queue to be generated
                             # TODO Temporary, just gnerate counte events for now
                             logger.debug("Putting %d events in queue for sample '%s'" % (count, self.sample.name))
-                            c.generatorQueue.put((copy.copy(self.sample), count, self.sample.earliestTime(), self.sample.latestTime()))
+                            stop = False
+                            while not stop:
+                                try:
+                                    c.generatorQueue.put((copy.copy(self.sample), count, self.sample.earliestTime(), self.sample.latestTime()), block=True, timeout=1.0)
+                                    stop = True
+                                except Full:
+                                    logger.warn("Generator Queue Full, looping")
+                                    if self._sample.stopping:
+                                        stop = True
+                                    pass
                             # c.generatorQueue.put(self.sample, count, earliestTime, latestTime)
 
                             # Sleep until we're supposed to wake up and generate more events
@@ -155,5 +165,6 @@ class Timer(threading.Thread):
     def stop(self):
         self.sample.saveState()
         self.stopping = True
+        self.sample.stopping = True
                      
     		

@@ -15,7 +15,8 @@ import copy
 from eventgensamples import Sample
 from eventgentoken import Token
 import urllib
-from Queue import Queue
+# from Queue import Queue
+from multiprocessing import Queue
 import types
 
 # 5/10/12 CS Some people consider Singleton to be lazy.  Dunno, I like it for convenience.
@@ -164,13 +165,13 @@ class Config:
             # Initialize plugins
             self.__outputPlugins = { }
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'output'), self.__outputPlugins)
-            self.outputQueue = Queue()
+            self.outputQueue = Queue(5)
             # Hard code the worker plugin mapping which we expect to be there and will never have a sample associated with it
             self.__plugins['OutputWorker'] = self.__outputPlugins['output.outputworker']
             self._validOutputModes.extend(plugins)
 
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins)
-            self.generatorQueue = Queue()
+            self.generatorQueue = Queue(1000)
             self.__plugins['GeneratorWorker'] = self.__plugins['generator.generatorworker']
             self._complexSettings['generator'] = plugins
 
@@ -748,14 +749,16 @@ class Config:
         logger.info('Starting timers')
         for sampleTimer in self.sampleTimers:
             sampleTimer.start()
-            logger.debug("Starting timer for sample '%s'" % sampleTimer.sample.name)
+            logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)
         for x in xrange(0, self.outputWorkers):
-            logger.debug("Starting OutputWorker %d" % x)
+            logger.info("Starting OutputWorker %d" % x)
             worker = self.getPlugin('OutputWorker')(x)
+            worker.daemon = True
             worker.start()
             self.workers.append(worker)
         for x in xrange(0, self.generatorWorkers):
-            logger.debug("Starting GeneratorWorker %d" % x)
-            worker = self.getPlugin('GeneratorWorker')(x)
+            logger.info("Starting GeneratorWorker %d" % x)
+            worker = self.getPlugin('GeneratorWorker')(x, self.generatorQueue, self.outputQueue)
+            worker.daemon = True
             worker.start()
             self.workers.append(worker)

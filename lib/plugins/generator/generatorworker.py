@@ -4,13 +4,15 @@ import logging
 import logging.handlers
 from collections import deque
 import threading
+import multiprocessing
 from Queue import Empty
+import datetime
 
-class GeneratorWorker(threading.Thread):
+class GeneratorWorker(multiprocessing.Process):
     name = 'GeneratorWorker'
     stopping = False
 
-    def __init__(self, num):
+    def __init__(self, num, q1, q2):
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
@@ -23,8 +25,10 @@ class GeneratorWorker(threading.Thread):
         self._pluginCache = { }
 
         self.num = num
+        c.generatorQueue = q1
+        c.outputQueue = q2
 
-        threading.Thread.__init__(self)
+        multiprocessing.Process.__init__(self)
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
@@ -56,6 +60,9 @@ class GeneratorWorker(threading.Thread):
                 else:
                     plugin = c.getPlugin('generator.'+sample.generator)(sample)
                     self._pluginCache[sample.name] = plugin
+                logger.info("GeneratorWorker %d generating %d events from '%s' to '%s'" % (self.num, count, \
+                            datetime.datetime.strftime(earliest, "%Y-%m-%d %H:%M:%S"), \
+                            datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S")))
                 plugin.gen(count, earliest, latest)
             except Empty:
                 # Queue empty, do nothing... basically here to catch interrupts

@@ -79,6 +79,7 @@ class Sample:
     sampleDir = None
     backfillts = None
     backfilldone = None
+    stopping = False
     
     # Internal fields
     _sampleLines = None
