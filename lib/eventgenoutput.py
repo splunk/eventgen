@@ -1,8 +1,6 @@
-# TODO Make output thread count configurable
 # TODO Make output thread or process configurable
 # TODO Plugins define lists which contains a list of key value pairs, of which the key is the config
 #      parameter and the value is either a list of acceptable values or a callback function to parse the value
-# TODO Plugins define a name and a max queue length as variables
 # TODO Move config validation from config object to splunkstream plugin
 # TODO Main output object puts items into the queue.  There will be at least one of these per sample thread/process
 #      so it doesn't make sense to multithread this, it's already multithreaded putting items in the queue.  Flush
@@ -30,6 +28,8 @@ import base64
 import threading
 import copy
 from Queue import Full
+import json
+import time
 
 class Output:
     """Base class which loads output plugins in BASE_DIR/lib/plugins/output and handles queueing"""
@@ -68,7 +68,7 @@ class Output:
         self._queue.append({'_raw': msg, 'index': self._sample.index,
                         'source': self._sample.source, 'sourcetype': self._sample.sourcetype,
                         'host': self._sample.host, 'hostRegex': self._sample.hostRegex,
-                        '_time': self._sample.timestamp})
+                        '_time': time.mktime(self._sample.timestamp.timetuple())})
 
         if len(self._queue) >= self.MAXQUEUELENGTH:
             self.flush()
@@ -80,12 +80,14 @@ class Output:
             self.flush()
 
     def flush(self):
-        q = deque(list(self._queue)[:])
+        # q = deque(list(self._queue)[:])
+        q = list(self._queue)
         logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
         self._queue.clear()
         while not self._sample.stopping:
             try:
                 c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
+                c.outputQueueSize.increment()
                 # logger.info("Outputting queue")
                 break
             except Full:

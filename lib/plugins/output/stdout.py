@@ -25,9 +25,10 @@ class StdOutOutputPlugin(OutputPlugin):
 		# 	        m = False
 		# for x in q:
 		# 	print x['_raw'].rstrip()
-		buf = ''
-		for x in q:
-			buf += x['_raw'].rstrip()+'\n'
+		# buf = ''
+		# for x in q:
+		# 	buf += x['_raw'].rstrip()+'\n'
+		buf = '\n'.join(x['_raw'].rstrip() for x in q)
 		sys.stdout.write(buf)
 
 def load():

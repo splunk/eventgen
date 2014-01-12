@@ -15,9 +15,11 @@ import copy
 from eventgensamples import Sample
 from eventgentoken import Token
 import urllib
-# from Queue import Queue
-from multiprocessing import Queue
 import types
+from eventgencounter import Counter
+from eventgenqueue import Queue
+
+
 
 # 5/10/12 CS Some people consider Singleton to be lazy.  Dunno, I like it for convenience.
 # My general thought on that sort of stuff is if you don't like it, reimplement it.  I'll consider
@@ -94,12 +96,16 @@ class Config:
     dayOfMonthRate = None
     monthOfYearRate = None
     timeField = None
+    threading = None
+    profiler = None
+    queueing = None
+    generatorQueueUrl = None
+    outputQueueUrl = None
 
     __outputPlugins = { }
     __plugins = { }
     outputQueue = None
     generatorQueue = None
-    raterQueue = None
 
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
@@ -108,14 +114,15 @@ class Config:
                     'fileBackupFiles', 'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers', 'generator',
-                    'rater', 'generatorWorkers', 'timeField', 'sampleDir']
+                    'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading', 'profiler', 'queueing',
+                    'generatorQueueUrl', 'outputQueueUrl']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
     _validOutputModes = [ ]
     _intSettings = ['interval', 'count', 'outputWorkers', 'generatorWorkers']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
-    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines']
+    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate']
     _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay',
                             'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate',
@@ -124,7 +131,9 @@ class Config:
                             'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
                             'monthOfYearRate', 'sessionKey', 'generator', 'rater', 'timeField']
     _complexSettings = { 'sampletype': ['raw', 'csv'], 
-                         'mode': ['sample', 'replay'] }
+                         'mode': ['sample', 'replay'],
+                         'threading': ['thread', 'process'],
+                         'queueing': ['python', 'zeromq'] }
 
     def __init__(self):
         """Setup Config object.  Sets up Logging and path related variables."""
@@ -149,6 +158,7 @@ class Config:
             streamHandler = logging.StreamHandler(sys.stderr)
             streamHandler.setFormatter(formatter)
             logger.addHandler(streamHandler)
+            # logging.disable(logging.INFO)
 
             # Having logger as a global is just damned convenient
             globals()['logger'] = logger
@@ -162,16 +172,37 @@ class Config:
             if appName == 'sa-eventgen' or appName == 'eventgen':
                 self._isOwnApp = True
 
+            # 1/11/14 CS Adding a initial config parsing step (this does this twice now, oh well, just runs once
+            # per execution) so that I can get config before calling parse()
+
+            c = ConfigParser()
+            c.optionxform = str
+            c.read([os.path.join(self.grandparentdir, 'default', 'eventgen.conf')])
+            for s in c.sections():
+                for i in c.items(s):
+                    if i[0] == 'threading':
+                        self.threading = i[1]
+                    elif i[0] == 'queueing':
+                        self.queueing = i[1]
+                    elif i[0] == 'generatorQueueUrl':
+                        self.generatorQueueUrl = i[1]
+                    elif i[0] == 'outputQueueUrl':
+                        self.outputQueueUrl = i[1]
+
+            # Set a global variables to signal to our plugins the threading model without having 
+            # to load config.  Kinda hacky, but easier than other methods.
+            globals()['threadmodel'] = self.threading
+
             # Initialize plugins
             self.__outputPlugins = { }
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'output'), self.__outputPlugins)
-            self.outputQueue = Queue(5)
+            self.outputQueue = Queue(100, self.queueing, self.threading, self.outputQueueUrl)
             # Hard code the worker plugin mapping which we expect to be there and will never have a sample associated with it
             self.__plugins['OutputWorker'] = self.__outputPlugins['output.outputworker']
             self._validOutputModes.extend(plugins)
 
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins)
-            self.generatorQueue = Queue(1000)
+            self.generatorQueue = Queue(10000, self.queueing, self.threading, self.generatorQueueUrl)
             self.__plugins['GeneratorWorker'] = self.__plugins['generator.generatorworker']
             self._complexSettings['generator'] = plugins
 
@@ -180,6 +211,9 @@ class Config:
 
 
             self._complexSettings['timezone'] = self._validateTimezone 
+
+            self.generatorQueueSize = Counter(0, self.threading)
+            self.outputQueueSize = Counter(0, self.threading)
 
             self._firsttime = False
 
@@ -209,6 +243,7 @@ class Config:
                 if extension == ".py" and not basename.startswith("_"):
                     # module = __import__(base, fromlist=["plugins.output.", "plugins.rater.", "plugins.generator."])
                     module = __import__(base)
+                    module.__dict__.update({ 'threadmodel': self.threading })
                     plugin = module.load()
 
                     # set plugin to something like output.file
@@ -568,6 +603,7 @@ class Config:
         self._confDict = None
 
         logger.debug("Finished parsing.  Config str:\n%s" % self)
+
 
     def _validateSetting(self, stanza, key, value):
         """Validates settings to ensure they won't cause errors further down the line.

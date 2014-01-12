@@ -5,9 +5,35 @@ import logging.handlers
 from collections import deque
 import threading
 from Queue import Empty
+import multiprocessing
+import json
+from eventgenconfig import Config
 
-class OutputWorker(threading.Thread):
-	name = 'OutputWorker'
+class OutputProcessWorker(multiprocessing.Process):
+    def __init__(self, num):
+        self.worker = OutputRealWorker(num)
+
+        multiprocessing.Process.__init__(self)
+
+    def run(self):
+        self.worker.run()
+
+    def stop(self):
+    	self.worker.stopping = True
+
+class OutputThreadWorker(threading.Thread):
+    def __init__(self, num):
+        self.worker = OutputRealWorker(num)
+
+        threading.Thread.__init__(self)
+
+    def run(self):
+        self.worker.run()
+
+    def stop(self):
+    	self.worker.stopping = True
+
+class OutputRealWorker:
 	stopping = False
 
 	def __init__(self, num):
@@ -15,28 +41,14 @@ class OutputWorker(threading.Thread):
 		logger = logging.getLogger('eventgen')
 		globals()['logger'] = logger
 
-		from eventgenconfig import Config
 		globals()['c'] = Config()
 
 		logger.debug("Starting OutputWorker %d" % num)
 
 		self.num = num
 
-		threading.Thread.__init__(self)
-
-	def __str__(self):
-	    """Only used for debugging, outputs a pretty printed representation of this output"""
-	    # Eliminate recursive going back to parent
-	    temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != '_c'])
-	    # return pprint.pformat(temp)
-	    return ""
-
-	def __repr__(self):
-	    return self.__str__()
-
 	def run(self):
-		# TODO hide this behind a config setting
-		if True:
+		if c.profiler:
 		    import cProfile
 		    globals()['threadrun'] = self.real_run
 		    cProfile.runctx("threadrun()", globals(), locals(), "eventgen_outputworker_%s" % self.num)
@@ -48,14 +60,15 @@ class OutputWorker(threading.Thread):
 			try:
 				# Grab a queue to be written for plugin name, get an instance of the plugin, and call the flush method
 				name, queue = c.outputQueue.get(block=True, timeout=1.0)
+				c.outputQueueSize.decrement()
 				plugin = c.getPlugin(name)
 				plugin.flush(queue)
 			except Empty:
 				# If the queue is empty, do nothing and start over at the top.  Mainly here to catch interrupts.
 				pass
 
-	def stop(self):
-		self.stopping = True
-
 def load():
-	return OutputWorker
+	if globals()['threadmodel'] == 'thread':
+	    return OutputThreadWorker
+	else:
+	    return OutputProcessWorker

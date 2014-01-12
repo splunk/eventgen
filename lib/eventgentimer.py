@@ -3,9 +3,10 @@ import time
 import logging
 from eventgenconfig import Config
 import sys
-import datetime
+import datetime, time
 import copy
 from Queue import Full
+from eventgenthread import Thread
 
 class Timer(threading.Thread):
 # class Timer(multiprocessing.Process):
@@ -37,7 +38,7 @@ class Timer(threading.Thread):
 
     def run(self):
         # TODO hide this behind a config setting
-        if True:
+        if c.profiler:
             import cProfile
             globals()['threadrun'] = self.real_run
             cProfile.runctx("threadrun()", globals(), locals(), "eventgen_timer_%s" % self.sample.name)
@@ -117,7 +118,7 @@ class Timer(threading.Thread):
                               
                             logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
                                         % (self.sample.name, self.sample.app, partialInterval) ) 
-                            logger.debug("Queue depth for sample '%s' in app '%s': %d" % (self.sample.name, self.sample.app, c.outputQueue.qsize()))   
+                            # logger.debug("Queue depth for sample '%s' in app '%s': %d" % (self.sample.name, self.sample.app, c.outputQueue.qsize()))   
                             # if sleepTime > 0:
                             if self.countdown > 0:
                                 self.sample.saveState()
@@ -132,14 +133,14 @@ class Timer(threading.Thread):
                             stop = False
                             while not stop:
                                 try:
-                                    c.generatorQueue.put((copy.copy(self.sample), count, self.sample.earliestTime(), self.sample.latestTime()), block=True, timeout=1.0)
+                                    c.generatorQueue.put((self.sample.name, count, time.mktime(self.sample.earliestTime().timetuple()), time.mktime(self.sample.latestTime().timetuple())), block=True, timeout=1.0)
+                                    c.generatorQueueSize.increment()
                                     stop = True
                                 except Full:
                                     logger.warn("Generator Queue Full, looping")
-                                    if self._sample.stopping:
+                                    if self.sample.stopping:
                                         stop = True
                                     pass
-                            # c.generatorQueue.put(self.sample, count, earliestTime, latestTime)
 
                             # Sleep until we're supposed to wake up and generate more events
                             self.countdown = self.sample.interval

@@ -27,7 +27,7 @@ class GeneratorPlugin:
         from eventgenconfig import Config
         globals()['c'] = Config()
 
-        logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
+        # logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
 
         # multiprocessing.Process.__init__(self)
 

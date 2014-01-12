@@ -71,13 +71,21 @@ if __name__ == '__main__':
         if os.name != "nt":
             c.set_exit_handler(c.handle_exit)
         first = True
+        outputQueueCounter = 0
+        generatorQueueCounter = 0
         while (1):
             try:
                 ## Only need to start timers once
                 if first:
                     c.start()
                     first = False
-                logger.info('Output Queue depth: %d  Generator Queue depth: %d' % (c.outputQueue.qsize(), c.generatorQueue.qsize()))
+                generatorDecrements = c.generatorQueueSize.totaldecrements()
+                outputDecrements = c.outputQueueSize.totaldecrements()
+                generatorsPerSec = (generatorDecrements - generatorQueueCounter) / 5
+                outputtersPerSec = (outputDecrements - generatorQueueCounter) / 5
+                outputQueueCounter = outputDecrements
+                generatorQueueCounter = generatorDecrements
+                logger.info('Output Queue depth: %d  Generator Queue depth: %d Generators Per Sec: %d Outputters Per Sec: %d' % (c.outputQueueSize.value(), c.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
                 time.sleep(5)
             except KeyboardInterrupt:
                 c.handle_exit()
