@@ -148,7 +148,7 @@ if __name__ == '__main__':
                 if first:
                     c.start()
                     first = False
-                logger.info('Queue depth: %d' % c.outputQueue.qsize())
+                # logger.info('Queue depth: %d' % c.outputQueue.qsize())
                 time.sleep(5)
             except KeyboardInterrupt:
                 c.handle_exit()

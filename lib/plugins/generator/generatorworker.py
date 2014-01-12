@@ -5,11 +5,36 @@ import logging.handlers
 from collections import deque
 import threading
 import multiprocessing
-from Queue import Empty
+import Queue
 import datetime
+from eventgenconfig import Config
 
-class GeneratorWorker(multiprocessing.Process):
-    name = 'GeneratorWorker'
+class GeneratorProcessWorker(multiprocessing.Process):
+    def __init__(self, num, q1, q2):
+        self.worker = GeneratorRealWorker(num, q1, q2)
+
+        multiprocessing.Process.__init__(self)
+
+    def run(self):
+        self.worker.run()
+
+    def stop(self):
+        self.worker.stopping = True
+
+class GeneratorThreadWorker(threading.Thread):
+    def __init__(self, num, q1, q2):
+        sys.stderr.write('got here!\n')
+        self.worker = GeneratorRealWorker(num, q1, q2)
+
+        threading.Thread.__init__(self)
+
+    def run(self):
+        self.worker.run()
+
+    def stop(self):
+        self.worker.stopping = True
+
+class GeneratorRealWorker:
     stopping = False
 
     def __init__(self, num, q1, q2):
@@ -17,10 +42,9 @@ class GeneratorWorker(multiprocessing.Process):
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
 
-        from eventgenconfig import Config
         globals()['c'] = Config()
 
-        logger.debug("Starting GeneratorWorker")
+        logger.debug("Starting GeneratorRealWorker")
 
         self._pluginCache = { }
 
@@ -28,21 +52,8 @@ class GeneratorWorker(multiprocessing.Process):
         c.generatorQueue = q1
         c.outputQueue = q2
 
-        multiprocessing.Process.__init__(self)
-
-    def __str__(self):
-        """Only used for debugging, outputs a pretty printed representation of this output"""
-        # Eliminate recursive going back to parent
-        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != '_c'])
-        # return pprint.pformat(temp)
-        return ""
-
-    def __repr__(self):
-        return self.__str__()
-
     def run(self):
-        # TODO hide this behind a config setting
-        if True:
+        if c.profiler:
             import cProfile
             globals()['threadrun'] = self.real_run
             cProfile.runctx("threadrun()", globals(), locals(), "eventgen_generatorworker_%s" % self.num)
@@ -53,18 +64,29 @@ class GeneratorWorker(multiprocessing.Process):
         while not self.stopping:
             try:
                 # Grab item from the queue to generate, grab an instance of the plugin, then generate
-                sample, count, earliest, latest = c.generatorQueue.get(block=True, timeout=1.0)
-                if sample.name in self._pluginCache:
-                    plugin = self._pluginCache[sample.name]
-                    plugin.updateSample(sample)
+                samplename, count, earliestts, latestts = c.generatorQueue.get(block=True, timeout=1.0)
+                earliest = datetime.datetime.fromtimestamp(earliestts)
+                latest = datetime.datetime.fromtimestamp(latestts)
+                c.generatorQueueSize.decrement()
+                if samplename != None:
+                    if samplename in self._pluginCache:
+                        plugin = self._pluginCache[samplename]
+                        plugin.updateSample(sample)
+                    else:
+                        for s in c.samples:
+                            if s.name == samplename:
+                                sample = s
+                                break
+                        plugin = c.getPlugin('generator.'+sample.generator)(sample)
+                        self._pluginCache[sample.name] = plugin
+                    # logger.info("GeneratorWorker %d generating %d events from '%s' to '%s'" % (self.num, count, \
+                    #             datetime.datetime.strftime(earliest, "%Y-%m-%d %H:%M:%S"), \
+                    #             datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S")))
+                    plugin.gen(count, earliest, latest)
                 else:
-                    plugin = c.getPlugin('generator.'+sample.generator)(sample)
-                    self._pluginCache[sample.name] = plugin
-                logger.info("GeneratorWorker %d generating %d events from '%s' to '%s'" % (self.num, count, \
-                            datetime.datetime.strftime(earliest, "%Y-%m-%d %H:%M:%S"), \
-                            datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S")))
-                plugin.gen(count, earliest, latest)
-            except Empty:
+                    logger.debug("Received sentinel, shutting down GeneratorWorker %d" % self.num)
+                    self.stop()
+            except Queue.Empty:
                 # Queue empty, do nothing... basically here to catch interrupts
                 pass
 
@@ -72,4 +94,8 @@ class GeneratorWorker(multiprocessing.Process):
         self.stopping = True
 
 def load():
-    return GeneratorWorker
+    if globals()['threadmodel'] == 'thread':
+        sys.stderr.write('got to load!\n')
+        return GeneratorThreadWorker
+    else:
+        return GeneratorProcessWorker

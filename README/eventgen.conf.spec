@@ -54,6 +54,9 @@ generator = default
 rater = config
 generatorWorkers = 1
 timeField = _raw
+threading = thread
+profiler = false
+queueing = python
 
 [<sample file name>]
     * This stanza defines a given sample file contained within the samples directory.
@@ -80,6 +83,28 @@ disabled = true | false
 
 sampleDir = <dir>
     * Set a different directory to look for samples in
+
+threading = thread | process
+    * Configurable threading model.  Process uses multiprocessing.Process in Python to get around issues with the GIL.
+    * Defaults to thread
+
+profiler = true | false
+    * Run eventgen with python profiler on
+    * Defaults to false
+
+queueing = python | zeromq
+    * Use python queueing or zeromq.  Zeromq allows us to distribute on the machine or across multiple machines.
+    * Defaults to python
+
+generatorQueueUrl = <ur>
+    * Used for zeromq.  URL for Generator Queue.
+    * Defaults to ipc://tmp/eventgen-generator
+
+outputQueueUrl = <url>
+    * Used for zeromq.  URL for Output Queue.
+    * Defaults to ipc://tmp/eventgen-worker
+
+
         
 #############################
 ## OUTPUT RELATED SETTINGS ##
