@@ -1,8 +1,8 @@
 [windbag]
-generator = windbag
+generator = weblog
 earliest = now
 latest = now
-interval = 10
-count = 50000
+interval = 3
+count = 2000
 outputMode = stdout
 backfill = -1d

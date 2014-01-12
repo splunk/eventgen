@@ -5,7 +5,10 @@ import logging.handlers
 from collections import deque
 import threading
 from Queue import Empty
-import multiprocessing
+try:
+	import billiard as multiprocessing
+except ImportError, e:
+	import multiprocessing
 import json
 from eventgenconfig import Config
 
