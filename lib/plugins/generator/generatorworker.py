@@ -4,7 +4,10 @@ import logging
 import logging.handlers
 from collections import deque
 import threading
-import multiprocessing
+try:
+    import billiard as multiprocessing
+except ImportError, e:
+    import multiprocessing
 import Queue
 import datetime
 from eventgenconfig import Config
@@ -23,7 +26,6 @@ class GeneratorProcessWorker(multiprocessing.Process):
 
 class GeneratorThreadWorker(threading.Thread):
     def __init__(self, num, q1, q2):
-        sys.stderr.write('got here!\n')
         self.worker = GeneratorRealWorker(num, q1, q2)
 
         threading.Thread.__init__(self)
@@ -95,7 +97,6 @@ class GeneratorRealWorker:
 
 def load():
     if globals()['threadmodel'] == 'thread':
-        sys.stderr.write('got to load!\n')
         return GeneratorThreadWorker
     else:
         return GeneratorProcessWorker

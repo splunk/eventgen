@@ -1,5 +1,5 @@
 import sys
-import multiprocessing
+import billiard as multiprocessing
 import Queue
 import cProfile
 # while True:

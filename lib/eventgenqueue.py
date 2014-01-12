@@ -1,6 +1,11 @@
-import Queue as PQueue, multiprocessing
+import Queue as PQueue
+try:
+    import billiard as multiprocessing
+except ImportError, e:
+    import multiprocessing
 import logging
 import json
+import threading
 try:
     import zmq
     import errno
@@ -19,15 +24,28 @@ class Queue:
                 self.q = PQueue.Queue(depth)
             else:
                 self.q = multiprocessing.Queue(depth)
-        elif queueing == 'zeromq':
+
+        self.queueing = queueing
+        self.depth = depth
+        self.queueUrl = queueUrl
+
+    def initMQ(self, worker=True):
+        if self.worker:
             context = zmq.Context()
             self.receiver = context.socket(zmq.PULL)
-            self.receiver.setsockopt(zmq.RCVHWM, depth)
-            self.receiver.connect(queueUrl)
+            self.receiver.setsockopt(zmq.RCVHWM, self.depth)
+            self.receiver.bind(self.queueUrl)
             self.sender = context.socket(zmq.PUSH)
-            self.sender.setsockopt(zmq.SNDHWM, depth)
-            self.sender.bind(queueUrl)
-        self.queueing = queueing
+            self.sender.setsockopt(zmq.SNDHWM, self.depth)
+            self.sender.bind(self.queueUrl)
+        else:
+            context = zmq.Context()
+            self.receiver = context.socket(zmq.PULL)
+            self.receiver.setsockopt(zmq.RCVHWM, self.depth)
+            self.receiver.bind(self.queueUrl)
+            self.sender = context.socket(zmq.PUSH)
+            self.sender.setsockopt(zmq.SNDHWM, self.depth)
+            self.sender.bind(self.queueUrl)
 
     def put(self, item, block, timeout):
         if self.queueing == 'python':
@@ -51,7 +69,7 @@ class Queue:
         if self.queueing == 'python':
             return self.q.get(block, timeout)
         elif self.queueing == 'zeromq':
-            self.receiver.recv_json()
+            return self.receiver.recv_json()
             # while True:
             #     try:
             #         return self.receiver.recv_json()
