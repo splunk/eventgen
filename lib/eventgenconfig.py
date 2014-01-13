@@ -18,6 +18,7 @@ import urllib
 import types
 from eventgencounter import Counter
 from eventgenqueue import Queue
+from eventgenzmq import ZMQProxy
 
 
 
@@ -784,6 +785,9 @@ class Config:
         sys.exit(0)
 
     def start(self):
+        if c.queueing == 'zeromq':
+            p = ZMQProxy()
+            p.start()
         logger.info('Starting timers')
         for sampleTimer in self.sampleTimers:
             sampleTimer.start()

@@ -53,6 +53,11 @@ class Output:
 
         self.MAXQUEUELENGTH = c.getPlugin(self._sample.name).MAXQUEUELENGTH
 
+        if c.queueing == 'zeromq':
+            context = zmq.Context()
+            self.sender = context.socket(zmq.PUSH)
+            self.sender.connect("tcp://localhost:5557")
+
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
         # Eliminate recursive going back to parent
@@ -86,7 +91,10 @@ class Output:
         self._queue.clear()
         while not self._sample.stopping:
             try:
-                c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
+                if c.queueing == 'python':
+                    c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
+                elif c.queueing == 'zeromq':
+                    self.sender.send_json((self._sample.name, q))
                 c.outputQueueSize.increment()
                 # logger.info("Outputting queue")
                 break

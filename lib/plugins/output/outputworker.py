@@ -47,6 +47,11 @@ class OutputRealWorker:
 
 		globals()['c'] = Config()
 
+		if c.queueing == 'zeromq':
+			context = zmq.Context()
+			self.receiver = context.socket(zmq.PULL)
+			self.receiver.connect('tcp://localhost:5558')
+
 		logger.debug("Starting OutputWorker %d" % num)
 
 		self.num = num
@@ -62,9 +67,12 @@ class OutputRealWorker:
 	def real_run(self):
 		while not self.stopping:
 			try:
-				# Grab a queue to be written for plugin name, get an instance of the plugin, and call the flush method
-				# name, queue = c.outputQueue.get(block=True, timeout=1.0)
-				name, queue = c.outputQueue.get(False, 0)
+				if c.queueing == 'python':
+					# Grab a queue to be written for plugin name, get an instance of the plugin, and call the flush method
+					name, queue = c.outputQueue.get(block=True, timeout=1.0)
+					# name, queue = c.outputQueue.get(False, 0)
+				elif c.queueing == 'zeromq':
+					name, queue = self.receiver.recv_json()
 				c.outputQueueSize.decrement()
 				tmp = [len(s['_raw']) for s in queue]
 				c.eventsSent.add(len(tmp))
@@ -74,7 +82,7 @@ class OutputRealWorker:
 				plugin.flush(queue)
 			except Empty:
 				# If the queue is empty, do nothing and start over at the top.  Mainly here to catch interrupts.
-				time.sleep(0.1)
+				# time.sleep(0.1)
 				pass
 
 def load():
