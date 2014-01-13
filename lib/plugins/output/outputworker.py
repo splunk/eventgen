@@ -11,6 +11,7 @@ except ImportError, e:
 	import multiprocessing
 import json
 from eventgenconfig import Config
+import time
 
 class OutputProcessWorker(multiprocessing.Process):
     def __init__(self, num):
@@ -62,12 +63,18 @@ class OutputRealWorker:
 		while not self.stopping:
 			try:
 				# Grab a queue to be written for plugin name, get an instance of the plugin, and call the flush method
-				name, queue = c.outputQueue.get(block=True, timeout=1.0)
+				# name, queue = c.outputQueue.get(block=True, timeout=1.0)
+				name, queue = c.outputQueue.get(False, 0)
 				c.outputQueueSize.decrement()
+				tmp = [len(s['_raw']) for s in queue]
+				c.eventsSent.add(len(tmp))
+				c.bytesSent.add(sum(tmp))
+				tmp = None
 				plugin = c.getPlugin(name)
 				plugin.flush(queue)
 			except Empty:
 				# If the queue is empty, do nothing and start over at the top.  Mainly here to catch interrupts.
+				time.sleep(0.1)
 				pass
 
 def load():

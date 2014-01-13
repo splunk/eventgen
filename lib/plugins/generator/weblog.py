@@ -19,28 +19,28 @@ class WeblogGenerator(GeneratorPlugin):
         globals()['c'] = Config()
 
         f = open('tests/perf/weblog/external_ips.sample')
-        self.external_ips = f.readlines()
+        self.external_ips = [x.strip() for x in f.readlines()]
         f.close()
         self.external_ips_len = len(self.external_ips)
 
         f = open('tests/perf/weblog/webhosts.sample')
-        self.webhosts = f.readlines()
+        self.webhosts = [x.strip() for x in f.readlines()]
         f.close()
         self.webhosts_len = len(self.webhosts)
 
         f = open('tests/perf/weblog/useragents.sample')
-        self.useragents = f.readlines()
+        self.useragents = [x.strip() for x in f.readlines()]
         f.close()
         self.useragents_len = len(self.useragents)
 
         f = open('tests/perf/weblog/webserverstatus.sample')
-        self.webserverstatus = f.readlines()
+        self.webserverstatus = [x.strip() for x in f.readlines()]
         f.close()
         self.webserverstatus_len = len(self.webserverstatus)
 
     def gen(self, count, earliest, latest):
         # logger.debug("weblog: external_ips_len: %s webhosts_len: %s useragents_len: %s webserverstatus_len: %s" % \
-                    (self.external_ips_len, self.webhosts_len, self.useragents_len, self.webserverstatus_len))
+                    # (self.external_ips_len, self.webhosts_len, self.useragents_len, self.webserverstatus_len))
         l = [ { '_raw': ('%s %s - - [%s] ' \
                 + '"GET /product.screen?product_id=HolyGouda&JSESSIONID=SD3SL1FF7ADFF8 HTTP 1.1" '\
                 + '%s %s "http://shop.buttercupgames.com/cart.do?action=view&itemId=HolyGouda" '\

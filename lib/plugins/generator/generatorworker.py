@@ -85,6 +85,7 @@ class GeneratorRealWorker:
                     #             datetime.datetime.strftime(earliest, "%Y-%m-%d %H:%M:%S"), \
                     #             datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S")))
                     plugin.gen(count, earliest, latest)
+                    sample.timestamp = None
                 else:
                     logger.debug("Received sentinel, shutting down GeneratorWorker %d" % self.num)
                     self.stop()
