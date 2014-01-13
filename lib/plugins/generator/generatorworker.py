@@ -11,6 +11,7 @@ except ImportError, e:
 import Queue
 import datetime
 from eventgenconfig import Config
+from eventgenoutput import Output
 
 class GeneratorProcessWorker(multiprocessing.Process):
     def __init__(self, num, q1, q2):
@@ -84,6 +85,9 @@ class GeneratorRealWorker:
                     # logger.info("GeneratorWorker %d generating %d events from '%s' to '%s'" % (self.num, count, \
                     #             datetime.datetime.strftime(earliest, "%Y-%m-%d %H:%M:%S"), \
                     #             datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S")))
+                    if sample.out == None:
+                        logger.info("Setting up Output class for sample '%s' in app '%s'" % (s.name, s.app))
+                        sample.out = Output(sample)
                     plugin.gen(count, earliest, latest)
                     sample.timestamp = None
                 else:

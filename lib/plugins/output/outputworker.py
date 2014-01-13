@@ -12,6 +12,10 @@ except ImportError, e:
 import json
 from eventgenconfig import Config
 import time
+try:
+	import zmq
+except ImportError, e:
+	pass
 
 class OutputProcessWorker(multiprocessing.Process):
     def __init__(self, num):
