@@ -785,13 +785,10 @@ class Config:
         sys.exit(0)
 
     def start(self):
-        if c.queueing == 'zeromq':
+        if self.queueing == 'zeromq':
             p = ZMQProxy()
             p.start()
         logger.info('Starting timers')
-        for sampleTimer in self.sampleTimers:
-            sampleTimer.start()
-            logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)
         for x in xrange(0, self.outputWorkers):
             logger.info("Starting OutputWorker %d" % x)
             worker = self.getPlugin('OutputWorker')(x)
@@ -804,3 +801,6 @@ class Config:
             worker.daemon = True
             worker.start()
             self.workers.append(worker)
+        for sampleTimer in self.sampleTimers:
+            sampleTimer.start()
+            logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)

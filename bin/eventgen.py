@@ -58,8 +58,6 @@ if __name__ == '__main__':
             if c.runOnce:
                 s.gen()
             else:
-                logger.info("Setting up Output class for sample '%s' in app '%s'" % (s.name, s.app))
-                s.out = Output(s)
                 if s.backfillSearchUrl == None:
                     s.backfillSearchUrl = s.splunkUrl
                 logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )    

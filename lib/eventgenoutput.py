@@ -30,6 +30,10 @@ import copy
 from Queue import Full
 import json
 import time
+try:
+    import zmq
+except ImportError, e:
+    pass
 
 class Output:
     """Base class which loads output plugins in BASE_DIR/lib/plugins/output and handles queueing"""
