@@ -107,7 +107,7 @@ class ConfigRater:
                 logger.error("Month Of Year rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         ret = int(round(count * rateFactor, 0))
         if rateFactor != 1.0:
-            logger.info("Original count: %s Rated count: %s Rate factor: %s" % (count, ret, rateFactor))
+            logger.debug("Original count: %s Rated count: %s Rate factor: %s" % (count, ret, rateFactor))
         return ret
 
 def load():

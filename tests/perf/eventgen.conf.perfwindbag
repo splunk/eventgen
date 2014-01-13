@@ -4,5 +4,5 @@ earliest = now
 latest = now
 interval = 10
 count = 50000
-outputMode = stdout
+outputMode = devnull
 backfill = -1d

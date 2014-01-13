@@ -29,6 +29,12 @@ class Counter:
         with self.lock:
             return self.val.value
 
+    def valueAndClear(self):
+        with self.lock:
+            val = self.val.value
+            self.val.value = 0
+            return val
+
     def totalincrements(self):
         with self.lock:
             return self.incval.value
@@ -36,3 +42,11 @@ class Counter:
     def totaldecrements(self):
         with self.lock:
             return self.decval.value
+
+    def add(self, val):
+        with self.lock:
+            self.val.value += val
+
+    def sub(self, val):
+        with self.lock:
+            self.val.value -= val

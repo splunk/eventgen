@@ -6,7 +6,6 @@ import sys
 import datetime, time
 import copy
 from Queue import Full
-from eventgenthread import Thread
 
 class Timer(threading.Thread):
 # class Timer(multiprocessing.Process):
@@ -146,7 +145,7 @@ class Timer(threading.Thread):
                             self.countdown = self.sample.interval
 
                         # Clear cache for timestamp
-                        self.sample.timestamp = None
+                        # self.sample.timestamp = None
 
                         # No rest for the wicked!  Or while we're doing backfill
                         if self.sample.backfill != None and not self.sample.backfilldone:

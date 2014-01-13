@@ -214,6 +214,8 @@ class Config:
 
             self.generatorQueueSize = Counter(0, self.threading)
             self.outputQueueSize = Counter(0, self.threading)
+            self.eventsSent = Counter(0, self.threading)
+            self.bytesSent = Counter(0, self.threading)
 
             self._firsttime = False
 
