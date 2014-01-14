@@ -1,4 +1,4 @@
-[windbag]
+[weblog]
 generator = weblog
 earliest = now
 latest = now

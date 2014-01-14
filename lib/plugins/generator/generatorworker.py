@@ -23,6 +23,7 @@ class GeneratorProcessWorker(multiprocessing.Process):
         self.worker.run()
 
     def stop(self):
+        logger.info("Stopping GeneratorProcessWorker %d" % self.worker.num)
         self.worker.stopping = True
 
 class GeneratorThreadWorker(threading.Thread):
@@ -35,10 +36,10 @@ class GeneratorThreadWorker(threading.Thread):
         self.worker.run()
 
     def stop(self):
+        logger.info("Stopping GeneratorThreadWorker %d" % self.worker.num)
         self.worker.stopping = True
 
 class GeneratorRealWorker:
-    stopping = False
 
     def __init__(self, num, q1, q2):
         # Logger already setup by config, just get an instance
@@ -48,6 +49,8 @@ class GeneratorRealWorker:
         globals()['c'] = Config()
 
         logger.debug("Starting GeneratorRealWorker")
+
+        self.stopping = False
 
         self._pluginCache = { }
 
@@ -96,9 +99,7 @@ class GeneratorRealWorker:
             except Queue.Empty:
                 # Queue empty, do nothing... basically here to catch interrupts
                 pass
-
-    def stop(self):
-        self.stopping = True
+        logger.info("GeneratorRealWorker %d stopped" % self.num)
 
 def load():
     if globals()['threadmodel'] == 'thread':

@@ -93,7 +93,7 @@ class Output:
         q = list(self._queue)
         logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
         self._queue.clear()
-        while not self._sample.stopping:
+        while True:
             try:
                 if c.queueing == 'python':
                     c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
