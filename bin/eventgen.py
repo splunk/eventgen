@@ -31,7 +31,7 @@ if __name__ == '__main__':
     # if we timeout, assume we're not splunk embedded
     # Only support standalone mode on Unix due to limitation with select()
     if os.name != "nt":
-        rlist, _, _ = select([sys.stdin], [], [], 5)
+        rlist, _, _ = select([sys.stdin], [], [], 1)
         if rlist:
             sessionKey = sys.stdin.readline().strip()
         else:
@@ -64,10 +64,9 @@ if __name__ == '__main__':
                 t = Timer(1.0, s) 
                 c.sampleTimers.append(t)
     
+
     ## Start the timers
     if not c.runOnce:
-        if os.name != "nt":
-            c.set_exit_handler(c.handle_exit)
         first = True
         outputQueueCounter = 0
         generatorQueueCounter = 0
@@ -75,6 +74,8 @@ if __name__ == '__main__':
             try:
                 ## Only need to start timers once
                 if first:
+                    if os.name != "nt":
+                        c.set_exit_handler(c.handle_exit)
                     c.start()
                     first = False
                 generatorDecrements = c.generatorQueueSize.totaldecrements()

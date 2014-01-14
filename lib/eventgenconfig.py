@@ -19,6 +19,7 @@ import types
 from eventgencounter import Counter
 from eventgenqueue import Queue
 from eventgenzmq import ZMQProxy
+import zmq
 
 
 
@@ -490,7 +491,9 @@ class Config:
                             foundFiles.append(samplePath)
             # If we didn't find any files, log about it
             if len(foundFiles) == 0:
-                logger.error("Sample '%s' in config but no matching files" % s.name)
+                logger.warn("Sample '%s' in config but no matching files" % s.name)
+                if not s.disabled:
+                    tempsamples2.append(copy.deepcopy(s))
             for f in foundFiles:
                 news = copy.deepcopy(s)
                 news.filePath = f
@@ -777,17 +780,23 @@ class Config:
             signal.signal(signal.SIGINT, func)
         
     def handle_exit(self, sig=None, func=None):
-        print '\n\nCaught kill, exiting...'
+        logger.info("Caught kill, exiting...")
+        if self.queueing == 'zeromq':
+            self.zmqcontext.term()
         for sampleTimer in self.sampleTimers:
             sampleTimer.stop()
         for worker in self.workers:
             worker.stop()
+        logger.info("Exiting main thread.")
         sys.exit(0)
 
     def start(self):
         if self.queueing == 'zeromq':
-            p = ZMQProxy()
-            p.start()
+            self.zmqcontext = zmq.Context()
+            self.proxy1 = zmq.devices.ThreadProxy(zmq.PULL, zmq.PUSH)
+            self.proxy1.bind_in('tcp://*:5557')
+            self.proxy1.bind_out('tcp://*:5558')
+            self.proxy1.start()
         logger.info('Starting timers')
         for x in xrange(0, self.outputWorkers):
             logger.info("Starting OutputWorker %d" % x)
@@ -802,5 +811,6 @@ class Config:
             worker.start()
             self.workers.append(worker)
         for sampleTimer in self.sampleTimers:
+            sampleTimer.daemon = True
             sampleTimer.start()
             logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)

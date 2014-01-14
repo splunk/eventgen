@@ -137,7 +137,7 @@ class Timer(threading.Thread):
                                     stop = True
                                 except Full:
                                     logger.warn("Generator Queue Full, looping")
-                                    if self.sample.stopping:
+                                    if self.stopping:
                                         stop = True
                                     pass
 
@@ -160,11 +160,12 @@ class Timer(threading.Thread):
                 else:
                     time.sleep(self.time)
             else:
+                logger.info("Stopped timer for sample '%s'" % self.sample.name)
                 sys.exit(0)
 
     def stop(self):
+        logger.info("Stopping timer for sample '%s'" % self.sample.name)
         self.sample.saveState()
         self.stopping = True
-        self.sample.stopping = True
                      
     		
