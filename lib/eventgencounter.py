@@ -5,15 +5,19 @@ class Counter:
     def __init__(self, initval=0, model='thread'):
         if model == 'thread':
             self.lock = threading.Lock()
-            # self.val = initval
-            # self.incval = 0
-            # self.decval = 0
+            
+            class Value:
+                def __init__(self, value=None):
+                    self.value = value
+            self.val = Value(initval)
+            self.incval = Value(0)
+            self.decval = Value(0)
         else:
             self.lock = multiprocessing.Lock()
             
-        self.val = multiprocessing.RawValue('i', initval)
-        self.incval = multiprocessing.RawValue('i', 0)
-        self.decval = multiprocessing.RawValue('i', 0)
+            self.val = multiprocessing.RawValue('i', initval)
+            self.incval = multiprocessing.RawValue('i', 0)
+            self.decval = multiprocessing.RawValue('i', 0)
 
     def increment(self):
         with self.lock:
