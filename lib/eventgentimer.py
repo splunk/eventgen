@@ -6,6 +6,7 @@ import sys
 import datetime, time
 import copy
 from Queue import Full
+import zmq
 
 class Timer(threading.Thread):
 # class Timer(multiprocessing.Process):
@@ -64,6 +65,11 @@ class Timer(threading.Thread):
             plugin.setupBackfill()
         else:
             plugin(self.sample).setupBackfill()
+
+        if c.queueing == 'zeromq':
+            context = zmq.Context()
+            self.sender = context.socket(zmq.PUSH)
+            self.sender.connect(c.zmqBaseUrl+(':' if c.zmqBaseUrl.startswith('tcp') else '/')+str(c.zmqBasePort+2))
 
         while (1):
             if not self.stopping:
@@ -132,7 +138,10 @@ class Timer(threading.Thread):
                             stop = False
                             while not stop:
                                 try:
-                                    c.generatorQueue.put((self.sample.name, count, time.mktime(self.sample.earliestTime().timetuple()), time.mktime(self.sample.latestTime().timetuple())), block=True, timeout=1.0)
+                                    if c.queueing == 'python':
+                                        c.generatorQueue.put((self.sample.name, count, time.mktime(self.sample.earliestTime().timetuple()), time.mktime(self.sample.latestTime().timetuple())), block=True, timeout=1.0)
+                                    elif c.queueing == 'zeromq':
+                                        self.sender.send_json((self.sample.name, count, time.mktime(self.sample.earliestTime().timetuple()), time.mktime(self.sample.latestTime().timetuple())))
                                     c.generatorQueueSize.increment()
                                     stop = True
                                 except Full:

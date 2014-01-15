@@ -52,11 +52,6 @@ class OutputRealWorker:
 
         globals()['c'] = Config()
 
-        # if c.queueing == 'zeromq':
-        #     context = zmq.Context()
-        #     self.receiver = context.socket(zmq.PULL)
-        #     self.receiver.connect('tcp://localhost:5558')
-
         self.stopping = False
 
         logger.debug("Starting OutputWorker %d" % num)
@@ -72,9 +67,10 @@ class OutputRealWorker:
             self.real_run()
 
     def real_run(self):
-        context = zmq.Context()
-        self.receiver = context.socket(zmq.PULL)
-        self.receiver.connect('tcp://localhost:5558')
+        if c.queueing == 'zeromq':
+            context = zmq.Context()
+            self.receiver = context.socket(zmq.PULL)
+            self.receiver.connect(c.zmqBaseUrl+(':' if c.zmqBaseUrl.startswith('tcp') else '/')+str(c.zmqBasePort+1))
         while not self.stopping:
             try:
                 if c.queueing == 'python':

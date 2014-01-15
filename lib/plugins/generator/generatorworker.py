@@ -12,6 +12,7 @@ import Queue
 import datetime
 from eventgenconfig import Config
 from eventgenoutput import Output
+import zmq
 
 class GeneratorProcessWorker(multiprocessing.Process):
     def __init__(self, num, q1, q2):
@@ -67,10 +68,18 @@ class GeneratorRealWorker:
             self.real_run()
 
     def real_run(self):
+        if c.queueing == 'zeromq':
+            context = zmq.Context()
+            self.receiver = context.socket(zmq.PULL)
+            self.receiver.connect(c.zmqBaseUrl+(':' if c.zmqBaseUrl.startswith('tcp') else '/')+str(c.zmqBasePort+3))
+
         while not self.stopping:
             try:
                 # Grab item from the queue to generate, grab an instance of the plugin, then generate
-                samplename, count, earliestts, latestts = c.generatorQueue.get(block=True, timeout=1.0)
+                if c.queueing == 'python':
+                    samplename, count, earliestts, latestts = c.generatorQueue.get(block=True, timeout=1.0)
+                elif c.queueing == 'zeromq':
+                    samplename, count, earliestts, latestts = self.receiver.recv_json()
                 earliest = datetime.datetime.fromtimestamp(earliestts)
                 latest = datetime.datetime.fromtimestamp(latestts)
                 c.generatorQueueSize.decrement()

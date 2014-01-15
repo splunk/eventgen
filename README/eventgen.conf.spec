@@ -96,13 +96,13 @@ queueing = python | zeromq
     * Use python queueing or zeromq.  Zeromq allows us to distribute on the machine or across multiple machines.
     * Defaults to python
 
-generatorQueueUrl = <ur>
-    * Used for zeromq.  URL for Generator Queue.
-    * Defaults to ipc://tmp/eventgen-generator
+zmqBaseUrl = <ur>
+    * Used for zeromq.  URL Base which we will append ports to.
+    * Defaults to ipc://tmp/eventgenipc
 
-outputQueueUrl = <url>
-    * Used for zeromq.  URL for Output Queue.
-    * Defaults to ipc://tmp/eventgen-worker
+zmqBasePort = <portnum>
+    * Used for zeromq.  Port to start numbering from.  Will consume at least 4 ports on the proxy machine.
+    * Defaults to 5557
 
 
         
