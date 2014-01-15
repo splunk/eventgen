@@ -60,7 +60,7 @@ class Output:
         if c.queueing == 'zeromq':
             context = zmq.Context()
             self.sender = context.socket(zmq.PUSH)
-            self.sender.connect("tcp://localhost:5557")
+            self.sender.connect(c.zmqBaseUrl+(':' if c.zmqBaseUrl.startswith('tcp') else '/')+str(c.zmqBasePort))
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""

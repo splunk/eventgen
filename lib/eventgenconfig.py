@@ -18,7 +18,6 @@ import urllib
 import types
 from eventgencounter import Counter
 from eventgenqueue import Queue
-from eventgenzmq import ZMQProxy
 import zmq
 
 
@@ -101,8 +100,8 @@ class Config:
     threading = None
     profiler = None
     queueing = None
-    generatorQueueUrl = None
-    outputQueueUrl = None
+    zmqBaseUrl = None
+    zmqBasePort = None
 
     __outputPlugins = { }
     __plugins = { }
@@ -117,12 +116,12 @@ class Config:
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers', 'generator',
                     'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading', 'profiler', 'queueing',
-                    'generatorQueueUrl', 'outputQueueUrl']
+                    'zmqBaseUrl', 'zmqBasePort']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
     _validOutputModes = [ ]
-    _intSettings = ['interval', 'count', 'outputWorkers', 'generatorWorkers']
+    _intSettings = ['interval', 'count', 'outputWorkers', 'generatorWorkers', 'zmqBasePort']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate']
@@ -198,13 +197,13 @@ class Config:
             # Initialize plugins
             self.__outputPlugins = { }
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'output'), self.__outputPlugins)
-            self.outputQueue = Queue(100, self.queueing, self.threading, self.outputQueueUrl)
+            self.outputQueue = Queue(100, self.threading)
             # Hard code the worker plugin mapping which we expect to be there and will never have a sample associated with it
             self.__plugins['OutputWorker'] = self.__outputPlugins['output.outputworker']
             self._validOutputModes.extend(plugins)
 
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins)
-            self.generatorQueue = Queue(10000, self.queueing, self.threading, self.generatorQueueUrl)
+            self.generatorQueue = Queue(10000, self.threading)
             self.__plugins['GeneratorWorker'] = self.__plugins['generator.generatorworker']
             self._complexSettings['generator'] = plugins
 
@@ -794,9 +793,13 @@ class Config:
         if self.queueing == 'zeromq':
             self.zmqcontext = zmq.Context()
             self.proxy1 = zmq.devices.ThreadProxy(zmq.PULL, zmq.PUSH)
-            self.proxy1.bind_in('tcp://*:5557')
-            self.proxy1.bind_out('tcp://*:5558')
+            self.proxy1.bind_in(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort))
+            self.proxy1.bind_out(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+1))
             self.proxy1.start()
+            self.proxy2 = zmq.devices.ThreadProxy(zmq.PULL, zmq.PUSH)
+            self.proxy2.bind_in(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+2))
+            self.proxy2.bind_out(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+3))
+            self.proxy2.start()
         logger.info('Starting timers')
         for x in xrange(0, self.outputWorkers):
             logger.info("Starting OutputWorker %d" % x)
