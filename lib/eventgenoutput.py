@@ -306,35 +306,33 @@ class Output:
                 self._workingFilePath = os.path.join(self._c.greatgrandparentdir, self._app, 'samples', workingfile)
                 logger.debug("Creating working file '%s' for sample '%s' in app '%s'" % (workingfile, self._sample, self._app))
                 self._workingFH = open(self._workingFilePath, 'w')
-            elif self._outputMode == 'splunkstream':
-                try:
-                    if self._splunkMethod == 'https':
-                        connmethod = httplib.HTTPSConnection
-                    else:
-                        connmethod = httplib.HTTPConnection
-                    splunkhttp = connmethod(self._splunkHost, self._splunkPort)
-                    splunkhttp.connect()
-                    urlparms = [ ]
-                    if index != None:
-                        urlparms.append(('index', index))
-                    if source != None:
-                        urlparms.append(('source', source))
-                    if sourcetype != None:
-                        urlparms.append(('sourcetype', sourcetype))
-                    if hostRegex != None:
-                        urlparms.append(('host_regex', hostRegex))
-                    elif host != None:
-                        urlparms.append(('host', host))
-                    url = '/services/receivers/simple?%s' % (urllib.urlencode(urlparms))
-                    splunkhttp.putrequest("POST", url)
-                    splunkhttp.putheader("Authorization", "Splunk %s" % self._c.sessionKey)
-                    splunkhttp.putheader("x-splunk-input-mode", "streaming")
-                    splunkhttp.endheaders()
-                    logger.debug("POSTing to url %s on %s://%s:%s with sessionKey %s" \
-                                % (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._c.sessionKey))
-                except httplib.HTTPException, e:
-                    logger.error('Error connecting to Splunk for logging for sample %s.  Exception "%s" Config: %s' % (self._sample, e.args, self))
-                    raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
+            #elif self._outputMode == 'splunkstream':
+            #    try:
+            #        if self._splunkMethod == 'https':
+            #            connmethod = httplib.HTTPSConnection
+            #        else:
+            #            connmethod = httplib.HTTPConnection
+            #        splunkhttp = connmethod(self._splunkHost, self._splunkPort)
+            #        splunkhttp.connect()
+            #        urlparms = [ ]
+            #        if index != None:
+            #            urlparms.append(('index', index))
+            #        if source != None:
+            #            urlparms.append(('source', source))
+            #        if sourcetype != None:
+            #            urlparms.append(('sourcetype', sourcetype))
+            #        if hostRegex != None:
+            #            urlparms.append(('host_regex', hostRegex))
+            #        elif host != None:
+            #            urlparms.append(('host', host))
+            #        url = '/services/receivers/simple?%s' % (urllib.urlencode(urlparms))
+                    # splunkhttp.putrequest("POST", url)
+                    # splunkhttp.putheader("Authorization", "Splunk %s" % self._c.sessionKey)
+                    #splunkhttp.putheader("x-splunk-input-mode", "streaming")
+                    # splunkhttp.endheaders()
+            #    except httplib.HTTPException, e:
+            #        logger.error('Error connecting to Splunk for logging for sample %s.  Exception "%s" Config: %s' % (self._sample, e.args, self))
+            #        raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
             try:
                 while msg:
                     if self._outputMode == 'spool':
@@ -370,12 +368,12 @@ class Output:
                             self._fileLength = 0
 
 
-                    elif self._outputMode == 'splunkstream':
-                        if msg[-1] != '\n':
-                            msg += '\n'
+                    #elif self._outputMode == 'splunkstream':
+                    #    if msg[-1] != '\n':
+                    #        msg += '\n'
                         # logger.debug("Sending %s to self._splunkhttp" % msg)
-                        splunkhttp.send(msg)
-                    elif self._outputMode == 'stormstream':
+                    #    splunkhttp.send(msg)
+                    elif self._outputMode in ('splunkstream', 'stormstream'):
                         streamout += msg
                     
                     msg = queue.popleft()['_raw']
@@ -402,15 +400,27 @@ class Output:
         elif self._outputMode == 'file':
             if not self._fileHandle.closed:
                 self._fileHandle.flush()
-        elif self._outputMode == 'splunkstream':
-            #logger.debug("Closing self._splunkhttp connection")
-            if splunkhttp != None:
-                splunkhttp.close()
-                splunkhttp = None
-        elif self._outputMode == 'stormstream':
+        #elif self._outputMode == 'splunkstream':
+        #    #logger.debug("Closing self._splunkhttp connection")
+        #    logger.debug("POSTing to url %s on %s://%s:%s with sessionKey %s" \
+                #                % (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._c.sessionKey))
+        #    splunkhttp.request("POST", url, streamout, headers)
+        #    response = splunkhttp.getresponse()
+        #    data = response.read()
+        #    logger.debug("Response: %s Data returned %s" % (response, data))
+        #    splunkhttp.close()
+        #    splunkhttp = None
+        elif self._outputMode in ('splunkstream', 'stormstream'):
             if len(streamout) > 0:
                 try:
-                    self._splunkhttp = httplib.HTTPSConnection('api.splunkstorm.com', 443)
+                    if self._outputMode == 'splunkstream':
+                        if self._splunkMethod == 'https':
+                            connmethod = httplib.HTTPSConnection
+                        else:
+                            connmethod = httplib.HTTPConnection
+                        self._splunkhttp = connmethod(self._splunkHost, self._splunkPort)
+                    else:
+                        self._splunkhttp = httplib.HTTPSConnection('api.splunkstorm.com', 443)
                     urlparms = [ ]
                     if self._source != None:
                         urlparms.append(('source', self._source))
@@ -418,20 +428,28 @@ class Output:
                         urlparms.append(('sourcetype', self._sourcetype))
                     if self._host != None:
                         urlparms.append(('host', self._host))
-                    if self._projectID != None:
-                        urlparms.append(('project', self._projectID))
-                    url = '/1/inputs/http?%s' % (urllib.urlencode(urlparms))
-                    headers = {'Authorization': "Basic %s" % base64.b64encode(':'+self._accessToken)}
+                    if self._outputMode == 'splunkstream':
+                        if index != None:
+                            urlparms.append(('index', index))
+                        url = '/services/receivers/simple?%s' % (urllib.urlencode(urlparms))
+                        headers = {'Authorization': "Splunk %s" % self._c.sessionKey }
+                    else:
+                        if self._projectID != None:
+                            urlparms.append(('project', self._projectID))
+                        url = '/1/inputs/http?%s' % (urllib.urlencode(urlparms))
+                        headers = {'Authorization': "Basic %s" % base64.b64encode(':'+self._accessToken)}
                     self._splunkhttp.request("POST", url, streamout, headers)
-                    logger.debug("POSTing to url %s on https://api.splunkstorm.com with accessToken %s" \
-                                % (url, base64.b64encode(self._accessToken+':')))
+                    logger.debug("POSTing to url %s on %s://%s:%s with sessionKey %s" \
+                                        % (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._c.sessionKey))
+                    #logger.debug("POSTing to url %s on https://api.splunkstorm.com with accessToken %s" \
+                            #            % (url, base64.b64encode(self._accessToken+':')))
                 except httplib.HTTPException:
                     logger.error('Error connecting to Splunk for logging for sample %s' % self._sample)
                     raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
                 try:
                     response = self._splunkhttp.getresponse()
                     data = response.read()
-                    logger.debug("Data returned %s" % data)
+                    # logger.debug("Data returned %s" % data)
                     self._splunkhttp.close()
                     self._splunkhttp = None
                 except httplib.BadStatusLine:
