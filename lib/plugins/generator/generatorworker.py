@@ -12,7 +12,10 @@ import Queue
 import datetime
 from eventgenconfig import Config
 from eventgenoutput import Output
-import zmq
+try:
+    import zmq
+except ImportError, e:
+    pass
 
 class GeneratorProcessWorker(multiprocessing.Process):
     def __init__(self, num, q1, q2):

@@ -6,7 +6,10 @@ import sys
 import datetime, time
 import copy
 from Queue import Full
-import zmq
+try:
+    import zmq
+except ImportError:
+    pass
 
 class Timer(threading.Thread):
 # class Timer(multiprocessing.Process):
