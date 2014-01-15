@@ -5,7 +5,7 @@
 
 from __future__ import division
 from outputplugin import OutputPlugin
-import datetime
+import datetime, time
 
 class ModInputOutputPlugin(OutputPlugin):
     name = 'modinput'
@@ -20,7 +20,7 @@ class ModInputOutputPlugin(OutputPlugin):
             m = q.popleft()
             while m:
                 out += '  <event>\n'
-                out += '    <time>%s</time>\n' % datetime.datetime.strftime(m['_time'], '%s')
+                out += '    <time>%s</time>\n' % m['_time']
                 out += '    <index>%s</index>\n' % m['index']
                 out += '    <source>%s</source>\n' % m['source']
                 out += '    <sourcetype>%s</sourcetype>\n' % m['sourcetype']

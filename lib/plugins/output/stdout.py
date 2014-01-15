@@ -9,7 +9,7 @@ import sys
 
 class StdOutOutputPlugin(OutputPlugin):
 	name = 'stdout'
-	MAXQUEUELENGTH = 1000
+	MAXQUEUELENGTH = 10
 
 	def __init__(self, sample):
 		OutputPlugin.__init__(self, sample)
@@ -29,6 +29,7 @@ class StdOutOutputPlugin(OutputPlugin):
 		# for x in q:
 		# 	buf += x['_raw'].rstrip()+'\n'
 		buf = '\n'.join(x['_raw'].rstrip() for x in q)
+		buf += '\n'
 		sys.stdout.write(buf)
 
 def load():

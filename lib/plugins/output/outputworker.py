@@ -94,7 +94,7 @@ class OutputRealWorker:
                 c.bytesSent.add(sum(tmp))
                 tmp = None
                 plugin = c.getPlugin(name)
-                plugin.flush(queue)
+                plugin.flush(deque(queue[:]))
             except Empty:
                 # If the queue is empty, do nothing and start over at the top.  Mainly here to catch interrupts.
                 # time.sleep(0.1)
