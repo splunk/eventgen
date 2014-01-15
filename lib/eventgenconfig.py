@@ -18,7 +18,10 @@ import urllib
 import types
 from eventgencounter import Counter
 from eventgenqueue import Queue
-import zmq
+try:
+    import zmq
+except ImportError:
+    pass
 
 
 
