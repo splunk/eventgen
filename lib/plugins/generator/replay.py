@@ -1,3 +1,5 @@
+# TODO Add timestamp detection for common timestamp format
+
 from __future__ import division
 from generatorplugin import GeneratorPlugin
 import os
