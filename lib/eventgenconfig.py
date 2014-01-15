@@ -230,9 +230,6 @@ class Config:
         return self.__str__()
 
     def __initializePlugins(self, dirname, plugins):
-        # Automatically set the __all__ variable with all
-        # the available plugins.
-
         ret = [ ]
         
         if not dirname in sys.path:
