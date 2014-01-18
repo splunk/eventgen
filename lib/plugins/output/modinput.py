@@ -6,16 +6,18 @@
 from __future__ import division
 from outputplugin import OutputPlugin
 import datetime, time
+import sys
+from xml.sax.saxutils import escape
 
 class ModInputOutputPlugin(OutputPlugin):
     name = 'modinput'
     MAXQUEUELENGTH = 10
 
     def __init__(self, sample):
+        print '<stream>\n'
         OutputPlugin.__init__(self, sample)
 
     def flush(self, q):
-        out = '<stream>\n'
         if len(q) > 0:
             m = q.popleft()
             while m:
@@ -25,7 +27,7 @@ class ModInputOutputPlugin(OutputPlugin):
                 out += '    <source>%s</source>\n' % m['source']
                 out += '    <sourcetype>%s</sourcetype>\n' % m['sourcetype']
                 out += '    <host>%s</host>\n' % m['host']
-                out += '    <data>%s</data>\n' % m['_raw']
+                out += '    <data>%s</data>\n' % escape(m['_raw'])
                 out += '  </event>\n'
 
                 try:
@@ -35,6 +37,7 @@ class ModInputOutputPlugin(OutputPlugin):
         
         out += '</stream>'
         print out
+        sys.stdout.flush()
 
 def load():
     """Returns an instance of the plugin"""

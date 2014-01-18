@@ -31,6 +31,10 @@ class DefaultGenerator(GeneratorPlugin):
             eventsDict = [ ]
             sdlen = len(self.sampleDict)
             logger.debugv("Random filling eventsDict for sample '%s' in app '%s' with %d events" % (s.name, s.app, count))
+            # Count is zero, replay the whole file, but in randomizeEvents I think we'd want it to actually 
+            # just put as many events as there are in the file
+            if count == 0:
+                count = sdlen
             while len(eventsDict) < count:
                 eventsDict.append(self.sampleDict[random.randint(0, sdlen-1)])
         # If we're bundlelines, create count copies of the sampleDict
@@ -42,7 +46,10 @@ class DefaultGenerator(GeneratorPlugin):
         # Otherwise fill count events into eventsDict or keep making copies of events out of sampleDict until
         # eventsDict is as big as count
         else:
-            eventsDict = self.sampleDict[0:count if count < len(self.sampleDict) else len(self.sampleDict)]
+            # If count is 0, play the whole file, else grab a subset
+            if count == 0:
+                count = len(self.sampleDict)
+            eventsDict = self.sampleDict[0:count]
 
             ## Continue to fill events array until len(events) == count
             if len(eventsDict) < count:
