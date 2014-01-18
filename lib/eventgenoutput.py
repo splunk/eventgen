@@ -1,6 +1,3 @@
-# TODO Make output thread or process configurable
-# TODO Plugins define lists which contains a list of key value pairs, of which the key is the config
-#      parameter and the value is either a list of acceptable values or a callback function to parse the value
 # TODO Move config validation from config object to splunkstream plugin
 # TODO Main output object puts items into the queue.  There will be at least one of these per sample thread/process
 #      so it doesn't make sense to multithread this, it's already multithreaded putting items in the queue.  Flush
