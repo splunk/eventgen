@@ -17,8 +17,8 @@ from eventgenconfig import Config
 
 # 11/24/13 CS Replacing with multiproces finally in order to provide better isolation from crashes
 #             and also to improve performance with many samples
-# class Timer(threading.Thread):
-class Timer(multiprocessing.Process):
+class Timer(threading.Thread):
+#class Timer(multiprocessing.Process):
     time = None
     stopping = None
     interruptcatcher = None
@@ -32,8 +32,8 @@ class Timer(multiprocessing.Process):
         self.countdown = 0
         
         self.sample = sample
-        # threading.Thread.__init__(self)
-        multiprocessing.Process.__init__(self)
+        threading.Thread.__init__(self)
+        # multiprocessing.Process.__init__(self)
 
     def run(self):
         if self.sample.delay > 0:
