@@ -1,6 +1,6 @@
 # The Splunk Event Generator
 
-The Splunk Event Generator is a utility which allows its user to easily build real-time event generators based on a robust configuration file definition.  The user can easily take a sample file and build anything from a replayed set of events, to a noise generator, to complicated transaction flows through configuration without having to write any code.
+The Splunk Event Generator is a utility which allows its user to easily build real-time event generators based on a robust configuration file definition.  The user can easily take a sample file and build anything from a replayed set of events, to a noise generator, to complicated transaction flows through configuration without having to write any code.  Developers who wish to utilize Eventgen's rich framework can also build their own generator plugins allowing them to model more complicated scenarios in code instead of simply configuration.
 
 ## License
 
@@ -73,3 +73,11 @@ On top of that, we've made very significant enhancements over that version:
 # Tutorial
 
 Please see our [Tutorial in the README directory](README/Tutorial.md).
+
+# Architecture
+
+For an overview of the code and how Eventgen runs, please see our [Architecture guide in the README directory](README/Architecture.md)
+
+# Plugins
+
+For an overview of writing a plugin, please see our [Plugin documentation in the README directory](README/Plugins.md)
