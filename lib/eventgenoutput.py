@@ -449,7 +449,8 @@ class Output:
                 try:
                     response = self._splunkhttp.getresponse()
                     data = response.read()
-                    # logger.debug("Data returned %s" % data)
+                    if response.status != 200:
+                        logger.error("Data not written to Splunk.  Splunk returned %s" % data)
                     self._splunkhttp.close()
                     self._splunkhttp = None
                 except httplib.BadStatusLine:
