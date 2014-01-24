@@ -18,6 +18,7 @@ from timeparser import timeParser, timeDelta2secs
 import httplib2, urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
+from eventgencounter import Counter
 
 class Sample:
     # Required fields for Sample
@@ -80,6 +81,10 @@ class Sample:
     backfillts = None
     backfilldone = None
     stopping = False
+    intervalsSinceFlush = None
+    maxIntervalsBeforeFlush = None
+    maxQueueLength = None
+
     
     # Internal fields
     _sampleLines = None

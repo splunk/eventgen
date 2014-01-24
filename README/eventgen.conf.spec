@@ -22,6 +22,7 @@
 [global]
 disabled = false
 debug = false
+verbose = false
 spoolDir = $SPLUNK_HOME/var/spool/splunk
 spoolFile = <SAMPLE>
 breaker = [^\r\n\s]+
@@ -57,6 +58,8 @@ timeField = _raw
 threading = thread
 profiler = false
 queueing = python
+maxIntervalsBeforeFlush = 3
+maxQueueLength = 0
 
 [<sample file name>]
     * This stanza defines a given sample file contained within the samples directory.
@@ -103,8 +106,6 @@ zmqBaseUrl = <ur>
 zmqBasePort = <portnum>
     * Used for zeromq.  Port to start numbering from.  Will consume at least 4 ports on the proxy machine.
     * Defaults to 5557
-
-
         
 #############################
 ## OUTPUT RELATED SETTINGS ##
@@ -192,7 +193,15 @@ hostRegex = <hostRegex>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Allows setting the event host via a regex from the actual event itself.  Only used if host not set.
     
-    
+maxIntervalsBeforeFlush = <intervals before flushing queue>
+    * Number of intervals before flushing the queue if the queue hasn't filled to maxQueueLength
+    * Defaults to 3
+
+maxQueueLength = <maximum items before flushing the queue>
+    * Number of items before flushing the output queue
+    * Default is per outputMode specific    
+
+
 ###############################
 ## EVENT GENERATION SETTINGS ##
 ###############################

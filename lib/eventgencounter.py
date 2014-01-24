@@ -39,6 +39,10 @@ class Counter:
             self.val.value = 0
             return val
 
+    def clear(self):
+        with self.lock:
+            self.val.value = 0
+
     def totalincrements(self):
         with self.lock:
             return self.incval.value

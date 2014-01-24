@@ -87,6 +87,7 @@ class DefaultGenerator(GeneratorPlugin):
         endTime = datetime.datetime.now()
         timeDiff = endTime - startTime
         timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
+        s.out.flush(endOfInterval=True)
         logger.info("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
 
 def load():
