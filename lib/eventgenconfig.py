@@ -44,6 +44,7 @@ class Config:
 
     # Externally used vars
     debug = False
+    verbose = False
     runOnce = False
     splunkEmbedded = False
     sessionKey = None
@@ -105,6 +106,8 @@ class Config:
     queueing = None
     zmqBaseUrl = None
     zmqBasePort = None
+    maxIntervalsBeforeFlush = None
+    maxQueueLength = None
 
     __outputPlugins = { }
     __plugins = { }
@@ -119,12 +122,13 @@ class Config:
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers', 'generator',
                     'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading', 'profiler', 'queueing',
-                    'zmqBaseUrl', 'zmqBasePort']
+                    'zmqBaseUrl', 'zmqBasePort', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'verbose']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
     _validOutputModes = [ ]
-    _intSettings = ['interval', 'count', 'outputWorkers', 'generatorWorkers', 'zmqBasePort']
+    _intSettings = ['interval', 'count', 'outputWorkers', 'generatorWorkers', 'zmqBasePort', 'maxIntervalsBeforeFlush',
+                    'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate']
@@ -133,7 +137,8 @@ class Config:
                             'randomizeCount', 'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles',
                             'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
                             'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
-                            'monthOfYearRate', 'sessionKey', 'generator', 'rater', 'timeField']
+                            'monthOfYearRate', 'sessionKey', 'generator', 'rater', 'timeField', 'maxQueueLength',
+                            'maxIntervalsBeforeFlush']
     _complexSettings = { 'sampletype': ['raw', 'csv'], 
                          'mode': ['sample', 'replay'],
                          'threading': ['thread', 'process'],
@@ -603,6 +608,7 @@ class Config:
                 s.generator = 'replay'
 
             self.__setPlugin(s)
+            s.intervalsSinceFlush = Counter(0, self.threading)
 
         self.samples = tempsamples
         self._confDict = None
@@ -761,6 +767,9 @@ class Config:
         if self._confDict['global']['debug'].lower() == 'true' \
                 or self._confDict['global']['debug'].lower() == '1':
             logger.setLevel(logging.DEBUG)
+        if self._confDict['global']['verbose'].lower() == 'true' \
+                or self._confDict['global']['verbose'].lower() == '1':
+            logger.setLevel(logging.DEBUGV)
         logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
 
 

@@ -52,7 +52,10 @@ class Output:
         self._queue = deque([])
         self._workers = [ ]
 
-        self.MAXQUEUELENGTH = c.getPlugin(self._sample.name).MAXQUEUELENGTH
+        if self._sample.maxQueueLength == 0:
+            self.MAXQUEUELENGTH = c.getPlugin(self._sample.name).MAXQUEUELENGTH
+        else:
+            self.MAXQUEUELENGTH = self._sample.maxQueueLength
 
         if c.queueing == 'zeromq':
             context = zmq.Context()
@@ -85,23 +88,35 @@ class Output:
         if len(self._queue) >= self.MAXQUEUELENGTH:
             self.flush()
 
-    def flush(self):
-        # q = deque(list(self._queue)[:])
-        q = list(self._queue)
-        logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
-        self._queue.clear()
-        while True:
-            try:
-                if c.queueing == 'python':
-                    c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
-                elif c.queueing == 'zeromq':
-                    self.sender.send_json((self._sample.name, q))
-                c.outputQueueSize.increment()
-                # logger.info("Outputting queue")
-                break
-            except Full:
-                logger.warn("Output Queue full, looping again")
-                pass
+    def flush(self, endOfInterval=False):
+        flushing = False
+        if endOfInterval:
+            self._sample.intervalsSinceFlush.increment()
+            if self._sample.intervalsSinceFlush.value() >= self._sample.maxIntervalsBeforeFlush:
+                logger.debugv("Exceeded maxIntervalsBeforeFlush, flushing")
+                flushing = True
+                self._sample.intervalsSinceFlush.clear()
+        else:
+            logger.debugv("maxQueueLength exceeded, flushing")
+            flushing = True
+
+        if flushing:
+            # q = deque(list(self._queue)[:])
+            q = list(self._queue)
+            logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
+            self._queue.clear()
+            while True:
+                try:
+                    if c.queueing == 'python':
+                        c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
+                    elif c.queueing == 'zeromq':
+                        self.sender.send_json((self._sample.name, q))
+                    c.outputQueueSize.increment()
+                    # logger.info("Outputting queue")
+                    break
+                except Full:
+                    logger.warn("Output Queue full, looping again")
+                    pass
 
 
 
