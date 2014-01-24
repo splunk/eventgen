@@ -38,7 +38,7 @@ Depending on tunable parameters, these can be threads or processes and can eithe
 
 # Scaling
 
-This queue architecture allows to get significant advantage by distributing processing.  At each timer execution a generation job gets put in the queue.  This queue by default is a Python Queue (either in queue.Queue or multiprocessing.Queue), but can also be configured to be a (Zeromq)[http://zeromq.org/] push/pull queue via the network as well.  This is significantly faster than Python's multiprocessing.Queue and allows us to scale beyond one machine.
+This queue architecture allows to get significant advantage by distributing processing.  At each timer execution a generation job gets put in the queue.  This queue by default is a Python Queue (either in queue.Queue or multiprocessing.Queue), but can also be configured to be a [Zeromq](http://zeromq.org/) push/pull queue via the network as well.  This is significantly faster than Python's multiprocessing.Queue and allows us to scale beyond one machine.
 
 # Testing
 
