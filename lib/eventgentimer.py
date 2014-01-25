@@ -10,6 +10,7 @@ try:
     import zmq
 except ImportError:
     pass
+from eventgenoutput import Output
 
 class Timer(threading.Thread):
 # class Timer(multiprocessing.Process):
@@ -64,6 +65,9 @@ class Timer(threading.Thread):
 
         if not plugin.queueable:
             # Get an instance of the plugin instead of the class itself
+            if self.sample.out == None:
+                logger.info("Setting up Output class for sample '%s' in app '%s'" % (self.sample.name, self.sample.app))
+                self.sample.out = Output(self.sample)
             plugin = plugin(self.sample)
             plugin.setupBackfill()
         else:

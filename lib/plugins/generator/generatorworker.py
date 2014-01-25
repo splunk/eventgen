@@ -101,7 +101,7 @@ class GeneratorRealWorker:
                     #             datetime.datetime.strftime(earliest, "%Y-%m-%d %H:%M:%S"), \
                     #             datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S")))
                     if sample.out == None:
-                        logger.info("Setting up Output class for sample '%s' in app '%s'" % (s.name, s.app))
+                        logger.info("Setting up Output class for sample '%s' in app '%s'" % (sample.name, sample.app))
                         sample.out = Output(sample)
                     plugin.gen(count, earliest, latest)
                     sample.timestamp = None
