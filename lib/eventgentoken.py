@@ -83,7 +83,7 @@ class Token:
         """Replaces all instances of this token in provided event and returns event"""
         offset = 0
         tokenMatch = list(self._finditer(event))
-        logger.debugv("Found %d matches for token: '%s' of type '%s'" % (len(tokenMatch), self.token, self.replacementType))
+        logger.debugv("Found %d matches for token: '%s' of type '%s' in sample '%s'" % (len(tokenMatch), self.token, self.replacementType, self.sample.name))
 
         if len(tokenMatch) > 0:
             replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)])

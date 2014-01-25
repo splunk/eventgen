@@ -73,11 +73,11 @@ class Output:
         return self.__str__()
 
     def send(self, msg):
-        # ts = self._sample.timestamp if self._sample.timestamp != None else self._sample.now()
+        ts = self._sample.timestamp if self._sample.timestamp != None else self._sample.now()
         self._queue.append({'_raw': msg, 'index': self._sample.index,
                         'source': self._sample.source, 'sourcetype': self._sample.sourcetype,
                         'host': self._sample.host, 'hostRegex': self._sample.hostRegex,
-                        '_time': time.mktime(self._sample.timestamp.timetuple())})
+                        '_time': time.mktime(ts.timetuple())})
 
         if len(self._queue) >= self.MAXQUEUELENGTH:
             self.flush()

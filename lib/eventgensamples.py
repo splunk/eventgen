@@ -592,9 +592,17 @@ class Sample:
                     # logger.debug("Testing '%s' as a time string against '%s'" % (timeString, timeFormat))
                     if timeFormat == "%s":
                         ts = float(timeString) if len(timeString) < 10 else float(timeString) / (10**(len(timeString)-10))
+                        logger.debugv("Getting time for timestamp '%s'" % ts)
                         currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
-                        currentTime = datetime.datetime.strptime(timeString, timeFormat)
+                        logger.debugv("Getting time for timeFormat '%s' and timeString '%s'" % (timeFormat, timeString))
+                        # Working around Python bug with a non thread-safe strptime.  Randomly get AttributeError
+                        # when calling strptime, so if we get that, try again
+                        while currentTime == None:
+                            try:
+                                currentTime = datetime.datetime.strptime(timeString, timeFormat)
+                            except AttributeError:
+                                pass
                     logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
                     if type(currentTime) == datetime.datetime:
                         break
