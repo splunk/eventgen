@@ -13,8 +13,8 @@ class DevNullOutputPlugin(OutputPlugin):
 	def flush(self, q):
 		if self.firsttime:
 			self.f = open('/dev/null', 'w')
-		buf = '\n'.join(x['_raw'].rstrip() for x in q)
-		self.f.write(buf)
+			buf = '\n'.join(x['_raw'].rstrip() for x in q)
+			self.f.write(buf)
 
 def load():
     """Returns an instance of the plugin"""
