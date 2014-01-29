@@ -82,7 +82,7 @@ class GeneratorRealWorker:
                 if c.queueing == 'python':
                     samplename, count, earliestts, latestts = c.generatorQueue.get(block=True, timeout=1.0)
                 elif c.queueing == 'zeromq':
-                    samplename, count, earliestts, latestts = self.receiver.recv_json()
+                    samplename, count, earliestts, latestts = self.receiver.recv_pyobj()
                 earliest = datetime.datetime.fromtimestamp(earliestts)
                 latest = datetime.datetime.fromtimestamp(latestts)
                 c.generatorQueueSize.decrement()

@@ -2,7 +2,7 @@
 sampleDir = tests/perf/weblog
 disabled=false
 mode = sample
-outputMode = stdout
+outputMode = devnull
 index = main
 sourcetype = access_combined
 host = log.buttercupgames.com

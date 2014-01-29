@@ -110,7 +110,7 @@ class Output:
                     if c.queueing == 'python':
                         c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
                     elif c.queueing == 'zeromq':
-                        self.sender.send_json((self._sample.name, q))
+                        self.sender.send_pyobj((self._sample.name, q))
                     c.outputQueueSize.increment()
                     # logger.info("Outputting queue")
                     break

@@ -1,6 +1,6 @@
 [sample]
 sampleDir = tests/sample
-outputMode = stdout
+outputMode = devnull
 count = 100000
 earliest = now
 latest = now
