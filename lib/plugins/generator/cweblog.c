@@ -5,11 +5,11 @@
 #include <math.h>
 #include <string.h>
 
-#define DEBUG 1
-#define IPS_PATH "../../../tests/perf/weblog/external_ips.sample"
-#define WEBHOSTS_PATH "../../../tests/perf/weblog/webhosts.sample"
-#define USERAGENTS_PATH "../../../tests/perf/weblog/useragents.sample"
-#define WEBSERVERSTATUS_PATH "../../../tests/perf/weblog/webserverstatus.sample"
+#define DEBUG 0
+#define IPS_PATH "/home/Clint/local/projects/eventgen/tests/perf/weblog/external_ips.sample"
+#define WEBHOSTS_PATH "/home/Clint/local/projects/eventgen/tests/perf/weblog/webhosts.sample"
+#define USERAGENTS_PATH "/home/Clint/local/projects/eventgen/tests/perf/weblog/useragents.sample"
+#define WEBSERVERSTATUS_PATH "/home/Clint/local/projects/eventgen/tests/perf/weblog/webserverstatus.sample"
 
 typedef struct itemslist {
     char *item;
@@ -48,10 +48,13 @@ char *getitem(items *i, int idx) {
     itemslist *il = i->l;
     int x = 0;
 
-    for (x=0; x < idx;) {
+    for (x=0; x < idx; x++) {
         if (il->next != NULL) {
             il = il->next;
         }
+    }
+    if (DEBUG) {
+        printf("getitem returning: %s\n", il->item);
     }
     return il->item;
 }
@@ -112,6 +115,11 @@ int main() {
     int webhostidx = 0;
     int useragentidx = 0;
     int webserverstatusidx = 0;
+
+    struct tm *loctime;
+
+    int sizestr = 0;
+    int durationstr = 0;
 
     int i = 0;
     char *curtime;
@@ -175,6 +183,8 @@ int main() {
     }
 
 
+    srand(time(NULL));
+    curtime = malloc(50);
     // Generate events
     for (i=0; i < count; i++) {
         // Get random selections to substitute in
@@ -193,19 +203,27 @@ int main() {
         webserverstatus = getitem(webserverstatuses, webserverstatusidx);
 
         if (DEBUG) {
-            printf("IP: %s Webhost: %s Useragent: %s Webserverstatus: %s\n", ip, webhost, useragent, webserverstatus);
+            printf("IP: %s\nWebhost: %s\nUseragent: %s\nWebserverstatus: %s\n", ip, webhost, useragent, webserverstatus);
         }
 
-        struct tm *loctime = localtime(&latest_ts);
-        curtime = malloc(sizeof(char)*50);
+        loctime = localtime((time_t*)&latest_ts);
+        if (DEBUG) {
+            printf("Current time asctime: %s\n", asctime(loctime));
+        }
 
-        strftime(curtime, 50, "%d/%b/%Y %H:%M:%S:%f", loctime);
+        curtime = malloc(100);
+        strftime(curtime, 100, "%d/%b/%Y %H:%M:%S", loctime);
 
-        int sizestr = rand() % 1000;
-        int durationstr = rand() % 2000;
+        if (DEBUG) {
+            printf("Current time: %s\n", curtime);
+        }
 
-        printf("%s %s - - [%s] \"GET /product.screen?product_id=HolyGouda&JSESSIONID=SD3SL1FF7ADFF8 HTTP 1.1\" '%s %s \"http://shop.buttercupgames.com/cart.do?action=view&itemId=HolyGouda\" \"%s\" %s",
+        sizestr = rand() % 1000;
+        durationstr = rand() % 2000;
+
+        printf("%s %s - - [%s] \"GET /product.screen?product_id=HolyGouda&JSESSIONID=SD3SL1FF7ADFF8 HTTP 1.1\" %s %d \"http://shop.buttercupgames.com/cart.do?action=view&itemId=HolyGouda\" \"%s\" %d\n",
                 ip, webhost, curtime, webserverstatus, sizestr, useragent, durationstr);
+        free(curtime);
     }
 
     // We should clean up here and free ram we've allocated, but just exit instead
