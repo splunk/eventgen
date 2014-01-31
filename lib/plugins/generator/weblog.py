@@ -6,6 +6,7 @@ import datetime, time
 import itertools
 from collections import deque
 import random
+import subprocess
 
 class WeblogGenerator(GeneratorPlugin):
     def __init__(self, sample):
@@ -20,8 +21,8 @@ class WeblogGenerator(GeneratorPlugin):
 
         f = open('tests/perf/weblog/external_ips.sample')
         self.external_ips = [x.strip() for x in f.readlines()]
-        f.close()
         self.external_ips_len = len(self.external_ips)
+        f.close()
 
         f = open('tests/perf/weblog/webhosts.sample')
         self.webhosts = [x.strip() for x in f.readlines()]
