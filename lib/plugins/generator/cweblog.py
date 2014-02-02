@@ -34,7 +34,7 @@ class CWeblogGenerator(GeneratorPlugin):
                 'sourcetype': 'access_combined',
                 'host': 'log.buttercupgames.com',
                 'source': '/opt/access_combined.log',
-                '_time': time.mktime(latest.timetuple()) } for line in lines ]
+                '_time': 1 } for line in lines ]
 
 
         self._sample.out.bulksend(l)

@@ -6,10 +6,10 @@
 #include <string.h>
 
 #define DEBUG 0
-#define IPS_PATH "/home/Clint/local/projects/eventgen/tests/perf/weblog/external_ips.sample"
-#define WEBHOSTS_PATH "/home/Clint/local/projects/eventgen/tests/perf/weblog/webhosts.sample"
-#define USERAGENTS_PATH "/home/Clint/local/projects/eventgen/tests/perf/weblog/useragents.sample"
-#define WEBSERVERSTATUS_PATH "/home/Clint/local/projects/eventgen/tests/perf/weblog/webserverstatus.sample"
+#define IPS_PATH "/Users/csharp/local/projects/eventgen/tests/perf/weblog/external_ips.sample"
+#define WEBHOSTS_PATH "/Users/csharp/local/projects/eventgen/tests/perf/weblog/webhosts.sample"
+#define USERAGENTS_PATH "/Users/csharp/local/projects/eventgen/tests/perf/weblog/useragents.sample"
+#define WEBSERVERSTATUS_PATH "/Users/csharp/local/projects/eventgen/tests/perf/weblog/webserverstatus.sample"
 
 typedef struct itemslist {
     char *item;

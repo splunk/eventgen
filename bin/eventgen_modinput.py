@@ -97,7 +97,6 @@ def get_config():
     return config
 
 if __name__ == '__main__':
-    debug = False
     c = Config()
     # Logger is setup by Config, just have to get an instance
     logger = logging.getLogger('eventgen')
@@ -130,25 +129,32 @@ if __name__ == '__main__':
 
     for s in c.samples:
         if s.interval > 0 or s.mode == 'replay':
-            if c.runOnce:
-                s.gen()
-            else:
-                logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )    
-                t = Timer(1.0, s) 
-                c.sampleTimers.append(t)
+            logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )    
+            t = Timer(1.0, s) 
+            c.sampleTimers.append(t)
     
-    ## Start the timers
-    if not c.runOnce:
-        if os.name != "nt":
-            c.set_exit_handler(c.handle_exit)
-        first = True
-        while (1):
-            try:
-                ## Only need to start timers once
-                if first:
-                    c.start()
-                    first = False
-                # logger.info('Queue depth: %d' % c.outputQueue.qsize())
-                time.sleep(5)
-            except KeyboardInterrupt:
-                c.handle_exit()
+    if os.name != "nt":
+        c.set_exit_handler(c.handle_exit)
+    first = True
+    while (1):
+        try:
+            ## Only need to start timers once
+            if first:
+                c.start()
+                first = False
+
+            # Every 5 seconds, get values and output basic statistics about our operations
+            generatorDecrements = c.generatorQueueSize.totaldecrements()
+            outputDecrements = c.outputQueueSize.totaldecrements()
+            generatorsPerSec = (generatorDecrements - generatorQueueCounter) / 5
+            outputtersPerSec = (outputDecrements - outputQueueCounter) / 5
+            outputQueueCounter = outputDecrements
+            generatorQueueCounter = generatorDecrements
+            logger.info('Output Queue depth: %d  Generator Queue depth: %d Generators Per Sec: %d Outputters Per Sec: %d' % (c.outputQueueSize.value(), c.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
+            kiloBytesPerSec = c.bytesSent.valueAndClear() / 5 / 1024
+            gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
+            eventsPerSec = c.eventsSent.valueAndClear() / 5
+            logger.info('Events/Sec: %s Kilobytes/Sec: %1f GB/Day: %1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
+            time.sleep(5)
+        except KeyboardInterrupt:
+            c.handle_exit()
