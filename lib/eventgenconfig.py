@@ -1,5 +1,4 @@
 # TODO Add guid and sample name to logging output for each sample
-# TODO Allow configurable sample directory besides the hard coded "samples" directory in the eventgen app or another app
 
 from __future__ import division
 from ConfigParser import ConfigParser
@@ -45,7 +44,6 @@ class Config:
     # Externally used vars
     debug = False
     verbose = False
-    runOnce = False
     splunkEmbedded = False
     sessionKey = None
     grandparentdir = None
@@ -238,23 +236,33 @@ class Config:
         return self.__str__()
 
     def __initializePlugins(self, dirname, plugins):
+        """Load a python module dynamically and add to internal dictionary of plugins (only accessed by getPlugin)"""
         ret = [ ]
         
+        # Include all plugin directories in sys.path for includes
         if not dirname in sys.path:
             sys.path.append(dirname)
          
+        # Loop through all files in passed dirname looking for plugins
         for filename in os.listdir(dirname):
             filename = dirname + "/" + filename
+            # If the file exists
             if os.path.isfile(filename):
+                # Split file into a base name plus extension
                 basename = os.path.basename(filename)
                 base, extension = os.path.splitext(basename)
+
+                # If we're a python file and we don't start with _
                 if extension == ".py" and not basename.startswith("_"):
-                    # module = __import__(base, fromlist=["plugins.output.", "plugins.rater.", "plugins.generator."])
+                    # Import the module
                     module = __import__(base)
+                    # Signal to the plugin by adding a module level variable which indicates
+                    # our threading model, thread or process
                     module.__dict__.update({ 'threadmodel': self.threading })
+                    # Load will now return a threading.Thread or multiprocessing.Process based object
                     plugin = module.load()
 
-                    # set plugin to something like output.file
+                    # set plugin to something like output.file or generator.default
                     pluginname = filename.split(os.sep)[-2] + '.' + base 
                     plugins[pluginname] = plugin
 
@@ -286,11 +294,13 @@ class Config:
 
 
     def getPlugin(self, name):
+        """Return a reference to a Python object (not an instance) referenced by passed name"""
         if not name in self.__plugins:
             raise KeyError('Plugin ' + name + ' not found')
         return self.__plugins[name]
 
     def __setPlugin(self, s):
+        """Called during setup, assigns which output plugin to use based on configured outputMode"""
         # 12/2/13 CS Adding pluggable output modules, need to set array to map sample name to output plugin
         # module instances
         try:
@@ -299,12 +309,11 @@ class Config:
         except KeyError:
             raise KeyError('Output plugin %s does not exist' % s.outputMode.lower())
 
-    def makeSplunkEmbedded(self, sessionKey=None, runOnce=False):
+    def makeSplunkEmbedded(self, sessionKey=None):
         """Setup operations for being Splunk Embedded.  This is legacy operations mode, just a little bit obfuscated now.
         We wait 5 seconds for a sessionKey or 'debug' on stdin, and if we time out then we run in standalone mode.
         If we're not Splunk embedded, we operate simpler.  No rest handler for configurations. We only read configs
-        in our parent app's directory.  In standalone mode, we read eventgen-standalone.conf and will skip eventgen.conf if
-        we detect SA-Eventgen is installed. """
+        in our parent app's directory."""
 
         fileHandler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen.log', maxBytes=25000000, backupCount=5)
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
@@ -323,8 +332,7 @@ class Config:
         # globals()['rest'] = locals()['rest']
         # globals()['util'] = locals()['util']
 
-        if sessionKey == None or runOnce == True:
-            self.runOnce = True
+        if sessionKey == None:
             self.sessionKey = auth.getSessionKey('admin', 'changeme')
         else:
             self.sessionKey = sessionKey
@@ -496,6 +504,7 @@ class Config:
             # If we didn't find any files, log about it
             if len(foundFiles) == 0:
                 logger.warn("Sample '%s' in config but no matching files" % s.name)
+                # 1/23/14 Change in behavior, go ahead and add the sample even if we don't find a file
                 if not s.disabled:
                     tempsamples2.append(copy.deepcopy(s))
             for f in foundFiles:
@@ -698,7 +707,7 @@ class Config:
 
     def _validateTimezone(self, value):
         """Callback for complexSetting timezone which will parse and validate the timezone"""
-        logger.info("Parsing timezone '%s' for stanza '%s'" % (value, stanza))
+        logger.debug("Parsing timezone '%s' for stanza '%s'" % (value, stanza))
         if value.find('local') >= 0:
             value = datetime.timedelta(days=1)
         else:
@@ -712,7 +721,7 @@ class Config:
             except:
                 logger.error("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
                 raise ValueError("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
-        logger.info("Parsed timezone '%s' for stanza '%s'" % (value, stanza))
+        logger.debug("Parsed timezone '%s' for stanza '%s'" % (value, stanza))
         return value
 
     def _buildConfDict(self):
@@ -775,6 +784,7 @@ class Config:
 
     # Copied from http://danielkaes.wordpress.com/2009/06/04/how-to-catch-kill-events-with-python/
     def set_exit_handler(self, func):
+        """Catch signals and call handle_exit when we're supposed to shut down"""
         if os.name == "nt":
             try:
                 import win32api
@@ -788,18 +798,28 @@ class Config:
             signal.signal(signal.SIGINT, func)
         
     def handle_exit(self, sig=None, func=None):
+        """Clean up and shut down threads"""
         logger.info("Caught kill, exiting...")
+        # Kill off zeromq context which kills any processing threads
         if self.queueing == 'zeromq':
             self.zmqcontext.term()
+
+        # Loop through all threads/processes and mark them for death
+        # This does not actually kill the plugin, but they should check to see if
+        # they are set to stop with every iteration
         for sampleTimer in self.sampleTimers:
             sampleTimer.stop()
         for worker in self.workers:
             worker.stop()
+
         logger.info("Exiting main thread.")
         sys.exit(0)
 
     def start(self):
+        """Start up worker and zeromq threads"""
+
         if self.queueing == 'zeromq':
+            logger.info("Starting zeromq processing threads")
             self.zmqcontext = zmq.Context()
             self.proxy1 = zmq.devices.ThreadProxy(zmq.PULL, zmq.PUSH)
             self.proxy1.bind_in(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort))
@@ -809,7 +829,6 @@ class Config:
             self.proxy2.bind_in(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+2))
             self.proxy2.bind_out(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+3))
             self.proxy2.start()
-        logger.info('Starting timers')
         for x in xrange(0, self.outputWorkers):
             logger.info("Starting OutputWorker %d" % x)
             worker = self.getPlugin('OutputWorker')(x)
