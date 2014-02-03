@@ -14,26 +14,28 @@ As of version 3.0, the Eventgen now allows for plugins which extend our core fun
 
 Plugins inherit from a class per plugin type and are placed in their appropriate directory, either in the Eventgen app itself or inside another Splunk App's ``lib/plugins/<type>`` directory.  Lets take a look at the simplest plugin available to us, the Devnull output plugin:
 
-    from __future__ import division
-    from outputplugin import OutputPlugin
-    import sys
+```
+from __future__ import division
+from outputplugin import OutputPlugin
+import sys
 
-    class DevNullOutputPlugin(OutputPlugin):
-        MAXQUEUELENGTH = 1000
+class DevNullOutputPlugin(OutputPlugin):
+    MAXQUEUELENGTH = 1000
 
-        def __init__(self, sample):
-            OutputPlugin.__init__(self, sample)
-            self.firsttime = True
+    def __init__(self, sample):
+        OutputPlugin.__init__(self, sample)
+        self.firsttime = True
 
-        def flush(self, q):
-            if self.firsttime:
-                self.f = open('/dev/null', 'w')
-            buf = '\n'.join(x['_raw'].rstrip() for x in q)
-            self.f.write(buf)
+    def flush(self, q):
+        if self.firsttime:
+            self.f = open('/dev/null', 'w')
+        buf = '\n'.join(x['_raw'].rstrip() for x in q)
+        self.f.write(buf)
 
-    def load():
-        """Returns an instance of the plugin"""
-        return DevNullOutputPlugin
+def load():
+    """Returns an instance of the plugin"""
+    return DevNullOutputPlugin
+```
 
 First, we import the OutputPlugin superclass.  For output plugins, they define a constant MAXQUEUELENGTH to determine the maximum amount of items in queue before forcing a queue flush.  
 
@@ -43,12 +45,14 @@ Every Eventgen plugin defines a class and a ``load()`` method. The load() method
 
 Now, lets look at a slightly more complicated plugin, splunkstream.py in ``lib/plugins/output/splunkstream.py``.  We're going to look just at the top of the class as its being defined:
 
-    class SplunkStreamOutputPlugin(OutputPlugin):
-        MAXQUEUELENGTH = 100
+```
+class SplunkStreamOutputPlugin(OutputPlugin):
+    MAXQUEUELENGTH = 100
 
-        validSettings = [ 'splunkMethod', 'splunkUser', 'splunkPass', 'splunkHost', 'splunkPort' ]
-        complexSettings = { 'splunkMethod': ['http', 'https'] }
-        intSettings = [ 'splunkPort' ]
+    validSettings = [ 'splunkMethod', 'splunkUser', 'splunkPass', 'splunkHost', 'splunkPort' ]
+    complexSettings = { 'splunkMethod': ['http', 'https'] }
+    intSettings = [ 'splunkPort' ]
+```
 
 MAXQUEUELENGTH should look normal, but these other class variables bear a little explaination.
 
@@ -73,6 +77,7 @@ The following lists are optional and likely to be used by many plugins:
 Each plugin type will define a different method required.
 
 **Plugin Type** | **Method** | **Returns** | **Notes**
+--- | --- | --- | ---
 Rater | ``rate()`` | Integer count of events to generate | n/a
 Generator | ``gen(count, earliest, latest) `` | Success (0) | Events get put into an output queue by calling the Sample's ``send()`` or ``bulksend()`` methods in the output object.
 Output | ``flush(q)`` | Success (0) | Gets a deque list q to operate upon and output as configured.
@@ -81,43 +86,46 @@ Output | ``flush(q)`` | Success (0) | Gets a deque list q to operate upon and ou
 
 We reviewed a simple Output Plugin earlier, lets look at a simple Generator Plugin:
 
-    from __future__ import division
-    from generatorplugin import GeneratorPlugin
-    import os
-    import logging
-    import datetime, time
-    import itertools
-    from collections import deque
+```
+from __future__ import division
+from generatorplugin import GeneratorPlugin
+import os
+import logging
+import datetime, time
+import itertools
+from collections import deque
 
-    class WindbagGenerator(GeneratorPlugin):
-        def __init__(self, sample):
-            GeneratorPlugin.__init__(self, sample)
+class WindbagGenerator(GeneratorPlugin):
+    def __init__(self, sample):
+        GeneratorPlugin.__init__(self, sample)
 
-            # Logger already setup by config, just get an instance
-            logger = logging.getLogger('eventgen')
-            globals()['logger'] = logger
+        # Logger already setup by config, just get an instance
+        logger = logging.getLogger('eventgen')
+        globals()['logger'] = logger
 
-            from eventgenconfig import Config
-            globals()['c'] = Config()
+        from eventgenconfig import Config
+        globals()['c'] = Config()
 
-        def gen(self, count, earliest, latest):
-            l = [ {'_raw': '2014-01-05 23:07:08 WINDBAG Event 1 of 100000'} for i in xrange(count) ]
+    def gen(self, count, earliest, latest):
+        l = [ {'_raw': '2014-01-05 23:07:08 WINDBAG Event 1 of 100000'} for i in xrange(count) ]
 
-            self._sample.out.bulksend(l)
-            return 0
+        self._sample.out.bulksend(l)
+        return 0
+```
 
-
-    def load():
-        return WindbagGenerator
+def load():
+    return WindbagGenerator
 
 For this generator plugin, notice we inherit from GeneratorPlugin instead of OutputPlugin.  This plugin is also quite simple.  In its ``__init__()`` method, it calls the superclass ``__init__()`` and it sets up two global variables, c, which holds the config (and is a Singleton pattern which can be instantiated many times) and a copy of the logger which we'll use for logging in most plugins.
 
 Secondly, it defines a gen() method, which generates ``count`` events between ``earliest`` and ``latest`` time.  In this case, we ignore the timestamp and return just event text.  Then we call bulksend.  This plugin has several performance optimizations: using a list constructor instead of a loop and using bulksend instead of send.  Lets look how this could be implemented in a slightly less performant but easier to understand way:
 
-        def gen(self, count, earliest, latest):
-            for x in xrange(count):
-                self._sample.send({ '_raw': '2014-01-05 23:07:08 WINDBAG Event 1 of 100000' })
+```
+    def gen(self, count, earliest, latest):
+        for x in xrange(count):
+            self._sample.send({ '_raw': '2014-01-05 23:07:08 WINDBAG Event 1 of 100000' })
 
-            return 0
+        return 0
+```
 
 Here, we use ``send()`` instead of ``bulksend()`` and a loop to make it easier to understand.
