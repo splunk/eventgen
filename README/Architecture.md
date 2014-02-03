@@ -8,7 +8,7 @@ Eventgen a modular set of Python code, structured as a Splunk application, which
 * Generation using custom code to model a scenario
 * Output to Splunk modular input or any number of pluggable output modes
 
-Prior to version 3, Eventgen was a monolithic set of code with dozens of configuration tuneables all driving a complex set of conditional code.  Over its life, Eventgen has grown so many tunables that the code had essentially become unmaintainable.  This drove a desire by Clint Sharp (clint@splunk.com), the primarily Eventgen maintainer, to rearchitect the code to make it more modular.
+Prior to version 3, Eventgen was a monolithic set of code with dozens of configuration tuneables all driving a complex set of conditional code.  Over its life, Eventgen has grown so many tunables that the code had essentially become unmaintainable.  This drove a desire by Clint Sharp (clint@splunk.com), the primary Eventgen maintainer, to rearchitect the code to make it more modular.
 
 A second set of requirements also drove the version 3 re-architecture.  There continue to be a number of eventgens written internally to Splunk, and while most of those developers would be happy using Eventgen, either the config syntax is more arduous to learn than writing some python code or the scenario they want to model simply isn't possible using relatively naive methods of looking for events and replacing regex identified tokens with substitutions from random selections.  Replay mode is also insuffucient in that they do not want to have to base the eventgens on real data.
 
@@ -38,8 +38,10 @@ Depending on tunable parameters, these can be threads or processes and can eithe
 
 # Scaling
 
-This queue architecture allows to get significant advantage by distributing processing.  At each timer execution a generation job gets put in the queue.  This queue by default is a Python Queue (either in queue.Queue or multiprocessing.Queue), but can also be configured to be a [Zeromq](http://zeromq.org/) push/pull queue via the network as well.  This is significantly faster than Python's multiprocessing.Queue and allows us to scale beyond one machine.
+This queue architecture allows to get significant advantage by distributing processing.  At each timer execution a generation job gets put in the queue.  This queue by default is a Python Queue (either in queue.Queue or multiprocessing.Queue), but can also be configured to be a [Zeromq](http://zeromq.org/) push/pull queue via the network as well.  This is significantly faster than Python's multiprocessing.Queue and allows us to scale beyond one machine.  For details, see the [Performance guide](Performance.md)
 
 # Testing
 
-Given the complexity and the reimplementation of a number of features during the version 3 refactor, we've also built out a number of test examples.  We currently don't have test scripts built with assertions etc, but there are a series of configs and samples under the tests/ directory which should demonstrate and allow testing of basic functionality.
+Given the complexity and the reimplementation of a number of features during the version 3 refactor, we've also built out a number of test examples.  We currently don't have test scripts built with assertions etc, but there are a series of configs and samples under the tests/ directory which should demonstrate and allow testing of basic functionality.  Check out the ``tests`` directory in the project for a set of example configs and samples.  You can execute a test config by doing:
+
+    python bin/eventgen.py tests/<some>/<test>.conf
