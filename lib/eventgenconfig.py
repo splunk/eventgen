@@ -802,6 +802,7 @@ class Config:
         logger.info("Caught kill, exiting...")
         # Kill off zeromq context which kills any processing threads
         if self.queueing == 'zeromq':
+            logger.info("Shutting down zeromq threads")
             self.zmqcontext.term()
 
         # Loop through all threads/processes and mark them for death
