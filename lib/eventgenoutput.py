@@ -31,6 +31,7 @@ try:
     import zmq
 except ImportError, e:
     pass
+import marshal
 
 class Output:
     """Base class which loads output plugins in BASE_DIR/lib/plugins/output and handles queueing"""
@@ -110,7 +111,7 @@ class Output:
                     if c.queueing == 'python':
                         c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
                     elif c.queueing == 'zeromq':
-                        self.sender.send_pyobj((self._sample.name, q))
+                        self.sender.send(marshal.dumps((self._sample.name, q)))
                     c.outputQueueSize.increment()
                     # logger.info("Outputting queue")
                     break

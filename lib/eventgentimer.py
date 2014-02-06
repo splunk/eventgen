@@ -11,6 +11,7 @@ try:
 except ImportError:
     pass
 from eventgenoutput import Output
+import marshal
 
 class Timer(threading.Thread):
 # class Timer(multiprocessing.Process):
@@ -148,7 +149,7 @@ class Timer(threading.Thread):
                                     if c.queueing == 'python':
                                         c.generatorQueue.put((self.sample.name, count, time.mktime(self.sample.earliestTime().timetuple()), time.mktime(self.sample.latestTime().timetuple())), block=True, timeout=1.0)
                                     elif c.queueing == 'zeromq':
-                                        self.sender.send_pyobj((self.sample.name, count, time.mktime(self.sample.earliestTime().timetuple()), time.mktime(self.sample.latestTime().timetuple())))
+                                        self.sender.send(marshal.dumps((self.sample.name, count, time.mktime(self.sample.earliestTime().timetuple()), time.mktime(self.sample.latestTime().timetuple()))))
                                     c.generatorQueueSize.increment()
                                     stop = True
                                 except Full:

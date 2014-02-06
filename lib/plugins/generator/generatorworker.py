@@ -16,6 +16,7 @@ try:
     import zmq
 except ImportError, e:
     pass
+import marshal
 
 class GeneratorProcessWorker(multiprocessing.Process):
     def __init__(self, num, q1, q2):
@@ -82,7 +83,7 @@ class GeneratorRealWorker:
                 if c.queueing == 'python':
                     samplename, count, earliestts, latestts = c.generatorQueue.get(block=True, timeout=1.0)
                 elif c.queueing == 'zeromq':
-                    samplename, count, earliestts, latestts = self.receiver.recv_pyobj()
+                    samplename, count, earliestts, latestts = marshal.loads(self.receiver.recv())
                 earliest = datetime.datetime.fromtimestamp(earliestts)
                 latest = datetime.datetime.fromtimestamp(latestts)
                 c.generatorQueueSize.decrement()
