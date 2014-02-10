@@ -36,7 +36,7 @@ class ReplayGenerator(GeneratorPlugin):
         self._rpevents = self.sampleDict
         self._currentevent = 0
 
-        self.setupBackfill(sample.name)
+        self.setupBackfill(sample)
 
 
     def gen(self, count, earliest, latest):
@@ -92,24 +92,25 @@ class ReplayGenerator(GeneratorPlugin):
             ## Iterate tokens
             for token in s.tokens:
                 token.mvhash = mvhash
-                event = token.replace(event)
+                event = token.replace(event, et=s.earliestTime(), lt=s.latestTime(), s=s)
             if(s.hostToken):
                 # clear the host mvhash every time, because we need to re-randomize it
                 s.hostToken.mvhash =  {}
 
-            host = eventsDict[x]['host']
+            host = self.sampleDict[x]['host']
             if (s.hostToken):
                 host = s.hostToken.replace(host, s=s)
 
             l = [ { '_raw': event,
-                    'index': eventsDict[x]['index'],
+                    'index': self.sampleDict[x]['index'],
                     'host': host,
                     'hostRegex': s.hostRegex,
-                    'source': eventsDict[x]['source'],
-                    'sourcetype': eventsDict[x]['sourcetype'],
+                    'source': self.sampleDict[x]['source'],
+                    'sourcetype': self.sampleDict[x]['sourcetype'],
                     '_time': time.mktime(s.timestamp.timetuple()) } ]
 
             s.out.bulksend(l)
+            s.timestamp = None
 
 
         # If we roll over the max number of lines, roll over the counter and start over
