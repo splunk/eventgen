@@ -92,11 +92,11 @@ class Output:
     def flush(self, endOfInterval=False):
         flushing = False
         if endOfInterval:
-            self._sample.intervalsSinceFlush.increment()
-            if self._sample.intervalsSinceFlush.value() >= self._sample.maxIntervalsBeforeFlush:
+            c.intervalsSinceFlush[self._sample.name].increment()
+            if c.intervalsSinceFlush[self._sample.name].value() >= self._sample.maxIntervalsBeforeFlush:
                 logger.debugv("Exceeded maxIntervalsBeforeFlush, flushing")
                 flushing = True
-                self._sample.intervalsSinceFlush.clear()
+                c.intervalsSinceFlush[self._sample.name].clear()
         else:
             logger.debugv("maxQueueLength exceeded, flushing")
             flushing = True

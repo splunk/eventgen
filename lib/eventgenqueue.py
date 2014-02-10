@@ -12,8 +12,7 @@ class Queue:
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
 
-        logger.info("Creating Queue of depth %d, threading %s" % \
-                (depth, threading))
+        # logger.info("Creating Queue of depth %d, threading %s" % (depth, threading))
         # if queueing == 'python':
         if threading == 'thread':
             self.q = PQueue.Queue(depth)

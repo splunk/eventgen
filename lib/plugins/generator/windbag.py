@@ -8,7 +8,7 @@ from collections import deque
 
 class WindbagGenerator(GeneratorPlugin):
     def __init__(self, sample):
-        GeneratorPlugin.__init__(self, sample)
+        GeneratorPlugin.__init__(self)
 
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')

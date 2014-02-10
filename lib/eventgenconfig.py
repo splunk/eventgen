@@ -225,6 +225,7 @@ class Config:
             self.bytesSent = Counter(0, self.threading)
 
             self._firsttime = False
+            self.intervalsSinceFlush = { }
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
@@ -245,7 +246,7 @@ class Config:
          
         # Loop through all files in passed dirname looking for plugins
         for filename in os.listdir(dirname):
-            filename = dirname + "/" + filename
+            filename = dirname + os.sep + filename
             # If the file exists
             if os.path.isfile(filename):
                 # Split file into a base name plus extension
@@ -264,6 +265,7 @@ class Config:
 
                     # set plugin to something like output.file or generator.default
                     pluginname = filename.split(os.sep)[-2] + '.' + base 
+                    # logger.debugv("Filename: %s os.sep: %s pluginname: %s" % (filename, os.sep, pluginname))
                     plugins[pluginname] = plugin
 
                     # Return is used to determine valid configs, so only return the base name of the plugin
@@ -339,6 +341,39 @@ class Config:
 
         self.splunkEmbedded = True
 
+    def getSplunkUrl(self, s):
+        """
+        Get Splunk URL.  If we're embedded in Splunk, get it from Splunk's Python libraries, otherwise get it from config.
+
+        Returns a tuple of ( splunkUrl, splunkMethod, splunkHost, splunkPort )
+        """
+        if self.splunkEmbedded:
+            try:
+                import splunk.auth
+                splunkUrl = splunk.auth.splunk.getLocalServerInfo()
+                results = re.match('(http|https)://([^:/]+):(\d+).*', splunkUrl)
+                splunkMethod = results.groups()[0]
+                splunkHost = results.groups()[1]
+                splunkPort = results.groups()[2]
+            except:
+                import traceback
+                trace = traceback.format_exc()
+                logger.error('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s.  Stacktrace: %s' % (s.name, trace))
+                raise ValueError('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s' % s.name)
+        else:
+            # splunkMethod and splunkPort are defaulted so only check for splunkHost
+            if s.splunkHost == None:
+                logger.error("Splunk URL Requested but splunkHost not set for sample '%s'" % s.name)
+                raise ValueError("Splunk URL Requested but splunkHost not set for sample '%s'" % s.name)  
+                    
+            splunkUrl = '%s://%s:%s' % (s.splunkMethod, s.splunkHost, s.splunkPort)
+            splunkMethod = s.splunkMethod
+            splunkHost = s.splunkHost
+            splunkPort = s.splunkPort
+
+        logger.debug("Getting Splunk URL: %s Method: %s Host: %s Port: %s" % (splunkUrl, splunkMethod, splunkHost, splunkPort))
+        return (splunkUrl, splunkMethod, splunkHost, splunkPort)
+
 
     def parse(self):
         """Parse configs from Splunk REST Handler or from files.
@@ -386,7 +421,7 @@ class Config:
                         if(key.find("host.") > -1):
                             # logger.info("hostToken.{} = {}".format(value[1],oldvalue))
                             if not isinstance(s.hostToken, Token):
-                                s.hostToken = Token(s)
+                                s.hostToken = Token()
                                 # default hard-coded for host replacement
                                 s.hostToken.replacementType = 'file'
                             setattr(s.hostToken, value[0], oldvalue)
@@ -395,7 +430,7 @@ class Config:
                                 x = (value[0]+1) - len(s.tokens)
                                 s.tokens.extend([None for i in xrange(0, x)])
                             if not isinstance(s.tokens[value[0]], Token):
-                                s.tokens[value[0]] = Token(s)
+                                s.tokens[value[0]] = Token()
                             # logger.info("token[{}].{} = {}".format(value[0],value[1],oldvalue))
                             setattr(s.tokens[value[0]], value[1], oldvalue)
                     elif key == 'eai:acl':
@@ -617,7 +652,7 @@ class Config:
                 s.generator = 'replay'
 
             self.__setPlugin(s)
-            s.intervalsSinceFlush = Counter(0, self.threading)
+            self.intervalsSinceFlush[s.name] = Counter(0, self.threading)
 
         self.samples = tempsamples
         self._confDict = None
@@ -629,7 +664,7 @@ class Config:
         """Validates settings to ensure they won't cause errors further down the line.
         Returns a parsed value (if the value is something other than a string).
         If we've read a token, which is a complex config, returns a tuple of parsed values."""
-        logger.debug("Validating setting for '%s' with value '%s' in stanza '%s'" % (key, value, stanza))
+        logger.debugv("Validating setting for '%s' with value '%s' in stanza '%s'" % (key, value, stanza))
         if key.find('token.') > -1:
             results = re.match('token\.(\d+)\.(\w+)', key)
             if results != None:

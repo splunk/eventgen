@@ -4,7 +4,7 @@ from __future__ import division
 from generatorplugin import GeneratorPlugin
 import os
 import logging
-import datetime
+import datetime, time
 import math
 
 class ReplayGenerator(GeneratorPlugin):
@@ -16,7 +16,9 @@ class ReplayGenerator(GeneratorPlugin):
     _lastts = None
 
     def __init__(self, sample):
-        GeneratorPlugin.__init__(self, sample)
+        GeneratorPlugin.__init__(self)
+
+        self._sample = sample
 
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
@@ -30,11 +32,11 @@ class ReplayGenerator(GeneratorPlugin):
         self._times = [ ]
 
         # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
-        self.loadSample()
+        self.loadSample(sample)
         self._rpevents = self.sampleDict
         self._currentevent = 0
 
-        self.setupBackfill()
+        self.setupBackfill(sample.name)
 
 
     def gen(self, count, earliest, latest):
@@ -95,9 +97,19 @@ class ReplayGenerator(GeneratorPlugin):
                 # clear the host mvhash every time, because we need to re-randomize it
                 s.hostToken.mvhash =  {}
 
-            self.setOutputMetadata(self.sampleDict[x])
+            host = eventsDict[x]['host']
+            if (s.hostToken):
+                host = s.hostToken.replace(host, s=s)
 
-            s.out.send(event)
+            l = [ { '_raw': event,
+                    'index': eventsDict[x]['index'],
+                    'host': host,
+                    'hostRegex': s.hostRegex,
+                    'source': eventsDict[x]['source'],
+                    'sourcetype': eventsDict[x]['sourcetype'],
+                    '_time': time.mktime(s.timestamp.timetuple()) } ]
+
+            s.out.bulksend(l)
 
 
         # If we roll over the max number of lines, roll over the counter and start over

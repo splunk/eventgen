@@ -47,8 +47,6 @@ if __name__ == '__main__':
 
     for s in c.samples:
         if s.interval > 0 or s.mode == 'replay':
-            if s.backfillSearchUrl == None:
-                s.backfillSearchUrl = s.splunkUrl
             logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )    
             t = Timer(1.0, s) 
             c.sampleTimers.append(t)
@@ -77,7 +75,7 @@ if __name__ == '__main__':
             kiloBytesPerSec = c.bytesSent.valueAndClear() / 5 / 1024
             gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
             eventsPerSec = c.eventsSent.valueAndClear() / 5
-            logger.info('Events/Sec: %s Kilobytes/Sec: %1f GB/Day: %1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
+            logger.info('Global Events/Sec: %s Kilobytes/Sec: %1f GB/Day: %1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
             time.sleep(5)
         except KeyboardInterrupt:
             c.handle_exit()
