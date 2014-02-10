@@ -9,17 +9,16 @@ import copy
 import re
 import pprint
 from timeparser import timeParser
+import httplib2, urllib
+from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 
 class GeneratorPlugin:
     queueable = True
     sampleLines = None
     sampleDict = None
 
-    def __init__(self, sample):
-        self._sample = sample
-        
-        self._queue = deque([])
-
+    def __init__(self):
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
@@ -52,11 +51,9 @@ class GeneratorPlugin:
         logger.debugv("Closing sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
         self._sampleFH.close()
 
-    def loadSample(self):
+    def loadSample(self, s):
         """Load sample from disk into self._sample.sampleLines and self._sample.sampleDict, 
         using cached copy if possible"""
-        # Making a copy of self._sample in a short name to save typing
-        s = self._sample
 
         if s.sampletype == 'raw':
             # 5/27/12 CS Added caching of the sample file
@@ -149,9 +146,8 @@ class GeneratorPlugin:
             logger.debugv("Sampletype CSV.  Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                         % (self._sample.index, self._sample.host, self._sample.source, self._sample.sourcetype))
 
-    def setupBackfill(self):
+    def setupBackfill(self, s):
         """Called by non-queueable plugins or by the timer to setup backfill times per config or based on a Splunk Search"""
-        s = self._sample
         if s.backfill != None:
             try:
                 s.backfillts = timeParser(s.backfill, timezone=s.timezone)
@@ -161,17 +157,19 @@ class GeneratorPlugin:
                 raise
 
             if s.backfillSearch != None:
+                if s.backfillSearchUrl == None:
+                    s.backfillSearchUrl = c.getSplunkUrl(s)[0]
                 if not s.backfillSearch.startswith('search'):
-                    s.backfillSearch = 'search ' + self.backfillSearch
-                self.backfillSearch += '| head 1 | table _time'
+                    s.backfillSearch = 'search ' + s.backfillSearch
+                s.backfillSearch += '| head 1 | table _time'
 
                 logger.debug("Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" % (s.backfillSearchUrl, s.backfillSearch, s.sessionKey))
 
                 results = httplib2.Http(disable_ssl_certificate_validation=True).request(\
                             s.backfillSearchUrl + '/services/search/jobs',
-                            'POST', headers={'Authorization': 'Splunk %s' % self.sessionKey}, \
-                            body=urllib.urlencode({'search': self.backfillSearch,
-                                                    'earliest_time': self.backfill,
+                            'POST', headers={'Authorization': 'Splunk %s' % s.sessionKey}, \
+                            body=urllib.urlencode({'search': s.backfillSearch,
+                                                    'earliest_time': s.backfill,
                                                     'exec_mode': 'oneshot'}))[1]
                 try:
                     temptime = minidom.parseString(results).getElementsByTagName('text')[0].childNodes[0].nodeValue

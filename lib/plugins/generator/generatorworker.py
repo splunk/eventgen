@@ -104,8 +104,7 @@ class GeneratorRealWorker:
                     if sample.out == None:
                         logger.info("Setting up Output class for sample '%s' in app '%s'" % (sample.name, sample.app))
                         sample.out = Output(sample)
-                    plugin.gen(count, earliest, latest)
-                    sample.timestamp = None
+                    plugin.gen(count, earliest, latest, samplename=samplename)
                 else:
                     logger.debug("Received sentinel, shutting down GeneratorWorker %d" % self.num)
                     self.stop()

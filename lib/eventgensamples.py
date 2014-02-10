@@ -15,9 +15,6 @@ import copy
 from eventgenoutput import Output
 from eventgentoken import Token
 from timeparser import timeParser, timeDelta2secs
-import httplib2, urllib
-from xml.dom import minidom
-from xml.parsers.expat import ExpatError
 from eventgencounter import Counter
 
 class Sample:
@@ -81,7 +78,6 @@ class Sample:
     backfillts = None
     backfilldone = None
     stopping = False
-    intervalsSinceFlush = None
     maxIntervalsBeforeFlush = None
     maxQueueLength = None
 

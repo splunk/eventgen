@@ -38,54 +38,22 @@ class SplunkStreamOutputPlugin(OutputPlugin):
         from eventgenconfig import Config
         globals()['c'] = Config()
 
-        if c.splunkEmbedded:
-            try:
-                import splunk.auth
-                self._sample.splunkUrl = splunk.auth.splunk.getLocalServerInfo()
-                results = re.match('(http|https)://([^:/]+):(\d+).*', self._sample.splunkUrl)
-                self._splunkMethod = results.groups()[0]
-                self._splunkHost = results.groups()[1]
-                self._splunkPort = results.groups()[2]
-            except:
-                import traceback
-                trace = traceback.format_exc()
-                logger.error('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s.  Stacktrace: %s' % (self._sample.name, trace))
-                raise ValueError('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s' % self._sample.name)
-        else:
-            if sample.splunkHost == None:
-                logger.error('outputMode splunkstream but splunkHost not specified for sample %s' % self._sample.name)
-                raise ValueError('outputMode splunkstream but splunkHost not specified for sample %s' % self._sample.name)  
-            elif sample.splunkHost == '[':
-                try:
-                    sample.splunkHost = json.loads(sample.splunkHost)
-                except:
-                    logger.error('splunkHost configured as JSON, but unparseable for sample %s' % self._sample.name)
-                    raise ValueError('splunkHost configured as JSON, but unparseable for sample %s' % self._sample.name)
-            if sample.splunkUser == None:
-                logger.error('outputMode splunkstream but splunkUser not specified for sample %s' % self._sample.name)
-                raise ValueError('outputMode splunkstream but splunkUser not specified for sample %s' % self._sample.name)     
-            if sample.splunkPass == None:
-                logger.error('outputMode splunkstream but splunkPass not specified for sample %s' % self._sample.name)
-                raise ValueError('outputMode splunkstream but splunkPass not specified for sample %s' % self._sample.name)
-                    
-            self._splunkHost = sample.splunkHost
-            self._splunkPort = sample.splunkPort
-            self._splunkMethod = sample.splunkMethod
-            self._splunkUser = sample.splunkUser
-            self._splunkPass = sample.splunkPass
-            self._sample.splunkUrl = '%s://%s:%s' % (self._splunkMethod, self._splunkHost, self._splunkPort)
+        self._splunkUrl, self._splunkMethod, self._splunkHost, self._splunkPort = c.getSplunkUrl(self._sample)
+        self._splunkUser = self._sample.splunkUser
+        self._splunkPass = self._sample.splunkPass
             
-            if self._sample.sessionKey == None:
-                try:
-                    myhttp = httplib2.Http(disable_ssl_certificate_validation=True)
-                    response = myhttp.request(self._sample.splunkUrl + '/services/auth/login', 'POST',
-                                                headers = {}, body=urllib.urlencode({'username': self._splunkUser, 
-                                                                                    'password': self._splunkPass}))[1]
-                    self._sample.sessionKey = minidom.parseString(response).getElementsByTagName('sessionKey')[0].childNodes[0].nodeValue
-                    logger.debug("Got new session for splunkstream, sessionKey '%s'" % self._sample.sessionKey)
-                except:
-                    logger.error('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample.name)
-                    raise IOError('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample.name)
+        if self._sample.sessionKey == None:
+            try:
+                myhttp = httplib2.Http(disable_ssl_certificate_validation=True)
+                logger.debugv("Getting session key from '%s' with user '%s' and pass '%s'" % (self._splunkUrl + '/services/auth/login', self._splunkUser, self._splunkPass))
+                response = myhttp.request(self._splunkUrl + '/services/auth/login', 'POST',
+                                            headers = {}, body=urllib.urlencode({'username': self._splunkUser, 
+                                                                                'password': self._splunkPass}))[1]
+                self._sample.sessionKey = minidom.parseString(response).getElementsByTagName('sessionKey')[0].childNodes[0].nodeValue
+                logger.debug("Got new session for splunkstream, sessionKey '%s'" % self._sample.sessionKey)
+            except:
+                logger.error('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample.name)
+                raise IOError('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample.name)
                 
         logger.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._sample.sessionKey, self._sample.name))   
 
