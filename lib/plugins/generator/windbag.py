@@ -17,7 +17,7 @@ class WindbagGenerator(GeneratorPlugin):
         from eventgenconfig import Config
         globals()['c'] = Config()
 
-    def gen(self, count, earliest, latest):
+    def gen(self, count, earliest, latest, samplename=None):
         # l = range(count)
         # for i in xrange(count):
         #     # self._sample.timestamp = latest

@@ -1,6 +1,7 @@
 # TODO Move config settings to plugins
 # TODO Remove old gen method
-# TODO 
+# TODO Sample object now incredibly overloaded and not threadsafe.  Need to make it threadsafe and make it simpler to get a
+#       copy of whats needed without the whole object.
 
 from __future__ import division, with_statement
 import os, sys
@@ -15,9 +16,6 @@ import copy
 from eventgenoutput import Output
 from eventgentoken import Token
 from timeparser import timeParser, timeDelta2secs
-import httplib2, urllib
-from xml.dom import minidom
-from xml.parsers.expat import ExpatError
 from eventgencounter import Counter
 
 class Sample:
@@ -81,7 +79,6 @@ class Sample:
     backfillts = None
     backfilldone = None
     stopping = False
-    intervalsSinceFlush = None
     maxIntervalsBeforeFlush = None
     maxQueueLength = None
 

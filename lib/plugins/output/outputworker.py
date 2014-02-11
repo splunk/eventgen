@@ -16,6 +16,7 @@ try:
     import zmq, errno
 except ImportError, e:
     pass
+import marshal
 
 class OutputProcessWorker(multiprocessing.Process):
     def __init__(self, num):
@@ -81,7 +82,7 @@ class OutputRealWorker:
                     queue = [ ]
                     while len(queue) == 0 and not self.stopping:
                         # try:
-                        name, queue = self.receiver.recv_pyobj()
+                        name, queue = marshal.loads(self.receiver.recv())
                         # except zmq.ZMQError as err:
                         #     if err.errno != errno.EINTR and err.errno != errno.EAGAIN:
                         #         raise

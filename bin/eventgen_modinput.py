@@ -97,6 +97,11 @@ def get_config():
     return config
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--scheme":
+            do_scheme()
+            sys.exit(0)
+            
     c = Config()
     # Logger is setup by Config, just have to get an instance
     logger = logging.getLogger('eventgen')
@@ -108,14 +113,13 @@ if __name__ == '__main__':
     logger.handlers = [ ]
     logger.addHandler(streamHandler)
     logger.info('Starting eventgen')
+
+    # Start the stream, only once for the whole program
+    print '<stream>\n'
         
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "--scheme":
-            do_scheme()
-            sys.exit(0)
 
     splunkconf = get_config()
-    logger.debug("Splunkconf: %s" % pprint.pformat(splunkconf))
+    # logger.debug("Splunkconf: %s" % pprint.pformat(splunkconf))
     if 'session_key' in splunkconf:
         c.makeSplunkEmbedded(sessionKey=splunkconf['session_key'])
     else:
@@ -136,6 +140,8 @@ if __name__ == '__main__':
     if os.name != "nt":
         c.set_exit_handler(c.handle_exit)
     first = True
+    outputQueueCounter = 0
+    generatorQueueCounter = 0
     while (1):
         try:
             ## Only need to start timers once
@@ -154,7 +160,7 @@ if __name__ == '__main__':
             kiloBytesPerSec = c.bytesSent.valueAndClear() / 5 / 1024
             gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
             eventsPerSec = c.eventsSent.valueAndClear() / 5
-            logger.info('Events/Sec: %s Kilobytes/Sec: %1f GB/Day: %1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
+            logger.info('Global Events/Sec: %s Kilobytes/Sec: %1f GB/Day: %1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
             time.sleep(5)
         except KeyboardInterrupt:
             c.handle_exit()

@@ -31,6 +31,7 @@ try:
     import zmq
 except ImportError, e:
     pass
+import marshal
 
 class Output:
     """
@@ -102,11 +103,11 @@ class Output:
         """
         flushing = False
         if endOfInterval:
-            self._sample.intervalsSinceFlush.increment()
-            if self._sample.intervalsSinceFlush.value() >= self._sample.maxIntervalsBeforeFlush:
+            c.intervalsSinceFlush[self._sample.name].increment()
+            if c.intervalsSinceFlush[self._sample.name].value() >= self._sample.maxIntervalsBeforeFlush:
                 logger.debugv("Exceeded maxIntervalsBeforeFlush, flushing")
                 flushing = True
-                self._sample.intervalsSinceFlush.clear()
+                c.intervalsSinceFlush[self._sample.name].clear()
         else:
             logger.debugv("maxQueueLength exceeded, flushing")
             flushing = True
@@ -121,7 +122,7 @@ class Output:
                     if c.queueing == 'python':
                         c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
                     elif c.queueing == 'zeromq':
-                        self.sender.send_pyobj((self._sample.name, q))
+                        self.sender.send(marshal.dumps((self._sample.name, q)))
                     c.outputQueueSize.increment()
                     # logger.info("Outputting queue")
                     break
