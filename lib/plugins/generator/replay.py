@@ -4,7 +4,7 @@ from __future__ import division
 from generatorplugin import GeneratorPlugin
 import os
 import logging
-import datetime
+import datetime, time
 import math
 
 class ReplayGenerator(GeneratorPlugin):
@@ -17,6 +17,8 @@ class ReplayGenerator(GeneratorPlugin):
 
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
+
+        self._sample = sample
 
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
@@ -90,14 +92,25 @@ class ReplayGenerator(GeneratorPlugin):
             ## Iterate tokens
             for token in s.tokens:
                 token.mvhash = mvhash
-                event = token.replace(event)
+                event = token.replace(event, et=s.earliestTime(), lt=s.latestTime(), s=s)
             if(s.hostToken):
                 # clear the host mvhash every time, because we need to re-randomize it
                 s.hostToken.mvhash =  {}
 
-            self.setOutputMetadata(self.sampleDict[x])
+            host = self.sampleDict[x]['host']
+            if (s.hostToken):
+                host = s.hostToken.replace(host, s=s)
 
-            s.out.send(event)
+            l = [ { '_raw': event,
+                    'index': self.sampleDict[x]['index'],
+                    'host': host,
+                    'hostRegex': s.hostRegex,
+                    'source': self.sampleDict[x]['source'],
+                    'sourcetype': self.sampleDict[x]['sourcetype'],
+                    '_time': time.mktime(s.timestamp.timetuple()) } ]
+
+            s.out.bulksend(l)
+            s.timestamp = None
 
 
         # If we roll over the max number of lines, roll over the counter and start over
@@ -116,7 +129,7 @@ class ReplayGenerator(GeneratorPlugin):
 
         if partialInterval > 0:
             timeDiffFrac = "%d.%06d" % (self._timeSinceSleep.seconds, self._timeSinceSleep.microseconds)
-            logger.info("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
+            logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
                         % (s.name, s.app, timeDiffFrac, partialInterval) )
             self._timeSinceSleep = datetime.timedelta()
 

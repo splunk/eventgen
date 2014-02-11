@@ -14,10 +14,10 @@ class ModInputOutputPlugin(OutputPlugin):
     MAXQUEUELENGTH = 10
 
     def __init__(self, sample):
-        print '<stream>\n'
         OutputPlugin.__init__(self, sample)
 
     def flush(self, q):
+        out = ""
         if len(q) > 0:
             m = q.popleft()
             while m:
@@ -35,7 +35,7 @@ class ModInputOutputPlugin(OutputPlugin):
                 except IndexError:
                     m = False
         
-        out += '</stream>'
+        # out += '</stream>'
         print out
         sys.stdout.flush()
 

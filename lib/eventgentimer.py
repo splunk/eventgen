@@ -11,6 +11,7 @@ try:
 except ImportError:
     pass
 from eventgenoutput import Output
+import marshal
 
 class Timer(threading.Thread):
 # class Timer(multiprocessing.Process):
@@ -85,6 +86,9 @@ class Timer(threading.Thread):
                         # 12/15/13 CS Moving the rating to a separate plugin architecture
                         count = self.rater.rate()
 
+                        et = self.sample.earliestTime()
+                        lt = self.sample.latestTime()
+
                         # Override earliest and latest during backfill until we're at current time
                         if self.sample.backfill != None and not self.sample.backfilldone:
                             if self.sample.backfillts >= self.sample.now(realnow=True):
@@ -95,7 +99,7 @@ class Timer(threading.Thread):
 
                         if not plugin.queueable:
                             try:
-                                partialInterval = plugin.gen(count, None, None)
+                                partialInterval = plugin.gen(count, et, lt)
                             # 11/24/13 CS Blanket catch for any errors
                             # If we've gotten here, all error correction has failed and we
                             # need to gracefully exit providing some error context like what sample
@@ -132,24 +136,17 @@ class Timer(threading.Thread):
                                         % (self.sample.name, self.sample.app, partialInterval) ) 
                             # logger.debug("Queue depth for sample '%s' in app '%s': %d" % (self.sample.name, self.sample.app, c.outputQueue.qsize()))   
                             # if sleepTime > 0:
-                            if self.countdown > 0:
-                                self.sample.saveState()
                         else:
-                            # Check for if we're backfilling still
-
-                            # Determine earliest and latest times to send
-
                             # Put into the queue to be generated
-                            # TODO Temporary, just gnerate counte events for now
-                            logger.debug("Putting %d events in queue for sample '%s'" % (count, self.sample.name))
                             stop = False
                             while not stop:
                                 try:
                                     if c.queueing == 'python':
-                                        c.generatorQueue.put((self.sample.name, count, time.mktime(self.sample.earliestTime().timetuple()), time.mktime(self.sample.latestTime().timetuple())), block=True, timeout=1.0)
+                                        c.generatorQueue.put((self.sample.name, count, time.mktime(et.timetuple()), time.mktime(lt.timetuple())), block=True, timeout=1.0)
                                     elif c.queueing == 'zeromq':
-                                        self.sender.send_pyobj((self.sample.name, count, time.mktime(self.sample.earliestTime().timetuple()), time.mktime(self.sample.latestTime().timetuple())))
+                                        self.sender.send(marshal.dumps((self.sample.name, count, time.mktime(et.timetuple()), time.mktime(lt.timetuple()))))
                                     c.generatorQueueSize.increment()
+                                    logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
                                     stop = True
                                 except Full:
                                     logger.warn("Generator Queue Full, looping")
@@ -170,6 +167,9 @@ class Timer(threading.Thread):
                             incmicrosecs = self.countdown % 1
                             self.sample.backfillts += datetime.timedelta(seconds=incsecs, microseconds=incmicrosecs)
                             self.countdown = 0
+
+                        if self.countdown > 0:
+                            self.sample.saveState()
                     else:
                         self.countdown -= self.time
                         time.sleep(self.time)

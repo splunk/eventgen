@@ -1,9 +1,13 @@
+# TODO Sample object now incredibly overloaded and not threadsafe.  Need to make it threadsafe and make it simpler to get a
+#       copy of whats needed without the whole object.
+
 from __future__ import division
 from generatorplugin import GeneratorPlugin
 import os
 import logging
-import datetime
+import datetime, time
 import random
+import copy
 
 class DefaultGenerator(GeneratorPlugin):
     def __init__(self, sample):
@@ -16,14 +20,13 @@ class DefaultGenerator(GeneratorPlugin):
         from eventgenconfig import Config
         globals()['c'] = Config()
 
-        # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
+    def gen(self, count, earliest, latest, samplename=None):
+        # 2/10/14 CS set s to our local copy of the sample
+        s = self._samples[samplename]
+        self._sample = s
         self.loadSample()
 
-    def gen(self, count, earliest, latest):
-        # For shortness sake, we're going to call the sample s
-        s = self._sample
-
-        logger.debug("Generating sample '%s' in app '%s' with count %d" % (s.name, s.app, count))
+        logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (s.name, s.app, count, earliest, latest))
         startTime = datetime.datetime.now()
 
         # If we're random, fill random events from sampleDict into eventsDict
@@ -74,21 +77,34 @@ class DefaultGenerator(GeneratorPlugin):
             ## Iterate tokens
             for token in s.tokens:
                 token.mvhash = mvhash
-                logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
-                event = token.replace(event)
+                # logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
+                event = token.replace(event, et=earliest, lt=latest, s=s)
             if(s.hostToken):
                 # clear the host mvhash every time, because we need to re-randomize it
                 s.hostToken.mvhash =  {}
 
-            self.setOutputMetadata(eventsDict[x])
+            host = eventsDict[x]['host']
+            if (s.hostToken):
+                host = s.hostToken.replace(host, s=s)
 
-            s.out.send(event)
+            if s.timestamp == None:
+                s.timestamp = s.now()
+            l = [ { '_raw': event,
+                    'index': eventsDict[x]['index'],
+                    'host': host,
+                    'hostRegex': s.hostRegex,
+                    'source': eventsDict[x]['source'],
+                    'sourcetype': eventsDict[x]['sourcetype'],
+                    '_time': time.mktime(s.timestamp.timetuple()) } ]
+
+            s.out.bulksend(l)
+            s.timestamp = None
 
         endTime = datetime.datetime.now()
         timeDiff = endTime - startTime
         timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
         s.out.flush(endOfInterval=True)
-        logger.info("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
+        logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
 
 def load():
     return DefaultGenerator

@@ -36,8 +36,7 @@ class Token:
     _stringMatch = None
     _listMatch = None
     
-    def __init__(self, sample):
-        self.sample = sample
+    def __init__(self):
         
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
@@ -79,14 +78,16 @@ class Token:
             self._tokenre = re.compile(self.token)
         return self._tokenre.findall(event)
         
-    def replace(self, event):
+    def replace(self, event, et=None, lt=None, s=None):
         """Replaces all instances of this token in provided event and returns event"""
         offset = 0
         tokenMatch = list(self._finditer(event))
-        logger.debugv("Found %d matches for token: '%s' of type '%s' in sample '%s'" % (len(tokenMatch), self.token, self.replacementType, self.sample.name))
+        logger.debugv("Found %d matches for token: '%s' of type '%s' in sample '%s'" % (len(tokenMatch), self.token, self.replacementType, s.name))
+        if self.replacementType == 'timestamp':
+            logger.debugv("Timestamp replacement with et '%s' and lt '%s'" % (et, lt))
 
         if len(tokenMatch) > 0:
-            replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)])
+            replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)], et, lt, s)
             
             if replacement is not None:
                 # logger.debug("Replacement: '%s'" % replacement)
@@ -102,7 +103,7 @@ class Token:
                         # with the same value in multiple matches, here we'll include
                         # ones that need to be replaced for every match
                         if self.replacementType == 'replaytimestamp':
-                            replacement = self._getReplacement(event[matchStart:matchEnd])
+                            replacement = self._getReplacement(event[matchStart:matchEnd], et, lt, s)
                         offset += len(replacement) - len(match.group(1))
                     except:
                         matchStart = match.start(0) + offset
@@ -113,7 +114,7 @@ class Token:
                         # with the same value in multiple matches, here we'll include
                         # ones that need to be replaced for every match
                         if self.replacementType == 'replaytimestamp':
-                            replacement = self._getReplacement(event[matchStart:matchEnd])
+                            replacement = self._getReplacement(event[matchStart:matchEnd], et, lt, s)
                         offset += len(replacement) - len(match.group(0))
                     # logger.debug("matchStart %d matchEnd %d offset %d" % (matchStart, matchEnd, offset))
                     event = startEvent + replacement + endEvent
@@ -123,17 +124,14 @@ class Token:
                 self._lastts = None
         return event
                     
-    def _getReplacement(self, old=None):
+    def _getReplacement(self, old=None, earliestTime=None, latestTime=None, s=None):
         if self.replacementType == 'static':
             return self.replacement
         elif self.replacementType in ('timestamp', 'replaytimestamp'):
-            if self.sample.earliest and self.sample.latest:
-                earliestTime = self.sample.earliestTime()
-                latestTime = self.sample.latestTime()
-                
+            if s.earliest and s.latest:
                 if earliestTime and latestTime:
                     if latestTime>=earliestTime:
-                        if self.sample.timestamp == None:
+                        if s.timestamp == None:
                             minDelta = 0
 
                             ## Compute timeDelta as total_seconds
@@ -145,11 +143,11 @@ class Token:
 
                             ## Compute replacmentTime
                             replacementTime = latestTime - randomDelta
-                            self.sample.timestamp = replacementTime
+                            s.timestamp = replacementTime
                         else:
-                            replacementTime = self.sample.timestamp
+                            replacementTime = s.timestamp
 
-                        # logger.debug("Generating timestamp for sample '%s' with randomDelta %s, minDelta %s, maxDelta %s, earliestTime %s, latestTime %s, earliest: %s, latest: %s" % (self.sample.name, randomDelta, minDelta, maxDelta, earliestTime, latestTime, self.sample.earliest, self.sample.latest))
+                        # logger.debug("Generating timestamp for sample '%s' with randomDelta %s, minDelta %s, maxDelta %s, earliestTime %s, latestTime %s, earliest: %s, latest: %s" % (s.name, randomDelta, minDelta, maxDelta, earliestTime, latestTime, s.earliest, s.latest))
                         
                         if self.replacementType == 'replaytimestamp':
                             if old != None and len(old) > 0:
@@ -195,7 +193,7 @@ class Token:
                                 
                                 # Check to make sure we parsed a year
                                 if currentts.year == 1900:
-                                    currentts = currentts.replace(year=self.sample.now().year)
+                                    currentts = currentts.replace(year=s.now().year)
                                 # We should now know the timeformat and currentts associated with this event
                                 # If we're the first, save those values        
                                 if self._replaytd == None:
@@ -207,7 +205,7 @@ class Token:
                                 # Randomize time a bit between last event and this one
                                 # Note that we'll always end up shortening the time between
                                 # events because we don't know when the next timestamp is going to be
-                                if self.sample.bundlelines:
+                                if s.bundlelines:
                                     if self._lastts == None:
                                         self._lastts = replacementTime
                                     oldtd = replacementTime - self._lastts
@@ -239,7 +237,7 @@ class Token:
                     ## earliestTime/latestTime not proper
                     else:
                         logger.error("Earliest specifier '%s', value '%s' is greater than latest specifier '%s', value '%s' for sample '%s'; will not replace" \
-                                    % (self.sample.earliest, earliestTime, self.sample.latest, latestTime, self.sample.name) )
+                                    % (s.earliest, earliestTime, s.latest, latestTime, s.name) )
                         return old
             ## earliest/latest not proper
             else:
@@ -328,21 +326,21 @@ class Token:
                     replacementInt = random.randint(startInt, endInt)
                     if self.replacementType == 'rated':
                         rateFactor = 1.0
-                        if type(self.sample.hourOfDayRate) == dict:
+                        if type(s.hourOfDayRate) == dict:
                             try:
-                                rateFactor *= self.sample.hourOfDayRate[str(self.sample.now())]
+                                rateFactor *= s.hourOfDayRate[str(s.now())]
                             except KeyError:
                                 import traceback
                                 stack =  traceback.format_exc()
                                 logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
-                        if type(self.sample.dayOfWeekRate) == dict:
+                        if type(s.dayOfWeekRate) == dict:
                             try:
-                                weekday = datetime.date.weekday(self.sample.now())
+                                weekday = datetime.date.weekday(s.now())
                                 if weekday == 6:
                                     weekday = 0
                                 else:
                                     weekday += 1
-                                rateFactor *= self.sample.dayOfWeekRate[str(weekday)]
+                                rateFactor *= s.dayOfWeekRate[str(weekday)]
                             except KeyError:
                                 import traceback
                                 stack =  traceback.format_exc()
@@ -362,22 +360,22 @@ class Token:
                         floatret = round(random.uniform(startFloat,endFloat), len(floatMatch.group(2)))
                         if self.replacementType == 'rated':
                             rateFactor = 1.0
-                            now = self.sample.now()
-                            if type(self.sample.hourOfDayRate) == dict:
+                            now = s.now()
+                            if type(s.hourOfDayRate) == dict:
                                 try:
-                                    rateFactor *= self.sample.hourOfDayRate[str(now.hour)]
+                                    rateFactor *= s.hourOfDayRate[str(now.hour)]
                                 except KeyError:
                                     import traceback
                                     stack =  traceback.format_exc()
                                     logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
-                            if type(self.sample.dayOfWeekRate) == dict:
+                            if type(s.dayOfWeekRate) == dict:
                                 try:
                                     weekday = datetime.date.weekday(now)
                                     if weekday == 6:
                                         weekday = 0
                                     else:
                                         weekday += 1
-                                    rateFactor *= self.sample.dayOfWeekRate[str(weekday)]
+                                    rateFactor *= s.dayOfWeekRate[str(weekday)]
                                 except KeyError:
                                     import traceback
                                     stack =  traceback.format_exc()
@@ -421,7 +419,7 @@ class Token:
                 try:
                     value = json.loads(listMatch.group(1))
                 except:
-                    logger.error("Could not parse json for '%s' in sample '%s'" % (listMatch.group(1), self.sample.name))
+                    logger.error("Could not parse json for '%s' in sample '%s'" % (listMatch.group(1), s.name))
                     return old
                 return random.choice(value)
 
@@ -444,9 +442,9 @@ class Token:
                             replacementColumn = 0
                     if(replacementColumn > 0):
                         # This supports having a drive-letter colon
-                        replacementFile = self.sample.pathParser(":".join(paths[0:-1]))
+                        replacementFile = s.pathParser(":".join(paths[0:-1]))
                     else:
-                        replacementFile = self.sample.pathParser(self.replacement)
+                        replacementFile = s.pathParser(self.replacement)
                 except ValueError, e:
                     logger.error("Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column" % (self.replacement))
                     return old
