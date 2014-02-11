@@ -10,7 +10,7 @@ import subprocess
 
 class WeblogGenerator(GeneratorPlugin):
     def __init__(self, sample):
-        GeneratorPlugin.__init__(self)
+        GeneratorPlugin.__init__(self, sample)
 
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
@@ -39,7 +39,7 @@ class WeblogGenerator(GeneratorPlugin):
         f.close()
         self.webserverstatus_len = len(self.webserverstatus)
 
-    def gen(self, count, earliest, latest):
+    def gen(self, count, earliest, latest, **kwargs):
         # logger.debug("weblog: external_ips_len: %s webhosts_len: %s useragents_len: %s webserverstatus_len: %s" % \
                     # (self.external_ips_len, self.webhosts_len, self.useragents_len, self.webserverstatus_len))
         l = [ { '_raw': ('%s %s - - [%s] ' \

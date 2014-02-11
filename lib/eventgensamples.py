@@ -1,6 +1,7 @@
 # TODO Move config settings to plugins
 # TODO Remove old gen method
-# TODO 
+# TODO Sample object now incredibly overloaded and not threadsafe.  Need to make it threadsafe and make it simpler to get a
+#       copy of whats needed without the whole object.
 
 from __future__ import division, with_statement
 import os, sys

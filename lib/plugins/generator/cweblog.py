@@ -11,7 +11,7 @@ import re
 
 class CWeblogGenerator(GeneratorPlugin):
     def __init__(self, sample):
-        GeneratorPlugin.__init__(self)
+        GeneratorPlugin.__init__(self, sample)
 
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
@@ -20,7 +20,7 @@ class CWeblogGenerator(GeneratorPlugin):
         from eventgenconfig import Config
         globals()['c'] = Config()
 
-    def gen(self, count, earliest, latest):
+    def gen(self, count, earliest, latest, **kwargs):
         # logger.debug("weblog: external_ips_len: %s webhosts_len: %s useragents_len: %s webserverstatus_len: %s" % \
                     # (self.external_ips_len, self.webhosts_len, self.useragents_len, self.webserverstatus_len))
         # path = c.grandparentdir.split(os.sep)

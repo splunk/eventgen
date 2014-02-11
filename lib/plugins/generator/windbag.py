@@ -8,7 +8,7 @@ from collections import deque
 
 class WindbagGenerator(GeneratorPlugin):
     def __init__(self, sample):
-        GeneratorPlugin.__init__(self)
+        GeneratorPlugin.__init__(self, sample)
 
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
@@ -17,7 +17,7 @@ class WindbagGenerator(GeneratorPlugin):
         from eventgenconfig import Config
         globals()['c'] = Config()
 
-    def gen(self, count, earliest, latest):
+    def gen(self, count, earliest, latest, samplename=None):
         # l = range(count)
         # for i in xrange(count):
         #     # self._sample.timestamp = latest
