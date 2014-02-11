@@ -14,18 +14,38 @@ import logging
 import threading
 import multiprocessing
 import time
+import re
+import sys
 import datetime
 from select import select
 from eventgenconfig import Config
 from eventgentimer import Timer
 from eventgenoutput import Output
 
+def parse_arg(arg):
+    """arg must start with a double --"""
+    regex = re.compile('--([A-Za-z0-9]*):([A-Za-z0-9]*)=([A-Za-z0-9]*)')
+    print arg
+    match = regex.match(arg)
+    if match:
+        section = match.group(1)
+        key = match.group(2)
+        value = match.group(3)
+        return {'section': section, 'key': key, 'value': value}
+    return None
+
+def update_config(replacements, config):
+    for replacement in replacements:
+        for sample in config.samples:
+            if replacement['section'] == sample.name:
+                setattr(sample, replacement['key'], replacement['value'])
+
 if __name__ == '__main__':
     c = Config()
     # Logger is setup by Config, just have to get an instance
     logger = logging.getLogger('eventgen')
     logger.info('Starting eventgen')
-    
+
     # 5/6/12 CS use select to listen for input on stdin
     # if we timeout, assume we're not splunk embedded
     # Only support standalone mode on Unix due to limitation with select()
@@ -37,20 +57,22 @@ if __name__ == '__main__':
             sessionKey = ''
     else:
         sessionKey = sys.stdin.readline().strip()
-    
+
     if len(sessionKey) > 0:
         c.makeSplunkEmbedded(sessionKey=sessionKey)
-        
+
     c.parse()
+    replacements = [parse_arg(arg) for arg in sys.argv[1:] if parse_arg(arg)]
+    update_config(replacements, c)
 
     t = Timer(1.0, interruptcatcher=True)
 
     for s in c.samples:
         if s.interval > 0 or s.mode == 'replay':
-            logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )    
-            t = Timer(1.0, s) 
+            logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
+            t = Timer(1.0, s)
             c.sampleTimers.append(t)
-    
+
 
     first = True
     outputQueueCounter = 0
