@@ -33,10 +33,11 @@ except ImportError, e:
     pass
 
 class Output:
-    """Base class which loads output plugins in BASE_DIR/lib/plugins/output and handles queueing"""
+    """
+    Base class which loads output plugins in BASE_DIR/lib/plugins/output and handles queueing
+    """
 
     def __init__(self, sample):
-        """ Initialize the plugin list """
         self.__plugins = {}
 
         # Logger already setup by config, just get an instance
@@ -73,6 +74,9 @@ class Output:
         return self.__str__()
 
     def send(self, msg):
+        """
+        Adds msg to the output buffer, flushes if buffer is more than MAXQUEUELENGTH
+        """
         ts = self._sample.timestamp if self._sample.timestamp != None else self._sample.now()
         self._queue.append({'_raw': msg, 'index': self._sample.index,
                         'source': self._sample.source, 'sourcetype': self._sample.sourcetype,
@@ -83,12 +87,19 @@ class Output:
             self.flush()
 
     def bulksend(self, msglist):
+        """
+        Accepts list, msglist, and adds to the output buffer.  If the buffer exceeds MAXQUEUELENGTH, then flush.
+        """
         self._queue.extend(msglist)
 
         if len(self._queue) >= self.MAXQUEUELENGTH:
             self.flush()
 
     def flush(self, endOfInterval=False):
+        """
+        Flushes output buffer, unless endOfInterval called, and then only flush if we've been called
+        more than maxIntervalsBeforeFlush tunable.
+        """
         flushing = False
         if endOfInterval:
             self._sample.intervalsSinceFlush.increment()

@@ -13,6 +13,7 @@ class DevNullOutputPlugin(OutputPlugin):
     def flush(self, q):
         if self.firsttime:
             self.f = open('/dev/null', 'w')
+            self.firsttime = False
         buf = '\n'.join(x['_raw'].rstrip() for x in q)
         self.f.write(buf)
 
