@@ -16,7 +16,7 @@ class ReplayGenerator(GeneratorPlugin):
     _lastts = None
 
     def __init__(self, sample):
-        GeneratorPlugin.__init__(self)
+        GeneratorPlugin.__init__(self, sample)
 
         self._sample = sample
 
@@ -32,11 +32,11 @@ class ReplayGenerator(GeneratorPlugin):
         self._times = [ ]
 
         # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
-        self.loadSample(sample)
+        self.loadSample()
         self._rpevents = self.sampleDict
         self._currentevent = 0
 
-        self.setupBackfill(sample)
+        self.setupBackfill()
 
 
     def gen(self, count, earliest, latest):
@@ -129,7 +129,7 @@ class ReplayGenerator(GeneratorPlugin):
 
         if partialInterval > 0:
             timeDiffFrac = "%d.%06d" % (self._timeSinceSleep.seconds, self._timeSinceSleep.microseconds)
-            logger.info("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
+            logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
                         % (s.name, s.app, timeDiffFrac, partialInterval) )
             self._timeSinceSleep = datetime.timedelta()
 

@@ -1,3 +1,6 @@
+# TODO Sample object now incredibly overloaded and not threadsafe.  Need to make it threadsafe and make it simpler to get a
+#       copy of whats needed without the whole object.
+
 from __future__ import division
 from generatorplugin import GeneratorPlugin
 import os
@@ -8,7 +11,7 @@ import copy
 
 class DefaultGenerator(GeneratorPlugin):
     def __init__(self, sample):
-        GeneratorPlugin.__init__(self)
+        GeneratorPlugin.__init__(self, sample)
 
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
@@ -18,17 +21,10 @@ class DefaultGenerator(GeneratorPlugin):
         globals()['c'] = Config()
 
     def gen(self, count, earliest, latest, samplename=None):
-        # For shortness sake, we're going to call the sample s
-        s = None
-        for x in c.samples:
-            if x.name == samplename:
-                s = copy.deepcopy(x)
-                self._sample = s
-                # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
-                self.loadSample(s)
-
-        if s == None:
-            raise ValueError("Error in DefaultGenerator.gen: Sample '%s' not found" % samplename)
+        # 2/10/14 CS set s to our local copy of the sample
+        s = self._samples[samplename]
+        self._sample = s
+        self.loadSample()
 
         logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (s.name, s.app, count, earliest, latest))
         startTime = datetime.datetime.now()

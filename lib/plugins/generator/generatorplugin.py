@@ -12,19 +12,28 @@ from timeparser import timeParser
 import httplib2, urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
+from eventgenoutput import Output
 
 class GeneratorPlugin:
     queueable = True
     sampleLines = None
     sampleDict = None
 
-    def __init__(self):
+    def __init__(self, sample):
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
 
         from eventgenconfig import Config
         globals()['c'] = Config()
+
+        # 2/10/14 CS Make a threadsafe copy of all of the samples for us to work on
+        self._samples = dict((s.name, copy.deepcopy(s)) for s in c.samples)
+        self._sample = sample
+
+        if sample.out == None:
+            logger.info("Setting up Output class for sample '%s' in app '%s'" % (sample.name, sample.app))
+            sample.out = Output(sample)
 
         # logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
 
@@ -51,9 +60,11 @@ class GeneratorPlugin:
         logger.debugv("Closing sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
         self._sampleFH.close()
 
-    def loadSample(self, s):
+    def loadSample(self):
         """Load sample from disk into self._sample.sampleLines and self._sample.sampleDict, 
         using cached copy if possible"""
+
+        s = self._sample
 
         if s.sampletype == 'raw':
             # 5/27/12 CS Added caching of the sample file
@@ -146,8 +157,10 @@ class GeneratorPlugin:
             logger.debugv("Sampletype CSV.  Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                         % (self._sample.index, self._sample.host, self._sample.source, self._sample.sourcetype))
 
-    def setupBackfill(self, s):
+    def setupBackfill(self):
         """Called by non-queueable plugins or by the timer to setup backfill times per config or based on a Splunk Search"""
+        s = self._sample
+
         if s.backfill != None:
             try:
                 s.backfillts = timeParser(s.backfill, timezone=s.timezone)
