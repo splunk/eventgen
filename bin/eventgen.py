@@ -25,12 +25,15 @@ from eventgenoutput import Output
 def parse_arg(arg):
     """arg must start with a double --"""
     regex = re.compile('--([A-Za-z0-9]*):([A-Za-z0-9]*)=([A-Za-z0-9]*)')
-    print arg
     match = regex.match(arg)
     if match:
         section = match.group(1)
         key = match.group(2)
         value = match.group(3)
+        try:
+            value = float(value)
+        except:
+            pass
         return {'section': section, 'key': key, 'value': value}
     return None
 
