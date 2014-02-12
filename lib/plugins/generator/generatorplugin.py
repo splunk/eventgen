@@ -31,10 +31,6 @@ class GeneratorPlugin:
         self._samples = dict((s.name, copy.deepcopy(s)) for s in c.samples)
         self._sample = sample
 
-        if sample.out == None:
-            logger.info("Setting up Output class for sample '%s' in app '%s'" % (sample.name, sample.app))
-            sample.out = Output(sample)
-
         # logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
 
         # multiprocessing.Process.__init__(self)
@@ -138,6 +134,10 @@ class GeneratorPlugin:
         for i in xrange(0, len(self.sampleDict)):
             if self.sampleDict[i]['_raw'][-1] != '\n':
                 self.sampleDict[i]['_raw'] += '\n'
+
+        if s.out == None:
+            logger.info("Setting up Output class for sample '%s' in app '%s'" % (s.name, s.app))
+            s.out = Output(s)
 
     def setOutputMetadata(self, event):
         # logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))
