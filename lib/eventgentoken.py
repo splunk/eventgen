@@ -5,7 +5,7 @@ import os
 import logging
 import pprint
 import random
-import datetime
+import datetime, time
 import re
 import json
 import copy
@@ -219,14 +219,16 @@ class Token:
                                 else:
                                     randomtd = datetime.timedelta()
                                 self._lastts = replacementTime
-                                replacementTime = replacementTime.strftime(timeformat)
+                                replacement = self.replacement.replace('%s', str(round(time.mktime(timeformat.timetuple()))).rstrip('0').rstrip('.'))
+                                replacementTime = replacementTime.strftime(replacement)
                                 # logger.debug("Old '%s' Timeformat '%s' currentts '%s' replacementTime '%s' replaytd '%s' randomtd '%s'" \
                                 #             % (old, timeformat, currentts, replacementTime, self._replaytd, randomtd))
                             else:
                                 logger.error("Could not find old value, needed for replaytimestamp")
                                 return old
                         else:
-                            replacementTime = replacementTime.strftime(self.replacement)
+                            replacement = self.replacement.replace('%s', str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
+                            replacementTime = replacementTime.strftime(replacement)
                         ## replacementTime == replacement for invalid strptime specifiers
                         if replacementTime != self.replacement.replace('%', ''):
                             return replacementTime
