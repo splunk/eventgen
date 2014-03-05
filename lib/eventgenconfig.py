@@ -21,6 +21,7 @@ try:
     import zmq
 except ImportError:
     pass
+import threading, multiprocessing
 
 
 
@@ -223,6 +224,8 @@ class Config:
             self.outputQueueSize = Counter(0, self.threading)
             self.eventsSent = Counter(0, self.threading)
             self.bytesSent = Counter(0, self.threading)
+
+            self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
 
             self._firsttime = False
             self.intervalsSinceFlush = { }
