@@ -219,7 +219,7 @@ class Token:
                                 else:
                                     randomtd = datetime.timedelta()
                                 self._lastts = replacementTime
-                                replacement = self.replacement.replace('%s', str(round(time.mktime(timeformat.timetuple()))).rstrip('0').rstrip('.'))
+                                replacement = self.replacement.replace('%s', str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
                                 replacementTime = replacementTime.strftime(replacement)
                                 # logger.debug("Old '%s' Timeformat '%s' currentts '%s' replacementTime '%s' replaytd '%s' randomtd '%s'" \
                                 #             % (old, timeformat, currentts, replacementTime, self._replaytd, randomtd))

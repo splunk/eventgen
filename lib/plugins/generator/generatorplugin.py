@@ -8,6 +8,7 @@ import csv
 import copy
 import re
 import pprint
+import datetime
 from timeparser import timeParser
 import httplib2, urllib
 from xml.dom import minidom
@@ -28,8 +29,9 @@ class GeneratorPlugin:
         globals()['c'] = Config()
 
         # 2/10/14 CS Make a threadsafe copy of all of the samples for us to work on
-        self._samples = dict((s.name, copy.deepcopy(s)) for s in c.samples)
-        self._sample = sample
+        with c.copyLock:
+            self._samples = dict((s.name, copy.deepcopy(s)) for s in c.samples)
+            self._sample = sample
 
         # logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
 
