@@ -1091,6 +1091,14 @@ class Token:
                     replacementInt = random.randint(startInt, endInt)
                     if self.replacementType == 'rated':
                         rateFactor = 1.0
+                        if type(self.minuteOfHourRate) == dict:
+                            try:
+                                rateFactor *= self.minuteOfHourRate[str(self.now().minute)]
+                                logger.debug("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
+                            except KeyError:
+                                import traceback
+                                stack =  traceback.format_exc()
+                                logger.error("Minute of hour rate failed for sample '%s'.  Stacktrace %s" % (self.name, stack))
                         if type(self.sample.hourOfDayRate) == dict:
                             try:
                                 rateFactor *= self.sample.hourOfDayRate[str(self.sample.now())]
@@ -1126,6 +1134,14 @@ class Token:
                         if self.replacementType == 'rated':
                             rateFactor = 1.0
                             now = self.sample.now()
+                            if type(self.sample.minuteOfHourRate) == dict:
+                              try:
+                                  rateFactor *= self.sample.minuteOfHourRate[str(self.sample.now().minute)]
+                                  logger.debug("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self.sample.name, self.sample.app, rateFactor))
+                              except KeyError:
+                                  import traceback
+                                  stack =  traceback.format_exc()
+                                  logger.error("Minute of hour rate failed for sample '%s'.  Stacktrace %s" % (self.sample.name, stack))
                             if type(self.sample.hourOfDayRate) == dict:
                                 try:
                                     rateFactor *= self.sample.hourOfDayRate[str(now.hour)]
