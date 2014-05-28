@@ -81,9 +81,13 @@ class GeneratorRealWorker:
             try:
                 # Grab item from the queue to generate, grab an instance of the plugin, then generate
                 if c.queueing == 'python':
+                    # logger.debugv("Grabbing generator items from python queue")
                     samplename, count, earliestts, latestts = c.generatorQueue.get(block=True, timeout=1.0)
+                    # logger.debugv("Got a generator items from python queue for sample '%s'" % (samplename))
                 elif c.queueing == 'zeromq':
+                    # logger.debugv("Grabbing generator items from zeromq queue")
                     samplename, count, earliestts, latestts = marshal.loads(self.receiver.recv())
+                    # logger.debugv("Got a generator items from zeromq queue for sample '%s'" % (samplename))
                 earliest = datetime.datetime.fromtimestamp(earliestts)
                 latest = datetime.datetime.fromtimestamp(latestts)
                 c.generatorQueueSize.decrement()
@@ -96,7 +100,8 @@ class GeneratorRealWorker:
                             if s.name == samplename:
                                 sample = s
                                 break
-                        plugin = c.getPlugin('generator.'+sample.generator)(sample)
+                        with c.copyLock:
+                            plugin = c.getPlugin('generator.'+sample.generator)(sample)
                         self._pluginCache[sample.name] = plugin
                     # logger.info("GeneratorWorker %d generating %d events from '%s' to '%s'" % (self.num, count, \
                     #             datetime.datetime.strftime(earliest, "%Y-%m-%d %H:%M:%S"), \

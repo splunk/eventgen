@@ -69,10 +69,13 @@ class Timer(threading.Thread):
             if self.sample.out == None:
                 logger.info("Setting up Output class for sample '%s' in app '%s'" % (self.sample.name, self.sample.app))
                 self.sample.out = Output(self.sample)
-            plugin = plugin(self.sample)
+            with c.copyLock:
+                plugin = plugin(self.sample)
             plugin.setupBackfill()
         else:
-            plugin(self.sample).setupBackfill()
+            with c.copyLock:
+                p = plugin(self.sample)
+            p.setupBackfill()
 
         if c.queueing == 'zeromq':
             context = zmq.Context()

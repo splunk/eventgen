@@ -24,6 +24,21 @@ except ImportError:
 import threading, multiprocessing
 
 
+# 4/21/04 CS  Adding a defined constant whether we're running in standalone mode or not
+#             Standalone mode is when we know we're Splunk embedded but we want to force
+#             configs to be read from a file instead of via Splunk's REST endpoint.
+#             This is used in the OIDemo and others for embedding the eventgen into an 
+#             application.  We want to ensure we're reading from files.  It is the app's
+#             responsibility to ensure eventgen.conf settings are not exported to where
+#             SA-Eventgen can see them.
+#              
+#             The reason this is a constant instead of a config setting is we must know
+#             this before we read any config and we cannot use a command line parameter
+#             because we interpret all those as config overrides.
+
+STANDALONE = False
+
+
 
 # 5/10/12 CS Some people consider Singleton to be lazy.  Dunno, I like it for convenience.
 # My general thought on that sort of stuff is if you don't like it, reimplement it.  I'll consider
@@ -40,7 +55,6 @@ class Config:
     # Internal vars
     _firsttime = True
     _confDict = None
-    _isOwnApp = False
 
     # Externally used vars
     debug = False
@@ -126,7 +140,7 @@ class Config:
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
     _validOutputModes = [ ]
-    _intSettings = ['interval', 'count', 'outputWorkers', 'generatorWorkers', 'zmqBasePort', 'maxIntervalsBeforeFlush',
+    _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'zmqBasePort', 'maxIntervalsBeforeFlush',
                     'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler']
@@ -141,7 +155,7 @@ class Config:
     _complexSettings = { 'sampletype': ['raw', 'csv'], 
                          'mode': ['sample', 'replay'],
                          'threading': ['thread', 'process'],
-                         'queueing': ['python', 'zeromq'] }
+                         'queueing': ['python', 'zeromq']}
 
     def __init__(self):
         """Setup Config object.  Sets up Logging and path related variables."""
@@ -174,11 +188,6 @@ class Config:
             # Determine some path names in our environment
             self.grandparentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             self.greatgrandparentdir = os.path.dirname(self.grandparentdir)
-
-            # Determine if we're running as our own Splunk app or embedded in another
-            appName = self.grandparentdir.split(os.sep)[-1].lower()
-            if appName == 'sa-eventgen' or appName == 'eventgen':
-                self._isOwnApp = True
 
             # 1/11/14 CS Adding a initial config parsing step (this does this twice now, oh well, just runs once
             # per execution) so that I can get config before calling parse()
@@ -219,6 +228,8 @@ class Config:
 
 
             self._complexSettings['timezone'] = self._validateTimezone 
+
+            self._complexSettings['count'] = self._validateCount
 
             self.generatorQueueSize = Counter(0, self.threading)
             self.outputQueueSize = Counter(0, self.threading)
@@ -494,7 +505,7 @@ class Config:
             # directories
             if s.sampleDir == None:
                 logger.debug("Sample directory not specified in config, setting based on standard")
-                if self.splunkEmbedded and self._isOwnApp:
+                if self.splunkEmbedded and not STANDALONE:
                     self.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
                 else:
                     self.sampleDir = os.path.join(os.getcwd(), 'samples')
@@ -726,8 +737,10 @@ class Config:
             # which will parse the value or raise a ValueError if it is unparseable
             elif key in self._complexSettings:
                 complexSetting = self._complexSettings[key]
+                logger.debugv("Complex setting for '%s' in stanza '%s'" % (key, stanza))
                 # Set value to result of callback, e.g. parsed, or the function should raise an error
-                if isinstance(complexSetting, types.FunctionType):
+                if isinstance(complexSetting, types.FunctionType) or isinstance(complexSetting, types.MethodType):
+                    logger.debugv("Calling function for setting '%s' with value '%s'" % (key, value))
                     value = complexSetting(value)
                 elif isinstance(complexSetting, list):
                     if not value in complexSetting:
@@ -745,7 +758,7 @@ class Config:
 
     def _validateTimezone(self, value):
         """Callback for complexSetting timezone which will parse and validate the timezone"""
-        logger.debug("Parsing timezone '%s' for stanza '%s'" % (value, stanza))
+        logger.debug("Parsing timezone '%s'" % (value))
         if value.find('local') >= 0:
             value = datetime.timedelta(days=1)
         else:
@@ -757,14 +770,32 @@ class Config:
                     mod = -100
                 value = datetime.timedelta(hours=int(int(value) / 100.0), minutes=int(value) % mod )
             except:
-                logger.error("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
-                raise ValueError("Could not parse timezone '%s' for '%s' in stanza '%s'" % (value, key, stanza))
-        logger.debug("Parsed timezone '%s' for stanza '%s'" % (value, stanza))
+                logger.error("Could not parse timezone '%s' for '%s'" % (value, key))
+                raise ValueError("Could not parse timezone '%s' for '%s'" % (value, key))
+        logger.debug("Parsed timezone '%s'" % (value))
         return value
+
+    def _validateCount(self, value):
+        """Callback to override count to -1 if set to 0 in the config, otherwise return int"""
+        logger.debug("Validating count of %s" % value)
+        # 5/13/14 CS Hack to take a zero count in the config and set it to a value which signifies
+        # the special condition rather than simply being zero events, setting to -1       
+        try:
+            value = int(value)
+        except:
+            logger.error("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
+            raise ValueError("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
+
+        if value == 0:
+            value = -1
+        logger.debug("Count set to %d" % value)
+
+        return value
+
 
     def _buildConfDict(self):
         """Build configuration dictionary that we will use """
-        if self.splunkEmbedded and self._isOwnApp:
+        if self.splunkEmbedded and not STANDALONE:
             logger.info('Retrieving eventgen configurations from /configs/eventgen')
             self._confDict = entity.getEntities('configs/eventgen', count=-1, sessionKey=self.sessionKey)
         else:
