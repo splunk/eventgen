@@ -76,13 +76,17 @@ class OutputRealWorker:
             try:
                 if c.queueing == 'python':
                     # Grab a queue to be written for plugin name, get an instance of the plugin, and call the flush method
+                    # logger.debugv("Grabbing output items from python queue")
                     name, queue = c.outputQueue.get(block=True, timeout=1.0)
+                    # logger.debugv("Got %d output items from python queue for plugin '%s'" % (len(queue), name))
                     # name, queue = c.outputQueue.get(False, 0)
                 elif c.queueing == 'zeromq':
                     queue = [ ]
                     while len(queue) == 0 and not self.stopping:
                         # try:
+                        # logger.debugv("Grabbing output items from zeromq queue")
                         name, queue = marshal.loads(self.receiver.recv())
+                        # logger.debugv("Got %d output items from zeromq queue for plugin '%s'" % (len(queue), name))
                         # except zmq.ZMQError as err:
                         #     if err.errno != errno.EINTR and err.errno != errno.EAGAIN:
                         #         raise

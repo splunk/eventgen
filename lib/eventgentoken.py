@@ -157,6 +157,7 @@ class Token:
                                 currentts = None
                                 try:
                                     strptimelist = json.loads(self.replacement)   
+                                    # logger.debugv("Replaytimestamp formats: %s" % json.dumps(strptimelist))  
                                     for currentformat in strptimelist:
                                         try:
                                             timeformat = currentformat
@@ -170,6 +171,7 @@ class Token:
                                                 break
                                         except ValueError:
                                             pass
+                                    # logger.debugv("Currentts: %s" % currentts)
                                     if type(currentts) != datetime.datetime:
                                         # Total fail
                                         logger.error("Can't find strptime format for this timestamp '%s' in the list of formats.  Returning original value" % old)
@@ -219,8 +221,9 @@ class Token:
                                 else:
                                     randomtd = datetime.timedelta()
                                 self._lastts = replacementTime
-                                replacement = self.replacement.replace('%s', str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
+                                replacement = timeformat.replace('%s', str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
                                 replacementTime = replacementTime.strftime(replacement)
+                                # logger.debugv("ReplacementTime: %s" % replacementTime)
                                 # logger.debug("Old '%s' Timeformat '%s' currentts '%s' replacementTime '%s' replaytd '%s' randomtd '%s'" \
                                 #             % (old, timeformat, currentts, replacementTime, self._replaytd, randomtd))
                             else:
