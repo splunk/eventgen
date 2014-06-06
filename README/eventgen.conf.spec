@@ -116,12 +116,11 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = spool | file | splunkstream | stormstream
-    * Specifies how to output log data.  Spool is default (for legacy reasons).
+outputMode = modinput | file | splunkstream | stdout | devnull | spool
+    * Specifies how to output log data.  Modinput is default.
     * If setting spool, should set spoolDir
     * If setting file, should set logFile
-    * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser
-      and splunkPassword if not Splunk embedded
+    * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser and splunkPassword if not Splunk embedded
     * If setting stormstream, should set projectID and accessToken.
 
 spoolDir = <spool directory>
