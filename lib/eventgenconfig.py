@@ -24,7 +24,25 @@ except ImportError:
 import threading, multiprocessing
 
 
-# 4/21/04 CS  Adding a defined constant whether we're running in standalone mode or not
+# 6/7/14 CS   Adding a new logger adapter class which we will use to override the formatting
+#             for all messsages to include the sample they came from
+class EventgenAdapter(logging.LoggerAdapter):
+    """
+    Pass in a sample parameter and prepend sample to all logs
+    """
+    def process(self, msg, kwargs):
+        return "module='%s' sample='%s': %s" % (self.extra['module'], self.extra['sample'], msg), kwargs
+
+    def debugv(self, msg, *args, **kwargs):
+        """
+        Delegate a debug call to the underlying logger, after adding
+        contextual information from this adapter instance.
+        """
+        msg, kwargs = self.process(msg, kwargs)
+        self.logger.debugv(msg, *args, **kwargs)
+
+
+# 4/21/14 CS  Adding a defined constant whether we're running in standalone mode or not
 #             Standalone mode is when we know we're Splunk embedded but we want to force
 #             configs to be read from a file instead of via Splunk's REST endpoint.
 #             This is used in the OIDemo and others for embedding the eventgen into an 
@@ -182,8 +200,9 @@ class Config:
             logger.addHandler(streamHandler)
             # logging.disable(logging.INFO)
 
+            adapter = EventgenAdapter(logger, {'sample': 'null', 'module': 'config'})
             # Having logger as a global is just damned convenient
-            globals()['logger'] = logger
+            self.logger = adapter
 
             # Determine some path names in our environment
             self.grandparentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -279,13 +298,13 @@ class Config:
 
                     # set plugin to something like output.file or generator.default
                     pluginname = filename.split(os.sep)[-2] + '.' + base 
-                    # logger.debugv("Filename: %s os.sep: %s pluginname: %s" % (filename, os.sep, pluginname))
+                    # self.logger.debugv("Filename: %s os.sep: %s pluginname: %s" % (filename, os.sep, pluginname))
                     plugins[pluginname] = plugin
 
                     # Return is used to determine valid configs, so only return the base name of the plugin
                     ret.append(base)
 
-                    logger.debug("Loading module '%s' from '%s'" % (pluginname, basename))
+                    self.logger.debug("Loading module '%s' from '%s'" % (pluginname, basename))
 
                     # 12/3/13 If we haven't loaded a plugin right or we haven't initialized all the variables
                     # in the plugin, we will get an exception and the plan is to not handle it
@@ -335,9 +354,10 @@ class Config:
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         fileHandler.setFormatter(formatter)
         # fileHandler.setLevel(logging.DEBUG)
-        logger.handlers = [ ] # Remove existing StreamHandler if we're embedded
-        logger.addHandler(fileHandler)
-        logger.info("Running as Splunk embedded")
+        logobj = logging.getLogger('eventgen')
+        logobj.handlers = [ ] # Remove existing StreamHandler if we're embedded
+        logobj.addHandler(fileHandler)
+        self.logger.info("Running as Splunk embedded")
         import splunk.auth as auth
         import splunk.entity as entity
         # 5/7/12 CS For some reason Splunk will not import the modules into global in its copy of python
@@ -372,12 +392,12 @@ class Config:
             except:
                 import traceback
                 trace = traceback.format_exc()
-                logger.error('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s.  Stacktrace: %s' % (s.name, trace))
+                self.logger.error('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s.  Stacktrace: %s' % (s.name, trace))
                 raise ValueError('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s' % s.name)
         else:
             # splunkMethod and splunkPort are defaulted so only check for splunkHost
             if s.splunkHost == None:
-                logger.error("Splunk URL Requested but splunkHost not set for sample '%s'" % s.name)
+                self.logger.error("Splunk URL Requested but splunkHost not set for sample '%s'" % s.name)
                 raise ValueError("Splunk URL Requested but splunkHost not set for sample '%s'" % s.name)  
                     
             splunkUrl = '%s://%s:%s' % (s.splunkMethod, s.splunkHost, s.splunkPort)
@@ -385,7 +405,7 @@ class Config:
             splunkHost = s.splunkHost
             splunkPort = s.splunkPort
 
-        logger.debug("Getting Splunk URL: %s Method: %s Host: %s Port: %s" % (splunkUrl, splunkMethod, splunkHost, splunkPort))
+        self.logger.debug("Getting Splunk URL: %s Method: %s Host: %s Port: %s" % (splunkUrl, splunkMethod, splunkHost, splunkPort))
         return (splunkUrl, splunkMethod, splunkHost, splunkPort)
 
 
@@ -394,7 +414,7 @@ class Config:
         We get called manually instead of in __init__ because we need find out if we're Splunk embedded before
         we figure out how to configure ourselves.
         """
-        logger.debug("Parsing configuration files.")
+        self.logger.debug("Parsing configuration files.")
         self._buildConfDict()
         # Set defaults config instance variables to 'global' section
         # This establishes defaults for other stanza settings
@@ -433,9 +453,9 @@ class Config:
                         # see whether we have enough items in the list to update the token
                         # In general this will keep growing the list by whatever length we need
                         if(key.find("host.") > -1):
-                            # logger.info("hostToken.{} = {}".format(value[1],oldvalue))
+                            # self.logger.info("hostToken.{} = {}".format(value[1],oldvalue))
                             if not isinstance(s.hostToken, Token):
-                                s.hostToken = Token()
+                                s.hostToken = Token(s)
                                 # default hard-coded for host replacement
                                 s.hostToken.replacementType = 'file'
                             setattr(s.hostToken, value[0], oldvalue)
@@ -444,7 +464,7 @@ class Config:
                                 x = (value[0]+1) - len(s.tokens)
                                 s.tokens.extend([None for i in xrange(0, x)])
                             if not isinstance(s.tokens[value[0]], Token):
-                                s.tokens[value[0]] = Token()
+                                s.tokens[value[0]] = Token(s)
                             # logger.info("token[{}].{} = {}".format(value[0],value[1],oldvalue))
                             setattr(s.tokens[value[0]], value[1], oldvalue)
                     elif key == 'eai:acl':
@@ -454,7 +474,7 @@ class Config:
                         # 6/22/12 CS Need a way to show a setting was set by the original
                         # config read
                         s._lockedSettings.append(key)
-                        # logger.debug("Appending '%s' to locked settings for sample '%s'" % (key, s.name))
+                        # self.logger.debug("Appending '%s' to locked settings for sample '%s'" % (key, s.name))
 
 
                 # Validate all the tokens are fully setup, can't do this in _validateSettings
@@ -465,12 +485,12 @@ class Config:
                     t = s.tokens[i]
                     # If the index doesn't exist at all
                     if t == None:
-                        logger.info("Token at index %s invalid" % i)
+                        self.logger.info("Token at index %s invalid" % i)
                         # Can't modify list in place while we're looping through it
                         # so create a list to remove later
                         deleteidx.append(i)
                     elif t.token == None or t.replacementType == None or t.replacement == None:
-                        logger.info("Token at index %s invalid" % i)
+                        self.logger.info("Token at index %s invalid" % i)
                         deleteidx.append(i)
                 newtokens = [ ]
                 for i in xrange(0, len(s.tokens)):
@@ -480,7 +500,7 @@ class Config:
 
                 # Must have eai:acl key to determine app name which determines where actual files are
                 if s.app == None:
-                    logger.error("App not set for sample '%s' in stanza '%s'" % (s.name, stanza))
+                    self.logger.error("App not set for sample '%s' in stanza '%s'" % (s.name, stanza))
                     raise ValueError("App not set for sample '%s' in stanza '%s'" % (s.name, stanza))
 
                 # Set defaults for items not included in the config file
@@ -504,22 +524,22 @@ class Config:
             # 1/5/14 Adding a config setting to override sample directory, primarily so I can put tests in their own
             # directories
             if s.sampleDir == None:
-                logger.debug("Sample directory not specified in config, setting based on standard")
+                self.logger.debug("Sample directory not specified in config, setting based on standard")
                 if self.splunkEmbedded and not STANDALONE:
                     self.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
                 else:
                     self.sampleDir = os.path.join(os.getcwd(), 'samples')
                     if not os.path.exists(self.sampleDir):
                         newSampleDir = os.path.join(os.sep.join(os.getcwd().split(os.sep)[:-1]), 'samples')
-                        logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
+                        self.logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
                         self.sampleDir = newSampleDir
 
                         if not os.path.exists(self.sampleDir):
                             newSampleDir = self.sampleDir = os.path.join(self.grandparentdir, 'samples')
-                            logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
+                            self.logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
                             self.sampleDir = newSampleDir
             else:
-                logger.debug("Sample directory specified in config, checking for relative")
+                self.logger.debug("Sample directory specified in config, checking for relative")
                 # Allow for relative paths to the base directory
                 if not os.path.exists(s.sampleDir):
                     self.sampleDir = os.path.join(self.grandparentdir, s.sampleDir)
@@ -547,12 +567,12 @@ class Config:
                     if results != None:
                         samplePath = os.path.join(self.sampleDir, sample)
                         if os.path.isfile(samplePath):
-                            logger.debug("Found sample file '%s' for app '%s' using config '%s' with priority '%s'; adding to list" \
+                            self.logger.debug("Found sample file '%s' for app '%s' using config '%s' with priority '%s'; adding to list" \
                                 % (sample, s.app, s.name, s._priority) )
                             foundFiles.append(samplePath)
             # If we didn't find any files, log about it
             if len(foundFiles) == 0:
-                logger.warn("Sample '%s' in config but no matching files" % s.name)
+                self.logger.warn("Sample '%s' in config but no matching files" % s.name)
                 # 1/23/14 Change in behavior, go ahead and add the sample even if we don't find a file
                 if not s.disabled:
                     tempsamples2.append(copy.deepcopy(s))
@@ -576,7 +596,7 @@ class Config:
                 if not news.disabled:
                     tempsamples2.append(news)
                 else:
-                    logger.info("Sample '%s' for app '%s' is marked disabled." % (news.name, news.app))
+                    self.logger.info("Sample '%s' for app '%s' is marked disabled." % (news.name, news.app))
 
         # Clear tempsamples, we're going to reuse it
         tempsamples = [ ]
@@ -597,14 +617,14 @@ class Config:
                             # then we're a higher priority match
                         if len(matchs._origName) > len(s._origName) or matchs.name == matchs._origName:
                             # if s._priority < matchs._priority:
-                            logger.debug("Found higher priority for sample '%s' with priority '%s' from sample '%s' with priority '%s'" \
+                            self.logger.debug("Found higher priority for sample '%s' with priority '%s' from sample '%s' with priority '%s'" \
                                         % (s._origName, s._priority, matchs._origName, matchs._priority))
                             foundHigherPriority = True
                             break
                         else:
                             othermatches.append(matchs._origName)
             if not foundHigherPriority:
-                logger.debug("Chose sample '%s' from samples '%s' for file '%s'" \
+                self.logger.debug("Chose sample '%s' from samples '%s' for file '%s'" \
                             % (s._origName, othermatches, s.name))
                 tempsamples.append(s)
 
@@ -638,13 +658,13 @@ class Config:
                             if (destsetting == None or destsetting == getattr(self, settingname)) \
                                     and sourcesetting != None and sourcesetting != getattr(self, settingname) \
                                     and not settingname in s._lockedSettings:
-                                logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to sample '%s' in app '%s'" \
+                                self.logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to sample '%s' in app '%s'" \
                                                 % (settingname, sourcesetting, overridesample._origName, s.name, s.app))
                                 setattr(s, settingname, sourcesetting)
 
                     # Now prepend all the tokens to the beginning of the list so they'll be sure to match first
                     newtokens = copy.deepcopy(s.tokens)
-                    # logger.debug("Prepending tokens from sample '%s' to sample '%s' in app '%s': %s" \
+                    # self.logger.debug("Prepending tokens from sample '%s' to sample '%s' in app '%s': %s" \
                     #             % (overridesample._origName, s.name, s.app, pprint.pformat(newtokens)))
                     newtokens.extend(copy.deepcopy(overridesample.tokens))
                     s.tokens = newtokens
@@ -653,7 +673,7 @@ class Config:
         # settings for any samples that were set to replay mode
         for s in tempsamples:
             if s.mode == 'replay':
-                logger.debug("Setting defaults for replay samples")
+                self.logger.debug("Setting defaults for replay samples")
                 s.earliest = 'now'
                 s.latest = 'now'
                 s.count = 1
@@ -671,26 +691,26 @@ class Config:
         self.samples = tempsamples
         self._confDict = None
 
-        logger.debug("Finished parsing.  Config str:\n%s" % self)
+        self.logger.debug("Finished parsing.  Config str:\n%s" % self)
 
 
     def _validateSetting(self, stanza, key, value):
         """Validates settings to ensure they won't cause errors further down the line.
         Returns a parsed value (if the value is something other than a string).
         If we've read a token, which is a complex config, returns a tuple of parsed values."""
-        logger.debugv("Validating setting for '%s' with value '%s' in stanza '%s'" % (key, value, stanza))
+        self.logger.debugv("Validating setting for '%s' with value '%s' in stanza '%s'" % (key, value, stanza))
         if key.find('token.') > -1:
             results = re.match('token\.(\d+)\.(\w+)', key)
             if results != None:
                 groups = results.groups()
                 if groups[1] not in self._validTokenTypes:
-                    logger.error("Could not parse token index '%s' token type '%s' in stanza '%s'" % \
+                    self.logger.error("Could not parse token index '%s' token type '%s' in stanza '%s'" % \
                                     (groups[0], groups[1], stanza))
                     raise ValueError("Could not parse token index '%s' token type '%s' in stanza '%s'" % \
                                     (groups[0], groups[1], stanza))
                 if groups[1] == 'replacementType':
                     if value not in self._validReplacementTypes:
-                        logger.error("Invalid replacementType '%s' for token index '%s' in stanza '%s'" % \
+                        self.logger.error("Invalid replacementType '%s' for token index '%s' in stanza '%s'" % \
                                     (value, groups[0], stanza))
                         raise ValueError("Could not parse token index '%s' token type '%s' in stanza '%s'" % \
                                     (groups[0], groups[1], stanza))
@@ -700,7 +720,7 @@ class Config:
             if results != None:
                 groups = results.groups()
                 if groups[0] not in self._validHostTokens:
-                    logger.error("Could not parse host token type '%s' in stanza '%s'" % (groups[0], stanza))
+                    self.logger.error("Could not parse host token type '%s' in stanza '%s'" % (groups[0], stanza))
                     raise ValueError("Could not parse host token type '%s' in stanza '%s'" % (groups[0], stanza))
                 return (groups[0], value)
         elif key in self._validSettings:
@@ -708,13 +728,13 @@ class Config:
                 try:
                     value = int(value)
                 except:
-                    logger.error("Could not parse int for '%s' in stanza '%s'" % (key, stanza))
+                    self.logger.error("Could not parse int for '%s' in stanza '%s'" % (key, stanza))
                     raise ValueError("Could not parse int for '%s' in stanza '%s'" % (key, stanza))
             elif key in self._floatSettings:
                 try:
                     value = float(value)
                 except:
-                    logger.error("Could not parse float for '%s' in stanza '%s'" % (key, stanza))
+                    self.logger.error("Could not parse float for '%s' in stanza '%s'" % (key, stanza))
                     raise ValueError("Could not parse float for '%s' in stanza '%s'" % (key, stanza))
             elif key in self._boolSettings:
                 try:
@@ -724,41 +744,41 @@ class Config:
                         value = 0
                     value = bool(value)
                 except:
-                    logger.error("Could not parse bool for '%s' in stanza '%s'" % (key, stanza))
+                    self.logger.error("Could not parse bool for '%s' in stanza '%s'" % (key, stanza))
                     raise ValueError("Could not parse bool for '%s' in stanza '%s'" % (key, stanza))
             elif key in self._jsonSettings:
                 try:
                     value = json.loads(value)
                 except:
-                    logger.error("Could not parse json for '%s' in stanza '%s'" % (key, stanza))
+                    self.logger.error("Could not parse json for '%s' in stanza '%s'" % (key, stanza))
                     raise ValueError("Could not parse json for '%s' in stanza '%s'" % (key, stanza))
             # 12/3/13 CS Adding complex settings, which is a dictionary with the key containing
             # the config item name and the value is a list of valid values or a callback function
             # which will parse the value or raise a ValueError if it is unparseable
             elif key in self._complexSettings:
                 complexSetting = self._complexSettings[key]
-                logger.debugv("Complex setting for '%s' in stanza '%s'" % (key, stanza))
+                self.logger.debugv("Complex setting for '%s' in stanza '%s'" % (key, stanza))
                 # Set value to result of callback, e.g. parsed, or the function should raise an error
                 if isinstance(complexSetting, types.FunctionType) or isinstance(complexSetting, types.MethodType):
-                    logger.debugv("Calling function for setting '%s' with value '%s'" % (key, value))
+                    self.logger.debugv("Calling function for setting '%s' with value '%s'" % (key, value))
                     value = complexSetting(value)
                 elif isinstance(complexSetting, list):
                     if not value in complexSetting:
-                        logger.error("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
+                        self.logger.error("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
                         raise ValueError("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
             elif key == 'outputMode':
                 if not value in self._validOutputModes:
-                    logger.error("outputMode invalid in stanza '%s'" % stanza)
+                    self.logger.error("outputMode invalid in stanza '%s'" % stanza)
                     raise ValueError("outputMode invalid in stanza '%s'" % stanza)
         else:
             # Notifying only if the setting isn't valid and continuing on
             # This will allow future settings to be added and be backwards compatible
-            logger.warn("Key '%s' in stanza '%s' is not a valid setting" % (key, stanza))
+            self.logger.warn("Key '%s' in stanza '%s' is not a valid setting" % (key, stanza))
         return value
 
     def _validateTimezone(self, value):
         """Callback for complexSetting timezone which will parse and validate the timezone"""
-        logger.debug("Parsing timezone '%s'" % (value))
+        self.logger.debug("Parsing timezone '%s'" % (value))
         if value.find('local') >= 0:
             value = datetime.timedelta(days=1)
         else:
@@ -770,25 +790,25 @@ class Config:
                     mod = -100
                 value = datetime.timedelta(hours=int(int(value) / 100.0), minutes=int(value) % mod )
             except:
-                logger.error("Could not parse timezone '%s' for '%s'" % (value, key))
+                self.logger.error("Could not parse timezone '%s' for '%s'" % (value, key))
                 raise ValueError("Could not parse timezone '%s' for '%s'" % (value, key))
-        logger.debug("Parsed timezone '%s'" % (value))
+        self.logger.debug("Parsed timezone '%s'" % (value))
         return value
 
     def _validateCount(self, value):
         """Callback to override count to -1 if set to 0 in the config, otherwise return int"""
-        logger.debug("Validating count of %s" % value)
+        self.logger.debug("Validating count of %s" % value)
         # 5/13/14 CS Hack to take a zero count in the config and set it to a value which signifies
         # the special condition rather than simply being zero events, setting to -1       
         try:
             value = int(value)
         except:
-            logger.error("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
+            self.logger.error("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
             raise ValueError("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
 
         if value == 0:
             value = -1
-        logger.debug("Count set to %d" % value)
+        self.logger.debug("Count set to %d" % value)
 
         return value
 
@@ -796,10 +816,10 @@ class Config:
     def _buildConfDict(self):
         """Build configuration dictionary that we will use """
         if self.splunkEmbedded and not STANDALONE:
-            logger.info('Retrieving eventgen configurations from /configs/eventgen')
+            self.logger.info('Retrieving eventgen configurations from /configs/eventgen')
             self._confDict = entity.getEntities('configs/eventgen', count=-1, sessionKey=self.sessionKey)
         else:
-            logger.info('Retrieving eventgen configurations with ConfigParser()')
+            self.logger.info('Retrieving eventgen configurations with ConfigParser()')
             # We assume we're in a bin directory and that there are default and local directories
             conf = ConfigParser()
             # Make case sensitive
@@ -818,7 +838,7 @@ class Config:
                 conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
                             os.path.join(self.grandparentdir, 'local', 'eventgen.conf')]
 
-            logger.debug('Reading configuration files for non-splunkembedded: %s' % conffiles)
+            self.logger.debug('Reading configuration files for non-splunkembedded: %s' % conffiles)
             conf.read(conffiles)
 
             sections = conf.sections()
@@ -842,13 +862,14 @@ class Config:
 
         # Have to look in the data structure before normalization between what Splunk returns
         # versus what ConfigParser returns.
+        logobj = logging.getLogger('eventgen')
         if self._confDict['global']['debug'].lower() == 'true' \
                 or self._confDict['global']['debug'].lower() == '1':
-            logger.setLevel(logging.DEBUG)
+            logobj.setLevel(logging.DEBUG)
         if self._confDict['global']['verbose'].lower() == 'true' \
                 or self._confDict['global']['verbose'].lower() == '1':
-            logger.setLevel(logging.DEBUGV)
-        logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
+            logobj.setLevel(logging.DEBUGV)
+        self.logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
 
 
     # Copied from http://danielkaes.wordpress.com/2009/06/04/how-to-catch-kill-events-with-python/
@@ -868,10 +889,10 @@ class Config:
         
     def handle_exit(self, sig=None, func=None):
         """Clean up and shut down threads"""
-        logger.info("Caught kill, exiting...")
+        self.logger.info("Caught kill, exiting...")
         # Kill off zeromq context which kills any processing threads
         if self.queueing == 'zeromq':
-            logger.info("Shutting down zeromq threads")
+            self.logger.info("Shutting down zeromq threads")
             self.zmqcontext.term()
 
         # Loop through all threads/processes and mark them for death
@@ -882,14 +903,14 @@ class Config:
         for worker in self.workers:
             worker.stop()
 
-        logger.info("Exiting main thread.")
+        self.logger.info("Exiting main thread.")
         sys.exit(0)
 
     def start(self):
         """Start up worker and zeromq threads"""
 
         if self.queueing == 'zeromq':
-            logger.info("Starting zeromq processing threads")
+            self.logger.info("Starting zeromq processing threads")
             self.zmqcontext = zmq.Context()
             self.proxy1 = zmq.devices.ThreadProxy(zmq.PULL, zmq.PUSH)
             self.proxy1.bind_in(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort))
@@ -900,13 +921,13 @@ class Config:
             self.proxy2.bind_out(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+3))
             self.proxy2.start()
         for x in xrange(0, self.outputWorkers):
-            logger.info("Starting OutputWorker %d" % x)
+            self.logger.info("Starting OutputWorker %d" % x)
             worker = self.getPlugin('OutputWorker')(x)
             worker.daemon = True
             worker.start()
             self.workers.append(worker)
         for x in xrange(0, self.generatorWorkers):
-            logger.info("Starting GeneratorWorker %d" % x)
+            self.logger.info("Starting GeneratorWorker %d" % x)
             worker = self.getPlugin('GeneratorWorker')(x, self.generatorQueue, self.outputQueue)
             worker.daemon = True
             worker.start()
@@ -914,4 +935,4 @@ class Config:
         for sampleTimer in self.sampleTimers:
             sampleTimer.daemon = True
             sampleTimer.start()
-            logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)
+            self.logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)

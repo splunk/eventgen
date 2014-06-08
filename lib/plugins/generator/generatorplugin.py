@@ -23,7 +23,9 @@ class GeneratorPlugin:
     def __init__(self, sample):
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
+        from eventgenconfig import EventgenAdapter
+        adapter = EventgenAdapter(logger, {'module': 'GeneratorPlugin', 'sample': sample.name})
+        globals()['logger'] = adapter
 
         from eventgenconfig import Config
         globals()['c'] = Config()

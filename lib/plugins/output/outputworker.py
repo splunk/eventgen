@@ -49,7 +49,9 @@ class OutputRealWorker:
     def __init__(self, num):
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
+        from eventgenconfig import EventgenAdapter
+        adapter = EventgenAdapter(logger, {'module': 'OutputRealWorker', 'sample': 'null'})
+        globals()['logger'] = adapter
 
         globals()['c'] = Config()
 

@@ -14,7 +14,23 @@ from eventgenoutput import Output
 import marshal
 
 class Timer(threading.Thread):
-# class Timer(multiprocessing.Process):
+    """
+    Overall governor in Eventgen.  A timer is created for every sample in Eventgen.  The Timer has the responsibility
+    for executing each sample.  There are two ways the timer can execute:
+        * Queueable
+        * Non-Queueable
+
+    For Queueable plugins, we place a work item in the generator queue.  Generator workers pick up the item from the generator
+    queue and do work.  This queueing architecture allows for parallel execution of workers.  Workers then place items in the 
+    output queue for Output workers to pick up and output.
+
+    However, for some generators, like the replay generator, we need to keep a single view of state of where we are in the replay.
+    This means we cannot generate items in parallel.  This is why we also offer Non-Queueable plugins.  In the case of 
+    Non-Queueable plugins, the Timer class calls the generator method of the plugin directly, tracks the amount of time
+    the plugin takes to generate and sleeps the remaining interval before calling generate again.
+    """
+
+
     time = None
     stopping = None
     interruptcatcher = None
@@ -23,12 +39,17 @@ class Timer(threading.Thread):
     # Added by CS 5/7/12 to emulate threading.Timer
     def __init__(self, time, sample=None, interruptcatcher=None):
         # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
+        logobj = logging.getLogger('eventgen')
+        from eventgenconfig import EventgenAdapter
+        if sample == None:
+            adapter = EventgenAdapter(logobj, {'module': 'Timer', 'sample': 'null'})
+        else:
+            adapter = EventgenAdapter(logobj, {'module': 'Timer', 'sample': sample.name})
+        self.logger = adapter
 
         globals()['c'] = Config()
 
-        logger.debug('Starting timer for %s' % sample.name if sample is not None else "None")
+        self.logger.debug('Starting timer for %s' % sample.name if sample is not None else "None")
 
         self.time = time
         self.stopping = False
@@ -42,7 +63,9 @@ class Timer(threading.Thread):
         # multiprocessing.Process.__init__(self)
 
     def run(self):
-        # TODO hide this behind a config setting
+        """
+        Simple wrapper method to determine whether we should be running inside python's profiler or not
+        """
         if c.profiler:
             import cProfile
             globals()['threadrun'] = self.real_run
@@ -51,8 +74,14 @@ class Timer(threading.Thread):
             self.real_run()
 
     def real_run(self):
+        """
+        Worker function of the Timer class.  Determine whether a plugin is queueable, and either
+        place an item in the generator queue for that plugin or call the plugin's gen method directly.
+
+        Actual work for queueable plugins is done in lib/plugins/generatorworker.python
+        """
         if self.sample.delay > 0:
-            logger.info("Sample set to delay %s, sleeping." % s.delay)
+            self.logger.info("Sample set to delay %s, sleeping." % s.delay)
             time.sleep(self.sample.delay)
 
         # 12/29/13 CS Queueable plugins pull from the worker queue as soon as items
@@ -62,12 +91,12 @@ class Timer(threading.Thread):
 
         # 12/29/13 Non Queueable, same as before
         plugin = c.getPlugin('generator.'+self.sample.generator)
-        logger.debugv("Generating for class '%s' for generator '%s' queueable: %s" % (plugin.__name__, self.sample.generator, plugin.queueable))
+        self.logger.debugv("Generating for class '%s' for generator '%s' queueable: %s" % (plugin.__name__, self.sample.generator, plugin.queueable))
 
         if not plugin.queueable:
             # Get an instance of the plugin instead of the class itself
             if self.sample.out == None:
-                logger.info("Setting up Output class for sample '%s' in app '%s'" % (self.sample.name, self.sample.app))
+                self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self.sample.name, self.sample.app))
                 self.sample.out = Output(self.sample)
             with c.copyLock:
                 plugin = plugin(self.sample)
@@ -95,10 +124,10 @@ class Timer(threading.Thread):
                         # Override earliest and latest during backfill until we're at current time
                         if self.sample.backfill != None and not self.sample.backfilldone:
                             if self.sample.backfillts >= self.sample.now(realnow=True):
-                                logger.info("Backfill complete")
+                                self.logger.info("Backfill complete")
                                 self.sample.backfilldone = True
                             else:
-                                logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.sample.name, self.sample.backfillts))
+                                self.logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.sample.name, self.sample.backfillts))
 
                         if not plugin.queueable:
                             try:
@@ -111,7 +140,7 @@ class Timer(threading.Thread):
                                 raise
                             except:
                                 import traceback
-                                logger.error('Exception in sample: %s\n%s' % (self.sample.name, \
+                                self.logger.error('Exception in sample: %s\n%s' % (self.sample.name, \
                                         traceback.format_exc()))
                                 sys.stderr.write('Exception in sample: %s\n%s' % (self.sample.name, \
                                         traceback.format_exc()))
@@ -123,22 +152,13 @@ class Timer(threading.Thread):
                             # If we're going to sleep for longer than the default check for kill interval
                             # go ahead and flush output so we're not just waiting
                             if partialInterval > self.time:
-                                logger.debugv("Flushing because we're sleeping longer than a polling interval")
+                                self.logger.debugv("Flushing because we're sleeping longer than a polling interval")
                                 self.sample.out.flush()
 
-                                # Make sure that we're sleeping an accurate amount of time, including the
-                                # partial seconds.  After the first sleep, we'll sleep in increments of
-                                # self.time to make sure we're checking for kill signals.
-                                # sleepTime = self.time + (partialInterval % self.time)
-                                # self.countdown -= sleepTime
-                            # else:
-                            #     sleepTime = partialInterval
-                            #     self.countdown = 0
                               
-                            logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
+                            self.logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
                                         % (self.sample.name, self.sample.app, partialInterval) ) 
                             # logger.debug("Queue depth for sample '%s' in app '%s': %d" % (self.sample.name, self.sample.app, c.outputQueue.qsize()))   
-                            # if sleepTime > 0:
                         else:
                             # Put into the queue to be generated
                             stop = False
@@ -149,10 +169,10 @@ class Timer(threading.Thread):
                                     elif c.queueing == 'zeromq':
                                         self.sender.send(marshal.dumps((self.sample.name, count, time.mktime(et.timetuple()), time.mktime(lt.timetuple()))))
                                     c.generatorQueueSize.increment()
-                                    logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
+                                    self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
                                     stop = True
                                 except Full:
-                                    logger.warn("Generator Queue Full, looping")
+                                    self.logger.warn("Generator Queue Full, looping")
                                     if self.stopping:
                                         stop = True
                                     pass
@@ -179,11 +199,11 @@ class Timer(threading.Thread):
                 else:
                     time.sleep(self.time)
             else:
-                logger.info("Stopped timer for sample '%s'" % self.sample.name)
+                self.logger.info("Stopped timer for sample '%s'" % self.sample.name)
                 sys.exit(0)
 
     def stop(self):
-        logger.info("Stopping timer for sample '%s'" % self.sample.name)
+        self.logger.info("Stopping timer for sample '%s'" % self.sample.name)
         self.sample.saveState()
         self.stopping = True
                      

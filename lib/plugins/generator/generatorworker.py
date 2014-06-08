@@ -49,7 +49,9 @@ class GeneratorRealWorker:
     def __init__(self, num, q1, q2):
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
+        from eventgenconfig import EventgenAdapter
+        adapter = EventgenAdapter(logger, {'module': 'GeneratorRealWorker', 'sample': 'null'})
+        globals()['logger'] = adapter
 
         globals()['c'] = Config()
 

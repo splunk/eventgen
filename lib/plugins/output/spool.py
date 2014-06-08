@@ -7,6 +7,8 @@ from __future__ import division
 from outputplugin import OutputPlugin
 import shutil
 import logging
+import time
+import os
 
 class SpoolOutputPlugin(OutputPlugin):
     name = 'spool'
@@ -25,7 +27,9 @@ class SpoolOutputPlugin(OutputPlugin):
 
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
+        from eventgenconfig import EventgenAdapter
+        adapter = EventgenAdapter(logger, {'module': 'SpoolOutputPlugin', 'sample': sample.name})
+        globals()['logger'] = adapter
 
         from eventgenconfig import Config
         globals()['c'] = Config()
@@ -36,7 +40,7 @@ class SpoolOutputPlugin(OutputPlugin):
     def flush(self, q):
         if len(q) > 0:
             nowtime = int(time.mktime(time.gmtime()))
-            workingfile = str(nowtime) + '-' + self._sample + '.part'
+            workingfile = str(nowtime) + '-' + str(self._sample.name) + '.part'
             self._workingFilePath = os.path.join(c.greatgrandparentdir, self._app, 'samples', workingfile)
             logger.debug("Creating working file '%s' for sample '%s' in app '%s'" % (workingfile, self._sample.name, self._app))
             self._workingFH = open(self._workingFilePath, 'w')
