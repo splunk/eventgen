@@ -46,7 +46,10 @@ def update_config(replacements, config):
 if __name__ == '__main__':
     c = Config()
     # Logger is setup by Config, just have to get an instance
-    logger = logging.getLogger('eventgen')
+    logobj = logging.getLogger('eventgen')
+    from eventgenconfig import EventgenAdapter
+    adapter = EventgenAdapter(logobj, {'sample': 'null', 'module': 'main'})
+    logger = adapter
     logger.info('Starting eventgen')
 
     # 5/6/12 CS use select to listen for input on stdin
@@ -96,11 +99,11 @@ if __name__ == '__main__':
             outputtersPerSec = (outputDecrements - outputQueueCounter) / 5
             outputQueueCounter = outputDecrements
             generatorQueueCounter = generatorDecrements
-            logger.info('Output Queue depth: %d  Generator Queue depth: %d Generators Per Sec: %d Outputters Per Sec: %d' % (c.outputQueueSize.value(), c.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
+            logger.info('OutputQueueDepth=%d  GeneratorQueueDepth=%d GeneratorsPerSec=%d OutputtersPerSec=%d' % (c.outputQueueSize.value(), c.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
             kiloBytesPerSec = c.bytesSent.valueAndClear() / 5 / 1024
             gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
             eventsPerSec = c.eventsSent.valueAndClear() / 5
-            logger.info('Global Events/Sec: %s Kilobytes/Sec: %1f GB/Day: %1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
+            logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
             time.sleep(5)
         except KeyboardInterrupt:
             c.handle_exit()

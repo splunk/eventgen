@@ -15,12 +15,14 @@ class ConfigRater:
     def __init__(self, sample):
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
+        from eventgenconfig import EventgenAdapter
+        adapter = EventgenAdapter(logger, {'module': 'ConfigRater', 'sample': sample.name})
+        self.logger = adapter
 
         from eventgenconfig import Config
         globals()['c'] = Config()
 
-        logger.debug('Starting ConfigRater for %s' % sample.name if sample is not None else "None")
+        self.logger.debug('Starting ConfigRater for %s' % sample.name if sample is not None else "None")
 
         self._sample = sample
 
@@ -41,29 +43,29 @@ class ConfigRater:
         rateFactor = 1.0
         if self._sample.randomizeCount != 0 and self._sample.randomizeCount != None:
             try:
-                logger.debugv("randomizeCount for sample '%s' in app '%s' is %s" \
+                self.logger.debugv("randomizeCount for sample '%s' in app '%s' is %s" \
                                 % (self._sample.name, self._sample.app, self._sample.randomizeCount))
                 # If we say we're going to be 20% variable, then that means we
                 # can be .1% high or .1% low.  Math below does that.
                 randBound = round(self._sample.randomizeCount * 1000, 0)
                 rand = random.randint(0, randBound)
                 randFactor = 1+((-((randBound / 2) - rand)) / 1000)
-                logger.debug("randFactor for sample '%s' in app '%s' is %s" \
+                self.logger.debug("randFactor for sample '%s' in app '%s' is %s" \
                                 % (self._sample.name, self._sample.app, randFactor))
                 rateFactor *= randFactor
             except:
                 import traceback
                 stack =  traceback.format_exc()
-                logger.error("Randomize count failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
+                self.logger.error("Randomize count failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.hourOfDayRate) == dict:
             try:
                 rate = self._sample.hourOfDayRate[str(self._sample.now().hour)]
-                logger.debugv("hourOfDayRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
+                self.logger.debugv("hourOfDayRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
                 rateFactor *= rate
             except KeyError:
                 import traceback
                 stack =  traceback.format_exc()
-                logger.error("Hour of day rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
+                self.logger.error("Hour of day rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.dayOfWeekRate) == dict:
             try:
                 weekday = datetime.date.weekday(self._sample.now())
@@ -72,42 +74,42 @@ class ConfigRater:
                 else:
                     weekday += 1
                 rate = self._sample.dayOfWeekRate[str(weekday)]
-                logger.debugv("dayOfWeekRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
+                self.logger.debugv("dayOfWeekRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
                 rateFactor *= rate
             except KeyError:
                 import traceback
                 stack =  traceback.format_exc()
-                logger.error("Hour of day rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
+                self.logger.error("Hour of day rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.minuteOfHourRate) == dict:
             try:
                 rate = self._sample.minuteOfHourRate[str(self._sample.now().minute)]
-                logger.debugv("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
+                self.logger.debugv("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
                 rateFactor *= rate
             except KeyError:
                 import traceback
                 stack =  traceback.format_exc()
-                logger.error("Minute of hour rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
+                self.logger.error("Minute of hour rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.dayOfMonthRate) == dict:
             try:
                 rate = self._sample.dayOfMonthRate[str(self._sample.now().day)]
-                logger.debugv("dayOfMonthRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
+                self.logger.debugv("dayOfMonthRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
                 rateFactor *= rate
             except KeyError:
                 import traceback
                 stack =  traceback.format_exc()
-                logger.error("Day of Month rate for sample '%s' failed.  Stacktrace %s" % (self._sample.name, stack))
+                self.logger.error("Day of Month rate for sample '%s' failed.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.monthOfYearRate) == dict:
             try:
                 rate = self._sample.monthOfYearRate[str(self._sample.now().month)]
-                logger.debugv("monthOfYearRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
+                self.logger.debugv("monthOfYearRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
                 rateFactor *= rate
             except KeyError:
                 import traceback
                 stack =  traceback.format_exc()
-                logger.error("Month Of Year rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
+                self.logger.error("Month Of Year rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         ret = int(round(count * rateFactor, 0))
         if rateFactor != 1.0:
-            logger.debug("Original count: %s Rated count: %s Rate factor: %s" % (count, ret, rateFactor))
+            self.logger.debug("Original count: %s Rated count: %s Rate factor: %s" % (count, ret, rateFactor))
         return ret
 
 def load():

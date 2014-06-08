@@ -12,7 +12,9 @@ class WindbagGenerator(GeneratorPlugin):
 
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
+        from eventgenconfig import EventgenAdapter
+        adapter = EventgenAdapter(logger, {'module': 'WindbagGenerator', 'sample': sample.name})
+        globals()['logger'] = adapter
 
         from eventgenconfig import Config
         globals()['c'] = Config()

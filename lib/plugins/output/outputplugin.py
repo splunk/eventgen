@@ -14,12 +14,14 @@ class OutputPlugin:
 		
 		# Logger already setup by config, just get an instance
 		logger = logging.getLogger('eventgen')
-		globals()['logger'] = logger
+		from eventgenconfig import EventgenAdapter
+		adapter = EventgenAdapter(logger, {'module': 'OutputPlugin', 'sample': sample.name})
+		self.logger = adapter
 
 		from eventgenconfig import Config
 		globals()['c'] = Config()
 
-		logger.debug("Starting OutputPlugin for sample '%s' with output '%s'" % (self._sample.name, self._sample.outputMode))
+		self.logger.debug("Starting OutputPlugin for sample '%s' with output '%s'" % (self._sample.name, self._sample.outputMode))
 
 		self._queue = deque([])
 

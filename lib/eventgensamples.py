@@ -1,7 +1,5 @@
 # TODO Move config settings to plugins
 # TODO Remove old gen method
-# TODO Sample object now incredibly overloaded and not threadsafe.  Need to make it threadsafe and make it simpler to get a
-#       copy of whats needed without the whole object.
 
 from __future__ import division, with_statement
 import os, sys
@@ -19,6 +17,12 @@ from timeparser import timeParser, timeDelta2secs
 from eventgencounter import Counter
 
 class Sample:
+    """
+    The Sample class is the primary configuration holder for Eventgen.  Contains all of our configuration
+    information for any given sample, and is passed to most objects in Eventgen and a copy is maintained
+    to give that object access to configuration information.  Read and configured at startup, and each
+    object maintains a threadsafe copy of Sample.
+    """
     # Required fields for Sample
     name = None
     app = None
@@ -99,7 +103,9 @@ class Sample:
     def __init__(self, name):
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
+        from eventgenconfig import EventgenAdapter
+        adapter = EventgenAdapter(logger, {'module': 'Sample', 'sample': name})
+        globals()['logger'] = adapter
         
         self.name = name
         self.tokens = [ ]

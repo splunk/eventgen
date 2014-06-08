@@ -12,8 +12,11 @@ class Queue:
     Abstraction of threading or multiprocessing Queue
     """
     def __init__(self, depth, threading):
-        logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
+        # Logger already setup by config, just get an instance
+        logobj = logging.getLogger('eventgen')
+        from eventgenconfig import EventgenAdapter
+        adapter = EventgenAdapter(logobj, {'module': 'Queue', 'sample': 'null'})
+        self.logger = adapter
 
         # logger.info("Creating Queue of depth %d, threading %s" % (depth, threading))
         # if queueing == 'python':

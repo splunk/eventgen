@@ -104,15 +104,19 @@ if __name__ == '__main__':
             
     c = Config()
     # Logger is setup by Config, just have to get an instance
-    logger = logging.getLogger('eventgen')
-    logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
-    logger.setLevel(logging.DEBUG)
+    logobj = logging.getLogger('eventgen')
+    logobj.propagate = False # Prevent the log messages from being duplicated in the python.log file
+    logobj.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(levelname)s %(message)s')
     streamHandler = logging.StreamHandler(sys.stderr)
     streamHandler.setFormatter(formatter)
-    logger.handlers = [ ]
-    logger.addHandler(streamHandler)
-    logger.info('Starting eventgen')
+    logobj.handlers = [ ]
+    logobj.addHandler(streamHandler)
+    from eventgenconfig import EventgenAdapter
+    adapter = EventgenAdapter(logobj, {'sample': 'null', 'module': 'main'})
+    logger = adapter
+
+    logobj.info('Starting eventgen')
 
     # Start the stream, only once for the whole program
     print '<stream>\n'
@@ -156,11 +160,11 @@ if __name__ == '__main__':
             outputtersPerSec = (outputDecrements - outputQueueCounter) / 5
             outputQueueCounter = outputDecrements
             generatorQueueCounter = generatorDecrements
-            logger.info('Output Queue depth: %d  Generator Queue depth: %d Generators Per Sec: %d Outputters Per Sec: %d' % (c.outputQueueSize.value(), c.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
+            logger.info('OutputQueueDepth=%d  GeneratorQueueDepth=%d GeneratorsPerSec=%d OutputtersPerSec=%d' % (c.outputQueueSize.value(), c.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
             kiloBytesPerSec = c.bytesSent.valueAndClear() / 5 / 1024
             gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
             eventsPerSec = c.eventsSent.valueAndClear() / 5
-            logger.info('Global Events/Sec: %s Kilobytes/Sec: %1f GB/Day: %1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
+            logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
             time.sleep(5)
         except KeyboardInterrupt:
             c.handle_exit()
