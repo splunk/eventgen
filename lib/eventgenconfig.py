@@ -358,6 +358,14 @@ class Config:
         logobj.handlers = [ ] # Remove existing StreamHandler if we're embedded
         logobj.addHandler(fileHandler)
         self.logger.info("Running as Splunk embedded")
+
+        # 6/7/14 Add Metrics logger so we can output JSON metrics for Splunk
+        fileHandler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen_metrics.log', maxBytes=25000000, backupCount=5)
+        formatter = logging.Formatter('%(message)s')
+        fileHandler.setFormatter(formatter)
+        # fileHandler.setLevel(logging.DEBUG)
+        logobj = logging.getLogger('eventgen_metrics')
+        logobj.addHandler(fileHandler)
         import splunk.auth as auth
         import splunk.entity as entity
         # 5/7/12 CS For some reason Splunk will not import the modules into global in its copy of python

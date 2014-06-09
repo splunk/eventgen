@@ -13,3 +13,7 @@ modtime = 1340395082.652048000
 [views/log_viewer]
 version = 6.1.2
 modtime = 1402189849.443610000
+
+[views/perf]
+version = 6.1.2
+modtime = 1402343428.848001000

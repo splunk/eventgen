@@ -17,6 +17,8 @@ try:
 except ImportError, e:
     pass
 import marshal
+import json
+import datetime
 
 class OutputProcessWorker(multiprocessing.Process):
     def __init__(self, num):
@@ -99,6 +101,10 @@ class OutputRealWorker:
                 tmp = [len(s['_raw']) for s in queue]
                 c.eventsSent.add(len(tmp))
                 c.bytesSent.add(sum(tmp))
+                if c.splunkEmbedded and len(tmp)>0:
+                    metrics = logging.getLogger('eventgen_metrics')
+                    metrics.error(json.dumps({'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 
+                            'sample': name, 'events': len(tmp), 'bytes': sum(tmp)}))
                 tmp = None
                 plugin = c.getPlugin(name)
                 plugin.flush(deque(queue[:]))

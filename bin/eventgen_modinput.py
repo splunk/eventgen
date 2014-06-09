@@ -161,10 +161,11 @@ if __name__ == '__main__':
             outputQueueCounter = outputDecrements
             generatorQueueCounter = generatorDecrements
             logger.info('OutputQueueDepth=%d  GeneratorQueueDepth=%d GeneratorsPerSec=%d OutputtersPerSec=%d' % (c.outputQueueSize.value(), c.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
-            kiloBytesPerSec = c.bytesSent.valueAndClear() / 5 / 1024
-            gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
-            eventsPerSec = c.eventsSent.valueAndClear() / 5
-            logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
+            # Using Embedded Metrics log when in Splunk
+            # kiloBytesPerSec = c.bytesSent.valueAndClear() / 5 / 1024
+            # gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
+            # eventsPerSec = c.eventsSent.valueAndClear() / 5
+            # logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
             time.sleep(5)
         except KeyboardInterrupt:
             c.handle_exit()
