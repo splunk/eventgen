@@ -18,6 +18,6 @@ class TestBuildSAEventgen:
     def test_build(self):
         self.logger = logging.getLogger('BuildSA-Eventgen')
         """codeline = os.environ["CODELINE"]"""
-        buildutil = BuildUtil('SA-Eventgen2', 'mainline2', 'spl', self.logger)
+        buildutil = BuildUtil('SA-Eventgen', 'mainline2', 'spl', self.logger)
         buildutil.build_solution()
 
