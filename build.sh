@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# This should be run from the $SPLUNK_HOME/etc/apps/oidemo directory.
+# This should be run from the $SPLUNK_HOME/etc/apps/eventgen directory.
 
 # Save for later
 CURRENT_PWD=`pwd`

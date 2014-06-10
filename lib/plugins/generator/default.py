@@ -26,7 +26,12 @@ class DefaultGenerator(GeneratorPlugin):
         # 2/10/14 CS set s to our local copy of the sample
         s = self._samples[samplename]
         self._sample = s
-        self.loadSample()
+        # 6/9/14 CS If we get an exception loading the sample, fail
+        try:
+            self.loadSample()
+        except TypeError:
+            logger.error("Error loading sample file for sample '%s'" % self._sample.name)
+            return
 
         logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (s.name, s.app, count, earliest, latest))
         startTime = datetime.datetime.now()

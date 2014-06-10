@@ -1,6 +1,6 @@
 <form>
   <label>Eventgen Logs</label>
-  <fieldset submitButton="false" autoRun="true">
+  <fieldset submitButton="true" autoRun="true">
     <input type="time" token="time_picker" searchWhenChanged="true">
       <label>Time</label>
       <default>
@@ -35,13 +35,17 @@
       <delimiter> OR </delimiter>
       <default>*</default>
     </input>
+    <input type="text" token="search" searchWhenChanged="true">
+      <label>Search</label>
+      <default>*</default>
+    </input>
   </fieldset>
   <row>
     <table>
       <title>Eventgen Logs</title>
-      <searchString>index=_internal sourcetype=eventgen $level$ $module$ $sample$ | table _time, level, module, sample, message</searchString>
-      <earliestTime>-15m</earliestTime>
-      <latestTime>now</latestTime>
+      <searchString>index=_internal sourcetype=eventgen $level$ $module$ $sample$ $search$ | table _time, level, module, sample, message</searchString>
+      <earliestTime>$time_picker.earliest$</earliestTime>
+      <latestTime>$time_picker.latest$</latestTime>
       <option name="showPager">true</option>
       <option name="displayRowNumbers">false</option>
       <option name="list.drilldown">full</option>
