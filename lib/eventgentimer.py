@@ -93,18 +93,18 @@ class Timer(threading.Thread):
         plugin = c.getPlugin('generator.'+self.sample.generator)
         self.logger.debugv("Generating for class '%s' for generator '%s' queueable: %s" % (plugin.__name__, self.sample.generator, plugin.queueable))
 
-        if not plugin.queueable:
-            # Get an instance of the plugin instead of the class itself
-            if self.sample.out == None:
-                self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self.sample.name, self.sample.app))
-                self.sample.out = Output(self.sample)
-            with c.copyLock:
-                plugin = plugin(self.sample)
-            plugin.setupBackfill()
-        else:
-            with c.copyLock:
-                p = plugin(self.sample)
-            p.setupBackfill()
+        # if not plugin.queueable:
+        #     # Get an instance of the plugin instead of the class itself
+        #     if self.sample.out == None:
+        #         self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self.sample.name, self.sample.app))
+        #         self.sample.out = Output(self.sample)
+        #     with c.copyLock:
+        #         plugin = plugin(self.sample)
+        #     plugin.setupBackfill()
+        # else:
+        with c.copyLock:
+            p = plugin(self.sample)
+        p.setupBackfill()
 
         if c.queueing == 'zeromq':
             context = zmq.Context()
@@ -129,9 +129,9 @@ class Timer(threading.Thread):
                             else:
                                 self.logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.sample.name, self.sample.backfillts))
 
-                        if not plugin.queueable:
+                        if not p.queueable:
                             try:
-                                partialInterval = plugin.gen(count, et, lt)
+                                partialInterval = p.gen(count, et, lt)
                             # 11/24/13 CS Blanket catch for any errors
                             # If we've gotten here, all error correction has failed and we
                             # need to gracefully exit providing some error context like what sample
