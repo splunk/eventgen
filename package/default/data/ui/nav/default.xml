@@ -1,0 +1,5 @@
+<nav search_view="search" color="#5379af">
+   <view name="perf" />
+   <view name="log_viewer" />
+   <view name="search" />
+</nav>

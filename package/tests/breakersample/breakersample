@@ -1,0 +1,9 @@
+20110414114247.083068
+PercentProcessorTime=@@proc_time
+PercentUserTime=37
+wmi_type=CPUTime
+
+20110414114247.083068
+PercentProcessorTime=100
+PercentUserTime=37
+wmi_type=CPUTime

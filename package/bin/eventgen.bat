@@ -1,1 +1,1 @@
-"%SPLUNK_HOME%\bin\python" "%SPLUNK_HOME%\etc\apps\oidemo\bin\eventgen.py"
+"%SPLUNK_HOME%\bin\python" "%SPLUNK_HOME%\etc\apps\SA-Eventgen\bin\eventgen.py"

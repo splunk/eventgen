@@ -22,6 +22,7 @@
 [global]
 disabled = false
 debug = false
+verbose = false
 spoolDir = $SPLUNK_HOME/var/spool/splunk
 spoolFile = <SAMPLE>
 breaker = [^\r\n\s]+
@@ -49,7 +50,16 @@ index = main
 source = eventgen
 sourcetype = eventgen
 host = 127.0.0.1
+outputWorkers = 1
+generator = default
+rater = config
+generatorWorkers = 1
 timeField = _raw
+threading = thread
+profiler = false
+queueing = python
+maxIntervalsBeforeFlush = 3
+maxQueueLength = 0
 
 [<sample file name>]
     * This stanza defines a given sample file contained within the samples directory.
@@ -73,17 +83,44 @@ timeField = _raw
         
 disabled = true | false
     * Like what it looks like.  Will disable event generation for this sample.
+
+sampleDir = <dir>
+    * Set a different directory to look for samples in
+
+threading = thread | process
+    * Configurable threading model.  Process uses multiprocessing.Process in Python to get around issues with the GIL.
+    * Defaults to thread
+
+profiler = true | false
+    * Run eventgen with python profiler on
+    * Defaults to false
+
+queueing = python | zeromq
+    * Use python queueing or zeromq.  Zeromq allows us to distribute on the machine or across multiple machines.
+    * Defaults to python
+
+zmqBaseUrl = <ur>
+    * Used for zeromq.  URL Base which we will append ports to.
+    * Defaults to ipc://tmp/eventgenipc
+
+zmqBasePort = <portnum>
+    * Used for zeromq.  Port to start numbering from.  Will consume at least 4 ports on the proxy machine.
+    * Defaults to 5557
         
 #############################
 ## OUTPUT RELATED SETTINGS ##
 #############################
 
-outputMode = spool | file | splunkstream | stormstream
-    * Specifies how to output log data.  Spool is default (for legacy reasons).
+outputWorkers = <number of worker threads>
+    * Specifies how many threads or processes to stand up to handle output
+    * Generally if using TCP based outputs like splunkstream, more could be required
+    * Defaults to 1
+
+outputMode = modinput | file | splunkstream | stdout | devnull | spool
+    * Specifies how to output log data.  Modinput is default.
     * If setting spool, should set spoolDir
     * If setting file, should set logFile
-    * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser
-      and splunkPassword if not Splunk embedded
+    * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser and splunkPassword if not Splunk embedded
     * If setting stormstream, should set projectID and accessToken.
 
 spoolDir = <spool directory>
@@ -155,10 +192,31 @@ hostRegex = <hostRegex>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Allows setting the event host via a regex from the actual event itself.  Only used if host not set.
     
-    
+maxIntervalsBeforeFlush = <intervals before flushing queue>
+    * Number of intervals before flushing the queue if the queue hasn't filled to maxQueueLength
+    * Defaults to 3
+
+maxQueueLength = <maximum items before flushing the queue>
+    * Number of items before flushing the output queue
+    * Default is per outputMode specific    
+
+
 ###############################
 ## EVENT GENERATION SETTINGS ##
 ###############################
+
+generator = default | <plugin>
+    * Specifies the generator plugin to use.  Default generator will give behavior of eventgen pre-3.0
+      which exclusively uses settings in eventgen.conf to control behavior.  Generators in 3.0 are now
+      pluggable python modules which can be custom code.
+
+generatorWorkers = <number of generator threads>
+    * Specifies how many threads to use to generate events
+    * Defaults to 1
+
+rater = config | <plugin>
+    * Specifies which rater plugin to use.  Default rater uses hourOfDayRate, etc, settings to specify
+      how to affect the count of events being generated.  Raters in 3.0 are now pluggable python modules.
 
 mode = sample | replay
     * Default is sample, which will generate count (+/- rating) events every configured interval

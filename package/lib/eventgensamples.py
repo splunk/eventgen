@@ -1,4 +1,6 @@
-# -*-  indent-tabs-mode:nil;  -*- 
+# TODO Move config settings to plugins
+# TODO Remove old gen method
+
 from __future__ import division, with_statement
 import os, sys
 import logging
@@ -10,26 +12,17 @@ import csv
 import json
 import copy
 from eventgenoutput import Output
+from eventgentoken import Token
 from timeparser import timeParser, timeDelta2secs
-import httplib2, urllib
-from xml.dom import minidom
-from xml.parsers.expat import ExpatError
-import uuid
-from collections import deque
-
-class CircularBuffer(deque):
-    def __init__(self):
-        self.capacity = 100
-        super(CircularBuffer, self).__init__(maxlen=self.capacity)
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, copy.deepcopy(v, memo))
-        return result
+from eventgencounter import Counter
 
 class Sample:
+    """
+    The Sample class is the primary configuration holder for Eventgen.  Contains all of our configuration
+    information for any given sample, and is passed to most objects in Eventgen and a copy is maintained
+    to give that object access to configuration information.  Read and configured at startup, and each
+    object maintains a threadsafe copy of Sample.
+    """
     # Required fields for Sample
     name = None
     app = None
@@ -79,18 +72,30 @@ class Sample:
     timezone = datetime.timedelta(days=1)
     dayOfMonthRate = None
     monthOfYearRate = None
+    sessionKey = None
+    splunkUrl = None
+    generator = None
+    rater = None
+    out = None
     timeField = None
+    timestamp = None
+    sampleDir = None
+    backfillts = None
+    backfilldone = None
+    stopping = False
+    maxIntervalsBeforeFlush = None
+    maxQueueLength = None
+
     
     # Internal fields
-    _c = None
-    _out = None
     _sampleLines = None
+    sampleLines = None
     _sampleDict = None
+    sampleDict = None
     _lockedSettings = None
     _priority = None
     _origName = None
     _lastts = None
-    _backfillts = None
     _timeSinceSleep = None
     _earliestParsed = None
     _latestParsed = None
@@ -98,7 +103,9 @@ class Sample:
     def __init__(self, name):
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
+        from eventgenconfig import EventgenAdapter
+        adapter = EventgenAdapter(logger, {'module': 'Sample', 'sample': name})
+        globals()['logger'] = adapter
         
         self.name = name
         self.tokens = [ ]
@@ -106,14 +113,12 @@ class Sample:
 
         self._currentevent = 0
         self._rpevents = None
-        self._backfilldone = False
+        self.backfilldone = False
         self._timeSinceSleep = datetime.timedelta()
-        self._eventIntervals = CircularBuffer()
-
         
         # Import config
         from eventgenconfig import Config
-        self._c = Config()
+        globals()['c'] = Config()
         
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this sample"""
@@ -124,16 +129,12 @@ class Sample:
     def __repr__(self):
         return self.__str__()
     
-    def gen(self):
+    def gen(self, count, earliesttime, latesttime):
+        ret = [ ]
         logger.debug("Generating sample '%s' in app '%s'" % (self.name, self.app))
         startTime = datetime.datetime.now()
-        
-        # If this is the first time we're generating, setup out
-        if self._out == None:
-            logger.debug("Setting up Output class for sample '%s' in app '%s'" % (self.name, self.app))
-            self._out = Output(self)
-            if self.backfillSearchUrl == None:
-                self.backfillSearchUrl = self._out._splunkUrl
+
+        self.timestamp = None
 
         # Setup initial backfillts
         if self._backfillts == None and self.backfill != None and not self._backfilldone:
@@ -144,16 +145,16 @@ class Sample:
                 logger.error("Failed to parse backfill '%s': %s" % (self.backfill, ex))
                 raise
 
-            if self._out._outputMode == "splunkstream" and self.backfillSearch != None:
+            if self.outputMode == "splunkstream" and self.backfillSearch != None:
                 if not self.backfillSearch.startswith('search'):
                     self.backfillSearch = 'search ' + self.backfillSearch
                 self.backfillSearch += '| head 1 | table _time'
 
-                logger.debug("Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" % (self.backfillSearchUrl, self.backfillSearch, self._out._c.sessionKey))
+                logger.debug("Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" % (self.backfillSearchUrl, self.backfillSearch, self.sessionKey))
 
                 results = httplib2.Http(disable_ssl_certificate_validation=True).request(\
                             self.backfillSearchUrl + '/services/search/jobs',
-                            'POST', headers={'Authorization': 'Splunk %s' % self._out._c.sessionKey}, \
+                            'POST', headers={'Authorization': 'Splunk %s' % self.sessionKey}, \
                             body=urllib.urlencode({'search': self.backfillSearch,
                                                     'earliest_time': self.backfill,
                                                     'exec_mode': 'oneshot'}))[1]
@@ -167,7 +168,7 @@ class Sample:
                             temptime = temptime.split('+')[0]
                         temptime = '-'.join(temptime.split('-')[0:3])
                     self._backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
-                    logger.info("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
+                    logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, self._backfillts))
                 except (ExpatError, IndexError): 
                     pass
 
@@ -178,12 +179,12 @@ class Sample:
                 # exit(1)  # Added for perf test, REMOVE LATER
                 self._backfilldone = True
             else:
-                logger.info("Still backfilling for sample '%s'.  Currently at %s" % (self.name, self._backfillts))
+                logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.name, self._backfillts))
                 # if not self.mode == 'replay':
                 #     self._backfillts += datetime.timedelta(seconds=self.interval)
 
         
-        logger.debug("Opening sample '%s' in app '%s'" % (self.name, self.app) )
+        logger.debugv("Opening sample '%s' in app '%s'" % (self.name, self.app) )
         sampleFH = open(self.filePath, 'rU')
         if self.sampletype == 'raw':
             # 5/27/12 CS Added caching of the sample file
@@ -236,7 +237,7 @@ class Sample:
             if self.sampletype == 'csv':
                 self._rpevents = sampleDict
             else:
-                if self.breaker != self._c.breaker:
+                if self.breaker != c.breaker:
                     self._rpevents = []
                     lines = '\n'.join(sampleLines)
                     breaker = re.search(self.breaker, lines)
@@ -264,11 +265,6 @@ class Sample:
                 logger.debug("At end of the sample file, starting replay from the top")
                 self._currentevent = 0
                 self._lastts = None
-                if len(self._eventIntervals) > 0:
-                    sleep_time = self._eventIntervals[-1]
-                    logger.info("Sleeping for %f seconds" % sleep_time)
-                    self._timeSinceSleep = datetime.timedelta()
-                    return sleep_time
 
         # Ensure all lines have a newline
         for i in xrange(0, len(sampleLines)):
@@ -292,93 +288,18 @@ class Sample:
             
 
         if len(sampleLines) > 0:
-            count = self.count
             if self.count == 0 and self.mode == 'sample':
                 logger.debug("Count %s specified as default for sample '%s' in app '%s'; adjusting count to sample length %s; using default breaker" \
                                 % (self.count, self.name, self.app, len(sampleLines)) )
                 count = len(sampleLines)
-                self.breaker = self._c.breaker
-            elif self.count > 0 or self.mode == 'replay':
-                
-                # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
-                # hourOfDay, dayOfWeek and randomizeCount configs
-                rateFactor = 1.0
-                if self.randomizeCount != 0 and self.randomizeCount != None:
-                    try:
-                        logger.debug("randomizeCount for sample '%s' in app '%s' is %s" \
-                                        % (self.name, self.app, self.randomizeCount))
-                        # If we say we're going to be 20% variable, then that means we
-                        # can be .1% high or .1% low.  Math below does that.
-                        randBound = round(self.randomizeCount * 1000, 0)
-                        rand = random.randint(0, randBound)
-                        randFactor = 1+((-((randBound / 2) - rand)) / 1000)
-                        logger.debug("randFactor for sample '%s' in app '%s' is %s" \
-                                        % (self.name, self.app, randFactor))
-                        rateFactor *= randFactor
-                    except:
-                        import traceback
-                        stack =  traceback.format_exc()
-                        logger.error("Randomize count failed.  Stacktrace %s" % stack)
-                if type(self.hourOfDayRate) == dict:
-                    try:
-                        rate = self.hourOfDayRate[str(self.now().hour)]
-                        logger.debug("hourOfDayRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
-                        rateFactor *= rate
-                    except KeyError:
-                        import traceback
-                        stack =  traceback.format_exc()
-                        logger.error("Hour of day rate failed.  Stacktrace %s" % stack)
-                if type(self.dayOfWeekRate) == dict:
-                    try:
-                        weekday = datetime.date.weekday(self.now())
-                        if weekday == 6:
-                            weekday = 0
-                        else:
-                            weekday += 1
-                        rate = self.dayOfWeekRate[str(weekday)]
-                        logger.debug("dayOfWeekRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
-                        rateFactor *= rate
-                    except KeyError:
-                        import traceback
-                        stack =  traceback.format_exc()
-                        logger.error("Hour of day rate failed for sample '%s'.  Stacktrace %s" % (self.name, stack))
-                if type(self.minuteOfHourRate) == dict:
-                    try:
-                        rate = self.minuteOfHourRate[str(self.now().minute)]
-                        logger.debug("minuteOfHourRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
-                        rateFactor *= rate
-                    except KeyError:
-                        import traceback
-                        stack =  traceback.format_exc()
-                        logger.error("Minute of hour rate failed for sample '%s'.  Stacktrace %s" % (self.name, stack))
-                if type(self.dayOfMonthRate) == dict:
-                    try:
-                        rate = self.dayOfMonthRate[str(self.now().day)]
-                        logger.debug("dayOfMonthRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
-                        rateFactor *= rate
-                    except KeyError:
-                        import traceback
-                        stack =  traceback.format_exc()
-                        logger.error("Day of Month rate for sample '%s' failed.  Stacktrace %s" % (self.name, stack))
-                if type(self.monthOfYearRate) == dict:
-                    try:
-                        rate = self.monthOfYearRate[str(self.now().month)]
-                        logger.debug("monthOfYearRate for sample '%s' in app '%s' is %s" % (self.name, self.app, rate))
-                        rateFactor *= rate
-                    except KeyError:
-                        import traceback
-                        stack =  traceback.format_exc()
-                        logger.error("Month Of Year rate failed for sample '%s'.  Stacktrace %s" % (self.name, stack))
-                count = int(round(count * rateFactor, 0))
-                if rateFactor != 1.0:
-                    logger.info("Original count: %s Rated count: %s Rate factor: %s" % (self.count, count, rateFactor))
+                self.breaker = c.breaker
 
             try:
                 breakerRE = re.compile(self.breaker)
             except:
                 logger.error("Line breaker '%s' for sample '%s' in app '%s' could not be compiled; using default breaker" \
                             % (self.breaker, self.name, self.app) )
-                self.breaker = self._c.breaker
+                self.breaker = c.breaker
 
             events = []
             # 9/7/13 CS If we're sampleType CSV and we do an events fill that's greater than the count
@@ -387,8 +308,8 @@ class Sample:
             eventsDict = []
             event = ''
 
-            if self.breaker == self._c.breaker:
-                logger.debug("Default breaker detected for sample '%s' in app '%s'; using simple event fill" \
+            if self.breaker == c.breaker:
+                logger.debugv("Default breaker detected for sample '%s' in app '%s'; using simple event fill" \
                                 % (self.name, self.app) )
                 logger.debug("Filling events array for sample '%s' in app '%s'; count=%s, sampleLines=%s" \
                                 % (self.name, self.app, count, len(sampleLines)) )
@@ -400,7 +321,7 @@ class Sample:
                     # this out and seeing what breaks
                     #if self.randomizeEvents and self.sampletype == 'raw':
                     if self.randomizeEvents:
-                        logger.debug("Shuffling events for sample '%s' in app '%s'" \
+                        logger.debugv("Shuffling events for sample '%s' in app '%s'" \
                                         % (self.name, self.app))
                         random.shuffle(sampleLines)
                 except:
@@ -416,7 +337,7 @@ class Sample:
                     if self.sampletype == 'csv':
                         eventsDict = sampleDict[0:count]
             else:
-                logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'; using advanced event fill" \
+                logger.debugv("Non-default breaker '%s' detected for sample '%s' in app '%s'; using advanced event fill" \
                                 % (self.breaker, self.name, self.app) ) 
 
                 ## Fill events array from breaker and sampleLines
@@ -468,11 +389,11 @@ class Sample:
                     else:
                         events = sampleLines[0:count]
                 else:
-                    logger.debug("Found '%s' breakers for sample '%s' in app '%s'" % (breakersFound, self.name, self.app) )
+                    logger.debugv("Found '%s' breakers for sample '%s' in app '%s'" % (breakersFound, self.name, self.app) )
 
             ## Continue to fill events array until len(events) == count
             if len(events) > 0 and len(events) < count:
-                logger.debug("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (self.name, self.app, len(events), count) )
+                logger.debugv("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (self.name, self.app, len(events), count) )
                 tempEvents = events[:]
                 if self.sampletype == 'csv':
                     tempEventsDict = eventsDict[:]
@@ -492,13 +413,12 @@ class Sample:
                 self.host = eventsDict[0]['host']
                 self.source = eventsDict[0]['source']
                 self.sourcetype = eventsDict[0]['sourcetype']
-                logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                logger.debugv("Sampletype CSV.  Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                             % (self.index, self.host, self.source, self.sourcetype))
-                self._out.refreshconfig(self)
                 
             # Find interval before we muck with the event but after we've done event breaking
             if self.mode == 'replay':
-                logger.debug("Finding timestamp to compute interval for events")
+                logger.debugv("Finding timestamp to compute interval for events")
                 if self._lastts == None:
                     if self.sampletype == 'csv':
                         self._lastts = self._getTSFromEvent(self._rpevents[self._currentevent][self.timeField])
@@ -513,7 +433,7 @@ class Sample:
                     logger.debug("At end of _rpevents")
                     return 0
 
-                logger.debug('Computing timeDiff nextts: "%s" lastts: "%s"' % (nextts, self._lastts))
+                logger.debugv('Computing timeDiff nextts: "%s" lastts: "%s"' % (nextts, self._lastts))
 
                 timeDiff = nextts - self._lastts
                 if timeDiff.days >= 0 and timeDiff.seconds >= 0 and timeDiff.microseconds >= 0:
@@ -524,7 +444,7 @@ class Sample:
                 if self.timeMultiple > 0:
                     partialInterval *= self.timeMultiple
 
-                logger.debug("Setting partialInterval for replay mode with timeMultiple %s: %s %s" % (self.timeMultiple, timeDiff, partialInterval))
+                logger.debugv("Setting partialInterval for replay mode with timeMultiple %s: %s %s" % (self.timeMultiple, timeDiff, partialInterval))
                 self._lastts = nextts
 
             ## Iterate events
@@ -553,15 +473,12 @@ class Sample:
                     if event[-1] == '\n':
                         event = event[:-1]
                     lines = event.split('\n')
-                    logger.debug("Bundlelines set and sampletype csv, breaking event back apart.  %d lines %d eventsDict." % (len(lines), len(eventsDict)))
+                    logger.debugv("Bundlelines set and sampletype csv, breaking event back apart.  %d lines %d eventsDict." % (len(lines), len(eventsDict)))
                     for lineno in range(0, len(lines)):
                         if self.sampletype == 'csv' and (eventsDict[lineno]['index'] != self.index or \
                                                          eventsDict[lineno]['host'] != self.host or \
                                                          eventsDict[lineno]['source'] != self.source or \
                                                          eventsDict[lineno]['sourcetype'] != self.sourcetype):
-                            # Flush events before we change all the various parameters
-                            logger.debug("Sampletype CSV with bundlelines, parameters changed at event %s.  Flushing output." % lineno)
-                            self._out.flush()
                             self.index = eventsDict[lineno]['index']
                             self.host = eventsDict[lineno]['host']
                             # Allow randomizing the host:
@@ -570,12 +487,9 @@ class Sample:
 
                             self.source = eventsDict[lineno]['source']
                             self.sourcetype = eventsDict[lineno]['sourcetype']
-                            logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                            logger.debugv("Sampletype CSV.  Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                                          % (self.index, self.host, self.source, self.sourcetype))
-                            self._out.refreshconfig(self)
-                        self._out.send(lines[lineno].replace('NEWLINEREPLACEDHERE!!!', '\n'))
-                    logger.debug("Completed bundlelines event.  Flushing.")
-                    self._out.flush()
+                        self.out.send(lines[lineno].replace('NEWLINEREPLACEDHERE!!!', '\n'))
                 else:
                     # logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))
                     # logger.debug("Event Index: %s Host: %s Source: %s Sourcetype: %s" % (sampleDict[x]['index'], sampleDict[x]['host'], sampleDict[x]['source'], sampleDict[x]['sourcetype']))
@@ -583,9 +497,6 @@ class Sample:
                                                     eventsDict[x]['host'] != self.host or \
                                                     eventsDict[x]['source'] != self.source or \
                                                     eventsDict[x]['sourcetype'] != self.sourcetype):
-                        # Flush events before we change all the various parameters
-                        logger.debug("Sampletype CSV, parameters changed at event %s.  Flushing output." % x)
-                        self._out.flush()
                         self.index = sampleDict[x]['index']
                         self.host = sampleDict[x]['host']
                         # Allow randomizing the host:
@@ -594,13 +505,11 @@ class Sample:
 
                         self.source = sampleDict[x]['source']
                         self.sourcetype = sampleDict[x]['sourcetype']
-                        logger.debug("Sampletype CSV.  Setting self._out to CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
+                        logger.debugv("Sampletype CSV.  Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
                                     % (self.index, self.host, self.source, self.sourcetype))
-                        self._out.refreshconfig(self)
-                    self._out.send(event)
+                    self.out.send(event)
 
             ## Close file handles
-            self._out.flush()
             sampleFH.close()
 
             endTime = datetime.datetime.now()
@@ -611,8 +520,6 @@ class Sample:
                 timeDiffSecs = float("%d.%06d" % (timeDiff.seconds, timeDiff.microseconds))
                 wholeIntervals = timeDiffSecs / self.interval
                 partialInterval = timeDiffSecs % self.interval
-                if partialInterval > 0:
-                    self._eventIntervals.append(partialInterval)
 
                 if wholeIntervals > 1:
                     logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
@@ -640,7 +547,7 @@ class Sample:
         
     ## Replaces $SPLUNK_HOME w/ correct pathing
     def pathParser(self, path):
-        greatgreatgrandparentdir = os.path.dirname(os.path.dirname(self._c.grandparentdir)) 
+        greatgreatgrandparentdir = os.path.dirname(os.path.dirname(c.grandparentdir)) 
         sharedStorage = ['$SPLUNK_HOME/etc/apps', '$SPLUNK_HOME/etc/users/', '$SPLUNK_HOME/var/run/splunk']
 
         ## Replace windows os.sep w/ nix os.sep
@@ -671,7 +578,7 @@ class Sample:
 
         return path
 
-    def _getTSFromEvent(self, event):
+    def getTSFromEvent(self, event):
         currentTime = None
         formats = [ ]
         # JB: 2012/11/20 - Can we optimize this by only testing tokens of type = *timestamp?
@@ -688,10 +595,18 @@ class Sample:
                     # logger.debug("Testing '%s' as a time string against '%s'" % (timeString, timeFormat))
                     if timeFormat == "%s":
                         ts = float(timeString) if len(timeString) < 10 else float(timeString) / (10**(len(timeString)-10))
+                        logger.debugv("Getting time for timestamp '%s'" % ts)
                         currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
-                        currentTime = datetime.datetime.strptime(timeString, timeFormat)
-                    logger.debug("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
+                        logger.debugv("Getting time for timeFormat '%s' and timeString '%s'" % (timeFormat, timeString))
+                        # Working around Python bug with a non thread-safe strptime.  Randomly get AttributeError
+                        # when calling strptime, so if we get that, try again
+                        while currentTime == None:
+                            try:
+                                currentTime = datetime.datetime.strptime(timeString, timeFormat)
+                            except AttributeError:
+                                pass
+                    logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
                     if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
@@ -709,562 +624,59 @@ class Sample:
         """Saves state of all integer IDs of this sample to a file so when we restart we'll pick them up"""
         for token in self.tokens:
             if token.replacementType == 'integerid':
-                stateFile = open(os.path.join(self._c.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'w')
+                stateFile = open(os.path.join(c.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'w')
                 stateFile.write(token.replacement)
                 stateFile.close()
 
     def now(self, utcnow=False, realnow=False):
         # logger.info("Getting time (timezone %s)" % (self.timezone))
-        if not self._backfilldone and not self._backfillts == None and not realnow:
-            return self._backfillts
+        if not self.backfilldone and not self.backfillts == None and not realnow:
+            return self.backfillts
         elif self.timezone.days > 0:
             return datetime.datetime.now()
         else:
             return datetime.datetime.utcnow() + self.timezone
 
+    def earliestTime(self):
+        # First optimization, we need only store earliest and latest
+        # as an offset of now if they're relative times
+        if self._earliestParsed != None:
+            earliestTime = self.now() - self._earliestParsed
+            logger.debugv("Using cached earliest time: %s" % earliestTime)
+        else:
+            if self.earliest.strip()[0:1] == '+' or \
+                    self.earliest.strip()[0:1] == '-' or \
+                    self.earliest == 'now':
+                tempearliest = timeParser(self.earliest, timezone=self.timezone)
+                temptd = self.now(realnow=True) - tempearliest
+                self._earliestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
+                earliestTime = self.now() - self._earliestParsed
+                logger.debugv("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self._earliestParsed, earliestTime, tempearliest))
+            else:
+                earliestTime = timeParser(self.earliest, timezone=self.timezone)
+                logger.debugv("earliestTime as absolute time '%s'" % earliestTime)
+
+        return earliestTime
+
+
+    def latestTime(self):
+        if self._latestParsed != None:
+            latestTime = self.now() - self._latestParsed
+            logger.debugv("Using cached latestTime: %s" % latestTime)
+        else:
+            if self.latest.strip()[0:1] == '+' or \
+                    self.latest.strip()[0:1] == '-' or \
+                    self.latest == 'now':
+                templatest = timeParser(self.latest, timezone=self.timezone)
+                temptd = self.now(realnow=True) - templatest
+                self._latestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
+                latestTime = self.now() - self._latestParsed
+                logger.debugv("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self._latestParsed, latestTime, templatest))
+            else:
+                latestTime = timeParser(self.latest, timezone=self.timezone)
+                logger.debugv("latstTime as absolute time '%s'" % latestTime)
+
+        return latestTime
+
     def utcnow(self):
         return self.now(utcnow=True)
-
-        
-class Token:
-    """Contains data and methods for replacing a token in a given sample"""
-    token = None
-    replacementType = None
-    replacement = None
-    sample = None
-    mvhash = { }
-    
-    _replaytd = None
-    _lastts = None
-    _tokenre = None
-    _tokenfile = None
-    _tokents = None
-    _earliestTime = None
-    _latestTime = None
-    _replacementFile = None
-    _replacementColumn = None
-    _integerMatch = None
-    _floatMatch = None
-    _hexMatch = None
-    _stringMatch = None
-    _listMatch = None
-    
-    def __init__(self, sample):
-        self.sample = sample
-        
-        # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
-        
-        self._earliestTime = (None, None)
-        self._latestTime = (None, None)
-        
-    def __str__(self):
-        """Only used for debugging, outputs a pretty printed representation of this token"""
-        # Eliminate recursive going back to parent
-        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != 'sample' ])
-        return pprint.pformat(temp)
-
-    def __repr__(self):
-        return self.__str__()
-    
-    def _match(self, event):
-        """Executes regular expression match and returns the re.Match object"""
-        if self._tokenre == None:
-            self._tokenre = re.compile(self.token)
-        return self._tokenre.match(event)
-        
-    def _search(self, event):
-        """Executes regular expression search and returns the re.Match object"""
-        if self._tokenre == None:
-            self._tokenre = re.compile(self.token)
-        return self._tokenre.search(event)
-        
-    def _finditer(self, event):
-        """Executes regular expression finditer and returns the re.Match object"""
-        if self._tokenre == None:
-            self._tokenre = re.compile(self.token)
-        return self._tokenre.finditer(event)
-
-    def _findall(self, event):
-        """Executes regular expression finditer and returns the re.Match object"""
-        if self._tokenre == None:
-            self._tokenre = re.compile(self.token)
-        return self._tokenre.findall(event)
-        
-    def replace(self, event):
-        """Replaces all instances of this token in provided event and returns event"""
-        offset = 0
-        tokenMatch = list(self._finditer(event))
-        # logger.debug("Checking for match for token: '%s'" % (self.token))
-
-        if len(tokenMatch) > 0:
-            # 9/7/13  Trying to determine the logic for doing two regex
-            # searches, one to find the list of potential replacements and 
-            # another to find the actual string to replace, so commenting 
-            # out and recoding... may cause regressions.
-
-            # # 5/28/12 Changing logic to account for needing old to match
-            # # the right token we're actually replacing
-            # # This will call getReplacement for every match which is more
-            # # expensive, but necessary.
-            
-            # # Find old in case of error
-            # oldMatch = self._search(event)
-
-            # if oldMatch:
-            #     # old = event[oldMatch.start(group):oldMatch.end(group)]
-            #     group = 0 if len(oldMatch.groups()) == 0 else 1
-            #     old = oldMatch.group(group)
-            # else:
-            #     old = ""
-            
-            # logger.debug("Got match for token: '%s'" % (self.token))
-            # replacement = self._getReplacement(old)
-
-            replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)])
-            
-            if replacement is not None:
-                # logger.debug("Replacement: '%s'" % replacement)
-                ## Iterate matches
-                for match in tokenMatch:
-                    # logger.debug("Match: %s" % (match))
-                    try:
-                        matchStart = match.start(1) + offset
-                        matchEnd = match.end(1) + offset
-                        startEvent = event[:matchStart]
-                        endEvent = event[matchEnd:]
-                        # In order to not break legacy which might replace the same timestamp
-                        # with the same value in multiple matches, here we'll include
-                        # ones that need to be replaced for every match
-                        if self.replacementType in ('replaytimestamp'):
-                            replacement = self._getReplacement(event[matchStart:matchEnd])
-                        offset += len(replacement) - len(match.group(1))
-                    except:
-                        matchStart = match.start(0) + offset
-                        matchEnd = match.end(0) + offset
-                        startEvent = event[:matchStart]
-                        endEvent = event[matchEnd:]
-                        # In order to not break legacy which might replace the same timestamp
-                        # with the same value in multiple matches, here we'll include
-                        # ones that need to be replaced for every match
-                        if self.replacementType in ('replaytimestamp'):
-                            replacement = self._getReplacement(event[matchStart:matchEnd])
-                        offset += len(replacement) - len(match.group(0))
-                    # logger.debug("matchStart %d matchEnd %d offset %d" % (matchStart, matchEnd, offset))
-                    event = startEvent + replacement + endEvent
-                
-                # Reset replay internal variables for this token
-                self._replaytd = None
-                self._lastts = None
-        return event
-                    
-    def _getReplacement(self, old=None):
-        if self.replacementType == 'static':
-            return self.replacement
-        elif self.replacementType in ('timestamp', 'replaytimestamp'):
-            if self.sample.earliest and self.sample.latest:
-                # First optimization, we need only store earliest and latest
-                # as an offset of now if they're relative times
-                if self.sample._earliestParsed != None:
-                    earliestTime = self.sample.now() - self.sample._earliestParsed
-                    logger.debug("Using cached earliest time: %s" % earliestTime)
-                else:
-                    if self.sample.earliest.strip()[0:1] == '+' or \
-                            self.sample.earliest.strip()[0:1] == '-' or \
-                            self.sample.earliest == 'now':
-                        tempearliest = timeParser(self.sample.earliest, timezone=self.sample.timezone)
-                        temptd = self.sample.now(realnow=True) - tempearliest
-                        self.sample._earliestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
-                        earliestTime = self.sample.now() - self.sample._earliestParsed
-                        logger.debug("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self.sample._earliestParsed, earliestTime, tempearliest))
-                    else:
-                        earliestTime = timeParser(self.sample.earliest, timezone=self.sample.timezone)
-                        logger.debug("earliestTime as absolute time '%s'" % earliestTime)
-
-                if self.sample._latestParsed != None:
-                    latestTime = self.sample.now() - self.sample._latestParsed
-                    logger.debug("Using cached latestTime: %s" % latestTime)
-                else:
-                    if self.sample.latest.strip()[0:1] == '+' or \
-                            self.sample.latest.strip()[0:1] == '-' or \
-                            self.sample.latest == 'now':
-                        templatest = timeParser(self.sample.latest, timezone=self.sample.timezone)
-                        temptd = self.sample.now(realnow=True) - templatest
-                        self.sample._latestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
-                        latestTime = self.sample.now() - self.sample._latestParsed
-                        logger.debug("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self.sample._latestParsed, latestTime, templatest))
-                    else:
-                        latestTime = timeParser(self.sample.latest, timezone=self.sample.timezone)
-                        logger.debug("latstTime as absolute time '%s'" % latestTime)
-
-                if earliestTime and latestTime:
-                    if latestTime>=earliestTime:
-                        minDelta = 0
-
-                        ## Compute timeDelta as total_seconds
-                        td = latestTime - earliestTime
-                        maxDelta = timeDelta2secs(td)
-
-                        ## Get random timeDelta
-                        randomDelta = datetime.timedelta(seconds=random.randint(minDelta, maxDelta))
-
-                        ## Compute replacmentTime
-                        replacementTime = latestTime - randomDelta
-
-                        # logger.debug("Generating timestamp for sample '%s' with randomDelta %s, minDelta %s, maxDelta %s, earliestTime %s, latestTime %s, earliest: %s, latest: %s" % (self.sample.name, randomDelta, minDelta, maxDelta, earliestTime, latestTime, self.sample.earliest, self.sample.latest))
-                        
-                        if self.replacementType == 'replaytimestamp':
-                            if old != None and len(old) > 0:
-                                # Determine type of timestamp to use for this token
-                                # We can either be a string with one strptime format
-                                # or we can be a json formatted list of strptime formats
-                                currentts = None
-                                try:
-                                    strptimelist = json.loads(self.replacement)   
-                                    for currentformat in strptimelist:
-                                        try:
-                                            timeformat = currentformat
-                                            if timeformat == "%s":
-                                                ts = float(old) if  len(old) < 10 else float(old) / (10**(len(old)-10))
-                                                currentts = datetime.datetime.fromtimestamp(ts)
-                                            else:
-                                                currentts = datetime.datetime.strptime(old, timeformat)
-                                            # logger.debug("Old '%s' Timeformat '%s' currentts '%s'" % (old, timeformat, currentts))
-                                            if type(currentts) == datetime.datetime:
-                                                break
-                                        except ValueError:
-                                            pass
-                                    if type(currentts) != datetime.datetime:
-                                        # Total fail
-                                        logger.error("Can't find strptime format for this timestamp '%s' in the list of formats.  Returning original value" % old)
-                                        return old
-                                except ValueError:
-                                    # Not JSON, try to read as text
-                                    timeformat = self.replacement
-                                    try:
-                                        if timeformat == "%s":
-                                            ts = float(old) if  len(old) < 10 else float(old) / (10**(len(old)-10))
-                                            currentts = datetime.datetime.fromtimestamp(ts)
-                                        else:
-                                            currentts = datetime.datetime.strptime(old, timeformat)
-                                        # logger.debug("Timeformat '%s' currentts '%s'" % (timeformat, currentts))
-                                    except ValueError:
-                                        # Total fail
-                                        logger.error("Can't match strptime format ('%s') to this timestamp '%s'.  Returning original value" % (timeformat, old))
-                                        return old
-                                    
-                                    # Can't parse as strptime, try JSON
-                                
-                                # Check to make sure we parsed a year
-                                if currentts.year == 1900:
-                                    currentts = currentts.replace(year=self.sample.now().year)
-                                # We should now know the timeformat and currentts associated with this event
-                                # If we're the first, save those values        
-                                if self._replaytd == None:
-                                    self._replaytd = replacementTime - currentts
-                                
-                                # logger.debug("replaytd %s" % self._replaytd)
-                                replacementTime = currentts + self._replaytd
-                                
-                                # Randomize time a bit between last event and this one
-                                # Note that we'll always end up shortening the time between
-                                # events because we don't know when the next timestamp is going to be
-                                if self.sample.bundlelines:
-                                    if self._lastts == None:
-                                        self._lastts = replacementTime
-                                    oldtd = replacementTime - self._lastts
-                                    randomsecs = random.randint(0, oldtd.seconds)
-                                    if oldtd.seconds > 0:
-                                        randommicrosecs = random.randint(0, 1000000)
-                                    else:
-                                        randommicrosecs = random.randint(0, oldtd.microseconds)
-                                    randomtd = datetime.timedelta(seconds=randomsecs, microseconds=randommicrosecs)
-                                    replacementTime -= randomtd
-                                else:
-                                    randomtd = datetime.timedelta()
-                                self._lastts = replacementTime
-                                replacementTime = replacementTime.strftime(timeformat)
-                                # logger.debug("Old '%s' Timeformat '%s' currentts '%s' replacementTime '%s' replaytd '%s' randomtd '%s'" \
-                                #             % (old, timeformat, currentts, replacementTime, self._replaytd, randomtd))
-                            else:
-                                logger.error("Could not find old value, needed for replaytimestamp")
-                                return old
-                        else:
-                            replacementTime = replacementTime.strftime(self.replacement)
-                        ## replacementTime == replacement for invalid strptime specifiers
-                        if replacementTime != self.replacement.replace('%', ''):
-                            return replacementTime
-                        else:
-                            logger.error("Invalid strptime specifier '%s' detected; will not replace" \
-                                        % (self.replacement) )
-                            return old
-                    ## earliestTime/latestTime not proper
-                    else:
-                        logger.error("Earliest specifier '%s', value '%s' is greater than latest specifier '%s', value '%s' for sample '%s'; will not replace" \
-                                    % (self.sample.earliest, earliestTime, self.sample.latest, latestTime, self.sample.name) )
-                        return old
-            ## earliest/latest not proper
-            else:
-                logger.error('Earliest or latest specifier were not set; will not replace')
-                return old
-        elif self.replacementType in ('random', 'rated'):
-            ## Validations:
-            if self._integerMatch != None:
-                integerMatch = self._integerMatch
-            else:
-                integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
-                integerMatch = integerRE.match(self.replacement)
-                self._integerMatch = integerMatch
-            
-            if self._floatMatch != None:
-                floatMatch = self._floatMatch
-            else:
-                floatRE = re.compile('float\[(\d+)\.(\d+):(\d+)\.(\d+)\]', re.I)
-                floatMatch = floatRE.match(self.replacement)
-                self._floatMatch = floatMatch
-
-            if self._stringMatch != None:
-                stringMatch = self._stringMatch
-            else:
-                stringRE = re.compile('string\((\d+)\)', re.I)
-                stringMatch = stringRE.match(self.replacement)
-                self._stringMatch = stringMatch
-
-            if self._hexMatch != None:
-                hexMatch = self._hexMatch
-            else:       
-                hexRE = re.compile('hex\((\d+)\)', re.I)
-                hexMatch = hexRE.match(self.replacement)
-                self._hexMatch = hexMatch
-
-            if self._listMatch != None:
-                listMatch = self._listMatch
-            else:
-                listRE = re.compile('list(\[[^\]]+\])', re.I)
-                listMatch = listRE.match(self.replacement)
-                self._listMatch = listMatch
-
-            ## Valid replacements: ipv4 | ipv6 | integer[<start>:<end>] | string(<i>)
-            if self.replacement.lower() == 'ipv4':
-                x = 0
-                replacement = ''
-
-                while x < 4:
-                    replacement += str(random.randint(0, 255)) + '.'
-                    x += 1
-
-                replacement = replacement.strip('.')
-                return replacement
-            elif self.replacement.lower() == 'ipv6':
-                x = 0
-                replacement = ''
-
-                while x < 8:
-                    replacement += hex(random.randint(0, 65535))[2:] + ':'
-                    x += 1
-
-                replacement = replacement.strip(':')
-                return replacement
-            elif self.replacement.lower() == 'mac':
-                x = 0
-                replacement = ''
-
-                ## Give me 6 blocks of 2 hex
-                while x < 6:
-                    y = 0
-                    while y < 2:
-                        replacement += hex(random.randint(0, 15))[2:]
-                        y += 1
-                    replacement += ':'
-                    x += 1
-
-                replacement = replacement.strip(':')
-                return replacement
-            elif self.replacement.lower() == 'guid':
-                return str(uuid.uuid4())
-            elif integerMatch:
-                startInt = int(integerMatch.group(1))
-                endInt = int(integerMatch.group(2))
-
-                if endInt >= startInt:
-                    replacementInt = random.randint(startInt, endInt)
-                    if self.replacementType == 'rated':
-                        rateFactor = 1.0
-                        if type(self.sample.hourOfDayRate) == dict:
-                            try:
-                                rateFactor *= self.sample.hourOfDayRate[str(self.sample.now())]
-                            except KeyError:
-                                import traceback
-                                stack =  traceback.format_exc()
-                                logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
-                        if type(self.sample.dayOfWeekRate) == dict:
-                            try:
-                                weekday = datetime.date.weekday(self.sample.now())
-                                if weekday == 6:
-                                    weekday = 0
-                                else:
-                                    weekday += 1
-                                rateFactor *= self.sample.dayOfWeekRate[str(weekday)]
-                            except KeyError:
-                                import traceback
-                                stack =  traceback.format_exc()
-                                logger.error("Day of week rate failed.  Stacktrace %s" % stack)
-                        replacementInt = int(round(replacementInt * rateFactor, 0))
-                    replacement = str(replacementInt)
-                    return replacement
-                else:
-                    logger.error("Start integer %s greater than end integer %s; will not replace" % (startInt, endInt) )
-                    return old
-            elif floatMatch:
-                try:
-                    startFloat = float(floatMatch.group(1)+'.'+floatMatch.group(2))
-                    endFloat = float(floatMatch.group(3)+'.'+floatMatch.group(4))
-                    
-                    if endFloat >= startFloat:
-                        floatret = round(random.uniform(startFloat,endFloat), len(floatMatch.group(2)))
-                        if self.replacementType == 'rated':
-                            rateFactor = 1.0
-                            now = self.sample.now()
-                            if type(self.sample.hourOfDayRate) == dict:
-                                try:
-                                    rateFactor *= self.sample.hourOfDayRate[str(now.hour)]
-                                except KeyError:
-                                    import traceback
-                                    stack =  traceback.format_exc()
-                                    logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
-                            if type(self.sample.dayOfWeekRate) == dict:
-                                try:
-                                    weekday = datetime.date.weekday(now)
-                                    if weekday == 6:
-                                        weekday = 0
-                                    else:
-                                        weekday += 1
-                                    rateFactor *= self.sample.dayOfWeekRate[str(weekday)]
-                                except KeyError:
-                                    import traceback
-                                    stack =  traceback.format_exc()
-                                    logger.error("Day of week rate failed.  Stacktrace %s" % stack)
-                            floatret = round(floatret * rateFactor, len(floatMatch.group(2)))
-                        floatret = str(floatret)
-                        return floatret
-                    else:
-                        logger.error("Start float %s greater than end float %s; will not replace" % (startFloat, endFloat))
-                        return old
-                except ValueError:
-                    logger.error("Could not parse float[%s.%s:%s.%s]" % (floatMatch.group(1), floatMatch.group(2), \
-                                floatMatch.group(3), floatMatch.group(4)))
-                    return old
-            elif stringMatch:
-                strLength = int(stringMatch.group(1))
-                if strLength == 0:
-                    return ''
-                elif strLength > 0:
-                    replacement = ''
-                    while len(replacement) < strLength:
-                        ## Generate a random ASCII between dec 33->126
-                        replacement += chr(random.randint(33, 126))
-                        ## Practice safe strings
-                        replacement = re.sub('%[0-9a-fA-F]+', '', urllib.quote(replacement))
-                    
-                    return replacement
-                else:
-                    logger.error("Length specifier %s for string replacement must be greater than 0; will not replace" % (strLength) )
-                    return old
-            elif hexMatch:
-                strLength = int(hexMatch.group(1))
-
-                replacement = ''
-                hexList = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
-                while len(replacement) < strLength:
-                    replacement += hexList[random.randint(0, 15)]
-
-                return replacement
-            elif listMatch:
-                try:
-                    value = json.loads(listMatch.group(1))
-                except:
-                    logger.error("Could not parse json for '%s' in sample '%s'" % (listMatch.group(1), self.sample.name))
-                    return old
-                return random.choice(value)
-
-            else:
-                logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
-                return old
-        elif self.replacementType in ('file', 'mvfile'):
-            if self._replacementFile != None:
-                replacementFile = self._replacementFile
-                replacementColumn = self._replacementColumn
-            else:
-                try:
-                    paths = self.replacement.split(':')
-                    if(len(paths) == 1):
-                        replacementColumn = 0
-                    else:
-                        try: # When it's not a mvfile, there's no number on the end:
-                            replacementColumn = int(paths[-1])
-                        except (ValueError):
-                            replacementColumn = 0
-                    if(replacementColumn > 0):
-                        # This supports having a drive-letter colon
-                        replacementFile = self.sample.pathParser(":".join(paths[0:-1]))
-                    else:
-                        replacementFile = self.sample.pathParser(self.replacement)
-                except ValueError, e:
-                    logger.error("Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column" % (self.replacement))
-                    return old
-                self._replacementFile = replacementFile
-                self._replacementColumn = replacementColumn
-
-            # If we've seen this file before, simply return already read results
-            # This applies only if we're looking at a multivalue file and we want to
-            # return the same random pick on every iteration
-            if replacementColumn > 0 and replacementFile in self.mvhash:
-                if replacementColumn > len(self.mvhash[replacementFile]):
-                    logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
-                    return old
-                else:
-                    # logger.debug("Returning mvhash: %s" % self.mvhash[replacementFile][replacementColumn-1])
-                    return self.mvhash[replacementFile][replacementColumn-1]
-            else:
-                # Adding caching of the token file to avoid reading it every iteration
-                if self._tokenfile != None:
-                    replacementLines = self._tokenfile
-                ## Otherwise, lets read the file and build our cached results, pick a result and return it
-                else:
-                    # logger.debug("replacementFile: %s replacementColumn: %s" % (replacementFile, replacementColumn))
-                    if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
-                        replacementFH = open(replacementFile, 'rU')
-                        replacementLines = replacementFH.readlines()
-                        replacementFH.close()
-
-                        if len(replacementLines) == 0:
-                            logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
-                            return old
-                        else:
-                            self._tokenfile = replacementLines
-                    else:
-                        logger.error("File '%s' does not exist" % (replacementFile))
-                        return old
-
-                replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
-
-                if replacementColumn > 0:
-                    self.mvhash[replacementFile] = replacement.split(',')
-
-                    if replacementColumn > len(self.mvhash[replacementFile]):
-                        logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
-                        return old
-                    else:
-                        return self.mvhash[replacementFile][replacementColumn-1]
-                else:
-                    return replacement
-        elif self.replacementType == 'integerid':
-            temp = self.replacement
-            self.replacement = str(int(self.replacement) + 1)
-            return temp
-
-        else:
-            logger.error("Unknown replacementType '%s'; will not replace" % (replacementType) )
-            return old
-

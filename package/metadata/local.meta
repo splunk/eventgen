@@ -9,3 +9,11 @@ modtime = 1340395082.546770000
 [app/install/is_configured]
 version = 4.3.2
 modtime = 1340395082.652048000
+
+[views/log_viewer]
+version = 6.1.2
+modtime = 1402370790.886870000
+
+[views/perf]
+version = 6.1.2
+modtime = 1402343428.848001000
