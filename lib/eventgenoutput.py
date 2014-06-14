@@ -35,7 +35,7 @@ class Output:
         logobj = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
         adapter = EventgenAdapter(logobj, {'module': 'Output', 'sample': sample.name})
-        self.logger = adapter
+        globals()['logger'] = adapter
 
         from eventgenconfig import Config
         globals()['c'] = Config()
@@ -97,17 +97,17 @@ class Output:
         if endOfInterval:
             c.intervalsSinceFlush[self._sample.name].increment()
             if c.intervalsSinceFlush[self._sample.name].value() >= self._sample.maxIntervalsBeforeFlush:
-                self.logger.debugv("Exceeded maxIntervalsBeforeFlush, flushing")
+                logger.debugv("Exceeded maxIntervalsBeforeFlush, flushing")
                 flushing = True
                 c.intervalsSinceFlush[self._sample.name].clear()
         else:
-            self.logger.debugv("maxQueueLength exceeded, flushing")
+            logger.debugv("maxQueueLength exceeded, flushing")
             flushing = True
 
         if flushing:
             # q = deque(list(self._queue)[:])
             q = list(self._queue)
-            self.logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
+            logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue.clear()
             while True:
                 try:
@@ -116,10 +116,10 @@ class Output:
                     elif c.queueing == 'zeromq':
                         self.sender.send(marshal.dumps((self._sample.name, q)))
                     c.outputQueueSize.increment()
-                    # self.logger.info("Outputting queue")
+                    # logger.info("Outputting queue")
                     break
                 except Full:
-                    self.logger.warn("Output Queue full, looping again")
+                    logger.warn("Output Queue full, looping again")
                     pass
 
 
