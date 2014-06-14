@@ -618,6 +618,8 @@ class Sample:
         # Check to make sure we parsed a year
         if currentTime.year == 1900:
             currentTime = currentTime.replace(year=self.now().year)
+        if self.timestamp == None:
+            self.timestamp = currentTime
         return currentTime
     
     def saveState(self):
