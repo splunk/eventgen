@@ -119,7 +119,7 @@ class Output:
                     # logger.info("Outputting queue")
                     break
                 except Full:
-                    logger.warn("Output Queue full, looping again")
+                    logger.warning("Output Queue full, looping again")
                     pass
 
 

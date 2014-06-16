@@ -382,7 +382,7 @@ class Sample:
                 ## If breaker wasn't found in sample
                 ## events = sample
                 if breakersFound == 0:
-                    logger.warn("Breaker '%s' not found for sample '%s' in app '%s'; using default breaker" % (self.breaker, self.name, self.app) )
+                    logger.warning("Breaker '%s' not found for sample '%s' in app '%s'; using default breaker" % (self.breaker, self.name, self.app) )
 
                     if count >= len(sampleLines):
                         events = sampleLines
@@ -522,7 +522,7 @@ class Sample:
                 partialInterval = timeDiffSecs % self.interval
 
                 if wholeIntervals > 1:
-                    logger.warn("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
+                    logger.warning("Generation of sample '%s' in app '%s' took longer than interval (%s seconds vs. %s seconds); consider adjusting interval" \
                                 % (self.name, self.app, timeDiff, self.interval) )
 
                 partialInterval = self.interval - partialInterval
@@ -543,7 +543,7 @@ class Sample:
                 self._timeSinceSleep = datetime.timedelta()
             return partialInterval
         else:
-            logger.warn("Sample '%s' in app '%s' contains no data" % (self.name, self.app) )
+            logger.warning("Sample '%s' in app '%s' contains no data" % (self.name, self.app) )
         
     ## Replaces $SPLUNK_HOME w/ correct pathing
     def pathParser(self, path):
