@@ -580,7 +580,7 @@ class Config:
                             foundFiles.append(samplePath)
             # If we didn't find any files, log about it
             if len(foundFiles) == 0:
-                self.logger.warn("Sample '%s' in config but no matching files" % s.name)
+                self.logger.warning("Sample '%s' in config but no matching files" % s.name)
                 # 1/23/14 Change in behavior, go ahead and add the sample even if we don't find a file
                 if not s.disabled:
                     tempsamples2.append(copy.deepcopy(s))
@@ -781,7 +781,7 @@ class Config:
         else:
             # Notifying only if the setting isn't valid and continuing on
             # This will allow future settings to be added and be backwards compatible
-            self.logger.warn("Key '%s' in stanza '%s' is not a valid setting" % (key, stanza))
+            self.logger.warning("Key '%s' in stanza '%s' is not a valid setting" % (key, stanza))
         return value
 
     def _validateTimezone(self, value):
