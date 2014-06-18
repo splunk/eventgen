@@ -172,7 +172,7 @@ class Timer(threading.Thread):
                                     self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
                                     stop = True
                                 except Full:
-                                    self.logger.warn("Generator Queue Full, looping")
+                                    self.logger.warning("Generator Queue Full, looping")
                                     if self.stopping:
                                         stop = True
                                     pass

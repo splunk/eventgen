@@ -23,7 +23,6 @@ class Token:
     
     _replaytd = None
     _lastts = None
-    _tokenre = None
     _tokenfile = None
     _tokents = None
     _earliestTime = None
@@ -58,27 +57,19 @@ class Token:
     
     def _match(self, event):
         """Executes regular expression match and returns the re.Match object"""
-        if self._tokenre == None:
-            self._tokenre = re.compile(self.token)
-        return self._tokenre.match(event)
+        return re.match(self.token, event)
         
     def _search(self, event):
         """Executes regular expression search and returns the re.Match object"""
-        if self._tokenre == None:
-            self._tokenre = re.compile(self.token)
-        return self._tokenre.search(event)
+        return re.search(self.token, event)
         
     def _finditer(self, event):
         """Executes regular expression finditer and returns the re.Match object"""
-        if self._tokenre == None:
-            self._tokenre = re.compile(self.token)
-        return self._tokenre.finditer(event)
+        return re.finditer(self.token, event)
 
     def _findall(self, event):
         """Executes regular expression finditer and returns the re.Match object"""
-        if self._tokenre == None:
-            self._tokenre = re.compile(self.token)
-        return self._tokenre.findall(event)
+        return re.findall(self.token, event)
         
     def replace(self, event, et=None, lt=None, s=None):
         """Replaces all instances of this token in provided event and returns event"""
