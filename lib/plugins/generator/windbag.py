@@ -5,6 +5,7 @@ import logging
 import datetime, time
 import itertools
 from collections import deque
+from eventgenoutput import Output
 
 class WindbagGenerator(GeneratorPlugin):
     def __init__(self, sample):
@@ -20,6 +21,9 @@ class WindbagGenerator(GeneratorPlugin):
         globals()['c'] = Config()
 
     def gen(self, count, earliest, latest, samplename=None):
+        if self._sample.out == None:
+            self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
+            self._sample.out = Output(self._sample)
         # l = range(count)
         # for i in xrange(count):
         #     # self._sample.timestamp = latest
