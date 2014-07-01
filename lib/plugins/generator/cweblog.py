@@ -8,6 +8,7 @@ from collections import deque
 import random
 import subprocess
 import re
+from eventgenoutput import Output
 
 class CWeblogGenerator(GeneratorPlugin):
     def __init__(self, sample):
@@ -21,6 +22,9 @@ class CWeblogGenerator(GeneratorPlugin):
         globals()['c'] = Config()
 
     def gen(self, count, earliest, latest, **kwargs):
+        if self._sample.out == None:
+            self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
+            self._sample.out = Output(self._sample)
         # logger.debug("weblog: external_ips_len: %s webhosts_len: %s useragents_len: %s webserverstatus_len: %s" % \
                     # (self.external_ips_len, self.webhosts_len, self.useragents_len, self.webserverstatus_len))
         # path = c.grandparentdir.split(os.sep)
