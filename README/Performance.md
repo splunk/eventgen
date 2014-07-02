@@ -180,3 +180,20 @@ This will use most of the capacity of the machine for generating, and in my test
 
     2014-02-02 21:55:20,351 INFO Output Queue depth: 407  Generator Queue depth: 7945 Generators Per Sec: 71 Outputters Per Sec: 29
     2014-02-02 21:55:20,352 INFO Events/Sec: 1470000.0 Kilobytes/Sec: 64599.609375 GB/Day: 5322.843790
+
+Running the cweblog generator, lets see how far we can push the machine with 20 GeneratorWorkers and 4 OutputWorkers:
+
+    2014-07-01 22:39:24,597 INFO module='main' sample='null': OutputQueueDepth=57  GeneratorQueueDepth=23730 GeneratorsPerSec=344 OutputtersPerSec=345
+    2014-07-01 22:39:24,597 INFO module='main' sample='null': GlobalEventsPerSec=690745.2 KilobytesPerSec=241171.648633 GigabytesPerDay=19871.931497
+
+We're outputting about 20TB a Day and keeping up with the output queue which is good.
+
+# Removing the bottleneck
+
+In this architecture, the primary bottleneck is serializing and deserializing the data between processes.  We added the reduce step of the outputqueue primarily to handle modular input and file outputs where we needed a limited number of things touching a file or outputting to stdout.  Where we can parallelize this work, we can remove the majority of the CPU bottleneck of passing data around between processes.
+
+For this reason, in July of 2014, we added a config option to disable using the outputqueue.  In default/eventgen.conf, setting useOutputQueue to false will output data directly from each GeneratorWorker rather than forcing the data back through the output queue.  Running the same performance test with the cweblog generator with 24 GeneratorWorkers and 0 OutputWorkers and useOutputQueue=false generates the following numbers:
+
+    2014-07-01 22:43:01,232 INFO module='main' sample='null': GlobalEventsPerSec=17469130.2 KilobytesPerSec=6108727.259180 GigabytesPerDay=503343.615716
+
+That's 503TB/day of output!  This is about 48GB/sec of output, which would half saturate a 100 gigabit network pipe.  This is more than enough output, so I think we can reasonably consider Eventgen to be able to generate more than enough data to saturate pretty much any instance from a single 24 core machine.

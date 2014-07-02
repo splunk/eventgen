@@ -96,8 +96,11 @@ profiler = true | false
     * Defaults to false
 
 queueing = python | zeromq
-    * Use python queueing or zeromq.  Zeromq allows us to distribute on the machine or across multiple machines.
+    * Use python queueing or zeromq.  Zeromq allows us to distribute on the machine or across multiple machines.  Zeromq is significantly faster than Python's multiprocess Queue module as well.
     * Defaults to python
+
+useOutputQueue = true | false
+    * Disable the use of the output Queue.  The output queue functions as a reduce step when you need to maintain a single thread or a limited number of threads outputting data, for instance if you're outputting to a file or to stdout/modular input.  Defaults to true.  If you can multithread output, for example with splunkstream or s2s type outputs, setting this to false will give an order of magnitude or better performance improvement.
 
 zmqBaseUrl = <ur>
     * Used for zeromq.  URL Base which we will append ports to.
