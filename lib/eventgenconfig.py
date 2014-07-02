@@ -139,6 +139,7 @@ class Config:
     zmqBasePort = None
     maxIntervalsBeforeFlush = None
     maxQueueLength = None
+    useOutputQueue = None
 
     __outputPlugins = { }
     __plugins = { }
@@ -153,7 +154,7 @@ class Config:
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers', 'generator',
                     'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading', 'profiler', 'queueing',
-                    'zmqBaseUrl', 'zmqBasePort', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'verbose']
+                    'zmqBaseUrl', 'zmqBasePort', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'verbose', 'useOutputQueue']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -161,7 +162,7 @@ class Config:
     _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'zmqBasePort', 'maxIntervalsBeforeFlush',
                     'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
-    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler']
+    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate']
     _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay',
                             'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate',
