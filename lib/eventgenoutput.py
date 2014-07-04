@@ -109,8 +109,8 @@ class Output:
             q = list(self._queue)
             logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue.clear()
-            while True:
-                if c.useOutputQueue:
+            if c.useOutputQueue:
+                while True:
                     try:
                         if c.queueing == 'python':
                             c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
@@ -122,17 +122,17 @@ class Output:
                     except Full:
                         logger.warning("Output Queue full, looping again")
                         pass
-                else:
-                    tmp = [len(s['_raw']) for s in q]
-                    c.eventsSent.add(len(tmp))
-                    c.bytesSent.add(sum(tmp))
-                    if c.splunkEmbedded and len(tmp)>0:
-                        metrics = logging.getLogger('eventgen_metrics')
-                        metrics.error(json.dumps({'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 
-                                'sample': name, 'events': len(tmp), 'bytes': sum(tmp)}))
-                    tmp = None
-                    plugin = c.getPlugin(self._sample.name)
-                    plugin.flush(deque(q[:]))
+            else:
+                tmp = [len(s['_raw']) for s in q]
+                c.eventsSent.add(len(tmp))
+                c.bytesSent.add(sum(tmp))
+                if c.splunkEmbedded and len(tmp)>0:
+                    metrics = logging.getLogger('eventgen_metrics')
+                    metrics.error(json.dumps({'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 
+                            'sample': name, 'events': len(tmp), 'bytes': sum(tmp)}))
+                tmp = None
+                plugin = c.getPlugin(self._sample.name)
+                plugin.flush(deque(q[:]))
 
 
 
