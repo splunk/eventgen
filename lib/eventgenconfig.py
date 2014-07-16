@@ -655,21 +655,26 @@ class Config:
                     # the more specific object that we've matched doesn't already have them set
                     for settingname in self._validSettings:
                         if settingname not in ['eai:acl', 'blacklist', 'disabled', 'name']:
-                            sourcesetting = getattr(overridesample, settingname)
-                            destsetting = getattr(s, settingname)
-                            # We want to check that the setting we're copying to hasn't been
-                            # set, otherwise keep the more specific value
-                            # 6/22/12 CS Added support for non-overrideable (locked) settings
-                            # logger.debug("Locked settings: %s" % pprint.pformat(matchs._lockedSettings))
-                            # if settingname in matchs._lockedSettings:
-                            #     logger.debug("Matched setting '%s' in sample '%s' lockedSettings" \
-                            #         % (settingname, matchs.name))
-                            if (destsetting == None or destsetting == getattr(self, settingname)) \
-                                    and sourcesetting != None and sourcesetting != getattr(self, settingname) \
-                                    and not settingname in s._lockedSettings:
-                                self.logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to sample '%s' in app '%s'" \
-                                                % (settingname, sourcesetting, overridesample._origName, s.name, s.app))
-                                setattr(s, settingname, sourcesetting)
+                            # 7/16/14 CS For some reason default settings are suddenly erroring
+                            # not sure why, but lets just move on
+                            try:
+                                sourcesetting = getattr(overridesample, settingname)
+                                destsetting = getattr(s, settingname)
+                                # We want to check that the setting we're copying to hasn't been
+                                # set, otherwise keep the more specific value
+                                # 6/22/12 CS Added support for non-overrideable (locked) settings
+                                # logger.debug("Locked settings: %s" % pprint.pformat(matchs._lockedSettings))
+                                # if settingname in matchs._lockedSettings:
+                                #     logger.debug("Matched setting '%s' in sample '%s' lockedSettings" \
+                                #         % (settingname, matchs.name))
+                                if (destsetting == None or destsetting == getattr(self, settingname)) \
+                                        and sourcesetting != None and sourcesetting != getattr(self, settingname) \
+                                        and not settingname in s._lockedSettings:
+                                    self.logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to sample '%s' in app '%s'" \
+                                                    % (settingname, sourcesetting, overridesample._origName, s.name, s.app))
+                                    setattr(s, settingname, sourcesetting)
+                            except AttributeError:
+                                pass
 
                     # Now prepend all the tokens to the beginning of the list so they'll be sure to match first
                     newtokens = copy.deepcopy(s.tokens)
