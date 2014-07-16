@@ -63,7 +63,10 @@ class ReplayGenerator(GeneratorPlugin):
             logger.debugv("At end of _rpevents")
             # At the end of the buffer, we sould wait the average amount of time at the end 
             # return 0
-            avgtimes = sum(list(self._times)) / len(self._times) / s.timeMultiple
+            try:
+                avgtimes = sum(list(self._times)) / len(self._times) / s.timeMultiple
+            except ZeroDivisionError:
+                avgtimes = 1
             interval = datetime.timedelta(seconds=int(math.modf(avgtimes)[1]), microseconds=int(round(math.modf(avgtimes)[0] * 1000000, 0)))
             nextts = self._lastts + interval
             logger.debugv("Setting nextts to '%s' with avgtimes '%d' and interval '%s'" % (nextts, avgtimes, interval))

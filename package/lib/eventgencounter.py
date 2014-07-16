@@ -27,9 +27,9 @@ class Counter:
         else:
             self.lock = multiprocessing.Lock()
             
-            self.val = multiprocessing.RawValue('i', initval)
-            self.incval = multiprocessing.RawValue('i', 0)
-            self.decval = multiprocessing.RawValue('i', 0)
+            self.val = multiprocessing.RawValue('l', initval)
+            self.incval = multiprocessing.RawValue('l', 0)
+            self.decval = multiprocessing.RawValue('l', 0)
 
     def increment(self):
         """

@@ -96,8 +96,11 @@ profiler = true | false
     * Defaults to false
 
 queueing = python | zeromq
-    * Use python queueing or zeromq.  Zeromq allows us to distribute on the machine or across multiple machines.
+    * Use python queueing or zeromq.  Zeromq allows us to distribute on the machine or across multiple machines.  Zeromq is significantly faster than Python's multiprocess Queue module as well.
     * Defaults to python
+
+useOutputQueue = true | false
+    * Disable the use of the output Queue.  The output queue functions as a reduce step when you need to maintain a single thread or a limited number of threads outputting data, for instance if you're outputting to a file or to stdout/modular input.  Defaults to true.  If you can multithread output, for example with splunkstream or s2s type outputs, setting this to false will give an order of magnitude or better performance improvement.
 
 zmqBaseUrl = <ur>
     * Used for zeromq.  URL Base which we will append ports to.
@@ -116,12 +119,12 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = modinput | file | splunkstream | stdout | devnull | spool
+outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool
     * Specifies how to output log data.  Modinput is default.
     * If setting spool, should set spoolDir
     * If setting file, should set logFile
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser and splunkPassword if not Splunk embedded
-    * If setting stormstream, should set projectID and accessToken.
+    * If setting s2s, should set splunkHost and splunkPort
 
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.
