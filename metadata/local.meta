@@ -12,7 +12,7 @@ modtime = 1340395082.652048000
 
 [views/log_viewer]
 version = 6.1.2
-modtime = 1402370790.886870000
+modtime = 1405368344.241276000
 
 [views/perf]
 version = 6.1.2
@@ -20,4 +20,4 @@ modtime = 1402343428.848001000
 
 [inputs/eventgen_modinput%3A%2F%2Fmain]
 version = 6.1.2
-modtime = 1404371986.936913000
+modtime = 1405542782.814751000
