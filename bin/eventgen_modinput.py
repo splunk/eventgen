@@ -106,7 +106,7 @@ if __name__ == '__main__':
     # Logger is setup by Config, just have to get an instance
     logobj = logging.getLogger('eventgen')
     logobj.propagate = False # Prevent the log messages from being duplicated in the python.log file
-    logobj.setLevel(logging.DEBUG)
+    logobj.setLevel(logging.INFO)
     formatter = logging.Formatter('%(levelname)s %(message)s')
     streamHandler = logging.StreamHandler(sys.stderr)
     streamHandler.setFormatter(formatter)
