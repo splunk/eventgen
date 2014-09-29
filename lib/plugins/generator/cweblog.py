@@ -29,7 +29,7 @@ class CWeblogGenerator(GeneratorPlugin):
                     # (self.external_ips_len, self.webhosts_len, self.useragents_len, self.webserverstatus_len))
         # path = c.grandparentdir.split(os.sep)
         # path.extend(['lib', 'plugins', 'generator', 'cweblog'])
-        p = subprocess.Popen(c.grandparentdir + '/lib/plugins/generator/cweblog', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        p = subprocess.Popen(c.grandparentdir + '/lib/plugins/generator/cweblog', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.stdin.write("%d;1;1\n" % count)
         linesstr = p.stdout.read()
         lines = re.split('\n', linesstr);
