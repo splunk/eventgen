@@ -86,6 +86,9 @@ class DefaultGenerator(GeneratorPlugin):
                 token.mvhash = mvhash
                 # logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
                 event = token.replace(event, et=earliest, lt=latest, s=s)
+                if token.replacementType == 'timestamp' and s.timeField != '_raw':
+                    s.timestamp = None
+                    token.replace(self.sampleDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
             if(s.hostToken):
                 # clear the host mvhash every time, because we need to re-randomize it
                 s.hostToken.mvhash =  {}
