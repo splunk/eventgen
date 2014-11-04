@@ -618,8 +618,11 @@ class Sample:
         # Check to make sure we parsed a year
         if currentTime.year == 1900:
             currentTime = currentTime.replace(year=self.now().year)
-        if self.timestamp == None:
-            self.timestamp = currentTime
+        # 11/3/14 CS So, this is breaking replay mode, and getTSFromEvent is only used by replay mode
+        #            but I don't remember why I added these two lines of code so it might create a regression.
+        #            Found the change on 6/14/14 but no comments as to why I added these two lines.
+        # if self.timestamp == None:
+        #     self.timestamp = currentTime
         return currentTime
     
     def saveState(self):
