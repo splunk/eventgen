@@ -165,9 +165,9 @@ class Timer(threading.Thread):
                             while not stop:
                                 try:
                                     if c.queueing == 'python':
-                                        c.generatorQueue.put((self.sample.name, count, time.mktime(et.timetuple()), time.mktime(lt.timetuple())), block=True, timeout=1.0)
+                                        c.generatorQueue.put((self.sample.name, count, (time.mktime(et.timetuple())*1000+et.microsecond), (time.mktime(lt.timetuple())*1000+lt.microsecond)), block=True, timeout=1.0)
                                     elif c.queueing == 'zeromq':
-                                        self.sender.send(marshal.dumps((self.sample.name, count, time.mktime(et.timetuple()), time.mktime(lt.timetuple()))))
+                                        self.sender.send(marshal.dumps((self.sample.name, count, (time.mktime(et.timetuple())+et.microsecond), (time.mktime(lt.timetuple())+lt.microsecond))))
                                     c.generatorQueueSize.increment()
                                     self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
                                     stop = True

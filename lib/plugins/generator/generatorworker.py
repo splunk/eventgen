@@ -90,8 +90,8 @@ class GeneratorRealWorker:
                     # logger.debugv("Grabbing generator items from zeromq queue")
                     samplename, count, earliestts, latestts = marshal.loads(self.receiver.recv())
                     # logger.debugv("Got a generator items from zeromq queue for sample '%s'" % (samplename))
-                earliest = datetime.datetime.fromtimestamp(earliestts)
-                latest = datetime.datetime.fromtimestamp(latestts)
+                earliest = datetime.datetime.fromtimestamp(earliestts/1000)
+                latest = datetime.datetime.fromtimestamp(latestts/1000)
                 c.generatorQueueSize.decrement()
                 if samplename != None:
                     if samplename in self._pluginCache:
