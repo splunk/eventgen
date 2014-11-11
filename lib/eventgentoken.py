@@ -132,7 +132,7 @@ class Token:
                             maxDelta = timeDelta2secs(td)
 
                             ## Get random timeDelta
-                            randomDelta = datetime.timedelta(seconds=random.randint(minDelta, maxDelta), microseconds=random.randint(0, latestTime.microsecond))
+                            randomDelta = datetime.timedelta(seconds=random.randint(minDelta, maxDelta), microseconds=random.randint(0, latestTime.microsecond if latestTime.microsecond > 0 else 999999))
 
                             ## Compute replacmentTime
                             replacementTime = latestTime - randomDelta
