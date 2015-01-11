@@ -333,6 +333,7 @@ randomizeCount = <float>
 randomizeEvents = <boolean>
     * Will randomize the events found in the sample file before choosing the events.
     * NOT SUPPORTED WITH sampletype csv
+    * NOT SUPPORTED WITH mode = replay OR custom generators like generator = replay
     
 breaker = <regular expression>
     * NOT to be confused w/ props.conf LINE_BREAKER.
