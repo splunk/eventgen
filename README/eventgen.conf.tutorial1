@@ -5,13 +5,10 @@ timeMultiple = 2
 #backfill = -15m
 #backfillSearch = index=main sourcetype=splunkd
 
-outputMode = stdout
+outputMode = splunkstream
 #splunkHost = localhost
 #splunkUser = admin
 #splunkPass = changeme
-
-# outputMode = file
-# fileName = /tmp/internal.log
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3,6}
 token.0.replacementType = timestamp
