@@ -68,8 +68,12 @@ class GeneratorRealWorker:
     def run(self):
         if c.profiler:
             import cProfile
-            globals()['threadrun'] = self.real_run
-            cProfile.runctx("threadrun()", globals(), locals(), "eventgen_generatorworker_%s" % self.num)
+            # 2/1/15 CS Fixing bug with profiling in thread mode
+            # Making a copy of globals and then passing each thread its own threadsafe copy
+            temp = globals()
+            temp['threadrun'] = self.real_run
+            # locals()['threadrun'] = self.real_run
+            cProfile.runctx("threadrun()", temp, locals(), "eventgen_generatorworker_%s" % self.num)
         else:
             self.real_run()
 

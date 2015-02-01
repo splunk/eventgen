@@ -5,4 +5,4 @@ latest = now
 interval = 3
 count = 2000
 outputMode = devnull
-backfill = -1d
+backfill = -1h

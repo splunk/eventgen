@@ -1,5 +1,3 @@
-# TODO Add guid and sample name to logging output for each sample
-
 from __future__ import division
 from ConfigParser import ConfigParser
 import os
@@ -146,6 +144,8 @@ class Config:
     outputQueue = None
     generatorQueue = None
 
+    args = None
+
     ## Validations
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
                     'delay', 'count', 'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate',
@@ -176,11 +176,15 @@ class Config:
                          'threading': ['thread', 'process'],
                          'queueing': ['python', 'zeromq']}
 
-    def __init__(self):
+    def __init__(self, args=None):
         """Setup Config object.  Sets up Logging and path related variables."""
         # Rebind the internal datastore of the class to an Instance variable
         self.__dict__ = self.__sharedState
         if self._firsttime:
+            # 2/1/15 CS  Adding support for command line arguments
+            if args:
+                self.args = args
+
             # Setup logger
             # 12/8/13 CS Adding new verbose log level to make this a big more manageable
             DEBUG_LEVELV_NUM = 9 
@@ -198,7 +202,20 @@ class Config:
             formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
             streamHandler = logging.StreamHandler(sys.stderr)
             streamHandler.setFormatter(formatter)
-            logger.addHandler(streamHandler)
+            # 2/1/15 CS  Adding support for command line arguments.  In this case, if we're running from the command
+            # line and we have arguments, we only want output from logger if we're in verbose
+            if self.args:
+                if self.args.verbosity >= 1:
+                    logger.addHandler(streamHandler)
+                else:
+                    logger.addHandler(logging.NullHandler())
+
+                if self.args.multiprocess:
+                    self.threading = 'process'
+                if self.args.profiler:
+                    self.profiler = True
+            else:
+                logger.addHandler(streamHandler)
             # logging.disable(logging.INFO)
 
             adapter = EventgenAdapter(logger, {'sample': 'null', 'module': 'config'})
@@ -217,7 +234,7 @@ class Config:
             c.read([os.path.join(self.grandparentdir, 'default', 'eventgen.conf')])
             for s in c.sections():
                 for i in c.items(s):
-                    if i[0] == 'threading':
+                    if i[0] == 'threading' and self.threading == None:
                         self.threading = i[1]
                     elif i[0] == 'queueing':
                         self.queueing = i[1]
@@ -537,7 +554,15 @@ class Config:
                 if self.splunkEmbedded and not STANDALONE:
                     self.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
                 else:
-                    self.sampleDir = os.path.join(os.getcwd(), 'samples')
+                    # 2/1/15 CS  Adding support for looking for samples based on the config file specified on
+                    # the command line.
+                    if self.args:
+                        if os.path.isdir(self.args.configfile):
+                            self.sampleDir = os.path.join(self.args.configfile, 'samples')
+                        else:
+                            self.sampleDir = os.path.join(os.getcwd(), 'samples')
+                    else:
+                        self.sampleDir = os.path.join(os.getcwd(), 'samples')
                     if not os.path.exists(self.sampleDir):
                         newSampleDir = os.path.join(os.sep.join(os.getcwd().split(os.sep)[:-1]), 'samples')
                         self.logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
@@ -555,6 +580,41 @@ class Config:
                 else:
                     self.sampleDir = s.sampleDir
 
+            # 2/1/15 CS Adding support for command line options, specifically running a single sample
+            # from the command line
+            if self.args:
+                if self.args.sample:
+                    # Name doesn't match, disable
+                    if s.name != self.args.sample:
+                        self.logger.debug("Disabling sample '%s' because of command line override" % s.name)
+                        s.disabled = True
+                    # Name matches
+                    else:
+                        self.logger.debug("Sample '%s' selected from command line" % s.name)
+                        # Also, can't backfill search if we don't know how to talk to Splunk
+                        s.backfillSearch = None
+                        s.backfillSearchUrl = None
+                        # Since the user is running this for debug output, lets assume that they
+                        # always want to see output
+                        self.maxIntervalsBeforeFlush = 1
+                        if self.args.devnull:
+                            self.logger.debug("Sample '%s' redirecting to devnull from command line" % s.name)
+                            s.outputMode = 'devnull'
+                        elif self.args.modinput:
+                            self.logger.debug("Sample '%s' setting output to modinput from command line" % s.name)
+                            s.outputMode = 'modinput'
+                        else:
+                            s.outputMode = 'stdout'
+
+                        if self.args.count:
+                            self.logger.debug("Overriding count to '%d' for sample '%s'" % (self.args.count, s.name))
+                            s.count = self.args.count
+                            # If we're specifying a count, turn off backfill
+                            s.backfill = None
+
+                        if self.args.interval:
+                            self.logger.debug("Overriding interval to '%d' for sample '%s'" % (self.args.interval, s.name))
+                            s.interval = self.args.interval
 
             # Now that we know where samples will be written,
             # Loop through tokens and load state for any that are integerid replacementType
@@ -705,6 +765,20 @@ class Config:
         self.samples = tempsamples
         self._confDict = None
 
+        # 2/1/15 CS  Adding support for command line arguments to modify the config
+        if self.args:
+            if self.args.generators >= 0:
+                self.generatorWorkers = self.args.generators
+            if self.args.outputters >= 0:
+                self.outputWorkers = self.args.outputters
+            if self.args.disableOutputQueue:
+                self.useOutputQueue = False
+            if self.args.multiprocess:
+                self.threading = 'process'
+            if self.args.profiler:
+                self.profiler = True
+
+
         self.logger.debug("Finished parsing.  Config str:\n%s" % self)
 
 
@@ -843,11 +917,20 @@ class Config:
             # If we're running standalone (and thusly using configParser)
             # only pick up eventgen-standalone.conf.
             conffiles = [ ]
-            if len(sys.argv) > 1:
-                if len(sys.argv[1]) > 0:
-                    if os.path.exists(sys.argv[1]):
-                        conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
-                                    sys.argv[1]]
+            # 2/1/15 CS  Moving to argparse way of grabbing command line parameters
+            if self.args:
+                if self.args.configfile:
+                    if os.path.exists(self.args.configfile):
+                        # 2/1/15 CS Adding a check to see whether we're instead passed a directory
+                        # In which case we'll assume it's a splunk app and look for config files in 
+                        # default and local
+                        if os.path.isdir(self.args.configfile):
+                            conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
+                                    os.path.join(self.args.configfile, 'default', 'eventgen.conf'),
+                                    os.path.join(self.args.configfile, 'local', 'eventgen.conf')]
+                        else: 
+                            conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
+                                    self.args.configfile]
             if len(conffiles) == 0:
                 conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
                             os.path.join(self.grandparentdir, 'local', 'eventgen.conf')]
@@ -883,6 +966,15 @@ class Config:
         if self._confDict['global']['verbose'].lower() == 'true' \
                 or self._confDict['global']['verbose'].lower() == '1':
             logobj.setLevel(logging.DEBUGV)
+
+        # 2/1/15 CS  Adding support for command line options
+        if self.args:
+            if self.args.verbosity >= 2:
+                self.debug = True
+                logobj.setLevel(logging.DEBUG)
+            if self.args.verbosity >= 3:
+                self.verbose = True
+                logobj.setLevel(logging.DEBUGV)
         self.logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
 
 
@@ -934,12 +1026,13 @@ class Config:
             self.proxy2.bind_in(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+2))
             self.proxy2.bind_out(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+3))
             self.proxy2.start()
-        for x in xrange(0, self.outputWorkers):
-            self.logger.info("Starting OutputWorker %d" % x)
-            worker = self.getPlugin('OutputWorker')(x)
-            worker.daemon = True
-            worker.start()
-            self.workers.append(worker)
+        if self.useOutputQueue:
+            for x in xrange(0, self.outputWorkers):
+                self.logger.info("Starting OutputWorker %d" % x)
+                worker = self.getPlugin('OutputWorker')(x)
+                worker.daemon = True
+                worker.start()
+                self.workers.append(worker)
         for x in xrange(0, self.generatorWorkers):
             self.logger.info("Starting GeneratorWorker %d" % x)
             worker = self.getPlugin('GeneratorWorker')(x, self.generatorQueue, self.outputQueue)

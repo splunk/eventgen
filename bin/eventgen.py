@@ -1,8 +1,6 @@
 '''
-Copyright (C) 2005-2014 Splunk Inc. All Rights Reserved.
+Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 '''
-
-# TODO Allow override of any configuration variable from the command line
 
 from __future__ import division
 
@@ -21,30 +19,55 @@ from select import select
 from eventgenconfig import Config
 from eventgentimer import Timer
 from eventgenoutput import Output
+import argparse
 
-def parse_arg(arg):
-    """arg must start with a double --"""
-    regex = re.compile('--([A-Za-z0-9]*):([A-Za-z0-9]*)=([A-Za-z0-9]*)')
-    match = regex.match(arg)
-    if match:
-        section = match.group(1)
-        key = match.group(2)
-        value = match.group(3)
-        try:
-            value = float(value)
-        except:
-            pass
-        return {'section': section, 'key': key, 'value': value}
-    return None
+def parse_args():
+    """Parse command line arguments"""
 
-def update_config(replacements, config):
-    for replacement in replacements:
-        for sample in config.samples:
-            if replacement['section'] == sample.name:
-                setattr(sample, replacement['key'], replacement['value'])
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("configfile", nargs="?",
+                        help="Location of eventgen.conf, app folder, or name of an app in $SPLUNK_HOME/etc/apps to run")
+    parser.add_argument("-v", "--verbosity", action="count",
+                        help="increase output verbosity")
+    # parser.add_argument("-e", "--earliest", metavar="ISO8601_DateTime",
+    #                     help="Start generating events at this time")
+    # parser.add_argument("-l", "--latest", metavar="ISO8601_DateTime",
+    #                     help="Stop generating events at this time.  Note if this is not specified, eventgen will run until terminated by the user or parent process.")
+    group = parser.add_argument_group("sample", "Run eventgen with only one sample for testing")
+    group.add_argument("-s", "--sample",
+                        help="Run specified sample only, overriding outputMode to stdout, disabling all other samples")
+    megroup = group.add_mutually_exclusive_group()
+    megroup.add_argument("--keepoutput", action="store_true",
+                        help="Keep original outputMode for the sample")
+    megroup.add_argument("--devnull", action="store_true",
+                        help="Set outputMode to devnull")
+    megroup.add_argument("--modinput", action="store_true",
+                        help="Set outputMode to modinput, to see metadata")
+    group.add_argument("-c", "--count", type=int,
+                        help="Set sample count")
+    group.add_argument("-i", "--interval", type=int,
+                        help="Set sample interval")
+
+    group = parser.add_argument_group("Advanced", "Advanced settings for performance testing")
+    group.add_argument("--generators", type=int, help="Number of GeneratorWorkers (mappers)")
+    group.add_argument("--outputters", type=int, help="Number of OutputWorkers (reducers)")
+    group.add_argument("--disableOutputQueue", action="store_true", help="Disable reducer step")
+    group.add_argument("--multiprocess", action="store_true", help="Use multiprocesing instead of threading")
+    group.add_argument("--profiler", action="store_true", help="Turn on cProfiler")
+
+    args = parser.parse_args()
+
+    # Allow passing of a Splunk app on the command line and expand the full path before passing up the chain
+    if not os.path.exists(args.configfile):
+        if 'SPLUNK_HOME' in os.environ:
+            if os.path.isdir(os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', args.configfile)):
+                args.configfile = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', args.configfile)
+    return args
 
 if __name__ == '__main__':
-    c = Config()
+    args = parse_args()
+    c = Config(args)
     # Logger is setup by Config, just have to get an instance
     logobj = logging.getLogger('eventgen')
     from eventgenconfig import EventgenAdapter
@@ -68,8 +91,6 @@ if __name__ == '__main__':
         c.makeSplunkEmbedded(sessionKey=sessionKey)
 
     c.parse()
-    replacements = [parse_arg(arg) for arg in sys.argv[1:] if parse_arg(arg)]
-    update_config(replacements, c)
 
     t = Timer(1.0, interruptcatcher=True)
 
