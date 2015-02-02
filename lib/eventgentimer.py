@@ -90,7 +90,7 @@ class Timer(threading.Thread):
         # events, and is the same as we used to operate.
 
         # 12/29/13 Non Queueable, same as before
-        plugin = c.getPlugin('generator.'+self.sample.generator)
+        plugin = c.getPlugin('generator.'+self.sample.generator, self.sample)
         self.logger.debugv("Generating for class '%s' for generator '%s' queueable: %s" % (plugin.__name__, self.sample.generator, plugin.queueable))
 
         # if not plugin.queueable:
