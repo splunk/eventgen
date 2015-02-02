@@ -249,18 +249,18 @@ class Config:
 
             # Initialize plugins
             self.__outputPlugins = { }
-            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'output'), self.__outputPlugins)
+            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'output'), self.__outputPlugins, 'output')
             self.outputQueue = Queue(100, self.threading)
             # Hard code the worker plugin mapping which we expect to be there and will never have a sample associated with it
             self.__plugins['OutputWorker'] = self.__outputPlugins['output.outputworker']
             self._validOutputModes.extend(plugins)
 
-            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins)
+            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins, 'generator')
             self.generatorQueue = Queue(10000, self.threading)
             self.__plugins['GeneratorWorker'] = self.__plugins['generator.generatorworker']
-            self._complexSettings['generator'] = plugins
+            # self._complexSettings['generator'] = plugins
 
-            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'rater'), self.__plugins)
+            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'rater'), self.__plugins, 'rater')
             self._complexSettings['rater'] = plugins
 
 
@@ -287,7 +287,7 @@ class Config:
     def __repr__(self):
         return self.__str__()
 
-    def __initializePlugins(self, dirname, plugins):
+    def __initializePlugins(self, dirname, plugins, plugintype):
         """Load a python module dynamically and add to internal dictionary of plugins (only accessed by getPlugin)"""
         ret = [ ]
         
@@ -315,7 +315,7 @@ class Config:
                     plugin = module.load()
 
                     # set plugin to something like output.file or generator.default
-                    pluginname = filename.split(os.sep)[-2] + '.' + base 
+                    pluginname = plugintype + '.' + base 
                     # self.logger.debugv("Filename: %s os.sep: %s pluginname: %s" % (filename, os.sep, pluginname))
                     plugins[pluginname] = plugin
 
@@ -346,10 +346,26 @@ class Config:
         return ret
 
 
-    def getPlugin(self, name):
+    def getPlugin(self, name, s=None):
         """Return a reference to a Python object (not an instance) referenced by passed name"""
         if not name in self.__plugins:
-            raise KeyError('Plugin ' + name + ' not found')
+            # 2/1/15 CS If we haven't already seen the plugin, try to load it
+            # Note, this will only work for plugins which do not specify config validation
+            # parameters.  If they do, configs may not validate for user provided plugins.
+            if s:
+                for plugintype in ['generator', 'rater', 'output']:
+                    if plugintype in ('generator', 'rater'):
+                        plugin = getattr(s, plugintype)
+                    else:
+                        plugin = getattr(s, 'outputMode')
+                    if plugin != None:
+                        self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'"
+                                     % (plugintype, plugin, s.name))
+                        pluginsdict = self.__plugins if plugintype in ('generator', 'rater') else self.__outputPlugins
+                        self.__initializePlugins(os.path.join(os.sep.join(s.sampleDir.split(os.sep)[:-1]), 'bin'), pluginsdict, plugintype)
+            
+            if not name in self.__plugins:
+                raise KeyError('Plugin ' + name + ' not found')
         return self.__plugins[name]
 
     def __setPlugin(self, s):
@@ -552,33 +568,33 @@ class Config:
             if s.sampleDir == None:
                 self.logger.debug("Sample directory not specified in config, setting based on standard")
                 if self.splunkEmbedded and not STANDALONE:
-                    self.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
+                    s.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
                 else:
                     # 2/1/15 CS  Adding support for looking for samples based on the config file specified on
                     # the command line.
                     if self.args:
                         if os.path.isdir(self.args.configfile):
-                            self.sampleDir = os.path.join(self.args.configfile, 'samples')
+                            s.sampleDir = os.path.join(self.args.configfile, 'samples')
                         else:
-                            self.sampleDir = os.path.join(os.getcwd(), 'samples')
+                            s.sampleDir = os.path.join(os.getcwd(), 'samples')
                     else:
-                        self.sampleDir = os.path.join(os.getcwd(), 'samples')
-                    if not os.path.exists(self.sampleDir):
+                        s.sampleDir = os.path.join(os.getcwd(), 'samples')
+                    if not os.path.exists(s.sampleDir):
                         newSampleDir = os.path.join(os.sep.join(os.getcwd().split(os.sep)[:-1]), 'samples')
-                        self.logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
-                        self.sampleDir = newSampleDir
+                        self.logger.error("Path not found for samples '%s', trying '%s'" % (s.sampleDir, newSampleDir))
+                        s.sampleDir = newSampleDir
 
-                        if not os.path.exists(self.sampleDir):
-                            newSampleDir = self.sampleDir = os.path.join(self.grandparentdir, 'samples')
-                            self.logger.error("Path not found for samples '%s', trying '%s'" % (self.sampleDir, newSampleDir))
-                            self.sampleDir = newSampleDir
+                        if not os.path.exists(s.sampleDir):
+                            newSampleDir = os.path.join(self.grandparentdir, 'samples')
+                            self.logger.error("Path not found for samples '%s', trying '%s'" % (s.sampleDir, newSampleDir))
+                            s.sampleDir = newSampleDir
             else:
                 self.logger.debug("Sample directory specified in config, checking for relative")
                 # Allow for relative paths to the base directory
                 if not os.path.exists(s.sampleDir):
-                    self.sampleDir = os.path.join(self.grandparentdir, s.sampleDir)
+                    s.sampleDir = os.path.join(self.grandparentdir, s.sampleDir)
                 else:
-                    self.sampleDir = s.sampleDir
+                    s.sampleDir = s.sampleDir
 
             # 2/1/15 CS Adding support for command line options, specifically running a single sample
             # from the command line
@@ -621,7 +637,7 @@ class Config:
             for token in s.tokens:
                 if token.replacementType == 'integerid':
                     try:
-                        stateFile = open(os.path.join(self.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'rU')
+                        stateFile = open(os.path.join(s.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'rU')
                         token.replacement = stateFile.read()
                         stateFile.close()
                     # The file doesn't exist, use the default value in the config
@@ -629,12 +645,12 @@ class Config:
                         token.replacement = token.replacement
 
 
-            if os.path.exists(self.sampleDir):
-                sampleFiles = os.listdir(self.sampleDir)
+            if os.path.exists(s.sampleDir):
+                sampleFiles = os.listdir(s.sampleDir)
                 for sample in sampleFiles:
                     results = re.match(s.name, sample)
                     if results != None:
-                        samplePath = os.path.join(self.sampleDir, sample)
+                        samplePath = os.path.join(s.sampleDir, sample)
                         if os.path.isfile(samplePath):
                             self.logger.debug("Found sample file '%s' for app '%s' using config '%s' with priority '%s'; adding to list" \
                                 % (sample, s.app, s.name, s._priority) )
