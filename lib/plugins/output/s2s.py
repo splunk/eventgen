@@ -177,7 +177,10 @@ class S2SOutputPlugin(OutputPlugin):
         if len(q) > 0:
             m = q.popleft()
             while m:
-                self.s2s.send_event(m['index'], m['host'], m['source'], m['sourcetype'], m['_raw'], m['_time'])
+                try:
+                    self.s2s.send_event(m['index'], m['host'], m['source'], m['sourcetype'], m['_raw'], m['_time'])
+                except KeyError:
+                    pass
             
                 try:
                     m = q.popleft()
