@@ -13,14 +13,11 @@ from eventgenoutput import Output
 class CWeblogGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
-
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         globals()['logger'] = logger
-
         from eventgenconfig import Config
         globals()['c'] = Config()
-
     def gen(self, count, earliest, latest, **kwargs):
         if self._sample.out == None:
             self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
@@ -40,10 +37,8 @@ class CWeblogGenerator(GeneratorPlugin):
                 'source': '/opt/access_combined.log',
                 '_time': 1 } for line in lines ]
 
-
         self._sample.out.bulksend(l)
         return 0
-
 
 def load():
     return CWeblogGenerator
