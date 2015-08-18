@@ -13,6 +13,7 @@ from eventgensamples import Sample
 from eventgentoken import Token
 import urllib
 import types
+import random
 from eventgencounter import Counter
 from eventgenqueue import Queue
 try:
@@ -154,7 +155,8 @@ class Config:
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers', 'generator',
                     'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading', 'profiler', 'queueing',
-                    'zmqBaseUrl', 'zmqBasePort', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'verbose', 'useOutputQueue']
+                    'zmqBaseUrl', 'zmqBasePort', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'verbose', 'useOutputQueue',
+                    'seed']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -267,6 +269,8 @@ class Config:
             self._complexSettings['timezone'] = self._validateTimezone 
 
             self._complexSettings['count'] = self._validateCount
+
+            self._complexSettings['seed'] = self._validateSeed
 
             self.generatorQueueSize = Counter(0, self.threading)
             self.outputQueueSize = Counter(0, self.threading)
@@ -619,7 +623,7 @@ class Config:
                         elif self.args.modinput:
                             self.logger.debug("Sample '%s' setting output to modinput from command line" % s.name)
                             s.outputMode = 'modinput'
-                        else:
+                        elif not self.args.keepoutput:
                             s.outputMode = 'stdout'
 
                         if self.args.count:
@@ -915,6 +919,19 @@ class Config:
         self.logger.debug("Count set to %d" % value)
 
         return value
+
+    def _validateSeed(self, value):
+        """Callback to set random seed"""
+        self.logger.debug("Validating random seed of %s" % value)
+        try:
+            value = int(value)
+        except:
+            self.logger.error("Could not parse int for 'seed' in stanza '%s'" % (key, stanza))
+            raise ValueError("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
+
+        self.logger.info("Using random seed %s" % value)
+        random.seed(value)
+  
 
 
     def _buildConfDict(self):

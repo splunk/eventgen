@@ -466,6 +466,8 @@ class Token:
                 ## Otherwise, lets read the file and build our cached results, pick a result and return it
                 else:
                     # logger.debug("replacementFile: %s replacementColumn: %s" % (replacementFile, replacementColumn))
+                    replacementFile = os.path.abspath(replacementFile)
+                    logger.debug("Normalized replacement file %s" % replacementFile)
                     if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
                         replacementFH = open(replacementFile, 'rU')
                         replacementLines = replacementFH.readlines()
