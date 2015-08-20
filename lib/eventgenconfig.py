@@ -302,6 +302,8 @@ class Config:
         # Loop through all files in passed dirname looking for plugins
         for filename in os.listdir(dirname):
             filename = dirname + os.sep + filename
+
+            self.logger.debugv("Searching for plugin in file '%s'" % filename)
             # If the file exists
             if os.path.isfile(filename):
                 # Split file into a base name plus extension
@@ -617,6 +619,7 @@ class Config:
                         # Since the user is running this for debug output, lets assume that they
                         # always want to see output
                         self.maxIntervalsBeforeFlush = 1
+                        s.maxQueueLength = 0
                         if self.args.devnull:
                             self.logger.debug("Sample '%s' redirecting to devnull from command line" % s.name)
                             s.outputMode = 'devnull'
