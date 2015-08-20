@@ -63,7 +63,7 @@ class WeblogGenerator(GeneratorPlugin):
                 'sourcetype': 'access_combined',
                 'host': 'log.buttercupgames.com',
                 'source': '/opt/access_combined.log',
-                '_time': time.mktime(latest.timetuple()) } for i in xrange(count) ]
+                '_time': int(time.mktime(latest.timetuple())) } for i in xrange(count) ]
 
 
         self._sample.out.bulksend(l)
