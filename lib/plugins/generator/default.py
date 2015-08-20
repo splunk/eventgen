@@ -105,7 +105,7 @@ class DefaultGenerator(GeneratorPlugin):
                     'hostRegex': s.hostRegex,
                     'source': eventsDict[x]['source'],
                     'sourcetype': eventsDict[x]['sourcetype'],
-                    '_time': time.mktime(s.timestamp.timetuple()) } ]
+                    '_time': int(time.mktime(s.timestamp.timetuple())) } ]
 
             s.out.bulksend(l)
             s.timestamp = None

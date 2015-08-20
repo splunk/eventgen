@@ -74,7 +74,7 @@ class Output:
         self._queue.append({'_raw': msg, 'index': self._sample.index,
                         'source': self._sample.source, 'sourcetype': self._sample.sourcetype,
                         'host': self._sample.host, 'hostRegex': self._sample.hostRegex,
-                        '_time': time.mktime(ts.timetuple())})
+                        '_time': int(time.mktime(ts.timetuple()))})
 
         if len(self._queue) >= self.MAXQUEUELENGTH:
             self.flush()

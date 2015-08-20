@@ -38,6 +38,35 @@ class ReplayGenerator(GeneratorPlugin):
         self._rpevents = self.sampleDict
         self._currentevent = 0
 
+        # 8/18/15 CS Because this is not a queueable plugin, we can in a threadsafe way modify these data structures at init
+        s = self._sample
+
+        # Iterate through events and remove any events which do not match a configured timestamp,
+        # log it and then continue on
+        for e in self._rpevents:
+            try:
+                s.getTSFromEvent(e[s.timeField])
+            except ValueError:
+                self._rpevents = [x for x in self._rpevents if x['_raw'] != e['_raw']]
+
+        # Quick check to see if we're sorted in time order, if not reverse
+        if len(self._rpevents) > 1:
+            ts1 = s.getTSFromEvent(self._rpevents[0][s.timeField])
+            ts2 = s.getTSFromEvent(self._rpevents[1][s.timeField])
+            td = ts2 - ts1
+            x = 2
+            # Make sure we're not all zero
+            while td.days == 0 and td.seconds == 0 and td.microseconds == 0 and x < len(self._rpevents):
+                ts2 = s.getTSFromEvent(self._rpevents[x][s.timeField])
+                td = ts2 - ts1
+                x += 1
+
+            self.logger.debug("Testing timestamps ts1: %s ts2: %s" % (ts1.strftime('%Y-%m-%d %H:%M:%S'), ts2.strftime('%Y-%m-%d %H:%M:%S')))
+
+            if td.days < 0:
+                self.logger.debug("Timestamp order seems to be reverse chronological, reversing")
+                self._rpevents.reverse()
+
         self.setupBackfill()
 
 
@@ -115,7 +144,7 @@ class ReplayGenerator(GeneratorPlugin):
                     'hostRegex': s.hostRegex,
                     'source': self.sampleDict[x]['source'],
                     'sourcetype': self.sampleDict[x]['sourcetype'],
-                    '_time': time.mktime(s.timestamp.timetuple()) } ]
+                    '_time': int(time.mktime(s.timestamp.timetuple())) } ]
 
             s.out.bulksend(l)
             s.timestamp = None
