@@ -193,6 +193,12 @@ class Timer(threading.Thread):
 
                         if self.countdown > 0:
                             self.sample.saveState()
+
+                        # 8/20/15 CS Adding support for ending generation at a certain time
+                        if self.sample.end != None:
+                            if lt >= self.sample.endts:
+                                self.logger.info("End Time '%s' reached, ending generation of sample '%s'" % (self.sample.endts, self.sample.name))
+                                self.stopping = True
                     else:
                         self.countdown -= self.time
                         time.sleep(self.time)

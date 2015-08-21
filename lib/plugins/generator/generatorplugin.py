@@ -203,6 +203,14 @@ class GeneratorPlugin:
                 except (ExpatError, IndexError): 
                     pass
 
+        if s.end != None:
+            try:
+                s.endts = timeParser(s.end, timezone=s.timezone)
+                self.logger.info("Ending generation at %s (%s)" % (s.end, s.endts))
+            except Exception as ex:
+                self.logger.error("Failed to parse end '%s': %s" % (s.end, ex))
+                raise
+
 
 def load():
     return GeneratorPlugin

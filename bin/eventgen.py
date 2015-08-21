@@ -48,6 +48,10 @@ def parse_args():
                         help="Set sample count")
     group.add_argument("-i", "--interval", type=int,
                         help="Set sample interval")
+    group.add_argument("-b", "--backfill",
+                        help="Set time to backfill from.  Note: to use it, send the parameter with space in front like ' -60m'")
+    group.add_argument("-e", "--end",
+                        help="Set time to end generation at.  Note: to use it, send the parameter with space in front like ' -10m'")
 
     group = parser.add_argument_group("Advanced", "Advanced settings for performance testing")
     group.add_argument("--generators", type=int, help="Number of GeneratorWorkers (mappers)")
@@ -125,6 +129,15 @@ if __name__ == '__main__':
             gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
             eventsPerSec = c.eventsSent.valueAndClear() / 5
             logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
+
+            # 8/20/15 CS Since we added support for ending a certain time, see if all timers are stopped
+            stop = True
+            for t in c.sampleTimers:
+                if t.stopping == False:
+                    stop = False
+            if stop:
+                c.handle_exit()
+                
             time.sleep(5)
         except KeyboardInterrupt:
             c.handle_exit()
