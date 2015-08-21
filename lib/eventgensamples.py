@@ -85,6 +85,7 @@ class Sample:
     stopping = False
     maxIntervalsBeforeFlush = None
     maxQueueLength = None
+    end = None
 
     
     # Internal fields

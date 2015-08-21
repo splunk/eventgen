@@ -156,7 +156,7 @@ class Config:
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers', 'generator',
                     'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading', 'profiler', 'queueing',
                     'zmqBaseUrl', 'zmqBasePort', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'verbose', 'useOutputQueue',
-                    'seed']
+                    'seed', 'end']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -619,6 +619,7 @@ class Config:
                         # Since the user is running this for debug output, lets assume that they
                         # always want to see output
                         self.maxIntervalsBeforeFlush = 1
+                        s.maxIntervalsBeforeFlush = 1
                         s.maxQueueLength = 1
                         if self.args.devnull:
                             self.logger.debug("Sample '%s' redirecting to devnull from command line" % s.name)
@@ -638,6 +639,15 @@ class Config:
                         if self.args.interval:
                             self.logger.debug("Overriding interval to '%d' for sample '%s'" % (self.args.interval, s.name))
                             s.interval = self.args.interval
+
+                        if self.args.backfill:
+                            self.logger.debug("Overriding backfill to '%s' for sample '%s'" % (self.args.backfill, s.name))
+                            s.backfill = self.args.backfill.lstrip()
+
+                        if self.args.end:
+                            self.logger.debug("Overriding end to '%s' for sample '%s'" % (self.args.end, s.name))
+                            s.end = self.args.end.lstrip()
+
 
             # Now that we know where samples will be written,
             # Loop through tokens and load state for any that are integerid replacementType
