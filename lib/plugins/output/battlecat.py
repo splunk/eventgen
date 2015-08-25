@@ -1,7 +1,10 @@
 from __future__ import division
 from outputplugin import OutputPlugin
 import sys
-import requests
+try:
+    import requests
+except ImportError:
+    pass
 import json
 import random
 import logging

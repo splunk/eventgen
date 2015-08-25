@@ -960,8 +960,6 @@ class Config:
             conf.optionxform = str
             currentdir = os.getcwd()
 
-            # If we're running standalone (and thusly using configParser)
-            # only pick up eventgen-standalone.conf.
             conffiles = [ ]
             # 2/1/15 CS  Moving to argparse way of grabbing command line parameters
             if self.args:
@@ -991,16 +989,6 @@ class Config:
                 ret[section] = dict(conf.items(section))
                 # For compatibility with Splunk's configs, need to add the app name to an eai:acl key
                 ret[section]['eai:acl'] = { 'app': self.grandparentdir.split(os.sep)[-1] }
-                # orig[section] = dict(conf.items(section))
-                # ret[section] = { }
-                # for item in orig[section]:
-                #     results = re.match('(token\.\d+)\.(\w+)', item)
-                #     if results != None:
-                #         ret[section][item] = orig[section][item]
-                #     else:
-                #         if item.lower() in [x.lower() for x in self._validSettings]:
-                #             newitem = self._validSettings[[x.lower() for x in self._validSettings].index(item.lower())]
-                #         ret[section][newitem] = orig[section][item]
             self._confDict = ret
 
         # Have to look in the data structure before normalization between what Splunk returns

@@ -133,34 +133,3 @@ class Output:
                 tmp = None
                 plugin = c.getPlugin(self._sample.name)
                 plugin.flush(deque(q[:]))
-
-
-
-# The max number of threads setup for HTTP type outputs
-MAX_WORKERS = 5
-
-
-# This is used only for the HTTP output outputModes
-# This allows us to iowait while we keep on generating events
-# in the background
-class Worker(threading.Thread):
-    func = None
-    queue = None
-    running = None
-
-    def __init__(self, func, queue):
-        self.func = func
-        self.queue = queue
-        self.running = False
-        threading.Thread.__init__(self)
-
-    def run(self):
-        self.running = True
-        try:
-            self.func(self.queue)
-        except:
-            import traceback
-            sys.stderr.write(traceback.format_exc())
-            self.running = False
-        self.running = False
-        sys.exit(0)

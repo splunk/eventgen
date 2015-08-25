@@ -26,7 +26,7 @@ def parse_args():
 
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("configfile", nargs="?",
+    parser.add_argument("configfile", 
                         help="Location of eventgen.conf, app folder, or name of an app in $SPLUNK_HOME/etc/apps to run")
     parser.add_argument("-v", "--verbosity", action="count",
                         help="increase output verbosity")

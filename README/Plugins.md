@@ -129,3 +129,7 @@ Secondly, it defines a gen() method, which generates ``count`` events between ``
 ```
 
 Here, we use ``send()`` instead of ``bulksend()`` and a loop to make it easier to understand.
+
+# Shipping a Plugin
+
+When you've developed a plugin that you want to use in your app, shipping it with your app is easy.  Place any Eventgen plugin in your Splunk app's ``bin/`` directory and we'll search for and find any plugins referenced by a ``outputMode``, ``generator`` or ``rater`` config statement.

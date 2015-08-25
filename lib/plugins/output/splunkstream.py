@@ -54,8 +54,8 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                 self._sample.sessionKey = minidom.parseString(response).getElementsByTagName('sessionKey')[0].childNodes[0].nodeValue
                 logger.debug("Got new session for splunkstream, sessionKey '%s'" % self._sample.sessionKey)
             except:
-                logger.error('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample.name)
-                raise IOError('Error getting session key for non-SPLUNK_EMBEEDED for sample %s' % self._sample.name)
+                logger.error("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'.  Credentials are missing or wrong" % self._sample.name)
+                raise IOError("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'.  Credentials are missing or wrong" % self._sample.name)
                 
         logger.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._sample.sessionKey, self._sample.name))   
 
