@@ -78,7 +78,7 @@ class Timer(threading.Thread):
         Worker function of the Timer class.  Determine whether a plugin is queueable, and either
         place an item in the generator queue for that plugin or call the plugin's gen method directly.
 
-        Actual work for queueable plugins is done in lib/plugins/generatorworker.python
+        Actual work for queueable plugins is done in lib/plugins/generatorworker.py
         """
         if self.sample.delay > 0:
             self.logger.info("Sample set to delay %s, sleeping." % s.delay)
@@ -104,7 +104,7 @@ class Timer(threading.Thread):
         # else:
         with c.copyLock:
             p = plugin(self.sample)
-        p.setupBackfill()
+            p.setupBackfill()
 
         if c.queueing == 'zeromq':
             context = zmq.Context()

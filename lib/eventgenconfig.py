@@ -21,6 +21,8 @@ try:
 except ImportError:
     pass
 import threading, multiprocessing
+from generatorworker import GeneratorThreadWorker, GeneratorProcessWorker
+from outputworker import OutputThreadWorker, OutputProcessWorker
 
 
 # 6/7/14 CS   Adding a new logger adapter class which we will use to override the formatting
@@ -254,15 +256,11 @@ class Config:
             self.__outputPlugins = { }
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'output'), self.__outputPlugins, 'output')
             self.outputQueue = Queue(100, self.threading)
-            # Hard code the worker plugin mapping which we expect to be there and will never have a sample associated with it
-            self.__plugins['OutputWorker'] = self.__outputPlugins['output.outputworker']
             self._validOutputModes.extend(plugins)
 
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins, 'generator')
             self.generatorQueue = Queue(10000, self.threading)
-            self.__plugins['GeneratorWorker'] = self.__plugins['generator.generatorworker']
-            # self._complexSettings['generator'] = plugins
-
+            
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'rater'), self.__plugins, 'rater')
             self._complexSettings['rater'] = plugins
 
@@ -981,6 +979,9 @@ class Config:
 
     def _buildConfDict(self):
         """Build configuration dictionary that we will use """
+
+        # Abstracts grabbing configuration from Splunk or directly from Configuration Files
+
         if self.splunkEmbedded and not STANDALONE:
             self.logger.info('Retrieving eventgen configurations from /configs/eventgen')
             self._confDict = entity.getEntities('configs/eventgen', count=-1, sessionKey=self.sessionKey)
@@ -1092,19 +1093,33 @@ class Config:
             self.proxy2.bind_in(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+2))
             self.proxy2.bind_out(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+3))
             self.proxy2.start()
+
+        # Only start output workers if we're going to use them
         if self.useOutputQueue:
             for x in xrange(0, self.outputWorkers):
                 self.logger.info("Starting OutputWorker %d" % x)
-                worker = self.getPlugin('OutputWorker')(x)
+                if self.threading == "process":
+                    worker = OutputProcessWorker(x)
+                else:
+                    worker = OutputThreadWorker(x)
                 worker.daemon = True
                 worker.start()
                 self.workers.append(worker)
+
+        # Start X instantiations of GeneratorWorkers, controlled by the generators configuration
+        # or command line parameter
         for x in xrange(0, self.generatorWorkers):
             self.logger.info("Starting GeneratorWorker %d" % x)
-            worker = self.getPlugin('GeneratorWorker')(x, self.generatorQueue, self.outputQueue)
+            if self.threading == "process":
+                worker = GeneratorProcessWorker(x, self.generatorQueue, self.outputQueue)
+            else:
+                worker = GeneratorThreadWorker(x, self.generatorQueue, self.outputQueue)
             worker.daemon = True
             worker.start()
             self.workers.append(worker)
+
+        # Start a Timer thread for every sample which will either run a non-Queueable Plugin
+        # in the thread or send work to a queue which will be fulfilled by a GeneratorWorker
         for sampleTimer in self.sampleTimers:
             sampleTimer.daemon = True
             sampleTimer.start()

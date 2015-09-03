@@ -3,7 +3,6 @@ import os, sys
 import logging
 import logging.handlers
 from collections import deque
-from eventgenoutput import Output
 import csv
 import copy
 import re
@@ -13,7 +12,6 @@ from timeparser import timeParser
 import httplib2, urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
-from eventgenoutput import Output
 
 class GeneratorPlugin:
     queueable = True

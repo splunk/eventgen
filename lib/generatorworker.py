@@ -10,8 +10,6 @@ except ImportError, e:
     import multiprocessing
 import Queue
 import datetime
-from eventgenconfig import Config
-from eventgenoutput import Output
 try:
     import zmq
 except ImportError, e:
@@ -47,6 +45,8 @@ class GeneratorThreadWorker(threading.Thread):
 class GeneratorRealWorker:
 
     def __init__(self, num, q1, q2):
+        from eventgenconfig import Config
+        
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
@@ -106,8 +106,8 @@ class GeneratorRealWorker:
                             if s.name == samplename:
                                 sample = s
                                 break
-                        # with c.copyLock:
-                        plugin = c.getPlugin('generator.'+sample.generator, sample)(sample)
+                        with c.copyLock:
+                            plugin = c.getPlugin('generator.'+sample.generator, sample)(sample)
                         self._pluginCache[sample.name] = plugin
                     # logger.info("GeneratorWorker %d generating %d events from '%s' to '%s'" % (self.num, count, \
                     #             datetime.datetime.strftime(earliest, "%Y-%m-%d %H:%M:%S"), \
@@ -120,9 +120,3 @@ class GeneratorRealWorker:
                 # Queue empty, do nothing... basically here to catch interrupts
                 pass
         logger.info("GeneratorRealWorker %d stopped" % self.num)
-
-def load():
-    if globals()['threadmodel'] == 'thread':
-        return GeneratorThreadWorker
-    else:
-        return GeneratorProcessWorker

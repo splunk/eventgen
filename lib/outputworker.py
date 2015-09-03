@@ -10,7 +10,6 @@ try:
 except ImportError, e:
     import multiprocessing
 import json
-from eventgenconfig import Config
 import time
 try:
     import zmq, errno
@@ -49,6 +48,8 @@ class OutputThreadWorker(threading.Thread):
 class OutputRealWorker:
 
     def __init__(self, num):
+        from eventgenconfig import Config
+        
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
@@ -113,9 +114,3 @@ class OutputRealWorker:
                 # time.sleep(0.1)
                 pass
         logger.info("OutputRealWorker %d stopped" % self.num)
-
-def load():
-    if globals()['threadmodel'] == 'thread':
-        return OutputThreadWorker
-    else:
-        return OutputProcessWorker

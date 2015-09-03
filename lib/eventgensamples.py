@@ -346,7 +346,7 @@ class Sample:
                     else:
                         logger.error("Missing _raw in line '%s'" % pprint.pformat(line))
                 self._closeSampleFile()
-                logger.debug('Finished creating sampleDict & sampleLines.  Len sampleDict: %d' % (len(self.sampleDict)))
+                logger.debug("Finished creating sampleDict & sampleLines for sample '%s'.  Len sampleDict: %d" % (self.name, len(self.sampleDict)))
 
         # Ensure all lines have a newline
         for i in xrange(0, len(self.sampleDict)):
