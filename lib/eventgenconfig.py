@@ -139,6 +139,7 @@ class Config:
     maxIntervalsBeforeFlush = None
     maxQueueLength = None
     useOutputQueue = None
+    autotimestamps = None
 
     __outputPlugins = { }
     __plugins = { }
@@ -156,7 +157,7 @@ class Config:
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers', 'generator',
                     'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading', 'profiler', 'queueing',
                     'zmqBaseUrl', 'zmqBasePort', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'verbose', 'useOutputQueue',
-                    'seed', 'end']
+                    'seed', 'end', 'autotimestamps']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -165,7 +166,7 @@ class Config:
                     'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue']
-    _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate']
+    _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps']
     _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay',
                             'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate',
                             'randomizeCount', 'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles',
@@ -312,40 +313,43 @@ class Config:
 
                 # If we're a python file and we don't start with _
                 if extension == ".py" and not basename.startswith("_"):
-                    # Import the module
-                    module = __import__(base)
-                    # Signal to the plugin by adding a module level variable which indicates
-                    # our threading model, thread or process
-                    module.__dict__.update({ 'threadmodel': self.threading })
-                    # Load will now return a threading.Thread or multiprocessing.Process based object
-                    plugin = module.load()
+                    try:
+                        # Import the module
+                        module = __import__(base)
+                        # Signal to the plugin by adding a module level variable which indicates
+                        # our threading model, thread or process
+                        module.__dict__.update({ 'threadmodel': self.threading })
+                        # Load will now return a threading.Thread or multiprocessing.Process based object
+                        plugin = module.load()
 
-                    # set plugin to something like output.file or generator.default
-                    pluginname = plugintype + '.' + base 
-                    # self.logger.debugv("Filename: %s os.sep: %s pluginname: %s" % (filename, os.sep, pluginname))
-                    plugins[pluginname] = plugin
+                        # set plugin to something like output.file or generator.default
+                        pluginname = plugintype + '.' + base 
+                        # self.logger.debugv("Filename: %s os.sep: %s pluginname: %s" % (filename, os.sep, pluginname))
+                        plugins[pluginname] = plugin
 
-                    # Return is used to determine valid configs, so only return the base name of the plugin
-                    ret.append(base)
+                        # Return is used to determine valid configs, so only return the base name of the plugin
+                        ret.append(base)
 
-                    self.logger.debug("Loading module '%s' from '%s'" % (pluginname, basename))
+                        self.logger.debug("Loading module '%s' from '%s'" % (pluginname, basename))
 
-                    # 12/3/13 If we haven't loaded a plugin right or we haven't initialized all the variables
-                    # in the plugin, we will get an exception and the plan is to not handle it
-                    if 'validSettings' in dir(plugin):
-                        self._validSettings.extend(plugin.validSettings)
-                    if 'defaultableSettings' in dir(plugin):
-                        self._defaultableSettings.extend(plugin.defaultableSettings)
-                    if 'intSettings' in dir(plugin):
-                        self._intSettings.extend(plugin.intSettings)
-                    if 'floatSettings' in dir(plugin):
-                        self._floatSettings.extend(plugin.floatSettings)
-                    if 'boolSettings' in dir(plugin):
-                        self._boolSettings.extend(plugin.boolSettings)
-                    if 'jsonSettings' in dir(plugin):
-                        self._jsonSettings.extend(plugin.jsonSettings)
-                    if 'complexSettings' in dir(plugin):
-                        self._complexSettings.update(plugin.complexSettings)
+                        # 12/3/13 If we haven't loaded a plugin right or we haven't initialized all the variables
+                        # in the plugin, we will get an exception and the plan is to not handle it
+                        if 'validSettings' in dir(plugin):
+                            self._validSettings.extend(plugin.validSettings)
+                        if 'defaultableSettings' in dir(plugin):
+                            self._defaultableSettings.extend(plugin.defaultableSettings)
+                        if 'intSettings' in dir(plugin):
+                            self._intSettings.extend(plugin.intSettings)
+                        if 'floatSettings' in dir(plugin):
+                            self._floatSettings.extend(plugin.floatSettings)
+                        if 'boolSettings' in dir(plugin):
+                            self._boolSettings.extend(plugin.boolSettings)
+                        if 'jsonSettings' in dir(plugin):
+                            self._jsonSettings.extend(plugin.jsonSettings)
+                        if 'complexSettings' in dir(plugin):
+                            self._complexSettings.update(plugin.complexSettings)
+                    except ValueError:
+                        self.logger.error("Error loading plugin '%s' of type '%s'" % (base, plugintype))
 
         # Chop off the path we added
         sys.path = sys.path[0:-1]
@@ -810,6 +814,34 @@ class Config:
                 self.threading = 'process'
             if self.args.profiler:
                 self.profiler = True
+
+        # 9/2/15 Try autotimestamp values, add a timestamp if we find one
+        for s in self.samples:
+            s.loadSample()
+
+            for e in s.sampleDict:
+                for x in self.autotimestamps:
+                    t = Token()
+                    t.token = x[0]
+                    t.replacementType = "timestamp"
+                    t.replacement = x[1]
+
+                    try:
+                        self.logger.debugv("Trying regex '%s' for format '%s'" % (x[0], x[1]))
+                        ts = s.getTSFromEvent(e['_raw'], t)
+                        if type(ts) == datetime.datetime:
+                            found_token = False
+                            # Check to see if we're already a token
+                            for st in s.tokens:
+                                if st.token == t.token and st.replacement == t.replacement:
+                                    found_token = True
+                                    break
+                            if not found_token:
+                                self.logger.debugv("Found timestamp '%s', extending token with format '%s'" % (x[0], x[1]))
+                                s.tokens.append(t)
+                            break
+                    except ValueError:
+                        pass
 
 
         self.logger.debug("Finished parsing.  Config str:\n%s" % self)

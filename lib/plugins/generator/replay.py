@@ -6,6 +6,9 @@ import os
 import logging
 import datetime, time
 import math
+import re
+from eventgentoken import Token
+from eventgenoutput import Output
 
 class ReplayGenerator(GeneratorPlugin):
     queueable = False
@@ -33,14 +36,14 @@ class ReplayGenerator(GeneratorPlugin):
         self._timeSinceSleep = datetime.timedelta()
         self._times = [ ]
 
+        s = self._sample
+
         # Load sample from a file, using cache if possible, from superclass GeneratorPlugin
-        self.loadSample()
-        self._rpevents = self.sampleDict
+        s.loadSample()
+        self._rpevents = s.sampleDict
         self._currentevent = 0
 
         # 8/18/15 CS Because this is not a queueable plugin, we can in a threadsafe way modify these data structures at init
-        s = self._sample
-
         # Iterate through events and remove any events which do not match a configured timestamp,
         # log it and then continue on
         for e in self._rpevents:
@@ -74,6 +77,12 @@ class ReplayGenerator(GeneratorPlugin):
         # For shortness sake, we're going to call the sample s
         s = self._sample
 
+        # 9/2/15 Moving this back to the generate function because we may have a different
+        # instantantion in multiprocess mode
+        if s.out == None:
+            self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (s.name, s.app))
+            s.out = Output(s)
+
         logger.debug("Generating sample '%s' in app '%s'" % (s.name, s.app))
         startTime = datetime.datetime.now()
 
@@ -81,7 +90,8 @@ class ReplayGenerator(GeneratorPlugin):
         # we're currently on
         self.sampleDict = [ self._rpevents[self._currentevent] ]
 
-        self.setOutputMetadata(self.sampleDict[0])
+        # 9/2/2015 Commenting out, can't find a use for this anymore.
+        # self.setOutputMetadata(self.sampleDict[0])
 
         logger.debugv("Finding timestamp to compute interval for events")
         if self._lastts == None:

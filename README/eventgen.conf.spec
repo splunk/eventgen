@@ -60,6 +60,7 @@ profiler = false
 queueing = python
 maxIntervalsBeforeFlush = 3
 maxQueueLength = 0
+autotimestamps = [ <jsonlist> ]
 
 [<sample file name>]
     * This stanza defines a given sample file contained within the samples directory.

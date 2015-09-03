@@ -35,12 +35,16 @@ class Token:
     _stringMatch = None
     _listMatch = None
     
-    def __init__(self, sample):
+    def __init__(self, sample=None):
         
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'Token', 'sample': sample.name})
+        if sample == None:
+            name = "None"
+        else:
+            name = sample.name
+        adapter = EventgenAdapter(logger, {'module': 'Token', 'sample': name})
         globals()['logger'] = adapter
         
         self._earliestTime = (None, None)

@@ -101,7 +101,8 @@ class Sample:
     _latestParsed = None
     
     def __init__(self, name):
-        # Logger already setup by config, just get an instance
+        # 9/2/15 CS Can't make logger an attribute of the object like we do in other classes
+        # because it borks deepcopy of the sample object
         logger = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
         adapter = EventgenAdapter(logger, {'module': 'Sample', 'sample': name})
@@ -162,12 +163,17 @@ class Sample:
 
         return path
 
-    def getTSFromEvent(self, event):
+    # 9/2/15 Adding ability to pass in a token rather than using the tokens from the sample
+    def getTSFromEvent(self, event, passed_token=None):
         currentTime = None
         formats = [ ]
         # JB: 2012/11/20 - Can we optimize this by only testing tokens of type = *timestamp?
         # JB: 2012/11/20 - Alternatively, documentation should suggest putting timestamp as token.0.
-        for token in self.tokens:
+        if passed_token != None:
+            tokens = [ passed_token ]
+        else:
+            tokens = self.tokens
+        for token in tokens:
             try:
                 formats.append(token.token)
                 # logger.debug("Searching for token '%s' in event '%s'" % (token.token, event))
@@ -197,7 +203,8 @@ class Sample:
                 logger.debug("Match found ('%s') but time parse failed. Timeformat '%s' Event '%s'" % (timeString, timeFormat, event))
         if type(currentTime) != datetime.datetime:
             # Total fail
-            logger.error("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
+            if passed_token == None: # If we're running for autotimestamp don't log error
+                logger.error("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
             raise ValueError("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
         # Check to make sure we parsed a year
         if currentTime.year == 1900:
@@ -269,3 +276,79 @@ class Sample:
 
     def utcnow(self):
         return self.now(utcnow=True)
+
+    def _openSampleFile(self):
+        logger.debugv("Opening sample '%s' in app '%s'" % (self.name, self.app))
+        self._sampleFH = open(self.filePath, 'rU')
+
+    def _closeSampleFile(self):
+        logger.debugv("Closing sample '%s' in app '%s'" % (self.name, self.app))
+        self._sampleFH.close()
+
+    def loadSample(self):
+        """Load sample from disk into self._sample.sampleLines and self._sample.sampleDict, 
+        using cached copy if possible"""
+        if self.sampletype == 'raw':
+            # 5/27/12 CS Added caching of the sample file
+            if self.sampleDict == None:
+                self._openSampleFile()
+                if self.breaker == c.breaker:
+                    logger.debugv("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
+                    sampleLines = self._sampleFH.readlines()
+                # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time instead of on every generation
+                else:
+                    logger.debugv("Non-default breaker '%s' detected for sample '%s' in app '%s'" \
+                                    % (self.breaker, self.name, self.app) ) 
+
+                    sampleData = self._sampleFH.read()
+                    sampleLines = [ ]
+
+                    logger.debug("Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s" \
+                                    % (self.name, self.app, len(sampleData), self.breaker))
+
+                    try:
+                        breakerRE = re.compile(self.breaker, re.M)
+                    except:
+                        logger.error("Line breaker '%s' for sample '%s' in app '%s' could not be compiled; using default breaker" \
+                                    % (self.breaker, self.name, self.app) )
+                        self.breaker = c.breaker
+
+                    # Loop through data, finding matches of the regular expression and breaking them up into
+                    # "lines".  Each match includes the breaker itself.
+                    extractpos = 0
+                    searchpos = 0
+                    breakerMatch = breakerRE.search(sampleData, searchpos)
+                    while breakerMatch:
+                        logger.debugv("Breaker found at: %d, %d" % (breakerMatch.span()[0], breakerMatch.span()[1]))
+                        # Ignore matches at the beginning of the file
+                        if breakerMatch.span()[0] != 0:
+                            sampleLines.append(sampleData[extractpos:breakerMatch.span()[0]])
+                            extractpos = breakerMatch.span()[0]
+                        searchpos = breakerMatch.span()[1]
+                        breakerMatch = breakerRE.search(sampleData, searchpos)
+                    sampleLines.append(sampleData[extractpos:])
+
+                self._closeSampleFile()
+
+                self.sampleDict = [ { '_raw': line, 'index': self.index, 'host': self.host, 'source': self.source, 'sourcetype': self.sourcetype } for line in sampleLines ]
+                logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(sampleLines), len(self.sampleDict)))
+        elif self.sampletype == 'csv':
+            if self.sampleDict == None:
+                self._openSampleFile()
+                logger.debugv("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
+                self.sampleDict = [ ]
+                # Fix to load large csv files, work with python 2.5 onwards
+                csv.field_size_limit(sys.maxint)
+                csvReader = csv.DictReader(self._sampleFH)
+                for line in csvReader:
+                    if '_raw' in line:
+                        self.sampleDict.append(line)
+                    else:
+                        logger.error("Missing _raw in line '%s'" % pprint.pformat(line))
+                self._closeSampleFile()
+                logger.debug('Finished creating sampleDict & sampleLines.  Len sampleDict: %d' % (len(self.sampleDict)))
+
+        # Ensure all lines have a newline
+        for i in xrange(0, len(self.sampleDict)):
+            if self.sampleDict[i]['_raw'][-1] != '\n':
+                self.sampleDict[i]['_raw'] += '\n'

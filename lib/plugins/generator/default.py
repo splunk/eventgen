@@ -8,6 +8,7 @@ import logging
 import datetime, time
 import random
 import copy
+from eventgenoutput import Output
 
 class DefaultGenerator(GeneratorPlugin):
     def __init__(self, sample):
@@ -26,11 +27,18 @@ class DefaultGenerator(GeneratorPlugin):
         # 2/10/14 CS set s to our local copy of the sample
         s = self._samples[samplename]
         self._sample = s
+
+        # 9/2/15 Moving this back to the generate function because we may have a different
+        # instantantion in multiprocess mode
+        if s.out == None:
+            self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (s.name, s.app))
+            s.out = Output(s)
+
         # 6/9/14 CS If we get an exception loading the sample, fail
         try:
-            self.loadSample()
+            s.loadSample()
         except TypeError:
-            logger.error("Error loading sample file for sample '%s'" % self._sample.name)
+            logger.error("Error loading sample file for sample '%s'" % s.name)
             return
 
         logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (s.name, s.app, count, earliest, latest))
@@ -39,27 +47,27 @@ class DefaultGenerator(GeneratorPlugin):
         # If we're random, fill random events from sampleDict into eventsDict
         if s.randomizeEvents:
             eventsDict = [ ]
-            sdlen = len(self.sampleDict)
+            sdlen = len(s.sampleDict)
             logger.debugv("Random filling eventsDict for sample '%s' in app '%s' with %d events" % (s.name, s.app, count))
             # Count is -1, replay the whole file, but in randomizeEvents I think we'd want it to actually 
             # just put as many events as there are in the file
             if count == -1:
                 count = sdlen
             while len(eventsDict) < count:
-                eventsDict.append(self.sampleDict[random.randint(0, sdlen-1)])
+                eventsDict.append(s.sampleDict[random.randint(0, sdlen-1)])
         # If we're bundlelines, create count copies of the sampleDict
         elif s.bundlelines:
             eventsDict = [ ]
             logger.debugv("Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" % (s.name, s.app, count))
             for x in xrange(count):
-                eventsDict.extend(self.sampleDict)
+                eventsDict.extend(s.sampleDict)
         # Otherwise fill count events into eventsDict or keep making copies of events out of sampleDict until
         # eventsDict is as big as count
         else:
             # If count is -1, play the whole file, else grab a subset
             if count == -1:
                 count = len(self.sampleDict)
-            eventsDict = self.sampleDict[0:count]
+            eventsDict = s.sampleDict[0:count]
 
             ## Continue to fill events array until len(events) == count
             if len(eventsDict) < count:
