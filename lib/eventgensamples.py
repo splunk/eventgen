@@ -185,10 +185,10 @@ class Sample:
                     # logger.debug("Testing '%s' as a time string against '%s'" % (timeString, timeFormat))
                     if timeFormat == "%s":
                         ts = float(timeString) if len(timeString) < 10 else float(timeString) / (10**(len(timeString)-10))
-                        logger.debugv("Getting time for timestamp '%s'" % ts)
+                        # logger.debugv("Getting time for timestamp '%s'" % ts)
                         currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
-                        logger.debugv("Getting time for timeFormat '%s' and timeString '%s'" % (timeFormat, timeString))
+                        # logger.debugv("Getting time for timeFormat '%s' and timeString '%s'" % (timeFormat, timeString))
                         # Working around Python bug with a non thread-safe strptime.  Randomly get AttributeError
                         # when calling strptime, so if we get that, try again
                         while currentTime == None:
@@ -196,15 +196,15 @@ class Sample:
                                 currentTime = datetime.datetime.strptime(timeString, timeFormat)
                             except AttributeError:
                                 pass
-                    logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
+                    # logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
                     if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
-                logger.debug("Match found ('%s') but time parse failed. Timeformat '%s' Event '%s'" % (timeString, timeFormat, event))
+                logger.warning("Match found ('%s') but time parse failed. Timeformat '%s' Event '%s'" % (timeString, timeFormat, event))
         if type(currentTime) != datetime.datetime:
             # Total fail
             if passed_token == None: # If we're running for autotimestamp don't log error
-                logger.error("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
+                logger.warning("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
             raise ValueError("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
         # Check to make sure we parsed a year
         if currentTime.year == 1900:

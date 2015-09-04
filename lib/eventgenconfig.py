@@ -284,8 +284,17 @@ class Config:
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
         # Eliminate recursive going back to parent
-        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != 'samples' and key != 'sampleTimers' and key != 'workers' ])
-        return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
+
+        # Filter items from config we don't want to pretty print
+        filter_list = [ 'samples', 'sampleTimers', 'workers' ]
+        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key not in filter_list ])
+        
+        # Filter items out of the sample we don't want to print
+        temp2 = [ ]
+        filter_list = [ 'sampleLines', 'sampleDict' ]
+        for x in self.samples:
+            temp2.append(dict([ (key, value) for (key, value) in x.__dict__.items() if key not in filter_list ]))
+        return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(temp2)
 
     def __repr__(self):
         return self.__str__()
@@ -817,32 +826,53 @@ class Config:
         for s in self.samples:
             s.loadSample()
 
+            at = self.autotimestamps
+            line_puncts = [ ]
             for e in s.sampleDict:
-                for x in self.autotimestamps:
-                    t = Token()
-                    t.token = x[0]
-                    t.replacementType = "timestamp"
-                    t.replacement = x[1]
+                # Run punct against the line, make sure we haven't seen this same pattern
+                # Not totally exact but good enough for Rock'N'Roll
+                p = self._punct(e[s.timeField])
+                # self.logger.debugv("Got punct of '%s' for event '%s'" % (p, e[s.timeField]))
+                if p not in line_puncts:
+                    for x in at:
+                        t = Token()
+                        t.token = x[0]
+                        t.replacementType = "timestamp"
+                        t.replacement = x[1]
 
-                    try:
-                        self.logger.debugv("Trying regex '%s' for format '%s'" % (x[0], x[1]))
-                        ts = s.getTSFromEvent(e['_raw'], t)
-                        if type(ts) == datetime.datetime:
-                            found_token = False
-                            # Check to see if we're already a token
-                            for st in s.tokens:
-                                if st.token == t.token and st.replacement == t.replacement:
-                                    found_token = True
-                                    break
-                            if not found_token:
-                                self.logger.debugv("Found timestamp '%s', extending token with format '%s'" % (x[0], x[1]))
-                                s.tokens.append(t)
-                            break
-                    except ValueError:
-                        pass
+                        try:
+                            # self.logger.debugv("Trying regex '%s' for format '%s' on '%s'" % (x[0], x[1], e[s.timeField]))
+                            ts = s.getTSFromEvent(e[s.timeField], t)
+                            if type(ts) == datetime.datetime:
+                                found_token = False
+                                # Check to see if we're already a token
+                                for st in s.tokens:
+                                    if st.token == t.token and st.replacement == t.replacement:
+                                        found_token = True
+                                        break
+                                if not found_token:
+                                    self.logger.debugv("Found timestamp '%s', extending token with format '%s'" % (x[0], x[1]))
+                                    s.tokens.append(t)
+                                    # Drop this pattern from ones we try in the future
+                                    at = [ z for z in at if z[0] != x[0] ]
+                                break
+                        except ValueError:
+                            pass
+                line_puncts.append(p)
+
 
 
         self.logger.debug("Finished parsing.  Config str:\n%s" % self)
+
+    def _punct(self, string):
+        """Quick method of attempting to normalize like events"""
+        string = string.replace('\\', '\\\\')
+        string = string.replace('"', '\\"')
+        string = string.replace("'", "\\'")
+        string = string.replace(" ", "_")
+        string = string.replace("\t", "t")
+        string = re.sub("[^,;\-#\$%&+./:=\?@\\\'|*\n\r\"(){}<>\[\]\^!]", "", string, flags=re.M)
+        return string
 
 
     def _validateSetting(self, stanza, key, value):
