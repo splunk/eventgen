@@ -138,7 +138,15 @@ class ReplayGenerator(GeneratorPlugin):
                 token.mvhash = mvhash
                 event = token.replace(event, et=s.earliestTime(), lt=s.latestTime(), s=s)
                 if token.replacementType == 'timestamp' and s.timeField != '_raw':
-                    s.timestamp = None
+                    # 9/4/15 CS Found this change from 9/29/14 where I fixed a bug with timestamp
+                    # replacement.  Not sure why I set to this value to none other than I would
+                    # want to always use the timestamp from the timeField.  Unfortunately 
+                    # what happens is that what if we have multiple timestamps configured for
+                    # the sample (which happens with autotimestamp feature now) and we set 
+                    # this to none and future timestamps don't match.  In this case, I believe
+                    # by commenting this out the first timestamp to be replaced for the sample
+                    # will win and every other replacement will use that cached time.
+                    # s.timestamp = None
                     token.replace(self.sampleDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
             if(s.hostToken):
                 # clear the host mvhash every time, because we need to re-randomize it
