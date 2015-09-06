@@ -109,7 +109,7 @@ class WindbagGenerator(GeneratorPlugin):
     def gen(self, count, earliest, latest):
         l = [ {'_raw': '2014-01-05 23:07:08 WINDBAG Event 1 of 100000'} for i in xrange(count) ]
 
-        self._sample.out.bulksend(l)
+        self._out.bulksend(l)
         return 0
 
 def load():

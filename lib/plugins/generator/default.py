@@ -28,12 +28,6 @@ class DefaultGenerator(GeneratorPlugin):
         s = self._samples[samplename]
         self._sample = s
 
-        # 9/2/15 Moving this back to the generate function because we may have a different
-        # instantantion in multiprocess mode
-        if s.out == None:
-            self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (s.name, s.app))
-            s.out = Output(s)
-
         # 6/9/14 CS If we get an exception loading the sample, fail
         try:
             s.loadSample()
@@ -115,13 +109,13 @@ class DefaultGenerator(GeneratorPlugin):
                     'sourcetype': eventsDict[x]['sourcetype'],
                     '_time': int(time.mktime(s.timestamp.timetuple())) } ]
 
-            s.out.bulksend(l)
+            self._out.bulksend(l)
             s.timestamp = None
 
         endTime = datetime.datetime.now()
         timeDiff = endTime - startTime
         timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
-        s.out.flush(endOfInterval=True)
+        self._out.flush(endOfInterval=True)
         logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
 
 def load():

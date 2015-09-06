@@ -21,9 +21,6 @@ class WindbagGenerator(GeneratorPlugin):
         globals()['c'] = Config()
 
     def gen(self, count, earliest, latest, samplename=None):
-        if self._sample.out == None:
-            self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
-            self._sample.out = Output(self._sample)
         # l = range(count)
         # for i in xrange(count):
         #     # self._sample.timestamp = latest
@@ -51,7 +48,7 @@ class WindbagGenerator(GeneratorPlugin):
         # l = [ {'_raw': '"111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"'} for i in xrange(count) ]
         # l = [ '2014-01-05 23:07:08 WINDBAG Event 1 of 100000' for i in xrange(count) ]
 
-        self._sample.out.bulksend(l)
+        self._out.bulksend(l)
         return 0
 
 

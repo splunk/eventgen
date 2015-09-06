@@ -12,6 +12,7 @@ from timeparser import timeParser
 import httplib2, urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
+from eventgenoutput import Output
 
 class GeneratorPlugin:
     queueable = True
@@ -27,6 +28,8 @@ class GeneratorPlugin:
 
         from eventgenconfig import Config
         globals()['c'] = Config()
+        
+        self._out = Output(sample)
 
         # 2/10/14 CS Make a threadsafe copy of all of the samples for us to work on
         # with c.copyLock:
@@ -34,8 +37,6 @@ class GeneratorPlugin:
         self._sample = sample
 
         # self.logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
-
-        # multiprocessing.Process.__init__(self)
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""

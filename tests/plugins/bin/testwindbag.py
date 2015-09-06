@@ -20,14 +20,10 @@ class WindbagGenerator(GeneratorPlugin):
         from eventgenconfig import Config
         globals()['c'] = Config()
 
-    def gen(self, count, earliest, latest, samplename=None):
-        if self._sample.out == None:
-            self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
-            self._sample.out = Output(self._sample)
-        
+    def gen(self, count, earliest, latest, samplename=None):    
         l = [ {'_raw': '2014-01-05 23:07:08 WINDBAG Event 1 of 100000'} for i in xrange(count) ]
 
-        self._sample.out.bulksend(l)
+        self._out.bulksend(l)
         return 0
 
 

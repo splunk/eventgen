@@ -93,15 +93,6 @@ class Timer(threading.Thread):
         plugin = c.getPlugin('generator.'+self.sample.generator, self.sample)
         self.logger.debugv("Generating for class '%s' for generator '%s' queueable: %s" % (plugin.__name__, self.sample.generator, plugin.queueable))
 
-        # if not plugin.queueable:
-        #     # Get an instance of the plugin instead of the class itself
-        #     if self.sample.out == None:
-        #         self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self.sample.name, self.sample.app))
-        #         self.sample.out = Output(self.sample)
-        #     with c.copyLock:
-        #         plugin = plugin(self.sample)
-        #     plugin.setupBackfill()
-        # else:
         with c.copyLock:
             p = plugin(self.sample)
             p.setupBackfill()
@@ -151,9 +142,9 @@ class Timer(threading.Thread):
                             ## Sleep for partial interval
                             # If we're going to sleep for longer than the default check for kill interval
                             # go ahead and flush output so we're not just waiting
-                            if partialInterval > self.time:
-                                self.logger.debugv("Flushing because we're sleeping longer than a polling interval")
-                                self.sample.out.flush()
+                            # if partialInterval > self.time:
+                            #     self.logger.debugv("Flushing because we're sleeping longer than a polling interval")
+                            #     self.sample.out.flush()
 
                               
                             self.logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \

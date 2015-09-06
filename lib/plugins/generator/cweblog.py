@@ -19,9 +19,6 @@ class CWeblogGenerator(GeneratorPlugin):
         from eventgenconfig import Config
         globals()['c'] = Config()
     def gen(self, count, earliest, latest, **kwargs):
-        if self._sample.out == None:
-            self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
-            self._sample.out = Output(self._sample)
         # logger.debug("weblog: external_ips_len: %s webhosts_len: %s useragents_len: %s webserverstatus_len: %s" % \
                     # (self.external_ips_len, self.webhosts_len, self.useragents_len, self.webserverstatus_len))
         # path = c.grandparentdir.split(os.sep)
@@ -37,7 +34,7 @@ class CWeblogGenerator(GeneratorPlugin):
                 'source': '/opt/access_combined.log',
                 '_time': 1 } for line in lines ]
 
-        self._sample.out.bulksend(l)
+        self._out.bulksend(l)
         return 0
 
 def load():

@@ -830,24 +830,25 @@ class Config:
             line_puncts = [ ]
 
             # Check for _time field, if it exists, add a timestamp to support it
-            if '_time' in s.sampleDict[0]:
-                self.logger.debugv("Found _time field, checking if default timestamp exists")
-                t = Token()
-                t.token = "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}"
-                t.replacementType = "timestamp" 
-                t.replacement = "%Y-%m-%dT%H:%M:%S.%f"
-
-                found_token = False
-                # Check to see if we're already a token
-                for st in s.tokens:
-                    if st.token == t.token and st.replacement == t.replacement:
-                        found_token = True
-                        break
-                if not found_token:
-                    self.logger.debugv("Found _time adding timestamp to support")
-                    s.tokens.append(t)
-                else:
-                    self.logger.debugv("_time field exists and timestamp already configured")
+            if len(s.sampleDict) > 0:
+                if '_time' in s.sampleDict[0]:
+                    self.logger.debugv("Found _time field, checking if default timestamp exists")
+                    t = Token()
+                    t.token = "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}"
+                    t.replacementType = "timestamp" 
+                    t.replacement = "%Y-%m-%dT%H:%M:%S.%f"
+    
+                    found_token = False
+                    # Check to see if we're already a token
+                    for st in s.tokens:
+                        if st.token == t.token and st.replacement == t.replacement:
+                            found_token = True
+                            break
+                    if not found_token:
+                        self.logger.debugv("Found _time adding timestamp to support")
+                        s.tokens.append(t)
+                    else:
+                        self.logger.debugv("_time field exists and timestamp already configured")
 
             for e in s.sampleDict:
                 # Run punct against the line, make sure we haven't seen this same pattern

@@ -75,7 +75,6 @@ class Sample:
     splunkUrl = None
     generator = None
     rater = None
-    out = None
     timeField = None
     timestamp = None
     sampleDir = None

@@ -76,10 +76,6 @@ class WindbagGenerator(GeneratorPlugin):
         self.regionslen = len(self.regions)
 
     def gen(self, count, earliest, latest, samplename=None):
-        if self._sample.out == None:
-            self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (self._sample.name, self._sample.app))
-            self._sample.out = Output(self._sample)
-
         rows = [ ]
         for i in xrange(count):
             order = { }
@@ -104,7 +100,7 @@ class WindbagGenerator(GeneratorPlugin):
                             'sourcetype': 'order',
                             '_time': time.mktime(latest.timetuple()) })
 
-        self._sample.out.bulksend(rows)
+        self._out.bulksend(rows)
         return 0
 
 

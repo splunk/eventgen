@@ -77,12 +77,6 @@ class ReplayGenerator(GeneratorPlugin):
         # For shortness sake, we're going to call the sample s
         s = self._sample
 
-        # 9/2/15 Moving this back to the generate function because we may have a different
-        # instantantion in multiprocess mode
-        if s.out == None:
-            self.logger.info("Setting up Output class for sample '%s' in app '%s'" % (s.name, s.app))
-            s.out = Output(s)
-
         logger.debug("Generating sample '%s' in app '%s'" % (s.name, s.app))
         startTime = datetime.datetime.now()
 
@@ -164,7 +158,7 @@ class ReplayGenerator(GeneratorPlugin):
                     'sourcetype': self.sampleDict[x]['sourcetype'],
                     '_time': int(time.mktime(s.timestamp.timetuple())) } ]
 
-            s.out.bulksend(l)
+            self._out.bulksend(l)
             s.timestamp = None
 
 
@@ -190,6 +184,8 @@ class ReplayGenerator(GeneratorPlugin):
 
             # Add for average sleep time calculation when we're at the end of the events
             self._times.append(partialInterval)
+
+        self._out.flush(endOfInterval=True)
 
         return partialInterval
 
