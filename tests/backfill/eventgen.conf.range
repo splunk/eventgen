@@ -1,0 +1,15 @@
+[sample]
+sampleDir = tests/sample
+outputMode = file
+fileName = /tmp/test.log
+count = 10
+earliest = now
+latest = now
+interval = 1
+randomizeEvents = true
+backfill = 2015-01-01 00:00:00
+end = 2015-01-01 01:00:00
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+token.0.replacementType = timestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S

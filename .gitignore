@@ -2,3 +2,6 @@
 .DS_Store
 build
 .build
+eventgen.spl
+package.json
+node_modules

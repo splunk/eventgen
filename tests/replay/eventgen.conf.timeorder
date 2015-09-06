@@ -1,0 +1,25 @@
+[timeorder]
+sampleDir = tests/replay
+mode = replay
+timeMultiple = 2
+sampletype = csv
+timeField = _time
+#backfill = -15m
+#backfillSearch = index=main sourcetype=windbag
+
+outputMode = stdout
+index = main
+sourcetype = windbag
+source = windbag.log
+host = localhost
+#splunkHost = localhost
+#splunkUser = admin
+#splunkPass = changeme
+
+# outputMode = file
+# fileName = /tmp/internal.log
+
+# 2015-08-18T16:28:54.695-0700
+token.0.token = \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}
+token.0.replacementType = timestamp
+token.0.replacement = %Y-%m-%dT%H:%M:%S

@@ -1,0 +1,87 @@
+[windbag]
+generator = windbag
+earliest = -3s
+latest = now
+interval = 3
+count = 5
+outputMode = stdout
+
+[sample]
+sampleDir = tests/sample
+outputMode = stdout
+count = 3
+earliest = -3s
+latest = now
+interval = 3
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+token.0.replacementType = timestamp
+token.0.replacement = %s.%f
+
+[sample.mobilemusic.csv]
+sampleDir = tests/replaytimestamp
+outputMode = stdout
+sampletype = csv
+interval = 3
+earliest = -3s
+latest = now
+count = 1
+bundlelines = true
+hourOfDayRate = { "0": 0.30, "1": 0.20, "2": 0.20, "3": 0.20, "4": 0.20, "5": 0.25, "6": 0.35, "7": 0.50, "8": 0.60, "9": 0.65, "10": 0.70, "11": 0.75, "12": 0.77, "13": 0.80, "14": 0.82, "15": 0.85, "16": 0.87, "17": 0.90, "18": 0.95, "19": 1.0, "20": 0.85, "21": 0.70, "22": 0.60, "23": 0.45 }
+dayOfWeekRate = { "0": 0.97, "1": 0.95, "2": 0.90, "3": 0.97, "4": 1.0, "5": 0.99, "6": 0.55 }
+randomizeCount = 0.2
+backfill = -5m
+
+token.0.token = ((\w+\s+\d+\s+\d{2}:\d{2}:\d{2}:\d{3})|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}))
+token.0.replacementType = replaytimestamp
+token.0.replacement = ["%b %d %H:%M:%S:%f", "%Y-%m-%d %H:%M:%S:%f"]
+
+[replay]
+sampleDir = tests/replay
+mode = replay
+timeMultiple = 2
+#backfill = -15m
+#backfillSearch = index=main sourcetype=windbag
+
+outputMode = stdout
+index = main
+sourcetype = windbag
+source = windbag.log
+host = localhost
+#splunkHost = localhost
+#splunkUser = admin
+#splunkPass = changeme
+
+# outputMode = file
+# fileName = /tmp/internal.log
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+token.0.replacementType = timestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S
+
+[csv]
+sampleDir = tests/bundlelines
+outputMode = stdout
+count = 3
+earliest = -3s
+latest = now
+interval = 3
+bundlelines = true
+sampletype = csv
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+token.0.replacementType = timestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S
+
+[breakersample]
+sampleDir = tests/breakersample
+outputMode = stdout
+count = 3
+earliest = -3s
+latest = now
+interval = 3
+breaker = ^\d{14}\.\d{6}
+
+token.0.token = ^(\d{14})\.\d{6}
+token.0.replacementType = timestamp
+token.0.replacement = %Y%m%d%H%M%S
