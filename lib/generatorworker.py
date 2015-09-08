@@ -106,8 +106,7 @@ class GeneratorRealWorker:
                             if s.name == samplename:
                                 sample = s
                                 break
-                        with c.copyLock:
-                            plugin = c.getPlugin('generator.'+sample.generator, sample)(sample)
+                        plugin = c.getPlugin('generator.'+sample.generator, sample)(sample)
                         self._pluginCache[sample.name] = plugin
                     # logger.info("GeneratorWorker %d generating %d events from '%s' to '%s'" % (self.num, count, \
                     #             datetime.datetime.strftime(earliest, "%Y-%m-%d %H:%M:%S"), \

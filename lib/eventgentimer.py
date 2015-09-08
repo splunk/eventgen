@@ -83,6 +83,7 @@ class Timer(threading.Thread):
         if self.sample.delay > 0:
             self.logger.info("Sample set to delay %s, sleeping." % s.delay)
             time.sleep(self.sample.delay)
+            
 
         # 12/29/13 CS Queueable plugins pull from the worker queue as soon as items
         # are in it and farm it out to a pool of workers to generate.
@@ -93,9 +94,17 @@ class Timer(threading.Thread):
         plugin = c.getPlugin('generator.'+self.sample.generator, self.sample)
         self.logger.debugv("Generating for class '%s' for generator '%s' queueable: %s" % (plugin.__name__, self.sample.generator, plugin.queueable))
 
-        with c.copyLock:
-            p = plugin(self.sample)
-            p.setupBackfill()
+        # 9/6/15 Let other timers know whether this sample will be queueable or not
+        self.sample.queueable = plugin.queueable
+        
+        # 9/6/15 Don't do any work until all the timers have started
+        while c.timersStarted.value() < len(c.sampleTimers):
+            self.logger.debug("Not all timers started, sleeping for timer '%s'" % self.sample.name)
+            time.sleep(1.0)
+
+        # with c.copyLock:
+        p = plugin(self.sample)
+        p.setupBackfill()
 
         if c.queueing == 'zeromq':
             context = zmq.Context()

@@ -275,6 +275,8 @@ class Config:
             self.outputQueueSize = Counter(0, self.threading)
             self.eventsSent = Counter(0, self.threading)
             self.bytesSent = Counter(0, self.threading)
+            self.timersStarted = Counter(0, self.threading)
+            self.pluginsStarting = Counter(0, self.threading)
 
             self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
 
@@ -283,18 +285,11 @@ class Config:
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
-        # Eliminate recursive going back to parent
-
         # Filter items from config we don't want to pretty print
         filter_list = [ 'samples', 'sampleTimers', 'workers' ]
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key not in filter_list ])
         
-        # Filter items out of the sample we don't want to print
-        temp2 = [ ]
-        filter_list = [ 'sampleLines', 'sampleDict' ]
-        for x in self.samples:
-            temp2.append(dict([ (key, value) for (key, value) in x.__dict__.items() if key not in filter_list ]))
-        return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(temp2)
+        return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
 
     def __repr__(self):
         return self.__str__()
@@ -1146,6 +1141,22 @@ class Config:
             self.proxy2.bind_out(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+3))
             self.proxy2.start()
 
+        # 9/6/15 Start Timer workers first, they'll wait until they're all started before queueing up work, also
+        # they will give the generators knowledge of which samples they should be keeping local copies of by 
+        # keeping track of the queueable setting
+        # Start a Timer thread for every sample which will either run a non-Queueable Plugin
+        # in the thread or send work to a queue which will be fulfilled by a GeneratorWorker
+        for sampleTimer in self.sampleTimers:
+            sampleTimer.daemon = True
+            sampleTimer.start()
+            self.logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)
+            self.timersStarted.increment()
+            
+        # 9/6/15 Hopefully one last change.  Prime cache of all potential samples.
+        for s in self.samples:
+            if s.queueable:
+                self.getPlugin('generator.'+s.generator)(s)
+
         # Only start output workers if we're going to use them
         if self.useOutputQueue:
             for x in xrange(0, self.outputWorkers):
@@ -1169,10 +1180,3 @@ class Config:
             worker.daemon = True
             worker.start()
             self.workers.append(worker)
-
-        # Start a Timer thread for every sample which will either run a non-Queueable Plugin
-        # in the thread or send work to a queue which will be fulfilled by a GeneratorWorker
-        for sampleTimer in self.sampleTimers:
-            sampleTimer.daemon = True
-            sampleTimer.start()
-            self.logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)

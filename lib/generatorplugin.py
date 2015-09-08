@@ -7,7 +7,7 @@ import csv
 import copy
 import re
 import pprint
-import datetime
+import datetime, time
 from timeparser import timeParser
 import httplib2, urllib
 from xml.dom import minidom
@@ -25,18 +25,32 @@ class GeneratorPlugin:
         from eventgenconfig import EventgenAdapter
         adapter = EventgenAdapter(logger, {'module': 'GeneratorPlugin', 'sample': sample.name})
         self.logger = adapter
-
+        
         from eventgenconfig import Config
         globals()['c'] = Config()
         
-        self._out = Output(sample)
-
+        c.pluginsStarting.increment()
+        
         # 2/10/14 CS Make a threadsafe copy of all of the samples for us to work on
-        # with c.copyLock:
-        self._samples = dict((s.name, copy.deepcopy(s)) for s in c.samples)
-        self._sample = sample
+        with c.copyLock:
+            self.logger.debugv("GeneratorPlugin being initialized for sample '%s'" % sample.name)
+            
+            self._out = Output(sample)
+            
+            # 9/6/15 Don't do any work until all the timers have started
+            while c.timersStarted.value() < len(c.sampleTimers):
+                self.logger.debug("Not all timers started, sleeping for GeneratorPlugin '%s'" % sample.name)
+                time.sleep(1.0)
+                
+            self._samples = dict((s.name, copy.deepcopy(s)) for s in c.samples if s.queueable == True)
+            self._sample = sample
+    
+            c.pluginsStarting.decrement()
+            # self.logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
 
-        # self.logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
+        while c.pluginsStarting.value() > 0:
+            self.logger.debug("Not all plugins started, sleeping 100ms for GeneratorPlugin '%s'" % self._sample.name)
+            time.sleep(0.1)
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""

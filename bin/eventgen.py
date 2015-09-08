@@ -4,6 +4,8 @@ Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 
 from __future__ import division
 
+# import rpdb2; rpdb2.start_embedded_debugger('some_password')
+
 import sys, os
 path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
 sys.path.append(path_prepend)

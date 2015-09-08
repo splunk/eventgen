@@ -84,18 +84,16 @@ class Sample:
     maxIntervalsBeforeFlush = None
     maxQueueLength = None
     end = None
+    queueable = None
 
     
     # Internal fields
-    _sampleLines = None
     sampleLines = None
-    _sampleDict = None
     sampleDict = None
     _lockedSettings = None
     _priority = None
     _origName = None
     _lastts = None
-    _timeSinceSleep = None
     _earliestParsed = None
     _latestParsed = None
     
@@ -111,10 +109,7 @@ class Sample:
         self.tokens = [ ]
         self._lockedSettings = [ ]
 
-        self._currentevent = 0
-        self._rpevents = None
         self.backfilldone = False
-        self._timeSinceSleep = datetime.timedelta()
         
         # Import config
         from eventgenconfig import Config
@@ -122,8 +117,8 @@ class Sample:
         
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this sample"""
-        # Eliminate recursive going back to parent
-        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != '_c' ])
+        filter_list = [ 'sampleLines', 'sampleDict' ]
+        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key not in filter_list ])
         return pprint.pformat(temp)
         
     def __repr__(self):
