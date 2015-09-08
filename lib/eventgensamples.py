@@ -85,6 +85,7 @@ class Sample:
     maxQueueLength = None
     end = None
     queueable = None
+    autotimestamp = None
 
     
     # Internal fields

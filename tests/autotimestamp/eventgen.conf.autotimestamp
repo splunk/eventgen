@@ -2,6 +2,7 @@
 sampleDir = tests/replay
 mode = replay
 timeMultiple = 2
+autotimestamp = true
 #backfill = -15m
 #backfillSearch = index=main sourcetype=windbag
 

@@ -61,6 +61,7 @@ queueing = python
 maxIntervalsBeforeFlush = 3
 maxQueueLength = 0
 autotimestamps = [ <jsonlist> ]
+autotimestamp = false
 
 [<sample file name>]
     * This stanza defines a given sample file contained within the samples directory.
@@ -244,6 +245,9 @@ delay = <integer>
     * Specifies how long to wait until we begin generating events for this sample
     * Primarily this is used so we can stagger sets of samples which similar but slightly different data
     * Defaults to 0 which is disabled.
+    
+autotimestamp = <boolean>
+    * Will enable autotimestamp feature which detects most common forms of timestamps in your samples with no configuration.
 
 timeMultiple = <float>
     * Only valid in mode = replay

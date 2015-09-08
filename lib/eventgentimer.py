@@ -102,7 +102,6 @@ class Timer(threading.Thread):
             self.logger.debug("Not all timers started, sleeping for timer '%s'" % self.sample.name)
             time.sleep(1.0)
 
-        # with c.copyLock:
         p = plugin(self.sample)
         p.setupBackfill()
 

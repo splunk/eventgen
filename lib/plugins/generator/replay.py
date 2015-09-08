@@ -74,6 +74,11 @@ class ReplayGenerator(GeneratorPlugin):
 
 
     def gen(self, count, earliest, latest):
+        # 9/8/15 CS Check to make sure we have events to replay
+        if len(self._rpevents) == 0:
+            # Return insanely large sleep time
+            return 10000
+            
         # For shortness sake, we're going to call the sample s
         s = self._sample
 
