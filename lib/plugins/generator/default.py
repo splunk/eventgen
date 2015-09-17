@@ -35,10 +35,6 @@ class DefaultGenerator(GeneratorPlugin):
             logger.error("Error loading sample file for sample '%s'" % s.name)
             return
             
-        # 9/17/15 CS Need to ensure we have a valid sampleDict
-        if s.sampleDict == None:
-            logger.error("SampleDict is None for sample '%s'" % s.name)
-            return
 
         logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (s.name, s.app, count, earliest, latest))
         startTime = datetime.datetime.now()
@@ -65,7 +61,7 @@ class DefaultGenerator(GeneratorPlugin):
         else:
             # If count is -1, play the whole file, else grab a subset
             if count == -1:
-                count = len(self.sampleDict)
+                count = len(s.sampleDict)
             eventsDict = s.sampleDict[0:count]
 
             ## Continue to fill events array until len(events) == count
@@ -95,7 +91,7 @@ class DefaultGenerator(GeneratorPlugin):
                 event = token.replace(event, et=earliest, lt=latest, s=s)
                 if token.replacementType == 'timestamp' and s.timeField != '_raw':
                     s.timestamp = None
-                    token.replace(self.sampleDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
+                    token.replace(eventsDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
             if(s.hostToken):
                 # clear the host mvhash every time, because we need to re-randomize it
                 s.hostToken.mvhash =  {}
