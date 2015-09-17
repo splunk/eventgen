@@ -97,32 +97,36 @@ class GeneratorPlugin:
 
             if s.backfillSearch != None:
                 if s.backfillSearchUrl == None:
-                    s.backfillSearchUrl = c.getSplunkUrl(s)[0]
+                    try:
+                        s.backfillSearchUrl = c.getSplunkUrl(s)[0]
+                    except ValueError:
+                        self.logger.error("Backfill Search URL not specified for sample '%s', not running backfill search" % s.name)
                 if not s.backfillSearch.startswith('search'):
                     s.backfillSearch = 'search ' + s.backfillSearch
                 s.backfillSearch += '| head 1 | table _time'
 
-                self.logger.debug("Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" % (s.backfillSearchUrl, s.backfillSearch, s.sessionKey))
-
-                results = httplib2.Http(disable_ssl_certificate_validation=True).request(\
-                            s.backfillSearchUrl + '/services/search/jobs',
-                            'POST', headers={'Authorization': 'Splunk %s' % s.sessionKey}, \
-                            body=urllib.urlencode({'search': s.backfillSearch,
-                                                    'earliest_time': s.backfill,
-                                                    'exec_mode': 'oneshot'}))[1]
-                try:
-                    temptime = minidom.parseString(results).getElementsByTagName('text')[0].childNodes[0].nodeValue
-                    # self.logger.debug("Time returned from backfill search: %s" % temptime)
-                    # Results returned look like: 2013-01-16T10:59:15.411-08:00
-                    # But the offset in time can also be +, so make sure we strip that out first
-                    if len(temptime) > 0:
-                        if temptime.find('+') > 0:
-                            temptime = temptime.split('+')[0]
-                        temptime = '-'.join(temptime.split('-')[0:3])
-                    s.backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
-                    self.logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, s.backfillts))
-                except (ExpatError, IndexError): 
-                    pass
+                if s.backfillSearchUrl != None:
+                    self.logger.debug("Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" % (s.backfillSearchUrl, s.backfillSearch, s.sessionKey))
+    
+                    results = httplib2.Http(disable_ssl_certificate_validation=True).request(\
+                                s.backfillSearchUrl + '/services/search/jobs',
+                                'POST', headers={'Authorization': 'Splunk %s' % s.sessionKey}, \
+                                body=urllib.urlencode({'search': s.backfillSearch,
+                                                        'earliest_time': s.backfill,
+                                                        'exec_mode': 'oneshot'}))[1]
+                    try:
+                        temptime = minidom.parseString(results).getElementsByTagName('text')[0].childNodes[0].nodeValue
+                        # self.logger.debug("Time returned from backfill search: %s" % temptime)
+                        # Results returned look like: 2013-01-16T10:59:15.411-08:00
+                        # But the offset in time can also be +, so make sure we strip that out first
+                        if len(temptime) > 0:
+                            if temptime.find('+') > 0:
+                                temptime = temptime.split('+')[0]
+                            temptime = '-'.join(temptime.split('-')[0:3])
+                        s.backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
+                        self.logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" % (pprint.pformat(results), temptime, s.backfillts))
+                    except (ExpatError, IndexError): 
+                        pass
 
         if s.end != None:
             try:
