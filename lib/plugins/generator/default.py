@@ -34,6 +34,11 @@ class DefaultGenerator(GeneratorPlugin):
         except TypeError:
             logger.error("Error loading sample file for sample '%s'" % s.name)
             return
+            
+        # 9/17/15 CS Need to ensure we have a valid sampleDict
+        if s.sampleDict == None:
+            logger.error("SampleDict is None for sample '%s'" % s.name)
+            return
 
         logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (s.name, s.app, count, earliest, latest))
         startTime = datetime.datetime.now()
