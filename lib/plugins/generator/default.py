@@ -34,6 +34,7 @@ class DefaultGenerator(GeneratorPlugin):
         except TypeError:
             logger.error("Error loading sample file for sample '%s'" % s.name)
             return
+            
 
         logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (s.name, s.app, count, earliest, latest))
         startTime = datetime.datetime.now()
@@ -90,7 +91,11 @@ class DefaultGenerator(GeneratorPlugin):
                 event = token.replace(event, et=earliest, lt=latest, s=s)
                 if token.replacementType == 'timestamp' and s.timeField != '_raw':
                     s.timestamp = None
+<<<<<<< HEAD
                     token.replace(s.sampleDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
+=======
+                    token.replace(eventsDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
+>>>>>>> 7d53302ac3330b5b89f4892977627a524729b2c3
             if(s.hostToken):
                 # clear the host mvhash every time, because we need to re-randomize it
                 s.hostToken.mvhash =  {}

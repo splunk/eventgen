@@ -684,7 +684,8 @@ class Config:
             if len(foundFiles) == 0:
                 self.logger.warning("Sample '%s' in config but no matching files" % s.name)
                 # 1/23/14 Change in behavior, go ahead and add the sample even if we don't find a file
-                if not s.disabled:
+                # 9/16/15 Change bit us, now only append if we're a generator other than the two stock generators
+                if not s.disabled and not (s.generator == "default" or s.generator == "replay"):
                     tempsamples2.append(copy.deepcopy(s))
             for f in foundFiles:
                 news = copy.deepcopy(s)
