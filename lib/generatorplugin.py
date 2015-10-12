@@ -29,28 +29,39 @@ class GeneratorPlugin:
         from eventgenconfig import Config
         globals()['c'] = Config()
         
-        c.pluginsStarting.increment()
+        # # 2/10/14 CS Make a threadsafe copy of all of the samples for us to work on
+        # with c.copyLock:
+        #     # 10/9/15 CS Moving this to inside the lock, in theory, there should only be one thread
+        #     # trying to start at once, going to try to ensure this is the case and hoping for no deadlocks
+        #     while c.pluginsStarting.value() > 0:
+        #         self.logger.debug("Waiting for exclusive lock to start for GeneratorPlugin '%s'" % sample.name)
+        #         time.sleep(0.1)
+            
+        #     c.pluginsStarting.increment()
+        self.logger.debug("GeneratorPlugin being initialized for sample '%s'" % sample.name)
         
-        # 2/10/14 CS Make a threadsafe copy of all of the samples for us to work on
-        with c.copyLock:
-            self.logger.debugv("GeneratorPlugin being initialized for sample '%s'" % sample.name)
-            
-            self._out = Output(sample)
-            
-            # 9/6/15 Don't do any work until all the timers have started
-            while c.timersStarted.value() < len(c.sampleTimers):
-                self.logger.debug("Not all timers started, sleeping for GeneratorPlugin '%s'" % sample.name)
-                time.sleep(1.0)
-                
-            self._samples = dict((s.name, copy.deepcopy(s)) for s in c.samples if s.queueable == True)
-            self._sample = sample
+        self._out = Output(sample)
+        
+        # # 9/6/15 Don't do any work until all the timers have started
+        # while c.timersStarted.value() < len(c.sampleTimers):
+        #     self.logger.debug("Not all timers started, sleeping for GeneratorPlugin '%s'" % sample.name)
+        #     time.sleep(1.0)
+        
+        self._samples = { }
+        for s in c.samples:
+            news = copy.copy(s)
+            news.tokens = [ copy.copy(t) for t in s.tokens ]
+            for setting in c._jsonSettings:
+                if setting in s.__dict__:
+                    setattr(news, setting, getattr(s, setting))
+            self._samples[news.name] = news
+             
+        # self._samples = dict((s.name, copy.deepcopy(s)) for s in c.samples)
+        self._sample = sample
     
-            c.pluginsStarting.decrement()
-            # self.logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
-
-        while c.pluginsStarting.value() > 0:
-            self.logger.debug("Not all plugins started, sleeping 100ms for GeneratorPlugin '%s'" % self._sample.name)
-            time.sleep(0.1)
+            # c.pluginsStarting.decrement()
+            # c.pluginsStarted.increment()
+            # # self.logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
@@ -62,8 +73,8 @@ class GeneratorPlugin:
     def __repr__(self):
         return self.__str__()
 
-    def updateSample(self, sample):
-        self._sample = sample
+    def updateSample(self, samplename):
+        self._sample = self._samples[samplename]
 
     def setOutputMetadata(self, event):
         # self.logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))

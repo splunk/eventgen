@@ -12,6 +12,7 @@ except ImportError:
     pass
 from eventgenoutput import Output
 import marshal
+import random
 
 class Timer(threading.Thread):
     """
@@ -49,7 +50,7 @@ class Timer(threading.Thread):
 
         globals()['c'] = Config()
 
-        self.logger.debug('Starting timer for %s' % sample.name if sample is not None else "None")
+        self.logger.debug('Initializing timer for %s' % sample.name if sample is not None else "None")
 
         self.time = time
         self.stopping = False
@@ -93,17 +94,30 @@ class Timer(threading.Thread):
         # 12/29/13 Non Queueable, same as before
         plugin = c.getPlugin('generator.'+self.sample.generator, self.sample)
         self.logger.debugv("Generating for class '%s' for generator '%s' queueable: %s" % (plugin.__name__, self.sample.generator, plugin.queueable))
-
-        # 9/6/15 Let other timers know whether this sample will be queueable or not
-        self.sample.queueable = plugin.queueable
+        
+        # Wait a random amount of time, try to grab a lock, then start up the timer
+        time.sleep(random.randint(0, 100)/1000)
+        self.logger.debug("Timer creating plugin for '%s'" % self.sample.name)
+        with c.copyLock:
+            while c.timersStarting.value() > 0:
+                self.logger.debug("Waiting for exclusive lock to start for timer '%s'" % self.sample.name)
+                time.sleep(0.1)
+                
+            c.timersStarting.increment()
+            p = plugin(self.sample)
+            
+            c.timersStarting.decrement()
+            c.timersStarted.increment()
         
         # 9/6/15 Don't do any work until all the timers have started
         while c.timersStarted.value() < len(c.sampleTimers):
             self.logger.debug("Not all timers started, sleeping for timer '%s'" % self.sample.name)
             time.sleep(1.0)
-
-        p = plugin(self.sample)
-        p.setupBackfill()
+        try:
+            p.setupBackfill()
+        except ValueError as e:
+            self.logger.error("Exception during backfill for sample '%s': '%s'" % (self.sample.name, str(e)))
+            
 
         if c.queueing == 'zeromq':
             context = zmq.Context()

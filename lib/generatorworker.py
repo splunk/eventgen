@@ -9,12 +9,13 @@ try:
 except ImportError, e:
     import multiprocessing
 import Queue
-import datetime
+import datetime, time
 try:
     import zmq
 except ImportError, e:
     pass
 import marshal
+import random
 
 class GeneratorProcessWorker(multiprocessing.Process):
     def __init__(self, num, q1, q2):
@@ -64,6 +65,26 @@ class GeneratorRealWorker:
         self.num = num
         c.generatorQueue = q1
         c.outputQueue = q2
+        
+        # 10/9/15 CS Prime plugin cache to avoid concurrency bugs when creating local copies of samples
+        time.sleep(random.randint(0, 100)/1000)
+        logger.debug("Priming plugin cache for GeneratorWorker%d" % num)
+        with c.copyLock:
+            while c.pluginsStarting.value() > 0:
+                logger.debug("Waiting for exclusive lock to start for GeneratorWorker%d" % num)
+                time.sleep(random.randint(0, 100)/1000)
+            
+            c.pluginsStarting.increment()
+            for sample in c.samples:
+                plugin = c.getPlugin('generator.'+sample.generator, sample)
+                if plugin.queueable:
+                    p = plugin(sample)
+                    self._pluginCache[sample.name] = p
+                    
+            c.pluginsStarting.decrement()
+            c.pluginsStarted.increment()
+                    
+                
 
     def run(self):
         if c.profiler:
@@ -100,7 +121,7 @@ class GeneratorRealWorker:
                 if samplename != None:
                     if samplename in self._pluginCache:
                         plugin = self._pluginCache[samplename]
-                        plugin.updateSample(sample)
+                        plugin.updateSample(samplename)
                     else:
                         for s in c.samples:
                             if s.name == samplename:

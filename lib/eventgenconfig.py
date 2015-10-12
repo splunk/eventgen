@@ -1,7 +1,7 @@
 from __future__ import division
 from ConfigParser import ConfigParser
 import os
-import datetime
+import datetime, time
 import sys
 import re
 import __main__
@@ -275,8 +275,10 @@ class Config:
             self.outputQueueSize = Counter(0, self.threading)
             self.eventsSent = Counter(0, self.threading)
             self.bytesSent = Counter(0, self.threading)
+            self.timersStarting = Counter(0, self.threading)
             self.timersStarted = Counter(0, self.threading)
             self.pluginsStarting = Counter(0, self.threading)
+            self.pluginsStarted = Counter(0, self.threading)
 
             self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
 
@@ -1142,22 +1144,6 @@ class Config:
             self.proxy2.bind_out(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+3))
             self.proxy2.start()
 
-        # 9/6/15 Start Timer workers first, they'll wait until they're all started before queueing up work, also
-        # they will give the generators knowledge of which samples they should be keeping local copies of by 
-        # keeping track of the queueable setting
-        # Start a Timer thread for every sample which will either run a non-Queueable Plugin
-        # in the thread or send work to a queue which will be fulfilled by a GeneratorWorker
-        for sampleTimer in self.sampleTimers:
-            sampleTimer.daemon = True
-            sampleTimer.start()
-            self.logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)
-            self.timersStarted.increment()
-            
-        # 9/6/15 Hopefully one last change.  Prime cache of all potential samples.
-        for s in self.samples:
-            if s.queueable:
-                self.getPlugin('generator.'+s.generator)(s)
-
         # Only start output workers if we're going to use them
         if self.useOutputQueue:
             for x in xrange(0, self.outputWorkers):
@@ -1181,3 +1167,21 @@ class Config:
             worker.daemon = True
             worker.start()
             self.workers.append(worker)
+
+        self.logger.debug("Waiting for workers to start for %d workers" % self.generatorWorkers)
+        while self.pluginsStarted.value() < self.generatorWorkers:
+            self.logger.debug("pluginsStarted value of '%d' is less than total '%d'" % (self.pluginsStarted.value(), self.generatorWorkers))
+            time.sleep(0.1)
+
+        # Start a Timer thread for every sample which will either run a non-Queueable Plugin
+        # in the thread or send work to a queue which will be fulfilled by a GeneratorWorker
+        for sampleTimer in self.sampleTimers:
+            sampleTimer.daemon = True
+            sampleTimer.start()
+            self.logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)
+
+
+        self.logger.debug("Waiting for timers to start for %d timers" % len(self.sampleTimers))
+        while self.timersStarted.value() < len(self.sampleTimers):
+            self.logger.debug("timersStarted value of '%d' is less than total '%d'" % (self.timersStarted.value(), len(self.sampleTimers)))
+            time.sleep(0.1)

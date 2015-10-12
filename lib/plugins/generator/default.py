@@ -60,7 +60,7 @@ class DefaultGenerator(GeneratorPlugin):
         else:
             # If count is -1, play the whole file, else grab a subset
             if count == -1:
-                count = len(self.sampleDict)
+                count = len(s.sampleDict)
             eventsDict = s.sampleDict[0:count]
 
             ## Continue to fill events array until len(events) == count
@@ -90,7 +90,7 @@ class DefaultGenerator(GeneratorPlugin):
                 event = token.replace(event, et=earliest, lt=latest, s=s)
                 if token.replacementType == 'timestamp' and s.timeField != '_raw':
                     s.timestamp = None
-                    token.replace(self.sampleDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
+                    token.replace(s.sampleDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
             if(s.hostToken):
                 # clear the host mvhash every time, because we need to re-randomize it
                 s.hostToken.mvhash =  {}

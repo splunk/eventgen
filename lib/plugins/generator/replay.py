@@ -70,7 +70,10 @@ class ReplayGenerator(GeneratorPlugin):
                 self.logger.debug("Timestamp order seems to be reverse chronological, reversing")
                 self._rpevents.reverse()
 
-        self.setupBackfill()
+        try:
+            self.setupBackfill()
+        except ValueError as e:
+            self.logger.error("Exception during backfill for sample '%s': '%s'" % (s.name, str(e)))
 
 
     def gen(self, count, earliest, latest):
