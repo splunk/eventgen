@@ -103,18 +103,41 @@ On top of that, we've made very significant enhancements over that version:
 * New rating to allow for outage-scenario type modeling
 
 ## Version 3.0 Changelog
+For some reason that I can't remember, Version 3 became like the 13th floor on an American elevator.  We skipped it.
+
+## Version 4.0 Changelog
+This version is nearly 2 years in the making.  We have nearly completely refactored and rewritten huge sections of the codebase.
+
+*Features:*
+* New [plugin architecture](README/Plugins.md) to implement modular system
+  * Generator Plugins allow for a use case where you want to write a few lines of python to model complicated simulations of transactions or other interactions that doing simple random replacements on a set of data would not allow you to do
+  * Plugins can specify configuration variables required and provide validation rules & callbacks for validation
+  * Plugins, written in python, will be available by simply dropping them in the bin directory of any Splunk App (or into the proper directory in Eventgen itself)
+* [Massive scalability improvements](README/Performance.md): single instance can now spawn as many worker processes as required to generate Terabytes of data per day
+* New UI for viewing performance, output of samples, and looking at Eventgen internal logs for troubleshooting
+* New command line interface for testing and debugging
+  * Simply point eventgen at your app directory `python eventgen.py <path/to/app>`
+  * Test a single sample easily, overriding output to stdout for easy viewing
+  * Turn up verbosity to investigate eventgen internals while testing
+  * Scalability tuneables available in command line options for performance testing (Geneartors, Outputters, disabling output queue, etc)
+* Specify time range to generate events for
+  * Generate events for a fixed or relative time range
+  * Easily generate a file, for example, for an entire month
+* Autotimestamp feature to minimize configuration by auto-detecting an adding tokens for common timestamp formats
+* Enhancements to Replay mode to detect and support reverse chronological samples and to fail more gracefully when timestamps are not found (only discard that event instead of fail the whole sample)
+* Rewritten Tutorial documentation
+
+*Internals:*
 * Complete refactor of the codebase
-** Code now greatly more readable and understandable
-** Added architecture documentation to help future developers
+  * Code now greatly more readable and understandable
+  * Added [architecture documentation](README/Architecture.md) to help future developers
 * Core code base now handles:
-** Configuration management
-** Concurrency, worker management and communication
+  * Configuration management
+  * Concurrency, worker management and communication
 * All other logic has been moved to a pluggable, modular system with plugins for
-** Rating event counts
-** Generating events
-** Outputting Events
-* New plugin architecture to implement modular system
-** Plugins can specify configuration variables required and provide validation rules & callbacks for validation
-** Plugins, written in python, will be available by simply dropping them in the proper directory in the Eventgen app or any other Splunk App
+  * Rating event counts
+  * Generating events
+  * Outputting Events
+* New Modular Input, S2S and HTTP Event Collector Output Plugins
 * Added number of test scenarios and configs under the tests directory
 

@@ -2,9 +2,9 @@
 
 # Intro
 
-Eventgen v3 has been designed to scale, despite no small number of obstacles put in our way by Python.  Eventgen's original goals were primarily around making it simple for people to quickly build event generators for many different use cases without needing to resort to hand writing them every time.  This brings consistency and makes it simpler for others to come behind and support the work of others.  However, none of the earlier iterations really gave much thought to performance.
+Eventgen v4 has been designed to scale, despite no small number of obstacles put in our way by Python.  Eventgen's original goals were primarily around making it simple for people to quickly build event generators for many different use cases without needing to resort to hand writing them every time.  This brings consistency and makes it simpler for others to come behind and support the work of others.  However, none of the earlier iterations really gave much thought to performance.
 
-Prior to v3, Eventgen scaling was available only by increasing the number of samples Eventgen was running.  Each Sample was its own thread, and you could, up to a point, gain some additional scalability by adding more samples.  However, this approach quickly leads us to the first scalability blocker for Eventgen: its written in Python.
+Prior to v4, Eventgen scaling was available only by increasing the number of samples Eventgen was running.  Each Sample was its own thread, and you could, up to a point, gain some additional scalability by adding more samples.  However, this approach quickly leads us to the first scalability blocker for Eventgen: its written in Python.
 
 # Scaling, despite Python
 
@@ -12,9 +12,9 @@ I'm sure had either David or I considered that we'd eventually want to scale thi
 
 ## The Global Interpreter Lock
 
-The first obstacle to scaling a Python application is the Global Interpreter Lock.  Lots of information online, but long story short, only one Thread running Python code can be executed simultaneously.  Python functions written in C can run in different threads.  Threads in Python are lightweight, similar to OS threads, but they will only gain concurrency in the event that your Python program is primarily I/O bound or is spending a good portion of its time eexcuting C-written python functions.
+The first obstacle to scaling a Python application is the Global Interpreter Lock.  Lots of information online, but long story short, only one Thread running Python code can be executed simultaneously.  Python functions written in C can run in different threads.  Threads in Python are lightweight, similar to OS threads, but they will only gain concurrency in the event that your Python program is primarily I/O bound or is spending a good portion of its time executing C-written python functions.
 
-In the case of Eventgen, we do a non-insignificant amount of I/O, so our first step to scaling is to utilizing threading.  In Eventgen, we create a thread for each sample.  The sample acts as the master timer for that sample.  In the case of a queuable generator plugin, it will place an entry in the generator queue for generator workers to pick up.  With a non-queueable plugin, it will call the generator's gen() function directly.
+In the case of Eventgen, we do a non-insignificant amount of I/O, so our first step to scaling is to utilizing threading.  In Eventgen, we create a thread for each sample.  The sample acts as the master timer for that sample.  In the case of a queuable generator plugin, it will place an entry in the generator queue for generator workers to pick up.  With a non-queueable plugin, it will call the generator's `gen()` function directly.
 
 ## Growing beyond a single process
 
@@ -25,7 +25,7 @@ We give the end user the choice between threading and processing via a tuneable 
     [global]
     threading = thread | process
 
-For multiprocessing, set threading = process.  This will cause eventgen to spin up a process for each generator worker and each output worker instead of a thread.  Samples will remain threads in the master process since they aren't really doing any work other than scheduling.
+For multiprocessing, set threading = process or pass `--multiprocess` on the command line.  This will cause eventgen to spin up a process for each generator worker and each output worker instead of a thread.  Samples will remain threads in the master process since they aren't really doing any work other than scheduling.
 
 ## Multiprocessing.Queue sucks
 
@@ -55,6 +55,8 @@ By default, Eventgen will run one generator thread and one output thread.  This 
     [global]
     generatorWorkers = 1
     outputWorkers = 1
+
+Spawning multiple generators is configurable also by passing `--generators` on the comamnd line.
 
 By default we're setup to output as a Splunk modular input, which is very fast writing to stdout.  If you're outputting to stdout, even maxing out CPU, we often only need one output worker.  If you're outputting to something which is over the network or has a higher latency, you may want to increase output workers to allow for more concurrency.
 
@@ -109,7 +111,7 @@ Lets set this to true and run again.  Now we need to get information on the outp
       4400088    2.713    0.000    3.404    0.000 /Users/csharp/local/projects/eventgen/lib/plugins/output/devnull.py:16(<genexpr>)
            88    0.945    0.011    4.349    0.049 {method 'join' of 'str' objects}
 
-With this, we can see that we're actually spending most of our time in the Queueing system.  I told you it sucked!  To get around this, we've implemented zeromq to allow for faster IPC between workers.  Lets test again after setting ``queueing = zeromq`` in ``[global]`` in default/eventgen.conf.
+With this, we can see that we're actually spending most of our time in the Queueing system.  I told you it sucked!  To get around this, we've implemented zeromq to allow for faster IPC between workers.  Lets test again after setting `queueing = zeromq` in `[global]` in default/eventgen.conf.
 
     csharp-mbp15:eventgen csharp$ python bin/eventgen.py tests/perf/eventgen.conf.perfwindbag
     2014-02-02 21:37:44,119 INFO Output Queue depth: 25  Generator Queue depth: 8509 Generators Per Sec: 13 Outputters Per Sec: 11
@@ -121,18 +123,18 @@ There we go!  Actually scalable horizontal performance, exactly what we're looki
 
 Generators are written as [Plugins](Plugins.md).  These have varying performance characteristics depending on how they're written.  The default generator is the regex based replacement generator thats been available since Eventgen v1.  It is unfortunately slow.  It is very configurable, but that configurability comes at a cost in performance.  It is written entirely in Python, and it utilizes RegEx extensively which is slow.  
 
-The replay generator (formerly mode=reply) is also slow, but for a different reason.  Because we're sequentially navigating through time, we can't easily multi-thread this operation, so thusly we can only run one copy of this at a time.
+The replay generator (formerly mode=replay) is also slow, but for a different reason.  Because we're sequentially navigating through time, we can't easily multi-thread this operation, so thusly we can only run one copy of this at a time.
 
 ## Comparing three options
 
 However, our plugin architecture is rich and we can easily hand-craft generators which will perform better.  For comparison purposes, we built a weblog based generator using three different approaches.
 
 * Default Generator, Regex
-** In this, we generate weblogs through the default generator, using regular expressions.  You can see the configs for this in ``tests/perf/eventgen.conf.perfweblog``
+** In this, we generate weblogs through the default generator, using regular expressions.  You can see the configs for this in `tests/perf/eventgen.conf.perfweblog`
 * Hand-built Python Weblog Generator
-** Here, we generate identical weblogs, but through a hand crafted Python generator preset in ``lib/plugins/generator/weblog.py``
+** Here, we generate identical weblogs, but through a hand crafted Python generator preset in `lib/plugins/generator/weblog.py`
 * C Weblog Generator
-** And here, we wrap a little Python around a C-based Weblog generator.  The C generator is located in ``lib/plugins/generator/cweblog.c`` and the Python wrapper is in ``lib/plugins/generator/cweblog.py``.  To run cweblog on your system, you'll need to customize some #define's for paths in cweblog.c and compile it (``gcc -c cweblog.c && gcc -o cweblog cweblog.o`).
+** And here, we wrap a little Python around a C-based Weblog generator.  The C generator is located in `lib/plugins/generator/cweblog.c` and the Python wrapper is in `lib/plugins/generator/cweblog.py`.  To run cweblog on your system, you'll need to customize some #define's for paths in cweblog.c and compile it (`gcc -c cweblog.c && gcc -o cweblog cweblog.o`).
 
 ## Testing
 
@@ -192,7 +194,7 @@ We're outputting about 20TB a Day and keeping up with the output queue which is 
 
 In this architecture, the primary bottleneck is serializing and deserializing the data between processes.  We added the reduce step of the outputqueue primarily to handle modular input and file outputs where we needed a limited number of things touching a file or outputting to stdout.  Where we can parallelize this work, we can remove the majority of the CPU bottleneck of passing data around between processes.
 
-For this reason, in July of 2014, we added a config option to disable using the outputqueue.  In default/eventgen.conf, setting useOutputQueue to false will output data directly from each GeneratorWorker rather than forcing the data back through the output queue.  Running the same performance test with the cweblog generator with 24 GeneratorWorkers and 0 OutputWorkers and useOutputQueue=false generates the following numbers:
+For this reason, in July of 2014, we added a config option to disable using the outputqueue.  In default/eventgen.conf, setting useOutputQueue to false or using `--disableOutputQueue` on the command line will output data directly from each GeneratorWorker rather than forcing the data back through the output queue.  Running the same performance test with the cweblog generator with 24 GeneratorWorkers and 0 OutputWorkers and useOutputQueue=false generates the following numbers:
 
     2014-07-01 22:43:01,232 INFO module='main' sample='null': GlobalEventsPerSec=17469130.2 KilobytesPerSec=6108727.259180 GigabytesPerDay=503343.615716
 

@@ -28,7 +28,7 @@ class FileOutputPlugin(OutputPlugin):
             logger.error('outputMode file but file not specified for sample %s' % self._sample.name)
             raise ValueError('outputMode file but file not specified for sample %s' % self._sample.name)
             
-        self._file = sample.fileName
+        self._file = sample.pathParser(sample.fileName)
         self._fileMaxBytes = sample.fileMaxBytes
         self._fileBackupFiles = sample.fileBackupFiles
 
