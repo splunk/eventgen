@@ -11,12 +11,8 @@ path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 sys.path.append(path_prepend)
 
 import logging
-import threading
-import multiprocessing
 import time
-import re
 import sys
-import datetime
 from select import select
 from eventgenconfig import Config
 from eventgentimer import Timer

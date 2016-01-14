@@ -1,4 +1,4 @@
-# Copyright (C) 2005-2011 Splunk Inc. All Rights Reserved.
+# Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 #
 # This file contains all possible options for an eventgen.conf file.  Use this file to configure 
 # Splunk's event generation properties.
@@ -128,6 +128,11 @@ outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser and splunkPassword if not Splunk embedded
     * If setting s2s, should set splunkHost and splunkPort
 
+battlecatServers = <valid json>
+    * valid json that contains a list of server objects
+    * valid server objects contain a protocol, a address, a port and a session key
+    * {"servers":[{ "protocol":"http", "address":"127.0.0.1", "port":"8088", "key":"12345-12345-123123123123123123"}]}
+
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.
     * Only valid in spool outputMode.
@@ -182,11 +187,11 @@ index = <index>
     * Splunk index to write events to.  Defaults to main if none specified.
     
 source = <source>
-    * ONLY VALID WITH outputMode SPLUNKSTREAM
+    * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=battlecat
     * Set event source in Splunk to <source>.  Defaults to 'eventgen' if none specified.
     
 sourcetype = <sourcetype>
-    * ONLY VALID WITH outputMode SPLUNKSTREAM
+    * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=battlecat
     * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
     
 host = <host>
@@ -286,7 +291,12 @@ count = <integer>
     * Maximum number of events to generate per sample file
     * 0 means replay the entire sample.
     * Defaults to 0.
-    
+
+perDayVolume = <float>
+    * This is used in place of count.  The perDayVolume is a size supplied in GB per Day.  This value will allow
+    * eventgen to supply a target datavolume instead of a count for event generation.
+    * Defaults to Null
+
 bundlelines = true | false
     * For outside use cases where you need to take all the lines in a sample file and pretend they are
       one event, but count = 0 will not work because you want to replay all the lines more than once.

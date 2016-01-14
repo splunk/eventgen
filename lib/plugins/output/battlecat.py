@@ -22,11 +22,14 @@ class BattleCatOutputPlugin(OutputPlugin):
     name = 'battlecat'
     MAXQUEUELENGTH = 100
     validSettings = [ 'battlecatServers' ]
+    defaultableSettings = [ 'battlecatServers' ]
     jsonSettings = ['battlecatServers']
 
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
 
+        #disable any "requests" warnings
+        requests.packages.urllib3.disable_warnings()
         #Setup loggers from the root eventgen
         logger = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter

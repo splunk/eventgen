@@ -1,4 +1,4 @@
-<!--Copyright (C) 2005-2011 Splunk Inc. All Rights Reserved.-->
+<!--Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.-->
 <setup>	
 
 	<block title="Welcome to the Splunk for Event Generation">
@@ -7,7 +7,7 @@
 		</text>
 	</block>
 	
-	<block title="Event Generator" endpoint="data/inputs/script" entity=".*SA-Eventgen.*eventgen\.py" mode="iter">
+	<block title="Event Generator" endpoint="data/inputs/script" entity="bin.*eventgen\.py" mode="iter">
 		<input field="enabled">
 			<label>Enable $name$</label>
 			<type>bool</type>

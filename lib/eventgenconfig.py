@@ -156,10 +156,10 @@ class Config:
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes',
                     'fileBackupFiles', 'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
-                    'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'outputWorkers', 'generator',
-                    'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading', 'profiler', 'queueing',
-                    'zmqBaseUrl', 'zmqBasePort', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'verbose', 'useOutputQueue',
-                    'seed', 'end', 'autotimestamps', 'autotimestamp']
+                    'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
+                    'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
+                    'profiler', 'queueing', 'zmqBaseUrl', 'zmqBasePort', 'maxIntervalsBeforeFlush', 'maxQueueLength',
+                    'verbose', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -174,7 +174,7 @@ class Config:
                             'randomizeCount', 'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles',
                             'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
                             'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
-                            'monthOfYearRate', 'sessionKey', 'generator', 'rater', 'timeField', 'maxQueueLength',
+                            'monthOfYearRate', 'perDayVolume', 'sessionKey', 'generator', 'rater', 'timeField', 'maxQueueLength',
                             'maxIntervalsBeforeFlush', 'autotimestamp']
     _complexSettings = { 'sampletype': ['raw', 'csv'], 
                          'mode': ['sample', 'replay'],
@@ -289,6 +289,7 @@ class Config:
         """Only used for debugging, outputs a pretty printed representation of our Config"""
         # Filter items from config we don't want to pretty print
         filter_list = [ 'samples', 'sampleTimers', 'workers' ]
+        # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key not in filter_list ])
         
         return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
@@ -561,7 +562,7 @@ class Config:
 
                 # Set defaults for items not included in the config file
                 for setting in self._defaultableSettings:
-                    if getattr(s, setting) == None:
+                    if not hasattr(s, setting) or getattr(s, setting) == None:
                         setattr(s, setting, getattr(self, setting))
 
                 # Append to temporary holding list
@@ -788,6 +789,14 @@ class Config:
         # We've added replay mode, so lets loop through the samples again and set the earliest and latest
         # settings for any samples that were set to replay mode
         for s in tempsamples:
+            # We've added replay mode, so lets loop through the samples again and set the earliest and latest
+            # settings for any samples that were set to replay mode
+            if s.perDayVolume:
+                self.logger.info("Stanza contains per day volume, changing rater and generator to perdayvolume instead of count")
+                s.rater = 'perdayvolume'
+                s.count = 1
+                s.generator = 'perdayvolumegenerator'
+
             if s.mode == 'replay':
                 self.logger.debug("Setting defaults for replay samples")
                 s.earliest = 'now'
