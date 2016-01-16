@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="SA-eventgen" default="package">
 	<property name="build.dir" value="build"/>
-	<property name="build.version" value="2.0.3"/>
+	<property name="build.version" value="5.0.0"/>
 	
 	<property name="dist.file" value="${build.dir}/dist/${ant.project.name}-${build.version}.tar.gz"/>
 	
