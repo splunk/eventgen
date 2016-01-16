@@ -90,51 +90,9 @@ class Config:
     # These are only options which are valid in the 'global' stanza
     # 5/22 CS Except for blacklist, we define that in code, since splunk complains about it in
     # the config files
+    threading = None
     disabled = None
     blacklist = ".*\.part"
-    spoolDir = None
-    spoolFile = None
-    breaker = None
-    sampletype = None
-    interval = None
-    delay = None
-    count = None
-    bundlelines = None
-    earliest = None
-    latest = None
-    hourOfDayRate = None
-    dayOfWeekRate = None
-    randomizeCount = None
-    randomizeEvents = None
-    outputMode = None
-    fileName = None
-    fileMaxBytes = None
-    fileBackupFiles = None
-    splunkHost = None
-    splunkPort = None
-    splunkMethod = None
-    index = None
-    source = None
-    host = None
-    hostRegex = None
-    sourcetype = None
-    projectID = None
-    accessToken = None
-    mode = None
-    backfill = None
-    backfillSearch = None
-    backfillSearchUrl = None
-    minuteOfHourRate = None
-    timezone = datetime.timedelta(days=1)
-    dayOfMonthRate = None
-    monthOfYearRate = None
-    timeField = None
-    threading = None
-    profiler = None
-    maxIntervalsBeforeFlush = None
-    maxQueueLength = None
-    useOutputQueue = None
-    autotimestamps = None
 
     __outputPlugins = { }
     __plugins = { }
@@ -470,6 +428,12 @@ class Config:
 
         tempsamples = [ ]
         tempsamples2 = [ ]
+        
+        # 1/16/16 CS Trying to clean up the need to have attributes hard coded into the Config object
+        # and instead go off the list of valid settings that could be set
+        for setting in self._validSettings:
+            if not hasattr(self, setting):
+                setattr(self, setting, None)
 
         # Now iterate for the rest of the samples we've found
         # We'll create Sample objects for each of them
