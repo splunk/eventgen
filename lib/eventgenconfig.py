@@ -16,10 +16,6 @@ import types
 import random
 from eventgencounter import Counter
 from eventgenqueue import Queue
-try:
-    import zmq
-except ImportError:
-    pass
 import threading, multiprocessing
 from generatorworker import GeneratorThreadWorker, GeneratorProcessWorker
 from outputworker import OutputThreadWorker, OutputProcessWorker
@@ -135,9 +131,6 @@ class Config:
     timeField = None
     threading = None
     profiler = None
-    queueing = None
-    zmqBaseUrl = None
-    zmqBasePort = None
     maxIntervalsBeforeFlush = None
     maxQueueLength = None
     useOutputQueue = None
@@ -158,14 +151,13 @@ class Config:
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
                     'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
-                    'profiler', 'queueing', 'zmqBaseUrl', 'zmqBasePort', 'maxIntervalsBeforeFlush', 'maxQueueLength',
+                    'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength',
                     'verbose', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
     _validOutputModes = [ ]
-    _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'zmqBasePort', 'maxIntervalsBeforeFlush',
-                    'maxQueueLength']
+    _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps']
@@ -178,8 +170,7 @@ class Config:
                             'maxIntervalsBeforeFlush', 'autotimestamp']
     _complexSettings = { 'sampletype': ['raw', 'csv'], 
                          'mode': ['sample', 'replay'],
-                         'threading': ['thread', 'process'],
-                         'queueing': ['python', 'zeromq']}
+                         'threading': ['thread', 'process']}
 
     def __init__(self, args=None):
         """Setup Config object.  Sets up Logging and path related variables."""
@@ -241,12 +232,6 @@ class Config:
                 for i in c.items(s):
                     if i[0] == 'threading' and self.threading == None:
                         self.threading = i[1]
-                    elif i[0] == 'queueing':
-                        self.queueing = i[1]
-                    elif i[0] == 'generatorQueueUrl':
-                        self.generatorQueueUrl = i[1]
-                    elif i[0] == 'outputQueueUrl':
-                        self.outputQueueUrl = i[1]
 
             # Set a global variables to signal to our plugins the threading model without having 
             # to load config.  Kinda hacky, but easier than other methods.
@@ -1124,10 +1109,6 @@ class Config:
     def handle_exit(self, sig=None, func=None):
         """Clean up and shut down threads"""
         self.logger.info("Caught kill, exiting...")
-        # Kill off zeromq context which kills any processing threads
-        if self.queueing == 'zeromq':
-            self.logger.info("Shutting down zeromq threads")
-            self.zmqcontext.term()
 
         # Loop through all threads/processes and mark them for death
         # This does not actually kill the plugin, but they should check to see if
@@ -1141,20 +1122,7 @@ class Config:
         sys.exit(0)
 
     def start(self):
-        """Start up worker and zeromq threads"""
-
-        if self.queueing == 'zeromq':
-            self.logger.info("Starting zeromq processing threads")
-            self.zmqcontext = zmq.Context()
-            self.proxy1 = zmq.devices.ThreadProxy(zmq.PULL, zmq.PUSH)
-            self.proxy1.bind_in(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort))
-            self.proxy1.bind_out(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+1))
-            self.proxy1.start()
-            self.proxy2 = zmq.devices.ThreadProxy(zmq.PULL, zmq.PUSH)
-            self.proxy2.bind_in(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+2))
-            self.proxy2.bind_out(self.zmqBaseUrl+(':' if self.zmqBaseUrl.startswith('tcp') else '/')+str(self.zmqBasePort+3))
-            self.proxy2.start()
-
+        """Start up worker threads"""
         # Only start output workers if we're going to use them
         if self.useOutputQueue:
             for x in xrange(0, self.outputWorkers):

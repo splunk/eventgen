@@ -6,10 +6,6 @@ import sys
 import datetime, time
 import copy
 from Queue import Full
-try:
-    import zmq
-except ImportError:
-    pass
 from eventgenoutput import Output
 import marshal
 import random
@@ -119,11 +115,6 @@ class Timer(threading.Thread):
             self.logger.error("Exception during backfill for sample '%s': '%s'" % (self.sample.name, str(e)))
             
 
-        if c.queueing == 'zeromq':
-            context = zmq.Context()
-            self.sender = context.socket(zmq.PUSH)
-            self.sender.connect(c.zmqBaseUrl+(':' if c.zmqBaseUrl.startswith('tcp') else '/')+str(c.zmqBasePort+2))
-
         while (1):
             if not self.stopping:
                 if not self.interruptcatcher:
@@ -177,10 +168,7 @@ class Timer(threading.Thread):
                             stop = False
                             while not stop:
                                 try:
-                                    if c.queueing == 'python':
-                                        c.generatorQueue.put((self.sample.name, count, (time.mktime(et.timetuple())*(10**6)+et.microsecond), (time.mktime(lt.timetuple())*(10**6)+lt.microsecond)), block=True, timeout=1.0)
-                                    elif c.queueing == 'zeromq':
-                                        self.sender.send(marshal.dumps((self.sample.name, count, (time.mktime(et.timetuple())*(10**6)+et.microsecond), (time.mktime(lt.timetuple())*(10**6)+lt.microsecond))))
+                                    c.generatorQueue.put((self.sample.name, count, (time.mktime(et.timetuple())*(10**6)+et.microsecond), (time.mktime(lt.timetuple())*(10**6)+lt.microsecond)), block=True, timeout=1.0)
                                     c.generatorQueueSize.increment()
                                     self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
                                     stop = True

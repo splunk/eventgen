@@ -19,7 +19,6 @@ class Queue:
         self.logger = adapter
 
         # logger.info("Creating Queue of depth %d, threading %s" % (depth, threading))
-        # if queueing == 'python':
         if threading == 'thread':
             self.q = PQueue.Queue(depth)
         else:

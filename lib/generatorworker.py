@@ -10,10 +10,6 @@ except ImportError, e:
     import multiprocessing
 import Queue
 import datetime, time
-try:
-    import zmq
-except ImportError, e:
-    pass
 import marshal
 import random
 
@@ -99,22 +95,12 @@ class GeneratorRealWorker:
             self.real_run()
 
     def real_run(self):
-        if c.queueing == 'zeromq':
-            context = zmq.Context()
-            self.receiver = context.socket(zmq.PULL)
-            self.receiver.connect(c.zmqBaseUrl+(':' if c.zmqBaseUrl.startswith('tcp') else '/')+str(c.zmqBasePort+3))
-
         while not self.stopping:
             try:
                 # Grab item from the queue to generate, grab an instance of the plugin, then generate
-                if c.queueing == 'python':
-                    # logger.debugv("Grabbing generator items from python queue")
-                    samplename, count, earliestts, latestts = c.generatorQueue.get(block=True, timeout=1.0)
-                    # logger.debugv("Got a generator items from python queue for sample '%s'" % (samplename))
-                elif c.queueing == 'zeromq':
-                    # logger.debugv("Grabbing generator items from zeromq queue")
-                    samplename, count, earliestts, latestts = marshal.loads(self.receiver.recv())
-                    # logger.debugv("Got a generator items from zeromq queue for sample '%s'" % (samplename))
+                # logger.debugv("Grabbing generator items from python queue")
+                samplename, count, earliestts, latestts = c.generatorQueue.get(block=True, timeout=1.0)
+                # logger.debugv("Got a generator items from python queue for sample '%s'" % (samplename))
                 earliest = datetime.datetime.fromtimestamp(earliestts/10**6)
                 latest = datetime.datetime.fromtimestamp(latestts/10**6)
                 c.generatorQueueSize.decrement()

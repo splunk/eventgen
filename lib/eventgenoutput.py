@@ -17,10 +17,6 @@ import copy
 from Queue import Full
 import json
 import time
-try:
-    import zmq
-except ImportError, e:
-    pass
 import marshal
 
 class Output:
@@ -50,11 +46,6 @@ class Output:
             self.MAXQUEUELENGTH = c.getPlugin(self._sample.name).MAXQUEUELENGTH
         else:
             self.MAXQUEUELENGTH = self._sample.maxQueueLength
-
-        if c.queueing == 'zeromq':
-            context = zmq.Context()
-            self.sender = context.socket(zmq.PUSH)
-            self.sender.connect(c.zmqBaseUrl+(':' if c.zmqBaseUrl.startswith('tcp') else '/')+str(c.zmqBasePort))
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
@@ -112,10 +103,7 @@ class Output:
             if c.useOutputQueue:
                 while True:
                     try:
-                        if c.queueing == 'python':
-                            c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
-                        elif c.queueing == 'zeromq':
-                            self.sender.send(marshal.dumps((self._sample.name, q)))
+                        c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
                         c.outputQueueSize.increment()
                         # logger.info("Outputting queue")
                         break
