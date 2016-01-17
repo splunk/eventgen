@@ -27,27 +27,6 @@ We give the end user the choice between threading and processing via a tuneable 
 
 For multiprocessing, set threading = process or pass `--multiprocess` on the command line.  This will cause eventgen to spin up a process for each generator worker and each output worker instead of a thread.  Samples will remain threads in the master process since they aren't really doing any work other than scheduling.
 
-## Multiprocessing.Queue sucks
-
-Not a much softer way to put this.  Multiprocessing works great as long as your workers are for the most part doing long running computing tasks and they are not doing a log of interprocess communication back to the master process.  However, we were not getting the performance gains we were expecting as we moved to multiprocessing instead of threading.  After some detailed work profiling our application performance, we determined the root cause was multiprocessing.Queue.  Its just slow.  Its fine as long as you are not sending a large amount of data, but since we are not sharing memory any longer, sending data back to the master process involves serializing the objects we're sending and then sending them over a named pipe.  This can in theory be fast, but Python's implementation is just very slow.
-
-To get around this, we implemented [ZeroMQ](http://zeromq.org/). as a communication mechanism.  ZeroMQ is a networking library, but it provides some nice abstractions around basic communications and allow us to implement various patterns which resemble things like Queues.  Strongly recommend you check out their documentation.  ZeroMQ queue function orders of magnitude faster than Python multiprocessing.Queue, however they require you to install pyzmq before they will work.  On most systems:
-
-    sudo easy_install pyzmq
-
-Or:
-
-    sudo pip install pyzmq
-
-Will work fine.  These packages will build the zeromq libraries to embed into the egg file for you, so you do not necessarily need to have the shared objects available in /usr/lib for this to work.
-
-Once you've installed pyzmq, to use zeromq queueing, there's another tuneable in default/eventgen.conf:
-
-    [global]
-    queueing = python | zeromq
-
-Set to zeromq to enable zeromq queueing.
-
 ## Scaling up concurrency
 
 By default, Eventgen will run one generator thread and one output thread.  This is totally fine for nearly all use cases which are not trying to generate large volumes of data.  For those wanting to scale up, we provide two tunables which allow you to scale generation and outputting independently, also in default/eventgen.conf:
@@ -67,7 +46,7 @@ Eventgen outputs some useful log information, by default in $SPLUNK_HOME/var/log
     2014-02-02 20:57:03,091 INFO Output Queue depth: 0  Generator Queue depth: 28412 Generators Per Sec: 43 Outputters Per Sec: 43
     2014-02-02 20:57:03,091 INFO Events/Sec: 87643.8 Kilobytes/Sec: 30587.330859 GB/Day: 2520.318400
 
-Lets look at both lines.  First, we're giving you visibility into Queue depths.  Queue depths are whole numbers of worker items which are to be consumed, not total lines.  So if you have an Output Queue depth of 5, that's five whole generators work to be output, not 5 lines.  Its relatively low cost to scale up output workers, so you should always have a high enough number such that Output Queue depth stays at 0.  Generator Queue depth should also always be zero unless you're during backfill, otherwise you are falling behind and will likely never catch up.  If you're backing up, considering moving to process based threading (may be difficult as a Splunk app depending on which platform you're using) or if you're maxing out your CPU already, consider going to ZeroMQ queueing.
+Lets look at both lines.  First, we're giving you visibility into Queue depths.  Queue depths are whole numbers of worker items which are to be consumed, not total lines.  So if you have an Output Queue depth of 5, that's five whole generators work to be output, not 5 lines.  Its relatively low cost to scale up output workers, so you should always have a high enough number such that Output Queue depth stays at 0.  Generator Queue depth should also always be zero unless you're during backfill, otherwise you are falling behind and will likely never catch up.  If you're backing up, considering moving to process based threading (may be difficult as a Splunk app depending on which platform you're using).
 
 The second line is simply a view into the performance of the app as a whole.  This helps us tune and compare apples to apples.
 

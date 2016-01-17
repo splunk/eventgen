@@ -11,10 +11,6 @@ except ImportError, e:
     import multiprocessing
 import json
 import time
-try:
-    import zmq, errno
-except ImportError, e:
-    pass
 import marshal
 import json
 import datetime
@@ -73,30 +69,13 @@ class OutputRealWorker:
             self.real_run()
 
     def real_run(self):
-        if c.queueing == 'zeromq':
-            context = zmq.Context()
-            self.receiver = context.socket(zmq.PULL)
-            self.receiver.connect(c.zmqBaseUrl+(':' if c.zmqBaseUrl.startswith('tcp') else '/')+str(c.zmqBasePort+1))
         while not self.stopping:
             try:
-                if c.queueing == 'python':
-                    # Grab a queue to be written for plugin name, get an instance of the plugin, and call the flush method
-                    # logger.debugv("Grabbing output items from python queue")
-                    name, queue = c.outputQueue.get(block=True, timeout=1.0)
-                    # logger.debugv("Got %d output items from python queue for plugin '%s'" % (len(queue), name))
-                    # name, queue = c.outputQueue.get(False, 0)
-                elif c.queueing == 'zeromq':
-                    queue = [ ]
-                    while len(queue) == 0 and not self.stopping:
-                        # try:
-                        # logger.debugv("Grabbing output items from zeromq queue")
-                        name, queue = marshal.loads(self.receiver.recv())
-                        # logger.debugv("Got %d output items from zeromq queue for plugin '%s'" % (len(queue), name))
-                        # except zmq.ZMQError as err:
-                        #     if err.errno != errno.EINTR and err.errno != errno.EAGAIN:
-                        #         raise
-                        if len(queue) == 0:
-                            time.sleep(0.1)
+                # Grab a queue to be written for plugin name, get an instance of the plugin, and call the flush method
+                # logger.debugv("Grabbing output items from python queue")
+                name, queue = c.outputQueue.get(block=True, timeout=1.0)
+                # logger.debugv("Got %d output items from python queue for plugin '%s'" % (len(queue), name))
+                # name, queue = c.outputQueue.get(False, 0)
                         
                 c.outputQueueSize.decrement()
                 tmp = [len(s['_raw']) for s in queue]
