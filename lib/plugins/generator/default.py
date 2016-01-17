@@ -67,16 +67,18 @@ class DefaultGenerator(GeneratorPlugin):
             ## Continue to fill events array until len(events) == count
             if len(eventsDict) < count:
                 logger.debugv("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (s.name, s.app, len(eventsDict), count) )
-                tempEventsDict = eventsDict[:]
+                logger.debugv("Current eventsDict: %s" % eventsDict)
+                # run a modulus on the size of the eventdict to figure out what the last event was.  Populate to count
+                # from there.
                 while len(eventsDict) < count:
-                    y = 0
-                    while len(eventsDict) < count and y < len(tempEventsDict):
-                        eventsDict.append(tempEventsDict[y])
-                        y += 1
+                    nextEventToUse = s.sampleDict[len(eventsDict) % len(s.sampleDict)]
+                    logger.debugv("Next event to add: %s" % nextEventToUse)
+                    eventsDict.append(nextEventToUse)
                 logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" % (s.name, s.app, len(eventsDict)))
 
 
         for x in range(len(eventsDict)):
+            logger.debugv("Processing event: %s" % x)
             event = eventsDict[x]['_raw']
 
             # Maintain state for every token in a given event
@@ -116,6 +118,7 @@ class DefaultGenerator(GeneratorPlugin):
         endTime = datetime.datetime.now()
         timeDiff = endTime - startTime
         timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
+        logger.debugv("Interval complete, flushing feed")
         self._out.flush(endOfInterval=True)
         logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
 
