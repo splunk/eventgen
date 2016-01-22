@@ -27,7 +27,7 @@ class PerDayVolumeGenerator(GeneratorPlugin):
         s = self._samples[samplename]
         self._sample = s
         try:
-            self.loadSample()
+            s.loadSample()
             logger.debug("File sample loaded successfully.")
         except TypeError:
             logger.error("Error loading sample file for sample '%s'" % self._sample.name)
@@ -41,20 +41,20 @@ class PerDayVolumeGenerator(GeneratorPlugin):
         # If we're random, fill random events from sampleDict into eventsDict
         eventsDict = [ ]
         if s.randomizeEvents:
-            sdlen = len(self.sampleDict)
+            sdlen = len(s.sampleDict)
             logger.debugv("Random filling eventsDict for sample '%s' in app '%s' with %d bytes" % (s.name, s.app, size))
             while currentSize < size:
-                currentevent = self.sampleDict[random.randint(0, sdlen-1)]
+                currentevent = s.sampleDict[random.randint(0, sdlen-1)]
                 eventsDict.append(currentevent)
-                currentSize += sys.getsizeof(currentevent)
+                currentSize += len(currentevent['_raw'])
 
         # If we're bundlelines, create count copies of the sampleDict
         elif s.bundlelines:
             logger.debugv("Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" % (s.name, s.app, size))
             while currentSize <= size:
-                sizeofsample = sys.getsizeof(self.sampleDict)
-                eventsDict.extend(self.sampleDict)
-                currentSize+=sizeofsample
+                sizeofsample = sum(len(sample['_raw']) for sample in s.sampleDict)
+                eventsDict.extend(s.sampleDict)
+                currentSize += sizeofsample
 
         # Otherwise fill count events into eventsDict or keep making copies of events out of sampleDict until
         # eventsDict is as big as count
@@ -64,16 +64,20 @@ class PerDayVolumeGenerator(GeneratorPlugin):
             # or i've read the entire file.
             linecount = 0
             currentreadsize = 0
-            linesinfile = len(self.sampleDict)
-            logger.debug("Lines in files: %s " % linesinfile)
+            linesinfile = len(s.sampleDict)
+            logger.debugv("Lines in files: %s " % linesinfile)
             while currentreadsize <= size:
                 targetline = linecount % linesinfile
                 sizeremaining = size - currentreadsize
-                targetlinesize = sys.getsizeof(self.sampleDict[linecount%linesinfile])
-                logger.debug("Target Line: %s, Target Size Remaining: %s, TargetLineSize: %s" % (targetline, sizeremaining, targetlinesize))
+
+                #targetlinesize = sys.getsizeof(s.sampleDict[targetline])
+                logger.debugv("Printed Line: %s" % s.sampleDict[targetline])
+                targetlinesize =len(s.sampleDict[targetline]['_raw'])
+
+                logger.debugv("Target Line: %s, Target Size Remaining: %s, TargetLineSize: %s" % (targetline, sizeremaining, targetlinesize))
                 if targetlinesize <= sizeremaining or targetlinesize*.9 <= sizeremaining:
                     currentreadsize += targetlinesize
-                    eventsDict.append(self.sampleDict[targetline])
+                    eventsDict.append(s.sampleDict[targetline])
                 else:
                     break
                 linecount += 1
@@ -96,7 +100,7 @@ class PerDayVolumeGenerator(GeneratorPlugin):
                 event = token.replace(event, et=earliest, lt=latest, s=s)
                 if token.replacementType == 'timestamp' and s.timeField != '_raw':
                     s.timestamp = None
-                    token.replace(self.sampleDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
+                    token.replace(s.sampleDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
             if(s.hostToken):
                 # clear the host mvhash every time, because we need to re-randomize it
                 s.hostToken.mvhash =  {}
@@ -115,13 +119,14 @@ class PerDayVolumeGenerator(GeneratorPlugin):
                     'sourcetype': eventsDict[x]['sourcetype'],
                     '_time': time.mktime(s.timestamp.timetuple()) } ]
 
-            s.out.bulksend(l)
+            self._out.bulksend(l)
             s.timestamp = None
 
         endTime = datetime.datetime.now()
         timeDiff = endTime - startTime
         timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
-        s.out.flush(endOfInterval=True)
+        logger.debugv("Interval complete, flushing feed")
+        self._out.flush(endOfInterval=True)
         logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
 
 def load():

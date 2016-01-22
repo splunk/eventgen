@@ -86,11 +86,14 @@ class Output:
         """
         flushing = False
         if endOfInterval:
+            logger.debugv("Sample calling flush, checking increment against maxIntervalsBeforeFlush")
             c.intervalsSinceFlush[self._sample.name].increment()
             if c.intervalsSinceFlush[self._sample.name].value() >= self._sample.maxIntervalsBeforeFlush:
                 logger.debugv("Exceeded maxIntervalsBeforeFlush, flushing")
                 flushing = True
                 c.intervalsSinceFlush[self._sample.name].clear()
+            else:
+                logger.debugv("Not enough events to flush, passing flush routine.")
         else:
             logger.debugv("maxQueueLength exceeded, flushing")
             flushing = True

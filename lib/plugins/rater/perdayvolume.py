@@ -24,7 +24,7 @@ class PerDayVaolume(ConfigRater):
         self._sample = sample
 
     def rate(self):
-        perdayvolume = self._sample.perDayVolume
+        perdayvolume = float(self._sample.perDayVolume)
         # Convert perdayvolume to bytes from GB
         perdayvolume = perdayvolume * 1024 * 1024 * 1024
         interval = self._sample.interval
