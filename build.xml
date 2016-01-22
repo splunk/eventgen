@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="SA-eventgen" default="package">
+<project name="SA-Eventgen" default="package">
     <!-- Get the environment -->
     <property environment="env" />
 
@@ -50,7 +50,7 @@
         <mkdir dir="${build.dir}/dist"/>
         <tar destfile="${dist.file}" longfile="gnu" compression="gzip">
             <tarfileset dir="${build.dir}" filemode="755" username="splunk" group="splunk">
-                <include name="SA-eventgen/**"/>
+                <include name="SA-Eventgen/**"/>
             </tarfileset>
         </tar>
     </target>
