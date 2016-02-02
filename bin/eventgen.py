@@ -77,21 +77,6 @@ if __name__ == '__main__':
     logger = adapter
     logger.info('Starting eventgen')
 
-    # 5/6/12 CS use select to listen for input on stdin
-    # if we timeout, assume we're not splunk embedded
-    # Only support standalone mode on Unix due to limitation with select()
-    if os.name != "nt":
-        rlist, _, _ = select([sys.stdin], [], [], 1)
-        if rlist:
-            sessionKey = sys.stdin.readline().strip()
-        else:
-            sessionKey = ''
-    else:
-        sessionKey = sys.stdin.readline().strip()
-
-    if len(sessionKey) > 0:
-        c.makeSplunkEmbedded(sessionKey=sessionKey)
-
     c.parse()
 
     t = Timer(1.0, interruptcatcher=True)
