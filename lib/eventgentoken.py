@@ -334,7 +334,7 @@ class Token:
                             except KeyError:
                                 import traceback
                                 stack =  traceback.format_exc()
-                                logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % self.token, stack)
+                                logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % (self.token, stack))
                         if type(s.dayOfWeekRate) == dict:
                             try:
                                 weekday = datetime.date.weekday(s.now())
@@ -346,7 +346,7 @@ class Token:
                             except KeyError:
                                 import traceback
                                 stack =  traceback.format_exc()
-                                logger.error("Day of week rate failed for token %s.  Stacktrace %s" % self.token, stack)
+                                logger.error("Day of week rate failed for token %s.  Stacktrace %s" % (self.token, stack))
                         replacementInt = int(round(replacementInt * rateFactor, 0))
                     replacement = str(replacementInt)
                     return replacement
@@ -369,7 +369,7 @@ class Token:
                                 except KeyError:
                                     import traceback
                                     stack =  traceback.format_exc()
-                                    logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % self.token, stack)
+                                    logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % (self.token, stack))
                             if type(s.dayOfWeekRate) == dict:
                                 try:
                                     weekday = datetime.date.weekday(now)
@@ -381,7 +381,7 @@ class Token:
                                 except KeyError:
                                     import traceback
                                     stack =  traceback.format_exc()
-                                    logger.error("Day of week rate failed for token %s.  Stacktrace %s" % self.token, stack)
+                                    logger.error("Day of week rate failed for token %s.  Stacktrace %s" % (self.token, stack))
                             floatret = round(floatret * rateFactor, len(floatMatch.group(2)))
                         floatret = str(floatret)
                         return floatret
