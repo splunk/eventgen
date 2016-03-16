@@ -101,6 +101,7 @@ class Timer(threading.Thread):
                 
             c.timersStarting.increment()
             p = plugin(self.sample)
+            self.executions = 0
             
             c.timersStarting.decrement()
             c.timersStarted.increment()
@@ -151,6 +152,7 @@ class Timer(threading.Thread):
                                 sys.exit(1)
 
                             self.countdown = partialInterval
+                            self.executions += 1
 
                             ## Sleep for partial interval
                             # If we're going to sleep for longer than the default check for kill interval
@@ -180,6 +182,7 @@ class Timer(threading.Thread):
 
                             # Sleep until we're supposed to wake up and generate more events
                             self.countdown = self.sample.interval
+                            self.executions += 1
 
                         # Clear cache for timestamp
                         # self.sample.timestamp = None
@@ -197,7 +200,14 @@ class Timer(threading.Thread):
 
                         # 8/20/15 CS Adding support for ending generation at a certain time
                         if self.sample.end != None:
-                            if lt >= self.sample.endts:
+                            # 3/16/16 CS Adding support for ending on a number of executions instead of time
+                            # Should be fine with storing state in this sample object since each sample has it's own unique
+                            # timer thread
+                            if self.sample.endts == None:
+                                if self.executions >= self.sample.end:
+                                    self.logger.info("End executions %d reached, ending generation of sample '%s'" % (self.sample.end, self.sample.name))
+                                    self.stopping = True
+                            elif lt >= self.sample.endts:
                                 self.logger.info("End Time '%s' reached, ending generation of sample '%s'" % (self.sample.endts, self.sample.name))
                                 self.stopping = True
                     else:

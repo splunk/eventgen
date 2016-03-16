@@ -49,7 +49,7 @@ def parse_args():
     group.add_argument("-b", "--backfill",
                         help="Set time to backfill from.  Note: to use it, send the parameter with space in front like ' -60m'")
     group.add_argument("-e", "--end",
-                        help="Set time to end generation at.  Note: to use it, send the parameter with space in front like ' -10m'")
+                        help="Set time to end generation at or a number of intervals to run.  Note: to use it with a time, send the parameter with space in front like ' -10m'")
 
     group = parser.add_argument_group("Advanced", "Advanced settings for performance testing")
     group.add_argument("--generators", type=int, help="Number of GeneratorWorkers (mappers)")
