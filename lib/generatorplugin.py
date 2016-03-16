@@ -140,12 +140,21 @@ class GeneratorPlugin:
                         pass
 
         if s.end != None:
+            parsed = False
             try:
-                s.endts = timeParser(s.end, timezone=s.timezone)
-                self.logger.info("Ending generation at %s (%s)" % (s.end, s.endts))
-            except Exception as ex:
-                self.logger.error("Failed to parse end '%s': %s" % (s.end, ex))
-                raise
+                s.end = int(s.end)
+                s.endts = None
+                parsed = True
+            except ValueError:
+                self.logger.debug("Failed to parse end '%s' for sample '%s', treating as end time" % (s.end, s.name))
+                
+            if not parsed:    
+                try:
+                    s.endts = timeParser(s.end, timezone=s.timezone)
+                    self.logger.info("Ending generation at %s (%s)" % (s.end, s.endts))
+                except Exception as ex:
+                    self.logger.error("Failed to parse end '%s' for sample '%s', treating as number of executions" % (s.end, s.name))
+                    raise
 
 
 def load():

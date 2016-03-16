@@ -263,8 +263,9 @@ timezone = local | <integer>
 backfill = <time-str>
     * Specified in Splunk's relative time language, used to set a time to backfill events
 
-end = <time-str>
-    * Time to end generation of events, used with backfill to generate events over a specific window of time.
+end = <time-str> | <integer>
+    * Will end execution on a specific time or a number of events
+    * Can be used to execute only a specified number of intervals or with backfill to generate events over a specific time window.
 
 backfillSearch = <splunk search>
     * If outputMode = splunkstream, this will run this search, appending '| head 1', and narrow the
