@@ -122,8 +122,7 @@ class BattleCatOutputPlugin(OutputPlugin):
                 except Exception as e:
                     logger.error("Failed for exception: %s" % e)
                     logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" % (url, lastsourcetype, payloadsize ))
-                    logger.debugv("Failed sending events to url: %s headers: %s" % (url, headers))
-                    logger.debugvv("Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payload))
+                    logger.debugv("Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payload))
             except:
                 logger.error('failed indexing events')
 
