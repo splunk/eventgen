@@ -5,7 +5,7 @@ import logging.handlers
 import datetime
 import random
 
-class PerDayVaolume(ConfigRater):
+class PerDayVolume(ConfigRater):
     name = 'PerDayVolumeRater'
     stopping = False
 
@@ -28,7 +28,10 @@ class PerDayVaolume(ConfigRater):
         # Convert perdayvolume to bytes from GB
         perdayvolume = perdayvolume * 1024 * 1024 * 1024
         interval = self._sample.interval
-        self.logger.debug('Current perDayVolme: %f,  Sample interval: %s' % (perdayvolume, interval))
+        if self._sample.interval == 0:
+            self.logger.debug('Running perDayVolume as if for 24hr period.')
+            interval = 86400
+        self.logger.debug('Current perDayVolume: %f,  Sample interval: %s' % (perdayvolume, interval))
         intervalsperday = (86400 / interval)
         perintervalvolume = (perdayvolume / intervalsperday)
         count = self._sample.count
@@ -111,4 +114,4 @@ class PerDayVaolume(ConfigRater):
         return ret
 
 def load():
-    return PerDayVaolume
+    return PerDayVolume

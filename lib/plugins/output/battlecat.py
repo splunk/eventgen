@@ -76,6 +76,8 @@ class BattleCatOutputPlugin(OutputPlugin):
         if len(q) > 0:
             try:
                 payload = ""
+                lastsourcetype = ""
+                payloadsize = 0
                 logger.debug("Currently being called with %d events" % len(q))
                 for event in q:
                     logger.debug("Battlecat proccessing event: %s" % event)
@@ -91,6 +93,7 @@ class BattleCatOutputPlugin(OutputPlugin):
                         if event.get('sourcetype'):
                             logger.debug("Event contains sourcetype, adding to battlecat event")
                             payloadFragment['sourcetype'] = event['sourcetype']
+                            lastsourcetype = event['sourcetype']
                         if event.get('host'):
                             logger.debug("Event contains host, adding to battlecat event")
                             payloadFragment['host'] = event['host']
@@ -110,14 +113,16 @@ class BattleCatOutputPlugin(OutputPlugin):
                 headers['content-type'] = 'application/json'
                 logger.debug("Payload created, sending it to battlecat server: %s" % url)
                 try:
+                    payloadsize = len(payload)
                     response = requests.post(url, data=payload, headers=headers, verify=False)
                     if not response.raise_for_status():
                         logger.debug("Payload successfully sent to battlecat server.")
                     else:
                         logger.error("Server returned an error while trying to send, response code: %s" % response.status_code)
                 except Exception as e:
-                    logger.debug("Failed for exception: %s" % e)
-                    logger.error("Failed sending events to url: %s    payload: %s   headers: %s" % (url, payload, headers))
+                    logger.error("Failed for exception: %s" % e)
+                    logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" % (url, lastsourcetype, payloadsize ))
+                    logger.debugv("Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payload))
             except:
                 logger.error('failed indexing events')
 
