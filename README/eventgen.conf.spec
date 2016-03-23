@@ -1,4 +1,4 @@
-# Copyright (C) 2005-2011 Splunk Inc. All Rights Reserved.
+# Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 #
 # This file contains all possible options for an eventgen.conf file.  Use this file to configure 
 # Splunk's event generation properties.
@@ -22,6 +22,7 @@
 [global]
 disabled = false
 debug = false
+verbose = false
 spoolDir = $SPLUNK_HOME/var/spool/splunk
 spoolFile = <SAMPLE>
 breaker = [^\r\n\s]+
@@ -49,7 +50,17 @@ index = main
 source = eventgen
 sourcetype = eventgen
 host = 127.0.0.1
+outputWorkers = 1
+generator = default
+rater = config
+generatorWorkers = 1
 timeField = _raw
+threading = thread
+profiler = false
+maxIntervalsBeforeFlush = 3
+maxQueueLength = 0
+autotimestamps = [ <jsonlist> ]
+autotimestamp = false
 
 [<sample file name>]
     * This stanza defines a given sample file contained within the samples directory.
@@ -73,18 +84,41 @@ timeField = _raw
         
 disabled = true | false
     * Like what it looks like.  Will disable event generation for this sample.
+
+sampleDir = <dir>
+    * Set a different directory to look for samples in
+
+threading = thread | process
+    * Configurable threading model.  Process uses multiprocessing.Process in Python to get around issues with the GIL.
+    * Defaults to thread
+
+profiler = true | false
+    * Run eventgen with python profiler on
+    * Defaults to false
+
+useOutputQueue = true | false
+    * Disable the use of the output Queue.  The output queue functions as a reduce step when you need to maintain a single thread or a limited number of threads outputting data, for instance if you're outputting to a file or to stdout/modular input.  Defaults to true.  If you can multithread output, for example with splunkstream or s2s type outputs, setting this to false will give an order of magnitude or better performance improvement.
         
 #############################
 ## OUTPUT RELATED SETTINGS ##
 #############################
 
-outputMode = spool | file | splunkstream | stormstream
-    * Specifies how to output log data.  Spool is default (for legacy reasons).
+outputWorkers = <number of worker threads>
+    * Specifies how many threads or processes to stand up to handle output
+    * Generally if using TCP based outputs like splunkstream, more could be required
+    * Defaults to 1
+
+outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool
+    * Specifies how to output log data.  Modinput is default.
     * If setting spool, should set spoolDir
     * If setting file, should set logFile
-    * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser
-      and splunkPassword if not Splunk embedded
-    * If setting stormstream, should set projectID and accessToken.
+    * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser and splunkPassword if not Splunk embedded
+    * If setting s2s, should set splunkHost and splunkPort
+
+battlecatServers = <valid json>
+    * valid json that contains a list of server objects
+    * valid server objects contain a protocol, a address, a port and a session key
+    * {"servers":[{ "protocol":"http", "address":"127.0.0.1", "port":"8088", "key":"12345-12345-123123123123123123"}]}
 
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.
@@ -140,11 +174,11 @@ index = <index>
     * Splunk index to write events to.  Defaults to main if none specified.
     
 source = <source>
-    * ONLY VALID WITH outputMode SPLUNKSTREAM
+    * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=battlecat
     * Set event source in Splunk to <source>.  Defaults to 'eventgen' if none specified.
     
 sourcetype = <sourcetype>
-    * ONLY VALID WITH outputMode SPLUNKSTREAM
+    * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=battlecat
     * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
     
 host = <host>
@@ -155,10 +189,31 @@ hostRegex = <hostRegex>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Allows setting the event host via a regex from the actual event itself.  Only used if host not set.
     
-    
+maxIntervalsBeforeFlush = <intervals before flushing queue>
+    * Number of intervals before flushing the queue if the queue hasn't filled to maxQueueLength
+    * Defaults to 3
+
+maxQueueLength = <maximum items before flushing the queue>
+    * Number of items before flushing the output queue
+    * Default is per outputMode specific    
+
+
 ###############################
 ## EVENT GENERATION SETTINGS ##
 ###############################
+
+generator = default | <plugin>
+    * Specifies the generator plugin to use.  Default generator will give behavior of eventgen pre-3.0
+      which exclusively uses settings in eventgen.conf to control behavior.  Generators in 3.0 are now
+      pluggable python modules which can be custom code.
+
+generatorWorkers = <number of generator threads>
+    * Specifies how many threads to use to generate events
+    * Defaults to 1
+
+rater = config | <plugin>
+    * Specifies which rater plugin to use.  Default rater uses hourOfDayRate, etc, settings to specify
+      how to affect the count of events being generated.  Raters in 3.0 are now pluggable python modules.
 
 mode = sample | replay
     * Default is sample, which will generate count (+/- rating) events every configured interval
@@ -182,6 +237,9 @@ delay = <integer>
     * Specifies how long to wait until we begin generating events for this sample
     * Primarily this is used so we can stagger sets of samples which similar but slightly different data
     * Defaults to 0 which is disabled.
+    
+autotimestamp = <boolean>
+    * Will enable autotimestamp feature which detects most common forms of timestamps in your samples with no configuration.
 
 timeMultiple = <float>
     * Only valid in mode = replay
@@ -205,6 +263,10 @@ timezone = local | <integer>
 backfill = <time-str>
     * Specified in Splunk's relative time language, used to set a time to backfill events
 
+end = <time-str> | <integer>
+    * Will end execution on a specific time or a number of events
+    * Can be used to execute only a specified number of intervals or with backfill to generate events over a specific time window.
+
 backfillSearch = <splunk search>
     * If outputMode = splunkstream, this will run this search, appending '| head 1', and narrow the
       backfill range specified with backfill to when the search has last seen events.
@@ -217,7 +279,12 @@ count = <integer>
     * Maximum number of events to generate per sample file
     * 0 means replay the entire sample.
     * Defaults to 0.
-    
+
+perDayVolume = <float>
+    * This is used in place of count.  The perDayVolume is a size supplied in GB per Day.  This value will allow
+    * eventgen to supply a target datavolume instead of a count for event generation.
+    * Defaults to Null
+
 bundlelines = true | false
     * For outside use cases where you need to take all the lines in a sample file and pretend they are
       one event, but count = 0 will not work because you want to replay all the lines more than once.
@@ -272,6 +339,7 @@ randomizeCount = <float>
 randomizeEvents = <boolean>
     * Will randomize the events found in the sample file before choosing the events.
     * NOT SUPPORTED WITH sampletype csv
+    * NOT SUPPORTED WITH mode = replay OR custom generators like generator = replay
     
 breaker = <regular expression>
     * NOT to be confused w/ props.conf LINE_BREAKER.

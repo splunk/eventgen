@@ -2,13 +2,14 @@
 mode = replay
 sampletype = csv
 timeMultiple = 2
-backfill = -15m
-backfillSearch = index=main sourcetype=splunkd
+#backfill = -15m
+#backfillSearch = index=main sourcetype=splunkd
 
-outputMode = splunkstream
-splunkHost = localhost
-splunkUser = admin
-splunkPass = changeme
+outputMode = stdout
+#outputMode = splunkstream
+#splunkHost = localhost
+#splunkUser = admin
+#splunkPass = changeme
 
 # outputMode = file
 # fileName = /tmp/internal.log

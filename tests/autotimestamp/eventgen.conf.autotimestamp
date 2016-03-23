@@ -1,0 +1,19 @@
+[replay]
+sampleDir = tests/replay
+mode = replay
+timeMultiple = 2
+autotimestamp = true
+#backfill = -15m
+#backfillSearch = index=main sourcetype=windbag
+
+outputMode = stdout
+index = main
+sourcetype = windbag
+source = windbag.log
+host = localhost
+#splunkHost = localhost
+#splunkUser = admin
+#splunkPass = changeme
+
+# outputMode = file
+# fileName = /tmp/internal.log

@@ -1,0 +1,10 @@
+[weblog]
+generator = cweblog
+earliest = now
+latest = now
+interval = 3
+count = 2000
+outputMode = s2s
+splunkHost = localhost
+splunkPort = 9997
+backfill = -1d

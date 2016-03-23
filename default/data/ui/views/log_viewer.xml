@@ -1,0 +1,65 @@
+<form>
+  <label>Eventgen Logs</label>
+  <fieldset submitButton="true" autoRun="true">
+    <input type="time" token="time_picker" searchWhenChanged="true">
+      <label>Time</label>
+      <default>
+        <earliestTime>-60m@m</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+    </input>
+    <input type="checkbox" token="level" searchWhenChanged="true">
+      <label>Log Level</label>
+      <choice value="DEBUG">DEBUG</choice>
+      <choice value="DEBUGV">DEBUGV</choice>
+      <choice value="INFO">INFO</choice>
+      <choice value="WARN">WARN</choice>
+      <choice value="ERROR">ERROR</choice>
+      <default>INFO,WARN,ERROR</default>
+      <valuePrefix>level=</valuePrefix>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="multiselect" token="module" searchWhenChanged="true">
+      <label>Module</label>
+      <populatingSearch fieldForLabel="module" fieldForValue="module">index=_internal sourcetype=eventgen | stats count by module</populatingSearch>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <valuePrefix>module=</valuePrefix>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="multiselect" token="sample" searchWhenChanged="true">
+      <label>Sample</label>
+      <choice value="*">All</choice>
+      <populatingSearch earliest="$earliest$" latest="$latest$" fieldForLabel="sample" fieldForValue="sample">index=_internal sourcetype=eventgen | stats count by sample</populatingSearch>
+      <valuePrefix>sample=</valuePrefix>
+      <delimiter> OR </delimiter>
+      <default>*</default>
+    </input>
+    <input type="text" token="search" searchWhenChanged="true">
+      <label>Search</label>
+      <default>*</default>
+    </input>
+  </fieldset>
+  <row>
+    <table>
+      <title>Eventgen Logs</title>
+      <searchString>index=_internal sourcetype=eventgen $level$ $module$ $sample$ $search$ | table _time, level, module, sample, message</searchString>
+      <earliestTime>$time_picker.earliest$</earliestTime>
+      <latestTime>$time_picker.latest$</latestTime>
+      <option name="showPager">true</option>
+      <option name="displayRowNumbers">false</option>
+      <option name="list.drilldown">full</option>
+      <option name="list.wrap">1</option>
+      <option name="maxLines">5</option>
+      <option name="raw.drilldown">full</option>
+      <option name="rowNumbers">false</option>
+      <option name="table.drilldown">all</option>
+      <option name="table.wrap">1</option>
+      <option name="type">list</option>
+      <option name="wrap">true</option>
+      <option name="dataOverlayMode">none</option>
+      <option name="drilldown">cell</option>
+      <option name="count">100</option>
+    </table>
+  </row>
+</form>
