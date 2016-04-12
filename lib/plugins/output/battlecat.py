@@ -21,8 +21,8 @@ class BattleCatOutputPlugin(OutputPlugin):
     '''
     name = 'battlecat'
     MAXQUEUELENGTH = 100
-    validSettings = [ 'battlecatServers' ]
-    defaultableSettings = [ 'battlecatServers' ]
+    validSettings = [ 'battlecatServers', 'battlecatOutputMode' ]
+    defaultableSettings = [ 'battlecatServers', 'battlecatOutputMode' ]
     jsonSettings = ['battlecatServers']
 
     def __init__(self, sample):
@@ -30,6 +30,8 @@ class BattleCatOutputPlugin(OutputPlugin):
 
         #disable any "requests" warnings
         requests.packages.urllib3.disable_warnings()
+        # set default output mode to round robin
+        self.battlecatoutputmode = "r"
         #Setup loggers from the root eventgen
         logger = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
@@ -43,6 +45,10 @@ class BattleCatOutputPlugin(OutputPlugin):
         if hasattr(sample, 'battlecatServers') == False:
             logger.error('outputMode battlecat but battlecatServers not specified for sample %s' % self._sample.name)
             raise ValueError('outputMode battlecat but battlecatServers not specified for sample %s' % self._sample.name)
+        if hasattr(sample, 'battlecatOutputMode') == False:
+            logger.error('outputMode battlecat but no OutputMode, setting to roundrobin for sample %s' % self._sample.name)
+        elif hasattr(sample, 'battlecatOutputMode') == "mirror":
+            self.battlecatoutputmode = "m"
         self.battlecatServers = sample.battlecatServers
         logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
         self.createConnections()
@@ -105,24 +111,29 @@ class BattleCatOutputPlugin(OutputPlugin):
                             payloadFragment['index'] = event['index']
                     logger.debug("Full payloadFragment: %s" % json.dumps(payloadFragment))
                     payload = payload + json.dumps(payloadFragment)
-                targetServer = random.choice(self.serverPool)
-                logger.debug("Selected targetServer object: %s" % targetServer)
-                url = targetServer['url']
-                headers = {}
-                headers['Authorization'] = targetServer['header']
-                headers['content-type'] = 'application/json'
-                logger.debug("Payload created, sending it to battlecat server: %s" % url)
-                try:
-                    payloadsize = len(payload)
-                    response = requests.post(url, data=payload, headers=headers, verify=False)
-                    if not response.raise_for_status():
-                        logger.debug("Payload successfully sent to battlecat server.")
-                    else:
-                        logger.error("Server returned an error while trying to send, response code: %s" % response.status_code)
-                except Exception as e:
-                    logger.error("Failed for exception: %s" % e)
-                    logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" % (url, lastsourcetype, payloadsize ))
-                    logger.debugv("Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payload))
+                targetServer = []
+                if self.battlecatoutputmode == "m":
+                    targetServer = self.serverPool
+                else:
+                    targetServer = targetServer.append(random.choice(self.serverPool))
+                for server in targetServer:
+                    logger.debug("Selected targetServer object: %s" % targetServer)
+                    url = server['url']
+                    headers = {}
+                    headers['Authorization'] = server['header']
+                    headers['content-type'] = 'application/json'
+                    logger.debug("Payload created, sending it to battlecat server: %s" % url)
+                    try:
+                        payloadsize = len(payload)
+                        response = requests.post(url, data=payload, headers=headers, verify=False)
+                        if not response.raise_for_status():
+                            logger.debug("Payload successfully sent to battlecat server.")
+                        else:
+                            logger.error("Server returned an error while trying to send, response code: %s" % response.status_code)
+                    except Exception as e:
+                        logger.error("Failed for exception: %s" % e)
+                        logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" % (url, lastsourcetype, payloadsize ))
+                        logger.debugv("Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payload))
             except:
                 logger.error('failed indexing events')
 

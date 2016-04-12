@@ -42,6 +42,7 @@ latest = now
 randomizeCount = 0.2
 randomizeEvents = false
 outputMode = spool
+battlecatOutputMode = roundrobin
 fileMaxBytes = 10485760
 fileBackupFiles = 5
 splunkPort = 8089
@@ -108,7 +109,7 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool
+outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | battlecat
     * Specifies how to output log data.  Modinput is default.
     * If setting spool, should set spoolDir
     * If setting file, should set logFile
@@ -118,7 +119,11 @@ outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool
 battlecatServers = <valid json>
     * valid json that contains a list of server objects
     * valid server objects contain a protocol, a address, a port and a session key
-    * {"servers":[{ "protocol":"http", "address":"127.0.0.1", "port":"8088", "key":"12345-12345-123123123123123123"}]}
+    * {"servers":[{ "protocol":"https", "address":"127.0.0.1", "port":"8088", "key":"12345-12345-123123123123123123"}]}
+
+battlecatOutputMode = roundrobin | mirror
+    * in roundrobin mode, the HEC/Battlecat plugin will output to a random server out of the server pool
+    * in mirror moded, HEC/Battlecat plugin will mirror the event to every server specified in the server pool
 
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.
