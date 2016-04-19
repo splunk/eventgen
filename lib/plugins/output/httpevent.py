@@ -1,5 +1,6 @@
 from __future__ import division
 from outputplugin import OutputPlugin
+from time import sleep
 import sys
 try:
     import requests
@@ -20,7 +21,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
     
     '''
     name = 'httpevent'
-    MAXQUEUELENGTH = 0
+    MAXQUEUELENGTH = 1000
     validSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     defaultableSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     jsonSettings = ['httpeventServers']
@@ -41,16 +42,18 @@ class HTTPEventOutputPlugin(OutputPlugin):
         globals()['c'] = Config()
 
         #Bind passed in samples to the outputter.
-        logger.error("Outputmode: %s" % sample.httpeventOutputMode)
+        logger.debug("Outputmode: %s" % sample.httpeventOutputMode)
         if hasattr(sample, 'httpeventServers') == False:
             logger.error('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
             raise ValueError('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
-        self.httpeventoutputmode = getattr(sample, 'httpeventOutputMode', 'replay')
-        self.httpeventmaxsize = getattr(sample, "httpeventMaxPayloadSize", '10000')
+        self.httpeventoutputmode = sample.httpeventOutputMode if hasattr(sample, 'httpeventOutputMode') and sample.httpeventOutputMode else 'roundrobin'
+        self.httpeventmaxsize = sample.httpeventMaxPayloadSize if hasattr(sample, 'httpeventMaxPayloadSize') and sample.httpeventMaxPayloadSize else 10000
+        logger.debug("Currentmax size: %s " % self.httpeventmaxsize)
         self.httpeventServers = sample.httpeventServers
         logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
         self.createConnections()
         logger.debug("Pool created.")
+        logger.debug("Finished init of httpevent plugin.")
 
     def createConnections(self):
         self.serverPool = []
@@ -77,28 +80,40 @@ class HTTPEventOutputPlugin(OutputPlugin):
     def _sendHTTPEvents(self, payload):
         currentreadsize = 0
         stringpayload = ""
+        totalbytesexpected = 0
+        totalbytessent = 0
+        numberevents = len(payload)
+        logger.debug("Sending %s events to splunk" % numberevents)
         for line in payload:
+            logger.debugv("line: %s " % line)
             targetline = json.dumps(line)
+            logger.debugv("targetline: %s " % targetline)
             targetlinesize = len(targetline)
-            if (currentreadsize + targetlinesize) <= self.httpeventmaxsize:
+            totalbytesexpected += targetlinesize
+            if (int(currentreadsize) + int(targetlinesize)) <= int(self.httpeventmaxsize):
                 stringpayload = stringpayload + targetline
+                currentreadsize = currentreadsize + targetlinesize
+                logger.debugv("stringpayload: %s " % stringpayload)
             else:
                 logger.debug("Max size for payload hit, sending to splunk then continuing.")
                 try:
                     self._transmitEvents(stringpayload)
+                    totalbytessent += len(stringpayload)
                     currentreadsize = 0
                     stringpayload = targetline
                 except Exception as e:
                     raise e
         else:
-            logger.debug("End of for loop hit for sending events to splunk")
             try:
+                totalbytessent += len(stringpayload)
+                logger.debug("End of for loop hit for sending events to splunk, total bytes sent: %s ---- out of %s -----" % (totalbytessent, totalbytesexpected))
                 self._transmitEvents(stringpayload)
             except Exception as e:
                 raise e
 
     def _transmitEvents(self, payloadstring):
         targetServer = []
+        logger.debugv("Transmission called with payloadstring: %s " % payloadstring)
         if self.httpeventoutputmode == "mirror":
             targetServer = self.serverPool
         else:
@@ -109,7 +124,6 @@ class HTTPEventOutputPlugin(OutputPlugin):
             headers = {}
             headers['Authorization'] = server['header']
             headers['content-type'] = 'application/json'
-            logger.debug("Payload created, sending it to httpevent server: %s" % url)
             try:
                 payloadsize = len(payloadstring)
                 response = requests.post(url, data=payloadstring, headers=headers, verify=False)
@@ -134,7 +148,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 payloadsize = 0
                 logger.debug("Currently being called with %d events" % len(q))
                 for event in q:
-                    logger.debug("HTTPEvent proccessing event: %s" % event)
+                    logger.debugv("HTTPEvent proccessing event: %s" % event)
                     payloadFragment = {}
                     if event.get('_raw') == None:
                         logger.error('failure outputting event, does not contain _raw')
@@ -157,11 +171,12 @@ class HTTPEventOutputPlugin(OutputPlugin):
                         if event.get('index'):
                             logger.debug("Event contains index, adding to httpevent event")
                             payloadFragment['index'] = event['index']
-                    logger.debug("Full payloadFragment: %s" % json.dumps(payloadFragment))
+                    logger.debugv("Full payloadFragment: %s" % json.dumps(payloadFragment))
                     payload.append(payloadFragment)
+                logger.debug("Finished processing events, sending all to splunk")
                 self._sendHTTPEvents(payload)
-            except:
-                logger.error('failed indexing events')
+            except Exception as e:
+                logger.error('failed indexing events, reason: %s ' % e)
 
 def load():
     """Returns an instance of the plugin"""
