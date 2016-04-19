@@ -42,7 +42,6 @@ latest = now
 randomizeCount = 0.2
 randomizeEvents = false
 outputMode = spool
-battlecatOutputMode = roundrobin
 fileMaxBytes = 10485760
 fileBackupFiles = 5
 splunkPort = 8089
@@ -109,19 +108,19 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | battlecat
+outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent
     * Specifies how to output log data.  Modinput is default.
     * If setting spool, should set spoolDir
     * If setting file, should set logFile
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser and splunkPassword if not Splunk embedded
     * If setting s2s, should set splunkHost and splunkPort
 
-battlecatServers = <valid json>
+httpeventServers = <valid json>
     * valid json that contains a list of server objects
     * valid server objects contain a protocol, a address, a port and a session key
     * {"servers":[{ "protocol":"https", "address":"127.0.0.1", "port":"8088", "key":"12345-12345-123123123123123123"}]}
 
-battlecatOutputMode = roundrobin | mirror
+httpeventOutputMode = roundrobin | mirror
     * in roundrobin mode, the HEC/Battlecat plugin will output to a random server out of the server pool
     * in mirror moded, HEC/Battlecat plugin will mirror the event to every server specified in the server pool
 
@@ -179,11 +178,11 @@ index = <index>
     * Splunk index to write events to.  Defaults to main if none specified.
     
 source = <source>
-    * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=battlecat
+    * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
     * Set event source in Splunk to <source>.  Defaults to 'eventgen' if none specified.
     
 sourcetype = <sourcetype>
-    * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=battlecat
+    * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
     * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
     
 host = <host>
