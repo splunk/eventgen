@@ -1,0 +1,14 @@
+{
+  "name": "sa-eventgen-build",
+  "devDependencies": {
+    "ext-grunt-basebuild": "^1.0.0",
+    "json-override": "^0.2.0"
+  },
+  "scripts": {
+    "postinstall": "PYTHONPATH=./pypi_modules bash ./node_modules/ext-grunt-basebuild/scripts/install_deps.sh",
+    "build": "PYTHONPATH=./pypi_modules grunt",
+    "printconfig": "PYTHONPATH=./pypi_modules grunt config",
+    "upload": "PYTHONPATH=./pypi_modules grunt publish",
+    "clean_all": "grunt clean; rm -rf node_modules pypi_modules"
+  }
+}
