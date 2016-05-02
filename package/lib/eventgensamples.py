@@ -10,6 +10,7 @@ import re
 import csv
 import json
 import copy
+import urllib
 from eventgenoutput import Output
 from eventgentoken import Token
 from timeparser import timeParser, timeDelta2secs
@@ -215,7 +216,7 @@ class Sample:
         """Saves state of all integer IDs of this sample to a file so when we restart we'll pick them up"""
         for token in self.tokens:
             if token.replacementType == 'integerid':
-                stateFile = open(os.path.join(c.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'w')
+                stateFile = open(os.path.join(self.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'w')
                 stateFile.write(token.replacement)
                 stateFile.close()
 
