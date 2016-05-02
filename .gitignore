@@ -8,6 +8,7 @@ build
 .idea/
 *.spl
 eventgen.spl
+package.json
 node_modules
 cached_build_info.properties
 local.build.properties
