@@ -4,7 +4,7 @@
     <property environment="env" />
 
     <property name="build.dir" value="build"/>
-    <property name="build.version" value="5.0.0"/>
+    <property name="build.version" value="5.0.1"/>
 
     <!-- if BUILDNUMBER is not set, set it as 0 -->
     <condition property="build.number" value="0">

@@ -124,6 +124,9 @@ httpeventOutputMode = roundrobin | mirror
     * in roundrobin mode, the HEC/Battlecat plugin will output to a random server out of the server pool
     * in mirror moded, HEC/Battlecat plugin will mirror the event to every server specified in the server pool
 
+httpeventMaxPayloadSize = <int>
+    * the max payload size that is currently configured for HTTP event
+
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.
     * Only valid in spool outputMode.
