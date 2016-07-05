@@ -216,10 +216,16 @@ class Timer(threading.Thread):
                 else:
                     time.sleep(self.time)
             else:
+                while c.generatorQueueSize.value() > 0 or c.outputQueueSize.value() > 0:
+                    self.logger.debugv("Waiting for queues to empty")
+                    time.sleep(0.1)
                 self.logger.info("Stopped timer for sample '%s'" % self.sample.name)
                 sys.exit(0)
 
     def stop(self):
+        while c.generatorQueueSize.value() > 0 or c.outputQueueSize.value() > 0:
+            self.logger.debugv("Waiting for queues to empty")
+            time.sleep(0.1)
         self.logger.info("Stopping timer for sample '%s'" % self.sample.name)
         self.sample.saveState()
         self.stopping = True
