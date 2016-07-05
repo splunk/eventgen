@@ -127,7 +127,7 @@ class PerDayVolumeGenerator(GeneratorPlugin):
         timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
         logger.debugv("Interval complete, flushing feed")
         self._out.flush(endOfInterval=True)
-        logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
+        logger.info("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
 
 def load():
     return PerDayVolumeGenerator

@@ -1,0 +1,8 @@
+[windbag]
+generator = windbag
+earliest = -3s
+latest = now
+interval = 3
+count = 5
+outputMode = httpevent
+httpeventServers = {"servers":[{ "protocol":"http", "address":"127.0.0.1", "port":"8088", "key":"12345-12345-123123123123123123"}]}
