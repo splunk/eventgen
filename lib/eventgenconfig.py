@@ -28,6 +28,8 @@ class EventgenAdapter(logging.LoggerAdapter):
     Pass in a sample parameter and prepend sample to all logs
     """
     def process(self, msg, kwargs):
+        # Useful for multiprocess debugging to add pid, commented by default
+        # return "pid=%s module='%s' sample='%s': %s" % (os.getpid(), self.extra['module'], self.extra['sample'], msg), kwargs
         return "module='%s' sample='%s': %s" % (self.extra['module'], self.extra['sample'], msg), kwargs
 
     def debugv(self, msg, *args, **kwargs):
@@ -83,7 +85,8 @@ class Config:
     outputWorkers = None
     generatorWorkers = None
     sampleTimers = [ ]
-    workers = [ ]
+    __generatorworkers = [ ]
+    __outputworkers = [ ]
 
     # Config file options.  We do not define defaults here, rather we pull them in
     # from eventgen.conf.
@@ -222,6 +225,7 @@ class Config:
             self.timersStarted = Counter(0, self.threading)
             self.pluginsStarting = Counter(0, self.threading)
             self.pluginsStarted = Counter(0, self.threading)
+            self.stopping = Counter(0, self.threading)
 
             self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
 
@@ -231,7 +235,7 @@ class Config:
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
         # Filter items from config we don't want to pretty print
-        filter_list = [ 'samples', 'sampleTimers', 'workers' ]
+        filter_list = [ 'samples', 'sampleTimers', '__generatorworkers', '__outputworkers' ]
         # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key not in filter_list ])
         
@@ -1073,13 +1077,26 @@ class Config:
     def handle_exit(self, sig=None, func=None):
         """Clean up and shut down threads"""
         self.logger.info("Caught kill, exiting...")
+        self.stopping.increment()
 
         # Loop through all threads/processes and mark them for death
         # This does not actually kill the plugin, but they should check to see if
         # they are set to stop with every iteration
         for sampleTimer in self.sampleTimers:
             sampleTimer.stop()
-        for worker in self.workers:
+
+        time.sleep(0.5)
+
+        # while self.generatorQueueSize.value() > 0 or self.outputQueueSize.value() > 0:
+        #     time.sleep(0.1)
+
+        # 7/4/16 Stop generator workers first
+        for worker in self.__generatorworkers:
+            worker.stop()
+
+        time.sleep(0.5)
+
+        for worker in self.__outputworkers:
             worker.stop()
 
         self.logger.info("Exiting main thread.")
@@ -1097,7 +1114,7 @@ class Config:
                     worker = OutputThreadWorker(x)
                 worker.daemon = True
                 worker.start()
-                self.workers.append(worker)
+                self.__outputworkers.append(worker)
 
         # Start X instantiations of GeneratorWorkers, controlled by the generators configuration
         # or command line parameter
@@ -1109,7 +1126,7 @@ class Config:
                 worker = GeneratorThreadWorker(x, self.generatorQueue, self.outputQueue)
             worker.daemon = True
             worker.start()
-            self.workers.append(worker)
+            self.__generatorworkers.append(worker)
 
         self.logger.debug("Waiting for workers to start for %d workers" % self.generatorWorkers)
         while self.pluginsStarted.value() < self.generatorWorkers:
