@@ -1044,7 +1044,7 @@ class Config:
             self.logger.info('Retrieving eventgen configurations with ConfigParser()')
             # We assume we're in a bin directory and that there are default and local directories
             conf = ConfigParser()
-            # Make case sensitive 2016-07-20 10:33:59,815 ERROR module='config' sample='null': outputMode invalid in stanza 'testing'
+            # Make case sensitive
             conf.optionxform = str
             currentdir = os.getcwd()
 
