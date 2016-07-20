@@ -313,9 +313,6 @@ class Config:
                             self._jsonSettings.extend(plugin.jsonSettings)
                         if 'complexSettings' in dir(plugin):
                             self._complexSettings.update(plugin.complexSettings)
-                    # APPPERF-263... catch all the things... no matter what it is
-                    #  the loading of our plugin has failed
-                    #except Exception as e:
                     except ValueError:
                         self.logger.error("Error loading plugin '%s' of type '%s'" % (base, plugintype))
                         self.logger.debug(traceback.format_exc())
@@ -326,9 +323,13 @@ class Config:
 
 
     def getPlugin(self, name, s=None):
-        """
-            Return a reference to a Python object (not an instance) referenced by passed name
-        """
+        """Return a reference to a Python object (not an instance) referenced by passed name"""
+
+        '''
+        APPPERF-263:
+        make sure we look in __outputPlugins as well. For some reason we
+        keep 2 separate dicts of plugins.
+        '''
         if not name in self.__plugins and not name in self.__outputPlugins:
             # 2/1/15 CS If we haven't already seen the plugin, try to load it
             # Note, this will only work for plugins which do not specify config validation
@@ -347,15 +348,19 @@ class Config:
                         libdir = os.path.join(s.sampleDir, os.pardir, 'lib')
                         plugindir = os.path.join(libdir, 'plugins', plugintype)
 
-                        # be picky when loading from an app bindir (only load name)
+                        #APPPERF-263: be picky when loading from an app bindir (only load name)
                         self.__initializePlugins(bindir, pluginsdict, plugintype, name=plugin)
 
-                        # be greedy when scanning plugin dir (eat all the pys)
+                        #APPPERF-263: be greedy when scanning plugin dir (eat all the pys)
                         self.__initializePlugins(plugindir, pluginsdict, plugintype)
 
+        # APPPERF-263: consult both __outputPlugins and __plugins
         if not name in self.__plugins and not name in self.__outputPlugins:
             raise KeyError('Plugin ' + name + ' not found')
 
+        # return in order of precedence:  __plugins, __outputPlugins, None
+        # Note: because of the above KeyError Exception we should never return
+        # None, but it is the sane behavior for a getter method
         return self.__plugins.get(name,self.__outputPlugins.get(name,None))
 
     def __setPlugin(self, s):
@@ -371,10 +376,12 @@ class Config:
             plugin = self.__plugins[s.name]
         except KeyError:
             try:
+                # APPPERF-263: now attempt to dynamically load plugin
                 self.getPlugin(key, s)
                 self.__plugins[s.name] = self.__outputPlugins[key](s)
                 plugin = self.__plugins[s.name]
             except KeyError:
+                # APPPERF-264:  dynamic loading has failed
                 raise KeyError('Output plugin %s does not exist' % s.outputMode.lower())
 
 
@@ -953,7 +960,7 @@ class Config:
                 try:
                     value = json.loads(value)
                 except:
-                    self.logger.error("Could not:/O parse json for '%s' in stanza '%s'" % (key, stanza))
+                    self.logger.error("Could not parse json for '%s' in stanza '%s'" % (key, stanza))
                     raise ValueError("Could not parse json for '%s' in stanza '%s'" % (key, stanza))
             # 12/3/13 CS Adding complex settings, which is a dictionary with the key containing
             # the config item name and the value is a list of valid values or a callback function
@@ -969,10 +976,6 @@ class Config:
                     if not value in complexSetting:
                         self.logger.error("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
                         raise ValueError("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
-            #elif key == 'outputMode':
-            #    if not value in self._validOutputModes:
-            #        self.logger.error("outputMode invalid in stanza '%s'" % stanza)
-            #        raise ValueError("outputMode invalid in stanza '%s'" % stanza)
         else:
             # Notifying only if the setting isn't valid and continuing on
             # This will allow future settings to be added and be backwards compatible
