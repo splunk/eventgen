@@ -23,7 +23,7 @@ class GeneratorProcessWorker(multiprocessing.Process):
         self.worker.run()
 
     def stop(self):
-        while c.generatorQueueSize.value() > 0:
+        while c.generatorQueueSize.value() > 0 or self.worker.working:
             time.sleep(0.1)
         for (name, plugin) in self.worker._pluginCache.iteritems():
             plugin._out.flush()
@@ -40,7 +40,7 @@ class GeneratorThreadWorker(threading.Thread):
         self.worker.run()
 
     def stop(self):
-        while c.generatorQueueSize.value() > 0:
+        while c.generatorQueueSize.value() > 0 or self.worker.working:
             time.sleep(0.1)
         for (name, plugin) in self.worker._pluginCache.iteritems():
             plugin._out.flush()
@@ -61,6 +61,7 @@ class GeneratorRealWorker:
         globals()['c'] = Config()
 
         self.stopping = False
+        self.working = False
 
         self._pluginCache = { }
 
@@ -103,7 +104,7 @@ class GeneratorRealWorker:
             self.real_run()
 
     def real_run(self):
-        while not (self.stopping and c.generatorQueueSize.value() > 0):
+        while not (self.stopping and c.generatorQueueSize.value() == 0 and not self.working):
             try:
                 # Grab item from the queue to generate, grab an instance of the plugin, then generate
                 # logger.debugv("Grabbing generator items from python queue")
@@ -113,6 +114,7 @@ class GeneratorRealWorker:
                 latest = datetime.datetime.fromtimestamp(latestts/10**6)
                 c.generatorQueueSize.decrement()
                 if samplename != None:
+                    self.working = True
                     if samplename in self._pluginCache:
                         plugin = self._pluginCache[samplename]
                         plugin.updateSample(samplename)
@@ -128,14 +130,14 @@ class GeneratorRealWorker:
                     #             datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S")))
                     logger.debugv("Generating %d for sample '%s' stopping: %s" % (count, samplename, self.stopping))
                     plugin.gen(count, earliest, latest, samplename=samplename)
+                    self.working = False
                     if c.stopping.value() > 0:
                         self.stop()
                 else:
                     logger.debug("Received sentinel, shutting down GeneratorWorker %d" % self.num)
                     self.stop()
             except Queue.Empty:
-                if c.stopping.value() > 0:
-                    self.stop()
+                self.working = False
                 # Queue empty, do nothing... basically here to catch interrupts
                 # pass
         logger.info("GeneratorRealWorker %d stopped" % self.num)
