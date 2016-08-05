@@ -45,6 +45,7 @@ class GeneratorThreadWorker(threading.Thread):
         for (name, plugin) in self.worker._pluginCache.iteritems():
             plugin._out.flush()
         self.worker.stopping = True
+        c.pluginsStarted.decrement()
         logger.info("Stopping GeneratorThreadWorker %d" % self.worker.num)
 
 class GeneratorRealWorker:
@@ -131,13 +132,14 @@ class GeneratorRealWorker:
                     logger.debugv("Generating %d for sample '%s' stopping: %s" % (count, samplename, self.stopping))
                     plugin.gen(count, earliest, latest, samplename=samplename)
                     self.working = False
-                    if c.stopping.value() > 0:
-                        self.stop()
                 else:
                     logger.debug("Received sentinel, shutting down GeneratorWorker %d" % self.num)
                     self.stop()
             except Queue.Empty:
                 self.working = False
+                # stop running if i'm not doing anything and there's nothing in the queue and I'm told to stop!
+                if c.stopping.value() > 0 and not self.working:
+                    self.stop()
                 # Queue empty, do nothing... basically here to catch interrupts
                 # pass
         logger.info("GeneratorRealWorker %d stopped" % self.num)

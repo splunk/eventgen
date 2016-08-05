@@ -98,5 +98,9 @@ class OutputRealWorker:
                 # If the queue is empty, do nothing and start over at the top.  Mainly here to catch interrupts.
                 # time.sleep(0.1)
                 self.working = False
+                # stop running if i'm not doing anything and there's nothing in the queue and I'm told to stop
+                # and all generation has finished and stopped.
+                if c.stopping.value() > 0 and not self.working and c.pluginsStarted.value == 0:
+                    self.stop()
                 # pass
         logger.info("OutputRealWorker %d stopped" % self.num)
