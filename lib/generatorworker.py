@@ -138,7 +138,7 @@ class GeneratorRealWorker:
             except Queue.Empty:
                 self.working = False
                 # stop running if i'm not doing anything and there's nothing in the queue and I'm told to stop!
-                if c.stopping.value() > 0 and not self.working:
+                if c.stopping.value() > 0 :
                     self.stop()
                 # Queue empty, do nothing... basically here to catch interrupts
                 # pass
