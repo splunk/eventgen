@@ -22,7 +22,7 @@ class Queue:
         if threading == 'thread':
             self.q = PQueue.Queue(depth)
         else:
-            self.q = multiprocessing.Queue(depth)
+            self.q = multiprocessing.Manager().Queue(depth)
 
         self.depth = depth
 
