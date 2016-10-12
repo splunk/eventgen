@@ -146,6 +146,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     logger.debug("Payload successfully sent to httpevent server.")
                 else:
                     logger.error("Server returned an error while trying to send, response code: %s" % response.status_code)
+                    raise BadConnection("Server returned an error while sending, response code: %s" % response.status_code)
             except Exception as e:
                 logger.error("Failed for exception: %s" % e)
                 logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" % (url, self.lastsourcetype, payloadsize))
