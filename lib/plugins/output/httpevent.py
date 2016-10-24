@@ -10,14 +10,6 @@ import json
 import random
 import logging
 
-class NoServers(Exception):
-    def __init__(self,*args,**kwargs):
-        Exception.__init__(self,*args,**kwargs)
-
-class BadConnection(Exception):
-    def __init__(self,*args,**kwargs):
-        Exception.__init__(self,*args,**kwargs)
-
 class HTTPEventOutputPlugin(OutputPlugin):
     '''
     HTTPEvent output will enable events that are generated to be sent directly
@@ -51,46 +43,39 @@ class HTTPEventOutputPlugin(OutputPlugin):
 
         #Bind passed in samples to the outputter.
         logger.debug("Outputmode: %s" % sample.httpeventOutputMode)
-        self.lastsourcetype = None
-        try:
-            if hasattr(sample, 'httpeventServers') == False:
-                logger.error('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
-                raise NoServers('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
-            self.httpeventoutputmode = sample.httpeventOutputMode if hasattr(sample, 'httpeventOutputMode') and sample.httpeventOutputMode else 'roundrobin'
-            self.httpeventmaxsize = sample.httpeventMaxPayloadSize if hasattr(sample, 'httpeventMaxPayloadSize') and sample.httpeventMaxPayloadSize else 10000
-            logger.debug("Currentmax size: %s " % self.httpeventmaxsize)
-            self.httpeventServers = sample.httpeventServers
-            logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
-            self.createConnections()
-            logger.debug("Pool created.")
-            logger.debug("Finished init of httpevent plugin.")
-        except Exception as e:
-            logger.exception(e)
+        if hasattr(sample, 'httpeventServers') == False:
+            logger.error('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+            raise ValueError('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+        self.httpeventoutputmode = sample.httpeventOutputMode if hasattr(sample, 'httpeventOutputMode') and sample.httpeventOutputMode else 'roundrobin'
+        self.httpeventmaxsize = sample.httpeventMaxPayloadSize if hasattr(sample, 'httpeventMaxPayloadSize') and sample.httpeventMaxPayloadSize else 10000
+        logger.debug("Currentmax size: %s " % self.httpeventmaxsize)
+        self.httpeventServers = sample.httpeventServers
+        logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
+        self.createConnections()
+        logger.debug("Pool created.")
+        logger.debug("Finished init of httpevent plugin.")
 
     def createConnections(self):
         self.serverPool = []
-        if self.httpeventServers:
-            for server in self.httpeventServers.get('servers'):
-                if not server.get('address'):
-                    logger.error('requested a connection to a httpevent server, but no address specified for sample %s' % self._sample.name)
-                    raise ValueError('requested a connection to a httpevent server, but no address specified for sample %s' % self._sample.name)
-                if not server.get('port'):
-                    logger.error('requested a connection to a httpevent server, but no port specified for server %s' % server)
-                    raise ValueError('requested a connection to a httpevent server, but no port specified for server %s' % server)
-                if not server.get('key'):
-                    logger.error('requested a connection to a httpevent server, but no key specified for server %s' % server)
-                    raise ValueError('requested a connection to a httpevent server, but no key specified for server %s' % server)
-                if not ((server.get('protocol') == 'http') or (server.get('protocol') == 'https')):
-                    logger.error('requested a connection to a httpevent server, but no protocol specified for server %s' % server)
-                    raise ValueError('requested a connection to a httpevent server, but no protocol specified for server %s' % server)
-                logger.debug("Validation Passed, Creating a requests object for server: %s" % server.get('address'))
-                setserver = {}
-                setserver['url'] = "%s://%s:%s/services/collector" % (server.get('protocol'), server.get('address'), server.get('port'))
-                setserver['header'] = "Splunk %s" % server.get('key')
-                logger.debug("Adding server set to pool, server: %s" % setserver)
-                self.serverPool.append(setserver)
-        else:
-            raise NoServers('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+        for server in self.httpeventServers.get('servers'):
+            if not server.get('address'):
+                logger.error('requested a connection to a httpevent server, but no address specified for sample %s' % self._sample.name)
+                raise ValueError('requested a connection to a httpevent server, but no address specified for sample %s' % self._sample.name)
+            if not server.get('port'):
+                logger.error('requested a connection to a httpevent server, but no port specified for server %s' % server)
+                raise ValueError('requested a connection to a httpevent server, but no port specified for server %s' % server)
+            if not server.get('key'):
+                logger.error('requested a connection to a httpevent server, but no key specified for server %s' % server)
+                raise ValueError('requested a connection to a httpevent server, but no key specified for server %s' % server)
+            if not ((server.get('protocol') == 'http') or (server.get('protocol') == 'https')):
+                logger.error('requested a connection to a httpevent server, but no protocol specified for server %s' % server)
+                raise ValueError('requested a connection to a httpevent server, but no protocol specified for server %s' % server)
+            logger.debug("Validation Passed, Creating a requests object for server: %s" % server.get('address'))
+            setserver = {}
+            setserver['url'] = "%s://%s:%s/services/collector" % (server.get('protocol'), server.get('address'), server.get('port'))
+            setserver['header'] = "Splunk %s" % server.get('key')
+            logger.debug("Adding server set to pool, server: %s" % setserver)
+            self.serverPool.append(setserver)
 
     def _sendHTTPEvents(self, payload):
         currentreadsize = 0
@@ -145,11 +130,12 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 if not response.raise_for_status():
                     logger.debug("Payload successfully sent to httpevent server.")
                 else:
-                    logger.error("Server returned an error while trying to send, response code: %s" % response.status_code)
-                    raise BadConnection("Server returned an error while sending, response code: %s" % response.status_code)
+                    logger.error(
+                        "Server returned an error while trying to send, response code: %s" % response.status_code)
             except Exception as e:
                 logger.error("Failed for exception: %s" % e)
-                logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" % (url, self.lastsourcetype, payloadsize))
+                logger.error(
+                    "Failed sending events to url: %s  sourcetype: %s  size: %s" % (url, lastsourcetype, payloadsize))
                 logger.debugv("Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payloadstring))
                 raise e
 
@@ -175,7 +161,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                         if event.get('sourcetype'):
                             logger.debug("Event contains sourcetype, adding to httpevent event")
                             payloadFragment['sourcetype'] = event['sourcetype']
-                            self.lastsourcetype = event['sourcetype']
+                            lastsourcetype = event['sourcetype']
                         if event.get('host'):
                             logger.debug("Event contains host, adding to httpevent event")
                             payloadFragment['host'] = event['host']
