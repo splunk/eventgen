@@ -6,6 +6,7 @@ import sys
 import re
 import __main__
 import logging, logging.handlers
+import traceback
 import json
 import pprint
 import copy
@@ -28,6 +29,8 @@ class EventgenAdapter(logging.LoggerAdapter):
     Pass in a sample parameter and prepend sample to all logs
     """
     def process(self, msg, kwargs):
+        # Useful for multiprocess debugging to add pid, commented by default
+        # return "pid=%s module='%s' sample='%s': %s" % (os.getpid(), self.extra['module'], self.extra['sample'], msg), kwargs
         return "module='%s' sample='%s': %s" % (self.extra['module'], self.extra['sample'], msg), kwargs
 
     def debugv(self, msg, *args, **kwargs):
@@ -42,11 +45,11 @@ class EventgenAdapter(logging.LoggerAdapter):
 # 4/21/14 CS  Adding a defined constant whether we're running in standalone mode or not
 #             Standalone mode is when we know we're Splunk embedded but we want to force
 #             configs to be read from a file instead of via Splunk's REST endpoint.
-#             This is used in the OIDemo and others for embedding the eventgen into an 
+#             This is used in the OIDemo and others for embedding the eventgen into an
 #             application.  We want to ensure we're reading from files.  It is the app's
 #             responsibility to ensure eventgen.conf settings are not exported to where
 #             SA-Eventgen can see them.
-#              
+#
 #             The reason this is a constant instead of a config setting is we must know
 #             this before we read any config and we cannot use a command line parameter
 #             because we interpret all those as config overrides.
@@ -83,7 +86,8 @@ class Config:
     outputWorkers = None
     generatorWorkers = None
     sampleTimers = [ ]
-    workers = [ ]
+    __generatorworkers = [ ]
+    __outputworkers = [ ]
 
     # Config file options.  We do not define defaults here, rather we pull them in
     # from eventgen.conf.
@@ -105,7 +109,7 @@ class Config:
     _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
                     'delay', 'count', 'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate',
                     'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes',
-                    'fileBackupFiles', 'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken', 
+                    'fileBackupFiles', 'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken',
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
                     'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
@@ -126,7 +130,7 @@ class Config:
                             'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
                             'monthOfYearRate', 'perDayVolume', 'sessionKey', 'generator', 'rater', 'timeField', 'maxQueueLength',
                             'maxIntervalsBeforeFlush', 'autotimestamp']
-    _complexSettings = { 'sampletype': ['raw', 'csv'], 
+    _complexSettings = { 'sampletype': ['raw', 'csv'],
                          'mode': ['sample', 'replay'],
                          'threading': ['thread', 'process']}
 
@@ -141,13 +145,13 @@ class Config:
 
             # Setup logger
             # 12/8/13 CS Adding new verbose log level to make this a big more manageable
-            DEBUG_LEVELV_NUM = 9 
+            DEBUG_LEVELV_NUM = 9
             logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
             logging.__dict__['DEBUGV'] = DEBUG_LEVELV_NUM
             def debugv(self, message, *args, **kws):
                 # Yes, logger takes its '*args' as 'args'.
                 if self.isEnabledFor(DEBUG_LEVELV_NUM):
-                    self._log(DEBUG_LEVELV_NUM, message, args, **kws) 
+                    self._log(DEBUG_LEVELV_NUM, message, args, **kws)
             logging.Logger.debugv = debugv
 
             logger = logging.getLogger('eventgen')
@@ -191,7 +195,7 @@ class Config:
                     if i[0] == 'threading' and self.threading == None:
                         self.threading = i[1]
 
-            # Set a global variables to signal to our plugins the threading model without having 
+            # Set a global variables to signal to our plugins the threading model without having
             # to load config.  Kinda hacky, but easier than other methods.
             globals()['threadmodel'] = self.threading
 
@@ -203,12 +207,12 @@ class Config:
 
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins, 'generator')
             self.generatorQueue = Queue(10000, self.threading)
-            
+
             plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'rater'), self.__plugins, 'rater')
             self._complexSettings['rater'] = plugins
 
 
-            self._complexSettings['timezone'] = self._validateTimezone 
+            self._complexSettings['timezone'] = self._validateTimezone
 
             self._complexSettings['count'] = self._validateCount
 
@@ -222,6 +226,7 @@ class Config:
             self.timersStarted = Counter(0, self.threading)
             self.pluginsStarting = Counter(0, self.threading)
             self.pluginsStarted = Counter(0, self.threading)
+            self.stopping = Counter(0, self.threading)
 
             self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
 
@@ -231,28 +236,36 @@ class Config:
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
         # Filter items from config we don't want to pretty print
-        filter_list = [ 'samples', 'sampleTimers', 'workers' ]
+        filter_list = [ 'samples', 'sampleTimers', '__generatorworkers', '__outputworkers' ]
         # Eliminate recursive going back to parent
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key not in filter_list ])
-        
+
         return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
 
     def __repr__(self):
         return self.__str__()
-
-    def __initializePlugins(self, dirname, plugins, plugintype):
+    '''
+    APPPERF-263: add default name param. If name is supplied then only
+    attempt to load <name>.py
+    '''
+    def __initializePlugins(self, dirname, plugins, plugintype, name=None):
         """Load a python module dynamically and add to internal dictionary of plugins (only accessed by getPlugin)"""
-        ret = [ ]
-        
+        ret = []
+
+        dirname = os.path.abspath(dirname)
+        self.logger.debugv("looking for plugin(s) in {}".format(dirname))
+        if not os.path.isdir(dirname):
+            self.logger.debugv("directory {} does not exist ... moving on".format(dirname))
+            return ret
+
         # Include all plugin directories in sys.path for includes
         if not dirname in sys.path:
             sys.path.append(dirname)
-         
+
         # Loop through all files in passed dirname looking for plugins
         for filename in os.listdir(dirname):
             filename = dirname + os.sep + filename
 
-            self.logger.debugv("Searching for plugin in file '%s'" % filename)
             # If the file exists
             if os.path.isfile(filename):
                 # Split file into a base name plus extension
@@ -260,7 +273,11 @@ class Config:
                 base, extension = os.path.splitext(basename)
 
                 # If we're a python file and we don't start with _
-                if extension == ".py" and not basename.startswith("_"):
+                #if extension == ".py" and not basename.startswith("_"):
+                # APPPERF-263: If name param is supplied, only attempt to load
+                # {name}.py from {app}/bin directory
+                if extension == ".py" and ((name is None and not basename.startswith("_")) or base == name):
+                    self.logger.debugv("Searching for plugin in file '%s'" % filename)
                     try:
                         # Import the module
                         module = __import__(base)
@@ -271,7 +288,7 @@ class Config:
                         plugin = module.load()
 
                         # set plugin to something like output.file or generator.default
-                        pluginname = plugintype + '.' + base 
+                        pluginname = plugintype + '.' + base
                         # self.logger.debugv("Filename: %s os.sep: %s pluginname: %s" % (filename, os.sep, pluginname))
                         plugins[pluginname] = plugin
 
@@ -298,6 +315,7 @@ class Config:
                             self._complexSettings.update(plugin.complexSettings)
                     except ValueError:
                         self.logger.error("Error loading plugin '%s' of type '%s'" % (base, plugintype))
+                        self.logger.debug(traceback.format_exc())
 
         # Chop off the path we added
         sys.path = sys.path[0:-1]
@@ -306,7 +324,13 @@ class Config:
 
     def getPlugin(self, name, s=None):
         """Return a reference to a Python object (not an instance) referenced by passed name"""
-        if not name in self.__plugins:
+
+        '''
+        APPPERF-263:
+        make sure we look in __outputPlugins as well. For some reason we
+        keep 2 separate dicts of plugins.
+        '''
+        if not name in self.__plugins and not name in self.__outputPlugins:
             # 2/1/15 CS If we haven't already seen the plugin, try to load it
             # Note, this will only work for plugins which do not specify config validation
             # parameters.  If they do, configs may not validate for user provided plugins.
@@ -320,21 +344,46 @@ class Config:
                         self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'"
                                      % (plugintype, plugin, s.name))
                         pluginsdict = self.__plugins if plugintype in ('generator', 'rater') else self.__outputPlugins
-                        self.__initializePlugins(os.path.join(os.sep.join(s.sampleDir.split(os.sep)[:-1]), 'bin'), pluginsdict, plugintype)
-            
-            if not name in self.__plugins:
-                raise KeyError('Plugin ' + name + ' not found')
-        return self.__plugins[name]
+                        bindir = os.path.join(s.sampleDir, os.pardir, 'bin')
+                        libdir = os.path.join(s.sampleDir, os.pardir, 'lib')
+                        plugindir = os.path.join(libdir, 'plugins', plugintype)
+
+                        #APPPERF-263: be picky when loading from an app bindir (only load name)
+                        self.__initializePlugins(bindir, pluginsdict, plugintype, name=plugin)
+
+                        #APPPERF-263: be greedy when scanning plugin dir (eat all the pys)
+                        self.__initializePlugins(plugindir, pluginsdict, plugintype)
+
+        # APPPERF-263: consult both __outputPlugins and __plugins
+        if not name in self.__plugins and not name in self.__outputPlugins:
+            raise KeyError('Plugin ' + name + ' not found')
+
+        # return in order of precedence:  __plugins, __outputPlugins, None
+        # Note: because of the above KeyError Exception we should never return
+        # None, but it is the sane behavior for a getter method
+        return self.__plugins.get(name,self.__outputPlugins.get(name,None))
 
     def __setPlugin(self, s):
         """Called during setup, assigns which output plugin to use based on configured outputMode"""
         # 12/2/13 CS Adding pluggable output modules, need to set array to map sample name to output plugin
         # module instances
+
+        name = s.outputMode.lower()
+        key = "{type}.{name}".format(type="output", name=name)
+
         try:
-            self.__plugins[s.name] = self.__outputPlugins['output.'+s.outputMode.lower()](s)
+            self.__plugins[s.name] = self.__outputPlugins[key](s)
             plugin = self.__plugins[s.name]
         except KeyError:
-            raise KeyError('Output plugin %s does not exist' % s.outputMode.lower())
+            try:
+                # APPPERF-263: now attempt to dynamically load plugin
+                self.getPlugin(key, s)
+                self.__plugins[s.name] = self.__outputPlugins[key](s)
+                plugin = self.__plugins[s.name]
+            except KeyError:
+                # APPPERF-264:  dynamic loading has failed
+                raise KeyError('Output plugin %s does not exist' % s.outputMode.lower())
+
 
     def makeSplunkEmbedded(self, sessionKey=None):
         """Setup operations for being Splunk Embedded.  This is legacy operations mode, just a little bit obfuscated now.
@@ -398,8 +447,8 @@ class Config:
             # splunkMethod and splunkPort are defaulted so only check for splunkHost
             if s.splunkHost == None:
                 self.logger.error("Splunk URL Requested but splunkHost not set for sample '%s'" % s.name)
-                raise ValueError("Splunk URL Requested but splunkHost not set for sample '%s'" % s.name)  
-                    
+                raise ValueError("Splunk URL Requested but splunkHost not set for sample '%s'" % s.name)
+
             splunkUrl = '%s://%s:%s' % (s.splunkMethod, s.splunkHost, s.splunkPort)
             splunkMethod = s.splunkMethod
             splunkHost = s.splunkHost
@@ -428,7 +477,7 @@ class Config:
 
         tempsamples = [ ]
         tempsamples2 = [ ]
-        
+
         # 1/16/16 CS Trying to clean up the need to have attributes hard coded into the Config object
         # and instead go off the list of valid settings that could be set
         for setting in self._validSettings:
@@ -782,20 +831,20 @@ class Config:
         for s in self.samples:
             if s.generator in ('default', 'replay'):
                 s.loadSample()
-    
+
                 if s.autotimestamp:
                     at = self.autotimestamps
                     line_puncts = [ ]
-        
+
                     # Check for _time field, if it exists, add a timestamp to support it
                     if len(s.sampleDict) > 0:
                         if '_time' in s.sampleDict[0]:
                             self.logger.debugv("Found _time field, checking if default timestamp exists")
                             t = Token()
                             t.token = "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}"
-                            t.replacementType = "timestamp" 
+                            t.replacementType = "timestamp"
                             t.replacement = "%Y-%m-%dT%H:%M:%S.%f"
-            
+
                             found_token = False
                             # Check to see if we're already a token
                             for st in s.tokens:
@@ -807,7 +856,7 @@ class Config:
                                 s.tokens.append(t)
                             else:
                                 self.logger.debugv("_time field exists and timestamp already configured")
-        
+
                     for e in s.sampleDict:
                         # Run punct against the line, make sure we haven't seen this same pattern
                         # Not totally exact but good enough for Rock'N'Roll
@@ -819,7 +868,7 @@ class Config:
                                 t.token = x[0]
                                 t.replacementType = "timestamp"
                                 t.replacement = x[1]
-        
+
                                 try:
                                     # self.logger.debugv("Trying regex '%s' for format '%s' on '%s'" % (x[0], x[1], e[s.timeField]))
                                     ts = s.getTSFromEvent(e['_raw'], t)
@@ -927,10 +976,6 @@ class Config:
                     if not value in complexSetting:
                         self.logger.error("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
                         raise ValueError("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
-            elif key == 'outputMode':
-                if not value in self._validOutputModes:
-                    self.logger.error("outputMode invalid in stanza '%s'" % stanza)
-                    raise ValueError("outputMode invalid in stanza '%s'" % stanza)
         else:
             # Notifying only if the setting isn't valid and continuing on
             # This will allow future settings to be added and be backwards compatible
@@ -960,7 +1005,7 @@ class Config:
         """Callback to override count to -1 if set to 0 in the config, otherwise return int"""
         self.logger.debug("Validating count of %s" % value)
         # 5/13/14 CS Hack to take a zero count in the config and set it to a value which signifies
-        # the special condition rather than simply being zero events, setting to -1       
+        # the special condition rather than simply being zero events, setting to -1
         try:
             value = int(value)
         except:
@@ -984,7 +1029,7 @@ class Config:
 
         self.logger.info("Using random seed %s" % value)
         random.seed(value)
-  
+
 
 
     def _buildConfDict(self):
@@ -1009,13 +1054,13 @@ class Config:
                 if self.args.configfile:
                     if os.path.exists(self.args.configfile):
                         # 2/1/15 CS Adding a check to see whether we're instead passed a directory
-                        # In which case we'll assume it's a splunk app and look for config files in 
+                        # In which case we'll assume it's a splunk app and look for config files in
                         # default and local
                         if os.path.isdir(self.args.configfile):
                             conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
                                     os.path.join(self.args.configfile, 'default', 'eventgen.conf'),
                                     os.path.join(self.args.configfile, 'local', 'eventgen.conf')]
-                        else: 
+                        else:
                             conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
                                     self.args.configfile]
             if len(conffiles) == 0:
@@ -1069,17 +1114,30 @@ class Config:
             import signal
             signal.signal(signal.SIGTERM, func)
             signal.signal(signal.SIGINT, func)
-        
+
     def handle_exit(self, sig=None, func=None):
         """Clean up and shut down threads"""
         self.logger.info("Caught kill, exiting...")
+        self.stopping.increment()
 
         # Loop through all threads/processes and mark them for death
         # This does not actually kill the plugin, but they should check to see if
         # they are set to stop with every iteration
         for sampleTimer in self.sampleTimers:
             sampleTimer.stop()
-        for worker in self.workers:
+
+        time.sleep(0.5)
+
+        # while self.generatorQueueSize.value() > 0 or self.outputQueueSize.value() > 0:
+        #     time.sleep(0.1)
+
+        # 7/4/16 Stop generator workers first
+        for worker in self.__generatorworkers:
+            worker.stop()
+
+        time.sleep(0.5)
+
+        for worker in self.__outputworkers:
             worker.stop()
 
         self.logger.info("Exiting main thread.")
@@ -1097,7 +1155,7 @@ class Config:
                     worker = OutputThreadWorker(x)
                 worker.daemon = True
                 worker.start()
-                self.workers.append(worker)
+                self.__outputworkers.append(worker)
 
         # Start X instantiations of GeneratorWorkers, controlled by the generators configuration
         # or command line parameter
@@ -1109,7 +1167,7 @@ class Config:
                 worker = GeneratorThreadWorker(x, self.generatorQueue, self.outputQueue)
             worker.daemon = True
             worker.start()
-            self.workers.append(worker)
+            self.__generatorworkers.append(worker)
 
         self.logger.debug("Waiting for workers to start for %d workers" % self.generatorWorkers)
         while self.pluginsStarted.value() < self.generatorWorkers:
