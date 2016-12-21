@@ -25,7 +25,6 @@ class GeneratorProcessWorker(multiprocessing.Process):
     def stop(self):
         logger.info("Stop called on worker {0}.  Working: {1}".format(self.worker.num, self.worker.working))
         while c.generatorQueueSize.value() > 0 or self.worker.working:
-            logger.debug("Waiting for generator to finish...")
             time.sleep(0.1)
         for (name, plugin) in self.worker._pluginCache.iteritems():
             plugin._out.flush()
@@ -42,6 +41,7 @@ class GeneratorThreadWorker(threading.Thread):
         self.worker.run()
 
     def stop(self):
+        logger.info("Stop called on worker {0}.  Working: {1}".format(self.worker.num, self.worker.working))
         while c.generatorQueueSize.value() > 0 or self.worker.working:
             time.sleep(0.1)
         for (name, plugin) in self.worker._pluginCache.iteritems():

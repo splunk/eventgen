@@ -1117,7 +1117,7 @@ class Config:
 
     def handle_exit(self, sig=None, func=None):
         """Clean up and shut down threads"""
-        self.logger.info("Stopping addtional generation")
+        self.logger.info("Stopping additional generation")
         self.stopping.increment()
 
         # Loop through all threads/processes and mark them for death
@@ -1128,8 +1128,6 @@ class Config:
             sampleTimer.stop()
 
         time.sleep(0.5)
-
-
 
         # 7/4/16 Stop generator workers first
         self.logger.info("Stopping generators")
@@ -1144,11 +1142,12 @@ class Config:
 
         # Wait for all the queues to finish off before we exit.
         while self.generatorQueueSize.value() > 0 or self.outputQueueSize.value() > 0:
-            logger.info("Generator Size: {0}, Output Size: {1}".format(self.generatorQueueSize.value(), self.outputQueueSize.value()))
-            time.sleep(0.1)
+            self.logger.debug("Generator Size: {0}, Output Size: {1}".format(self.generatorQueueSize.value(), self.outputQueueSize.value()))
+            time.sleep(5)
         else:
-            logger.info("All queues are stopped")
+            self.logger.info("All queues are stopped")
         self.logger.info("Exiting main thread.")
+        time.sleep(1)
         sys.exit(0)
 
     def start(self):
