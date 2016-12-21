@@ -23,7 +23,9 @@ class GeneratorProcessWorker(multiprocessing.Process):
         self.worker.run()
 
     def stop(self):
+        logger.info("Stop called on worker {0}.  Working: {1}".format(self.worker.num, self.worker.working))
         while c.generatorQueueSize.value() > 0 or self.worker.working:
+            logger.debug("Waiting for generator to finish...")
             time.sleep(0.1)
         for (name, plugin) in self.worker._pluginCache.iteritems():
             plugin._out.flush()
@@ -131,14 +133,17 @@ class GeneratorRealWorker:
                     #             datetime.datetime.strftime(latest, "%Y-%m-%d %H:%M:%S")))
                     logger.debugv("Generating %d for sample '%s' stopping: %s" % (count, samplename, self.stopping))
                     plugin.gen(count, earliest, latest, samplename=samplename)
+                    logger.debugv("Finished full generation")
                     self.working = False
                 else:
                     logger.debug("Received sentinel, shutting down GeneratorWorker %d" % self.num)
                     self.stop()
             except Queue.Empty:
+                logger.debug("Queue Empty")
                 self.working = False
                 # stop running if i'm not doing anything and there's nothing in the queue and I'm told to stop!
                 if c.stopping.value() > 0 :
+                    logger.debug("Queue Empty and told to stop.  Exiting.")
                     self.stop()
                 # Queue empty, do nothing... basically here to catch interrupts
                 # pass
