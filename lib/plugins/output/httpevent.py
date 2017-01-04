@@ -164,7 +164,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 for event in q:
                     logger.debugv("HTTPEvent proccessing event: %s" % event)
                     payloadFragment = {}
-                    if event.get('_raw') == None:
+                    if event.get('_raw') == None or event['_raw'] == "\n":
                         logger.error('failure outputting event, does not contain _raw')
                     else:
                         logger.debug("Event contains _raw, attempting to process...")
