@@ -2,6 +2,7 @@ from __future__ import division
 from ConfigParser import ConfigParser
 import os
 import datetime, time
+import imp
 import sys
 import re
 import __main__
@@ -280,7 +281,7 @@ class Config:
                     self.logger.debugv("Searching for plugin in file '%s'" % filename)
                     try:
                         # Import the module
-                        module = __import__(base)
+                        module = imp.load_source(base, filename)
                         # Signal to the plugin by adding a module level variable which indicates
                         # our threading model, thread or process
                         module.__dict__.update({ 'threadmodel': self.threading })
