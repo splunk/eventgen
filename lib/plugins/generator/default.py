@@ -76,44 +76,49 @@ class DefaultGenerator(GeneratorPlugin):
                     eventsDict.append(nextEventToUse)
                 logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" % (s.name, s.app, len(eventsDict)))
 
+        eventcount=0
+        for targetevent in eventsDict:
+            try:
+                event = targetevent['_raw']
 
-        for x in range(len(eventsDict)):
-            logger.debugv("Processing event: %s" % x)
-            event = eventsDict[x]['_raw']
+                # Maintain state for every token in a given event
+                # Hash contains keys for each file name which is assigned a list of values
+                # picked from a random line in that file
+                mvhash = { }
 
-            # Maintain state for every token in a given event
-            # Hash contains keys for each file name which is assigned a list of values
-            # picked from a random line in that file
-            mvhash = { }
+                ## Iterate tokens
+                for token in s.tokens:
+                    token.mvhash = mvhash
+                    # logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
+                    logger.debugv("Sending event to token replacement: Event:{0} Token:{1}".format(event, token))
+                    event = token.replace(event, et=earliest, lt=latest, s=s)
+                    logger.debugv("finished replacing token")
+                    if token.replacementType == 'timestamp' and s.timeField != '_raw':
+                        s.timestamp = None
+                        token.replace(targetevent[s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
+                if(s.hostToken):
+                    # clear the host mvhash every time, because we need to re-randomize it
+                    s.hostToken.mvhash = {}
 
-            ## Iterate tokens
-            for token in s.tokens:
-                token.mvhash = mvhash
-                # logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
-                event = token.replace(event, et=earliest, lt=latest, s=s)
-                if token.replacementType == 'timestamp' and s.timeField != '_raw':
-                    s.timestamp = None
-                    token.replace(eventsDict[x][s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
-            if(s.hostToken):
-                # clear the host mvhash every time, because we need to re-randomize it
-                s.hostToken.mvhash =  {}
+                host = targetevent['host']
+                if (s.hostToken):
+                    host = s.hostToken.replace(host, s=s)
 
-            host = eventsDict[x]['host']
-            if (s.hostToken):
-                host = s.hostToken.replace(host, s=s)
-
-            if s.timestamp == None:
-                s.timestamp = s.now()
-            l = [ { '_raw': event,
-                    'index': eventsDict[x]['index'],
-                    'host': host,
-                    'hostRegex': s.hostRegex,
-                    'source': eventsDict[x]['source'],
-                    'sourcetype': eventsDict[x]['sourcetype'],
-                    '_time': int(time.mktime(s.timestamp.timetuple())) } ]
-
-            self._out.bulksend(l)
-            s.timestamp = None
+                if s.timestamp == None:
+                    s.timestamp = s.now()
+                l = [ { '_raw': event,
+                        'index': targetevent['index'],
+                        'host': host,
+                        'hostRegex': s.hostRegex,
+                        'source': targetevent['source'],
+                        'sourcetype': targetevent['sourcetype'],
+                        '_time': int(time.mktime(s.timestamp.timetuple())) } ]
+                logger.debugv("Finished Processing event: %s" % eventcount)
+                eventcount += 1
+                self._out.bulksend(l)
+                s.timestamp = None
+            except Exception as e:
+                raise e
 
         endTime = datetime.datetime.now()
         timeDiff = endTime - startTime

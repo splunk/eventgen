@@ -2,6 +2,7 @@ from __future__ import division
 from ConfigParser import ConfigParser
 import os
 import datetime, time
+import imp
 import sys
 import re
 import __main__
@@ -280,7 +281,7 @@ class Config:
                     self.logger.debugv("Searching for plugin in file '%s'" % filename)
                     try:
                         # Import the module
-                        module = __import__(base)
+                        module = imp.load_source(base, filename)
                         # Signal to the plugin by adding a module level variable which indicates
                         # our threading model, thread or process
                         module.__dict__.update({ 'threadmodel': self.threading })
@@ -1117,30 +1118,37 @@ class Config:
 
     def handle_exit(self, sig=None, func=None):
         """Clean up and shut down threads"""
-        self.logger.info("Caught kill, exiting...")
+        self.logger.info("Stopping additional generation")
         self.stopping.increment()
 
         # Loop through all threads/processes and mark them for death
         # This does not actually kill the plugin, but they should check to see if
         # they are set to stop with every iteration
+        self.logger.info("Stopping timers")
         for sampleTimer in self.sampleTimers:
             sampleTimer.stop()
 
         time.sleep(0.5)
 
-        # while self.generatorQueueSize.value() > 0 or self.outputQueueSize.value() > 0:
-        #     time.sleep(0.1)
-
         # 7/4/16 Stop generator workers first
+        self.logger.info("Stopping generators")
         for worker in self.__generatorworkers:
             worker.stop()
 
         time.sleep(0.5)
 
+        self.logger.info("Stopping outputers")
         for worker in self.__outputworkers:
             worker.stop()
 
+        # Wait for all the queues to finish off before we exit.
+        while self.generatorQueueSize.value() > 0 or self.outputQueueSize.value() > 0:
+            self.logger.debug("Generator Size: {0}, Output Size: {1}".format(self.generatorQueueSize.value(), self.outputQueueSize.value()))
+            time.sleep(5)
+        else:
+            self.logger.info("All queues are stopped")
         self.logger.info("Exiting main thread.")
+        time.sleep(1)
         sys.exit(0)
 
     def start(self):
@@ -1180,7 +1188,6 @@ class Config:
             sampleTimer.daemon = True
             sampleTimer.start()
             self.logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)
-
 
         self.logger.debug("Waiting for timers to start for %d timers" % len(self.sampleTimers))
         while self.timersStarted.value() < len(self.sampleTimers):
