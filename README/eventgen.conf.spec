@@ -241,7 +241,7 @@ interval = <integer>
     * Defaults to 60 seconds.
    
 delay = <integer>
-    * Specifies how long to wait until we begin generating events for this sample
+    * Specifies how long (in seconds) to wait until we begin generating events for this sample
     * Primarily this is used so we can stagger sets of samples which similar but slightly different data
     * Defaults to 0 which is disabled.
     
