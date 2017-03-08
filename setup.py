@@ -41,7 +41,7 @@ setup(
     package_data={"splunk_eventgen": ['*.sh', '*.txt', '*.yml'], '': ['*.sh', '*.txt', '*.yml']},
     install_requires=[
         'pytest>=3.0.0', # Required to test functional tests in eventgen.
-        'boto',
+        'boto3',
         'requests>=2.10.0',
         'requests[security]',
         'futures>=3.0.5']
