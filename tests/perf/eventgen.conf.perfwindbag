@@ -1,8 +1,0 @@
-[windbag]
-generator = windbag
-earliest = now
-latest = now
-interval = 10
-count = 50000
-outputMode = devnull
-backfill = -1d

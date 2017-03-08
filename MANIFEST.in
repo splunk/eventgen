@@ -1,0 +1,6 @@
+include README.md setup.py setup.cfg 
+
+recursive-include splunk_orca *
+
+recursive-exclude * *.pyc *.pyo
+

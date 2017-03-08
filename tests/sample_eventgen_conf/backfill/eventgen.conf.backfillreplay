@@ -1,0 +1,23 @@
+[replay]
+sampleDir = tests/replay
+mode = replay
+timeMultiple = 2
+backfill = -15m
+#backfillSearch = index=main sourcetype=windbag
+
+outputMode = stdout
+index = main
+sourcetype = windbag
+source = windbag.log
+host = localhost
+splunkHost = wimpy.splunk.com
+splunkPort = 10089
+splunkUser = admin
+splunkPass = changeme
+
+# outputMode = file
+# fileName = /tmp/internal.log
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+token.0.replacementType = timestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S

@@ -1,0 +1,55 @@
+[sample.shoppingapacheBrowse]
+sampleDir = tests/perf/weblog
+disabled=false
+mode = sample
+outputMode = devnull
+index = main
+sourcetype = access_combined
+host = log.buttercupgames.com
+source = /opt/access_combined.log
+interval = 3
+earliest = -3s
+latest = now
+count = 2000
+hourOfDayRate = { "0": 0.30, "1": 0.10, "2": 0.10, "3": 0.10, "4": 0.15, "5": 0.25, "6": 0.35, "7": 0.50, "8": 0.60, "9": 0.65, "10": 0.70, "11": 0.75, "12": 0.77, "13": 0.80, "14": 0.82, "15": 0.85, "16": 0.87, "17": 0.90, "18": 0.95, "19": 1.0, "20": 0.85, "21": 0.70, "22": 0.60, "23": 0.45 }
+dayOfWeekRate = { "0": 0.97, "1": 0.95, "2": 0.90, "3": 0.97, "4": 1.0, "5": 0.99, "6": 0.55 }
+#minuteOfHourRate = { "0": 1, "1": 1, "2": 1, "3": 1, "4": 1, "5": 1, "6": 1, "7": 1, "8": 1, "9": 1, "10": 1, "11": 1, "12": 1, "13": 1, "14": 1, "15": 1, "16": 1, "17": 1, "18": 1, "19": 1, "20": 1, "21": 1, "22": 1, "23": 1, "24": 1, "25": 1, "26": 1, "27": 1, "28": 1, "29": 1, "30": 1, "31": 1, "32": 1, "33": 1, "34": 1, "35": 4, "36": 0.1, "37": 0.1, "38": 1, "39": 1, "40": 1, "41": 1, "42": 1, "43": 1, "44": 1, "45": 1, "46": 1, "47": 1, "48": 1, "49": 1, "50": 1, "51": 1, "52": 1, "53": 1, "54": 1, "55": 1, "56": 1, "57": 1, "58": 1, "59": 1 }
+randomizeCount = 0.33
+randomizeEvents = true
+backfill = -3d
+# backfillSearch = index=buttercupgames sourcetype=access_custom
+
+# [29/Apr/2013 18:09:05:132]
+token.0.token = \d{1,2}/\w{3}/\d{4}\s\d{2}:\d{2}:\d{2}:\d{1,3}
+token.0.replacementType = timestamp
+token.0.replacement = %d/%b/%Y %H:%M:%S:%f
+
+# replace client IP
+token.1.token = (XXXXXXXXXX)
+token.1.replacementType = file
+token.1.replacement = tests/perf/weblog/external_ips.sample
+
+# replace server name
+token.2.token = (YYYYYYYYYY)
+token.2.replacementType = file
+token.2.replacement = tests/perf/weblog/webhosts.sample
+
+# replace user agent string
+token.3.token = (DDDDDDDDDD)
+token.3.replacementType = file
+token.3.replacement = tests/perf/weblog/useragents.sample
+
+# replace status
+token.4.token = (FFFFFFFFFF)
+token.4.replacementType = file
+token.4.replacement = tests/perf/weblog/webserverstatus.sample
+
+# replace size
+token.5.token = (GGGGGGGGGG)
+token.5.replacementType = random
+token.5.replacement = integer[200:4000]
+
+# replace time taken
+token.6.token = (HHHHHHHHHH)
+token.6.replacementType = random
+token.6.replacement = integer[100:1000]

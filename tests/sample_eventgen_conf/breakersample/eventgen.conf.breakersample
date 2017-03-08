@@ -1,0 +1,12 @@
+[breakersample]
+sampleDir = tests/breakersample
+outputMode = stdout
+count = 3
+earliest = -3s
+latest = now
+interval = 3
+breaker = ^\d{14}\.\d{6}
+
+token.0.token = ^(\d{14})\.\d{6}
+token.0.replacementType = timestamp
+token.0.replacement = %Y%m%d%H%M%S
