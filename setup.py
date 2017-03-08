@@ -3,10 +3,10 @@
 
 from setuptools import setup
 from setuptools import find_packages
-import splunk_orca
+import splunk_eventgen
 
 
-VERSION = splunk_orca.__version__
+VERSION = splunk_eventgen.__version__
 
 try:
     import pypandoc
@@ -19,7 +19,7 @@ def readme():
         return f.read()
 
 setup(
-    name='splunk_orca',
+    name='splunk_eventgen',
     version=VERSION,
     description='Containerized Splunk deployment as a Service command line tool and api',
     long_description=long_description,
@@ -34,18 +34,13 @@ setup(
         'Topic :: Software Development :: Testing',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7'],
-    keywords='splunk orca container containers docker automation',
-    entry_points={'console_scripts': ["splunk_orca = splunk_orca.__main__:main"]},
+    keywords='splunk eventgen container containers docker automation',
+    entry_points={'console_scripts': ["splunk_eventgen = splunk_eventgen.__main__:main"]},
     include_package_data=True,
     packages=find_packages(),
-    package_data={"splunk_orca": ['*.sh', '*.txt', '*.yml'], '': ['*.sh', '*.txt', '*.yml']},
+    package_data={"splunk_eventgen": ['*.sh', '*.txt', '*.yml'], '': ['*.sh', '*.txt', '*.yml']},
     install_requires=[
-        'ansible>=2.2.0',
-        'docker>=2.0.0',
-        'pyasn1>=0.1.9', # required by requests[security]
-        'pyOpenSSL==0.15.0', # required by requests[security]
-        'pytest>=3.0.0', # Required to test functional tests in orca.
-        'ndg-httpsclient>=0.4.1', # required by requests[security]
+        'pytest>=3.0.0', # Required to test functional tests in eventgen.
         'requests==2.10.0',
         'requests[security]',
         'futures>=3.0.5']

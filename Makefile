@@ -12,7 +12,7 @@ DESTROY_TEST ?= 0
 all: egg image
 
 egg:
-	python scripts/orca_CD.py pypi
+	python scripts/eventgen_CD.py
 
 clean:
 	rm -rf dist
