@@ -2,8 +2,10 @@ from __future__ import division
 from generatorplugin import GeneratorPlugin
 import os
 import logging
+import datetime, time
 import itertools
-from temp.lib.eventgenoutput import Output
+from collections import deque
+from eventgenoutput import Output
 
 class WindbagGenerator(GeneratorPlugin):
     def __init__(self, sample):

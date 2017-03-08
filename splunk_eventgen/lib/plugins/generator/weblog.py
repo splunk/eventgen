@@ -7,7 +7,7 @@ import itertools
 from collections import deque
 import random
 import subprocess
-from temp.lib.eventgenoutput import Output
+from eventgenoutput import Output
 
 class WeblogGenerator(GeneratorPlugin):
     def __init__(self, sample):

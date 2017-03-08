@@ -2,13 +2,13 @@
 #       copy of whats needed without the whole object.
 
 from __future__ import division
-
-import datetime
-import logging
-import random
-import time
 from generatorplugin import GeneratorPlugin
-
+import os
+import logging
+import datetime, time
+import random
+import copy
+from eventgenoutput import Output
 
 class DefaultGenerator(GeneratorPlugin):
     def __init__(self, sample):
