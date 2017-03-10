@@ -14,7 +14,7 @@ from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 from eventgenoutput import Output
 
-class GeneratorPlugin:
+class GeneratorPlugin(object):
     queueable = True
     sampleLines = None
     sampleDict = None

@@ -227,7 +227,7 @@ class Config:
             self.timersStarted = Counter(0, self.threading)
             self.pluginsStarting = Counter(0, self.threading)
             self.pluginsStarted = Counter(0, self.threading)
-            self.stopping = Counter(0, self.threading)
+            self.stopping = False
 
             self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
 
@@ -1119,7 +1119,7 @@ class Config:
     def handle_exit(self, sig=None, func=None):
         """Clean up and shut down threads"""
         self.logger.info("Stopping additional generation")
-        self.stopping.increment()
+        self.stopping = True
 
         # Loop through all threads/processes and mark them for death
         # This does not actually kill the plugin, but they should check to see if
