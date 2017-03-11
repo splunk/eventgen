@@ -91,3 +91,7 @@ if __name__ == '__main__':
     eventgen.start()
     # now just connect to the samples queue, and only quit if it's empty.
     eventgen.sampleQueue.join()
+    # if all the samples exited, make sure we finish generation
+    eventgen.workerQueue.join()
+    # finally if there are any outputters in the output queue, wait for those to exit.
+    eventgen.outputQueue.join()

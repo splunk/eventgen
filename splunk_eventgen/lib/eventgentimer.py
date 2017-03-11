@@ -1,9 +1,6 @@
-import threading
 import logging
-from eventgenconfig import Config
 import sys
 import datetime, time
-import random
 
 class Timer(object):
     """
@@ -133,18 +130,25 @@ class Timer(object):
                 else:
                     # Put into the queue to be generated
                     self.logger.error("Testing")
-                    """
-                     try:
-                        self.config.generatorQueue.put((self.sample.name, count, (time.mktime(et.timetuple())*(10**6)+et.microsecond), (time.mktime(lt.timetuple())*(10**6)+lt.microsecond)), block=True, timeout=1.0)
-                        c.generatorQueueSize.increment()
+                    try:
+                        # create a generator object, then place it in the generator queue.
+                        start_time=(time.mktime(et.timetuple())*(10**6)+et.microsecond)
+                        end_time=(time.mktime(lt.timetuple())*(10**6)+lt.microsecond)
+                        # self.generatorPlugin is only an instance, now we need a real plugin.
+                        genPlugin = self.generatorPlugin(sample=self.sample)
+                        genPlugin.updateConfig(config=self.config)
+                        genPlugin.updateCounts(count=count,
+                                               start_time=start_time,
+                                               end_time=end_time)
+                        self.generatorQueue.put(genPlugin)
                         self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
-                        stop = True
-                    except Full:
+                    #TODO: put this back to just catching a full queue
+                    except Exception as e:
+                        self.logger.exception(e)
                         self.logger.warning("Generator Queue Full, looping")
                         if self.stopping:
                             stop = True
                         pass
-                    """
 
 
                     # Sleep until we're supposed to wake up and generate more events

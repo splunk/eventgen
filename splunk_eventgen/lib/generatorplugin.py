@@ -1,18 +1,14 @@
 from __future__ import division
-import os, sys
 import logging
 import logging.handlers
-from collections import deque
-import csv
-import copy
-import re
 import pprint
-import datetime, time
+import datetime
 from timeparser import timeParser
 import httplib2, urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 from eventgenoutput import Output
+from Queue import Queue
 
 class GeneratorPlugin(object):
     queueable = True
@@ -20,49 +16,14 @@ class GeneratorPlugin(object):
     sampleDict = None
 
     def __init__(self, sample):
+        self._sample = sample
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'GeneratorPlugin', 'sample': sample.name})
+        adapter = EventgenAdapter(logger, {'module': 'GeneratorPlugin', 'sample': self._sample.name})
         self.logger = adapter
+        self.logger.debug("GeneratorPlugin being initialized for sample '%s'" % self._sample.name)
         
-        from eventgenconfig import Config
-        globals()['c'] = Config()
-        
-        # # 2/10/14 CS Make a threadsafe copy of all of the samples for us to work on
-        # with c.copyLock:
-        #     # 10/9/15 CS Moving this to inside the lock, in theory, there should only be one thread
-        #     # trying to start at once, going to try to ensure this is the case and hoping for no deadlocks
-        #     while c.pluginsStarting.value() > 0:
-        #         self.logger.debug("Waiting for exclusive lock to start for GeneratorPlugin '%s'" % sample.name)
-        #         time.sleep(0.1)
-            
-        #     c.pluginsStarting.increment()
-        self.logger.debug("GeneratorPlugin being initialized for sample '%s'" % sample.name)
-        
-        self._out = Output(sample)
-        
-        # # 9/6/15 Don't do any work until all the timers have started
-        # while c.timersStarted.value() < len(c.sampleTimers):
-        #     self.logger.debug("Not all timers started, sleeping for GeneratorPlugin '%s'" % sample.name)
-        #     time.sleep(1.0)
-        
-        self._samples = { }
-        for s in c.samples:
-            news = copy.copy(s)
-            news.tokens = [ copy.copy(t) for t in s.tokens ]
-            for setting in c._jsonSettings:
-                if setting in s.__dict__:
-                    setattr(news, setting, getattr(s, setting))
-            self._samples[news.name] = news
-             
-        # self._samples = dict((s.name, copy.deepcopy(s)) for s in c.samples)
-        self._sample = sample
-    
-            # c.pluginsStarting.decrement()
-            # c.pluginsStarted.increment()
-            # # self.logger.debug("Starting GeneratorPlugin for sample '%s' with generator '%s'" % (self._sample.name, self._sample.generator))
-
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
         # Eliminate recursive going back to parent
@@ -75,6 +36,23 @@ class GeneratorPlugin(object):
 
     def updateSample(self, samplename):
         self._sample = self._samples[samplename]
+
+    def updateConfig(self, config):
+        self.config = config
+        self.outputPlugin = self.config.getPlugin('output.' + self._sample.outputMode, self._sample)
+        if self._sample.maxQueueLength == 0:
+            self._sample.maxQueueLength = self.outputPlugin.MAXQUEUELENGTH
+        self._out = Output(self._sample)
+        self._out.updateConfig(self.config)
+        #self._out._update_outputqueue(self.outputQueue)
+        #TODO: Need to figure out some way to deal with the outputqueue
+
+    def updateCounts(self, sample=None, count=None, start_time=None, end_time=None):
+        if sample:
+            self._sample=sample
+        self.count = count
+        self.start_time = start_time
+        self.end_time = end_time
 
     def setOutputMetadata(self, event):
         # self.logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))
@@ -155,7 +133,10 @@ class GeneratorPlugin(object):
                 except Exception as ex:
                     self.logger.error("Failed to parse end '%s' for sample '%s', treating as number of executions" % (s.end, s.name))
                     raise
-
+    def run(self):
+        self.gen(count=self.count, earliest=self.start_time, latest=self.end_time, samplename=self._sample.name)
+        #TODO: Make this some how handle an output queue and support intervals and a master queue
+        self._out.flush()
 
 def load():
     return GeneratorPlugin
