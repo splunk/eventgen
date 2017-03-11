@@ -11,15 +11,13 @@ class OutputPlugin(object):
         self._app = sample.app
         self._sample = sample
         self._outputMode = sample.outputMode
+        self.events = None
 
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'OutputPlugin', 'sample': sample.name})
+        adapter = EventgenAdapter(logger, {'module': 'OutputPlugin', 'sample': self._sample.name})
         self.logger = adapter
-
-        from eventgenconfig import Config
-        globals()['c'] = Config()
 
         self.logger.debug("Starting OutputPlugin for sample '%s' with output '%s'" % (self._sample.name, self._sample.outputMode))
 
@@ -34,6 +32,14 @@ class OutputPlugin(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def set_events(self, events):
+        self.events = events
+
+    def run(self):
+        if self.events:
+            self.flush(q=self.events)
+        self.events = None
 
 def load():
     return OutputPlugin

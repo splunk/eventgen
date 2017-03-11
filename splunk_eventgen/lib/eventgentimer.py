@@ -24,7 +24,7 @@ class Timer(object):
     countdown = None
 
     # Added by CS 5/7/12 to emulate threading.Timer
-    def __init__(self, time, sample=None, config=None, genqueue=None):
+    def __init__(self, time, sample=None, config=None, genqueue=None, outputqueue=None):
         # Logger already setup by config, just get an instance
         # setup default options
         self.profiler = config.profiler
@@ -33,6 +33,7 @@ class Timer(object):
         self.end = int(getattr(self.sample, "end", None))
         self.endts = getattr(self.sample, "endts", None)
         self.generatorQueue = genqueue
+        self.outputQueue = outputqueue
         self.time = time
         self.stopping = False
         self.countdown = 0
@@ -136,7 +137,7 @@ class Timer(object):
                         end_time=(time.mktime(lt.timetuple())*(10**6)+lt.microsecond)
                         # self.generatorPlugin is only an instance, now we need a real plugin.
                         genPlugin = self.generatorPlugin(sample=self.sample)
-                        genPlugin.updateConfig(config=self.config)
+                        genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                         genPlugin.updateCounts(count=count,
                                                start_time=start_time,
                                                end_time=end_time)

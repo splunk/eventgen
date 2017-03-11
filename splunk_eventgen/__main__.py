@@ -87,7 +87,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     eventgen = splunk_eventgen_init.EventGenerator(args=args)
-    eventgen.logger.error("Starting")
+    eventgen.logger.info("Starting")
     eventgen.start()
     # now just connect to the samples queue, and only quit if it's empty.
     eventgen.sampleQueue.join()

@@ -19,7 +19,7 @@ class Output(object):
         logobj = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
         adapter = EventgenAdapter(logobj, {'module': 'Output', 'sample': sample.name})
-        globals()['logger'] = adapter
+        self.logger = adapter
 
         self._app = sample.app
         self._sample = sample
@@ -41,11 +41,12 @@ class Output(object):
         return self.__str__()
 
     def _update_outputqueue(self, queue):
-        pass
-        #self._queue = queue
+        self.outputQueue = queue
 
     def updateConfig(self, config):
-        self.confg = config
+        self.config = config
+        #TODO: This is where the actual output plugin is loaded, and pushed out.  This should be handled way better...
+        self.outputPlugin = self.config.getPlugin('output.' + self._sample.outputMode, self._sample)
 
     def send(self, msg):
         """
@@ -94,26 +95,22 @@ class Output(object):
         if flushing:
             # q = deque(list(self._queue)[:])
             q = list(self._queue)
-            logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
+            self.logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue.clear()
+            outputer = self.outputPlugin(self._sample)
+            outputer.set_events(q)
             if self.config.useOutputQueue:
-                while True:
-                    try:
-                        c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
-                        c.outputQueueSize.increment()
-                        # logger.info("Outputting queue")
-                        break
-                    except Full:
-                        logger.warning("Output Queue full, looping again")
-                        pass
+                try:
+                    self.outputQueue.put(outputer)
+                except Full:
+                    self.logger.warning("Output Queue full, looping again")
             else:
                 tmp = [len(s['_raw']) for s in q]
-                c.eventsSent.add(len(tmp))
-                c.bytesSent.add(sum(tmp))
-                if c.splunkEmbedded and len(tmp)>0:
+                self.config.eventsSent.add(len(tmp))
+                self.config.bytesSent.add(sum(tmp))
+                if self.config.splunkEmbedded and len(tmp)>0:
                     metrics = logging.getLogger('eventgen_metrics')
                     metrics.error(json.dumps({'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 
-                            'sample': name, 'events': len(tmp), 'bytes': sum(tmp)}))
+                            'sample': self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)}))
                 tmp = None
-                plugin = c.getPlugin(self._sample.name)
-                plugin.flush(deque(q[:]))
+                outputer.run()

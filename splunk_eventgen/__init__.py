@@ -108,7 +108,7 @@ class EventGenerator(object):
                 #TODO: Move these timers into a threading queue, and have them handle sticking things into the multiprocess queue
                 self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
                 # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
-                t = Timer(1.0, sample=s, config=self.config, genqueue=self.workerQueue)
+                t = Timer(1.0, sample=s, config=self.config, genqueue=self.workerQueue, outputqueue=self.outputQueue)
                 self.sampleQueue.put(t)
         try:
             ## Only need to start timers once

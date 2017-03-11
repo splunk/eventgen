@@ -37,15 +37,19 @@ class GeneratorPlugin(object):
     def updateSample(self, samplename):
         self._sample = self._samples[samplename]
 
-    def updateConfig(self, config):
+    def updateConfig(self, config, outqueue):
         self.config = config
+        self.outputQueue = outqueue
+        # TODO: Figure out if this maxQueueLength needs to even be set here.  I think this should exist on the output
+        # process and the generator shouldn't have anything to do with this.
         self.outputPlugin = self.config.getPlugin('output.' + self._sample.outputMode, self._sample)
         if self._sample.maxQueueLength == 0:
             self._sample.maxQueueLength = self.outputPlugin.MAXQUEUELENGTH
+        # Output = output process, not the plugin.  The plugin is loaded by the output process.
         self._out = Output(self._sample)
         self._out.updateConfig(self.config)
-        #self._out._update_outputqueue(self.outputQueue)
-        #TODO: Need to figure out some way to deal with the outputqueue
+        if self.config.useOutputQueue:
+            self._out._update_outputqueue(self.outputQueue)
 
     def updateCounts(self, sample=None, count=None, start_time=None, end_time=None):
         if sample:
