@@ -8,7 +8,6 @@ import httplib2, urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 from eventgenoutput import Output
-from Queue import Queue
 
 class GeneratorPlugin(object):
     queueable = True
@@ -23,7 +22,7 @@ class GeneratorPlugin(object):
         adapter = EventgenAdapter(logger, {'module': 'GeneratorPlugin', 'sample': self._sample.name})
         self.logger = adapter
         self.logger.debug("GeneratorPlugin being initialized for sample '%s'" % self._sample.name)
-        
+
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
         # Eliminate recursive going back to parent

@@ -2,12 +2,9 @@ from __future__ import division
 from ConfigParser import ConfigParser
 import os
 import datetime, time
-import imp
 import sys
 import re
-import __main__
 import logging, logging.handlers
-import traceback
 import json
 import pprint
 import copy
@@ -16,9 +13,6 @@ from eventgentoken import Token
 import urllib
 import types
 import random
-from eventgencounter import Counter
-from eventgenqueue import Queue
-import threading, multiprocessing
 from generatorworker import GeneratorThreadWorker, GeneratorProcessWorker
 from outputworker import OutputThreadWorker, OutputProcessWorker
 
@@ -62,7 +56,7 @@ STANDALONE = False
 # 5/10/12 CS Some people consider Singleton to be lazy.  Dunno, I like it for convenience.
 # My general thought on that sort of stuff is if you don't like it, reimplement it.  I'll consider
 # your patch.
-class Config:
+class Config(object):
     """Reads configuration from files or Splunk REST endpoint and stores them in a 'Borg' global.
     Borg is a variation on the Singleton design pattern which allows us to continually instantiate
     the configuration object throughout the application and maintain state."""
@@ -87,8 +81,6 @@ class Config:
     outputWorkers = None
     generatorWorkers = None
     sampleTimers = [ ]
-    __generatorworkers = [ ]
-    __outputworkers = [ ]
 
     # Config file options.  We do not define defaults here, rather we pull them in
     # from eventgen.conf.
@@ -99,8 +91,10 @@ class Config:
     disabled = None
     blacklist = ".*\.part"
 
-    __outputPlugins = { }
-    __plugins = { }
+    __generatorworkers = [ ]
+    __outputworkers = [ ]
+    outputPlugins = { }
+    plugins = { }
     outputQueue = None
     generatorQueue = None
 
@@ -119,7 +113,7 @@ class Config:
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
-    _validOutputModes = [ ]
+    validOutputModes = [ ]
     _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp']
@@ -200,26 +194,14 @@ class Config:
             # to load config.  Kinda hacky, but easier than other methods.
             globals()['threadmodel'] = self.threading
 
-            # Initialize plugins
-            self.__outputPlugins = { }
-            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'output'), self.__outputPlugins, 'output')
-            self.outputQueue = Queue(100, self.threading)
-            self._validOutputModes.extend(plugins)
-
-            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins, 'generator')
-            self.generatorQueue = Queue(10000, self.threading)
-
-            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'rater'), self.__plugins, 'rater')
-            self._complexSettings['rater'] = plugins
-
-
             self._complexSettings['timezone'] = self._validateTimezone
 
             self._complexSettings['count'] = self._validateCount
 
             self._complexSettings['seed'] = self._validateSeed
 
-            self.generatorQueueSize = Counter(0, self.threading)
+            #TODO: Figure out how to deal with counters.
+            '''self.generatorQueueSize = Counter(0, self.threading)
             self.outputQueueSize = Counter(0, self.threading)
             self.eventsSent = Counter(0, self.threading)
             self.bytesSent = Counter(0, self.threading)
@@ -227,12 +209,12 @@ class Config:
             self.timersStarted = Counter(0, self.threading)
             self.pluginsStarting = Counter(0, self.threading)
             self.pluginsStarted = Counter(0, self.threading)
+            '''
             self.stopping = False
 
-            self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
+            #self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
 
             self._firsttime = False
-            self.intervalsSinceFlush = { }
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
@@ -245,82 +227,7 @@ class Config:
 
     def __repr__(self):
         return self.__str__()
-    '''
-    APPPERF-263: add default name param. If name is supplied then only
-    attempt to load <name>.py
-    '''
-    def __initializePlugins(self, dirname, plugins, plugintype, name=None):
-        """Load a python module dynamically and add to internal dictionary of plugins (only accessed by getPlugin)"""
-        ret = []
 
-        dirname = os.path.abspath(dirname)
-        self.logger.debugv("looking for plugin(s) in {}".format(dirname))
-        if not os.path.isdir(dirname):
-            self.logger.debugv("directory {} does not exist ... moving on".format(dirname))
-            return ret
-
-        # Include all plugin directories in sys.path for includes
-        if not dirname in sys.path:
-            sys.path.append(dirname)
-
-        # Loop through all files in passed dirname looking for plugins
-        for filename in os.listdir(dirname):
-            filename = dirname + os.sep + filename
-
-            # If the file exists
-            if os.path.isfile(filename):
-                # Split file into a base name plus extension
-                basename = os.path.basename(filename)
-                base, extension = os.path.splitext(basename)
-
-                # If we're a python file and we don't start with _
-                #if extension == ".py" and not basename.startswith("_"):
-                # APPPERF-263: If name param is supplied, only attempt to load
-                # {name}.py from {app}/bin directory
-                if extension == ".py" and ((name is None and not basename.startswith("_")) or base == name):
-                    self.logger.debugv("Searching for plugin in file '%s'" % filename)
-                    try:
-                        # Import the module
-                        module = imp.load_source(base, filename)
-                        # Signal to the plugin by adding a module level variable which indicates
-                        # our threading model, thread or process
-                        module.__dict__.update({ 'threadmodel': self.threading })
-                        # Load will now return a threading.Thread or multiprocessing.Process based object
-                        plugin = module.load()
-
-                        # set plugin to something like output.file or generator.default
-                        pluginname = plugintype + '.' + base
-                        # self.logger.debugv("Filename: %s os.sep: %s pluginname: %s" % (filename, os.sep, pluginname))
-                        plugins[pluginname] = plugin
-
-                        # Return is used to determine valid configs, so only return the base name of the plugin
-                        ret.append(base)
-
-                        self.logger.debug("Loading module '%s' from '%s'" % (pluginname, basename))
-
-                        # 12/3/13 If we haven't loaded a plugin right or we haven't initialized all the variables
-                        # in the plugin, we will get an exception and the plan is to not handle it
-                        if 'validSettings' in dir(plugin):
-                            self._validSettings.extend(plugin.validSettings)
-                        if 'defaultableSettings' in dir(plugin):
-                            self._defaultableSettings.extend(plugin.defaultableSettings)
-                        if 'intSettings' in dir(plugin):
-                            self._intSettings.extend(plugin.intSettings)
-                        if 'floatSettings' in dir(plugin):
-                            self._floatSettings.extend(plugin.floatSettings)
-                        if 'boolSettings' in dir(plugin):
-                            self._boolSettings.extend(plugin.boolSettings)
-                        if 'jsonSettings' in dir(plugin):
-                            self._jsonSettings.extend(plugin.jsonSettings)
-                        if 'complexSettings' in dir(plugin):
-                            self._complexSettings.update(plugin.complexSettings)
-                    except ValueError:
-                        self.logger.error("Error loading plugin '%s' of type '%s'" % (base, plugintype))
-                        self.logger.debug(traceback.format_exc())
-
-        # Chop off the path we added
-        sys.path = sys.path[0:-1]
-        return ret
 
 
     def getPlugin(self, name, s=None):
@@ -331,7 +238,7 @@ class Config:
         make sure we look in __outputPlugins as well. For some reason we
         keep 2 separate dicts of plugins.
         '''
-        if not name in self.__plugins and not name in self.__outputPlugins:
+        if not name in self.plugins and not name in self.outputPlugins:
             # 2/1/15 CS If we haven't already seen the plugin, try to load it
             # Note, this will only work for plugins which do not specify config validation
             # parameters.  If they do, configs may not validate for user provided plugins.
@@ -344,7 +251,7 @@ class Config:
                     if plugin != None:
                         self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'"
                                      % (plugintype, plugin, s.name))
-                        pluginsdict = self.__plugins if plugintype in ('generator', 'rater') else self.__outputPlugins
+                        pluginsdict = self.plugins if plugintype in ('generator', 'rater') else self.outputPlugins
                         bindir = os.path.join(s.sampleDir, os.pardir, 'bin')
                         libdir = os.path.join(s.sampleDir, os.pardir, 'lib')
                         plugindir = os.path.join(libdir, 'plugins', plugintype)
@@ -356,35 +263,13 @@ class Config:
                         self.__initializePlugins(plugindir, pluginsdict, plugintype)
 
         # APPPERF-263: consult both __outputPlugins and __plugins
-        if not name in self.__plugins and not name in self.__outputPlugins:
+        if not name in self.plugins and not name in self.outputPlugins:
             raise KeyError('Plugin ' + name + ' not found')
 
         # return in order of precedence:  __plugins, __outputPlugins, None
         # Note: because of the above KeyError Exception we should never return
         # None, but it is the sane behavior for a getter method
-        return self.__plugins.get(name,self.__outputPlugins.get(name,None))
-
-    def __setPlugin(self, s):
-        """Called during setup, assigns which output plugin to use based on configured outputMode"""
-        # 12/2/13 CS Adding pluggable output modules, need to set array to map sample name to output plugin
-        # module instances
-
-        name = s.outputMode.lower()
-        key = "{type}.{name}".format(type="output", name=name)
-
-        try:
-            self.__plugins[s.name] = self.__outputPlugins[key](s)
-            plugin = self.__plugins[s.name]
-        except KeyError:
-            try:
-                # APPPERF-263: now attempt to dynamically load plugin
-                self.getPlugin(key, s)
-                self.__plugins[s.name] = self.__outputPlugins[key](s)
-                plugin = self.__plugins[s.name]
-            except KeyError:
-                # APPPERF-264:  dynamic loading has failed
-                raise KeyError('Output plugin %s does not exist' % s.outputMode.lower())
-
+        return self.plugins.get(name,self.outputPlugins.get(name,None))
 
     def makeSplunkEmbedded(self, sessionKey=None):
         """Setup operations for being Splunk Embedded.  This is legacy operations mode, just a little bit obfuscated now.
@@ -562,7 +447,7 @@ class Config:
                 # Set defaults for items not included in the config file
                 for setting in self._defaultableSettings:
                     if not hasattr(s, setting) or getattr(s, setting) == None:
-                        setattr(s, setting, getattr(self, setting))
+                        setattr(s, setting, getattr(self, setting, None))
 
                 # Append to temporary holding list
                 if not s.disabled:
@@ -809,8 +694,8 @@ class Config:
                 # 12/29/13 CS Moved replay generation to a new replay generator plugin
                 s.generator = 'replay'
 
-            self.__setPlugin(s)
-            self.intervalsSinceFlush[s.name] = Counter(0, self.threading)
+            #TODO: move plugins to the parent class
+            #self.__setPlugin(s)
 
         self.samples = tempsamples
         self._confDict = None

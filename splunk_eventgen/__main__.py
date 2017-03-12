@@ -89,9 +89,9 @@ if __name__ == '__main__':
     eventgen = splunk_eventgen_init.EventGenerator(args=args)
     eventgen.logger.info("Starting")
     eventgen.start()
-    # now just connect to the samples queue, and only quit if it's empty.
+    eventgen.logger.info("All timers started, joining queue until it's empty.")
     eventgen.sampleQueue.join()
-    # if all the samples exited, make sure we finish generation
+    eventgen.logger.info("All timers exited, joining generation queue until it's empty.")
     eventgen.workerQueue.join()
-    # finally if there are any outputters in the output queue, wait for those to exit.
+    eventgen.logger.info("All generators exited, joining output queue until it's empty.")
     eventgen.outputQueue.join()

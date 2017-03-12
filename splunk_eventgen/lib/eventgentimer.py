@@ -1,6 +1,7 @@
 import logging
 import sys
 import datetime, time
+import pickle
 
 class Timer(object):
     """
@@ -130,17 +131,23 @@ class Timer(object):
                     # logger.debug("Queue depth for sample '%s' in app '%s': %d" % (self.sample.name, self.sample.app, c.outputQueue.qsize()))
                 else:
                     # Put into the queue to be generated
-                    self.logger.error("Testing")
                     try:
                         # create a generator object, then place it in the generator queue.
                         start_time=(time.mktime(et.timetuple())*(10**6)+et.microsecond)
                         end_time=(time.mktime(lt.timetuple())*(10**6)+lt.microsecond)
                         # self.generatorPlugin is only an instance, now we need a real plugin.
                         genPlugin = self.generatorPlugin(sample=self.sample)
+                        # need to make sure we set the queue right if we're using multiprocessing or thread modes
                         genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                         genPlugin.updateCounts(count=count,
                                                start_time=start_time,
                                                end_time=end_time)
+                        if self.config.threading == 'process':
+                            # Remove things that aren't pickleable.
+                            genPlugin.logger = None
+                            genPlugin.config.logger = None
+                            genPlugin._out.config = None
+                            genPlugin._out.logger = None
                         self.generatorQueue.put(genPlugin)
                         self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
                     #TODO: put this back to just catching a full queue

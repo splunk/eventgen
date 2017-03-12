@@ -33,6 +33,14 @@ class OutputPlugin(object):
     def __repr__(self):
         return self.__str__()
 
+    def save(obj):
+        return (obj.__class__, obj.__dict__)
+
+    def load(cls, attributes):
+        obj = cls.__new__(cls)
+        obj.__dict__.update(attributes)
+        return obj
+
     def set_events(self, events):
         self.events = events
 
@@ -40,6 +48,7 @@ class OutputPlugin(object):
         if self.events:
             self.flush(q=self.events)
         self.events = None
+
 
 def load():
     return OutputPlugin

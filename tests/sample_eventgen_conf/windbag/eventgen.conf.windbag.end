@@ -4,5 +4,5 @@ earliest = -3s
 latest = now
 interval = 3
 count = 5
-end = 5
+end = 1
 outputMode = stdout

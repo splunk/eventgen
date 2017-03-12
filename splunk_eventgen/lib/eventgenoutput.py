@@ -95,12 +95,14 @@ class Output(object):
         if flushing:
             # q = deque(list(self._queue)[:])
             q = list(self._queue)
-            self.logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
+            self.logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue.clear()
             outputer = self.outputPlugin(self._sample)
             outputer.set_events(q)
             if self.config.useOutputQueue:
                 try:
+                    #TODO: FIX THIS LOGGING CRAP!!!!
+                    outputer.logger = None
                     self.outputQueue.put(outputer)
                 except Full:
                     self.logger.warning("Output Queue full, looping again")
