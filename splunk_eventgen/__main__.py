@@ -93,5 +93,9 @@ if __name__ == '__main__':
     eventgen.sampleQueue.join()
     eventgen.logger.info("All timers exited, joining generation queue until it's empty.")
     eventgen.workerQueue.join()
-    eventgen.logger.info("All generators exited, joining output queue until it's empty.")
+    eventgen.logger.info("All generators working/exited, joining output queue until it's empty.")
     eventgen.outputQueue.join()
+    eventgen.logger.info("All output queue empty, trying to wait for outputers to finish")
+    # TODO: Fix this to actually know when the last process is done with work.
+    # give the outputters time to finish processing before we exit.
+    time.sleep(10)

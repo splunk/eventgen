@@ -54,7 +54,7 @@ class EventGenerator(object):
         self._create_output_threadpool()
         self._create_generator_workers()
 
-    def _create_timer_threadpool(self, threadcount=1):
+    def _create_timer_threadpool(self, threadcount=100):
         '''
         Timer threadpool is used to contain the timer object for each sample.  A timer will stay active
         until the end condition is met for the sample.  If there is no end condition, the timer will exist forever.
@@ -79,7 +79,7 @@ class EventGenerator(object):
         :return:
         '''
         #TODO: Make this take the config param and figure out what we want to do with this.
-        if getattr(self, "manager"):
+        if getattr(self, "manager", None):
             self.outputQueue = self.manager.Queue(maxsize=10000)
         else:
             self.outputQueue = Queue(maxsize=10000)
@@ -138,7 +138,6 @@ class EventGenerator(object):
             item._out.logger = logger
             item._out.config.logger = logger
             item.run()
-            foo = "world"
             queue.task_done()
 
     def _initializePlugins(self, dirname, plugins, plugintype, name=None):
