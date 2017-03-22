@@ -6,11 +6,8 @@ from __future__ import division
 import sys, os
 path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.append(path_prepend)
-import logging
 import time
-import splunk_eventgen.__init__ as splunk_eventgen_init
-from eventgenconfig import Config
-from eventgentimer import Timer
+import __init__ as splunk_eventgen_init
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
 
@@ -87,7 +84,6 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     eventgen = splunk_eventgen_init.EventGenerator(args=args)
-    eventgen.logger.info("Starting")
     eventgen.start()
     eventgen.logger.info("All timers started, joining queue until it's empty.")
     eventgen.sampleQueue.join()
@@ -98,4 +94,4 @@ if __name__ == '__main__':
     eventgen.logger.info("All output queue empty, trying to wait for outputers to finish")
     # TODO: Fix this to actually know when the last process is done with work.
     # give the outputters time to finish processing before we exit.
-    time.sleep(10)
+    sys.exit(0)

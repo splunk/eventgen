@@ -3,13 +3,23 @@
 from lib.eventgenconfig import Config
 from lib.eventgentimer import Timer
 import logging
+import logging.config
 import os
 import sys
 import imp
 from Queue import Queue
 from threading import Thread
-import copy
-import pickle
+
+# Since i'm including a new library but external sources may not have access to pip (like splunk embeded), I need to
+# be able to load this library directly from src if it's not installed.
+try:
+    import logutils
+    import logutils.handlers
+except ImportError:
+    path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib', 'logutils_src')
+    sys.path.append(path_prepend)
+    import logutils
+    import logutils.queue
 
 __version__ = "0.6.0"
 
@@ -29,16 +39,14 @@ class EventGenerator(object):
         localized .conf entries.
         :param args: __main__ parse_args() object.
         '''
+        self._setup_loggers()
+        # attach to the logging queue
+        self.logger.debug("Logging Setup Complete.")
+
         self.config = None
         self.args = args
         if getattr(self.args, "configfile"):
             self.reload_conf()
-        # Logger is setup by Config, just have to get an instance
-        # TODO: The config object shouldn't setup the logger, this should.  It needs to be moved here.
-        self.logobj = logging.getLogger('eventgen')
-        from lib.eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(self.logobj, {'sample': 'null', 'module': 'main'})
-        self.logger = adapter
         # Initialize plugins
         # Plugins must be loaded before objects that do work, otherwise threads and processes generated will not have
         # the modules loaded in active memory.
@@ -65,7 +73,7 @@ class EventGenerator(object):
         self.sampleQueue = Queue(maxsize=0)
         num_threads = threadcount
         for i in range(num_threads):
-            worker = Thread(target=self._worker_do_work, args=(self.sampleQueue, ))
+            worker = Thread(target=self._worker_do_work, args=(self.sampleQueue, self.loggingQueue, ))
             worker.setDaemon(True)
             worker.start()
 
@@ -85,7 +93,7 @@ class EventGenerator(object):
             self.outputQueue = Queue(maxsize=10000)
         num_threads = threadcount
         for i in range(num_threads):
-            worker = Thread(target=self._worker_do_work, args=(self.outputQueue, ))
+            worker = Thread(target=self._worker_do_work, args=(self.outputQueue, self.loggingQueue, ))
             worker.setDaemon(True)
             worker.start()
 
@@ -107,7 +115,7 @@ class EventGenerator(object):
             self.workerQueue = Queue(maxsize=500)
             worker_threads = workercount
             for i in range(worker_threads):
-                worker = Thread(target=self._worker_do_work, args=(self.workerQueue, ))
+                worker = Thread(target=self._worker_do_work, args=(self.workerQueue, self.loggingQueue, ))
                 worker.setDaemon(True)
                 worker.start()
 
@@ -116,29 +124,104 @@ class EventGenerator(object):
             import multiprocessing
             self.workerPool = multiprocessing.Pool(processes=workercount,
                                                    initializer=self._proc_worker_do_work,
-                                                   initargs=(self.workerQueue,self.logger,))
+                                                   initargs=(self.workerQueue, self.loggingQueue,))
         else:
             pass
 
-    @staticmethod
-    def _worker_do_work(queue):
-        while True:
-            item = queue.get()
-            item.run()
-            queue.task_done()
+    def _setup_loggers(self, config=None):
+        if not config:
+            self.logger_config = {
+                'version': 1,
+                'formatters': {
+                    'detailed': {
+                        'class': 'logging.Formatter',
+                        'format': '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
+                    }
+                },
+                'handlers': {
+                    'console': {
+                        'class': 'logging.StreamHandler',
+                        'level': 'INFO',
+                    },
+                    'file': {
+                        'class': 'logging.FileHandler',
+                        'filename': 'eventgen_main.log',
+                        'mode': 'w',
+                        'formatter': 'detailed',
+                    },
+                    'eventgenfile': {
+                        'class': 'logging.FileHandler',
+                        'filename': 'eventgen-process.log',
+                        'mode': 'w',
+                        'formatter': 'detailed',
+                    },
+                    'errors': {
+                        'class': 'logging.FileHandler',
+                        'filename': 'eventgen-errors.log',
+                        'mode': 'w',
+                        'level': 'ERROR',
+                        'formatter': 'detailed',
+                    },
+                },
+                'loggers': {
+                    'eventgen': {
+                        'handlers': ['eventgenfile']
+                    }
+                },
+                'root': {
+                    'level': 'DEBUG',
+                    'handlers': ['console', 'file', 'errors']
+                },
+            }
+        else:
+            self.logger_config = config
+        logging.config.dictConfig(self.logger_config)
+        # We need to have debugv from the olderversions of eventgen.
+        DEBUG_LEVELV_NUM = 9
+        logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
+        def debugv(self, message, *args, **kws):
+            # Yes, logger takes its '*args' as 'args'.
+            if self.isEnabledFor(DEBUG_LEVELV_NUM):
+                self._log(DEBUG_LEVELV_NUM, message, args, **kws)
+        logging.Logger.debugv = debugv
+        self.loggingQueue = Queue()
+        self.logger = logging.getLogger('eventgen')
+        self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue,))
+        self.logging_pool.start()
+
 
     @staticmethod
-    def _proc_worker_do_work(queue, logger):
+    def _worker_do_work(work_queue, logging_queue):
         while True:
-            item = queue.get()
-            # TODO: Actually make real loggers for all the layers in this object, and then set them correctly.
-            item.logger = logger
-            item.config.logger = logger
-            item._out.updateConfig(item.config)
-            item._out.logger = logger
-            item._out.config.logger = logger
+            item = work_queue.get()
             item.run()
-            queue.task_done()
+            work_queue.task_done()
+
+    @staticmethod
+    def _proc_worker_do_work(work_queue, logging_queue):
+        qh = logutils.queue.QueueHandler(logging_queue)
+        root = logging.getLogger()
+        root.setLevel(logging.DEBUG)
+        root.addHandler(qh)
+        while True:
+            item = work_queue.get()
+            # TODO: Actually make real loggers for all the layers in this object, and then set them correctly.
+            item.logger = root
+            item.config._setup_logging()
+            item._out.updateConfig(item.config)
+            item._out._setup_logging()
+            item.run()
+            work_queue.task_done()
+
+    @staticmethod
+    def logger_thread(loggingQueue):
+        while True:
+            record = loggingQueue.get()
+            if record is None:
+                break
+            logger = logging.getLogger(record.name)
+            logger.handle(record)
+            loggingQueue.task_done()
 
     def _initializePlugins(self, dirname, plugins, plugintype, name=None):
         """Load a python module dynamically and add to internal dictionary of plugins (only accessed by getPlugin)"""
@@ -212,13 +295,14 @@ class EventGenerator(object):
         return ret
 
     def start(self):
-        self.logger.info('Starting eventgen')
-
+        if len(self.config.samples) <= 0:
+            self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
             if s.interval > 0 or s.mode == 'replay':
                 self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
                 # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
-                t = Timer(1.0, sample=s, config=self.config, genqueue=self.workerQueue, outputqueue=self.outputQueue)
+                t = Timer(1.0, sample=s, config=self.config,
+                         genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
                 self.sampleQueue.put(t)
         try:
             ## Only need to start timers once
@@ -254,3 +338,4 @@ class EventGenerator(object):
             self.args.configfile = config
         self.config = Config(self.args)
         self.config.parse()
+        self.logger.debug("Config File Loading Complete.")

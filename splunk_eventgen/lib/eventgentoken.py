@@ -38,15 +38,13 @@ class Token:
     def __init__(self, sample=None):
         
         # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
+        self._setup_logging()
+
         if sample == None:
             name = "None"
         else:
             name = sample.name
-        adapter = EventgenAdapter(logger, {'module': 'Token', 'sample': name})
-        globals()['logger'] = adapter
-        
+
         self._earliestTime = (None, None)
         self._latestTime = (None, None)
         
@@ -58,7 +56,21 @@ class Token:
 
     def __repr__(self):
         return self.__str__()
-    
+
+    # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
+    def __getstate__(self):
+        temp = self.__dict__
+        if getattr(self, 'logger', None):
+            temp.pop('logger', None)
+        return temp
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self._setup_logging()
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen')
+
     def _match(self, event):
         """Executes regular expression match and returns the re.Match object"""
         return re.match(self.token, event)
@@ -79,9 +91,9 @@ class Token:
         """Replaces all instances of this token in provided event and returns event"""
         offset = 0
         tokenMatch = list(self._finditer(event))
-        logger.debugv("Found %d matches for token: '%s' of type '%s' in sample '%s'" % (len(tokenMatch), self.token, self.replacementType, s.name))
+        self.logger.debugv("Found %d matches for token: '%s' of type '%s' in sample '%s'" % (len(tokenMatch), self.token, self.replacementType, s.name))
         if self.replacementType == 'timestamp':
-            logger.debugv("Timestamp replacement with et '%s' and lt '%s'" % (et, lt))
+            self.logger.debugv("Timestamp replacement with et '%s' and lt '%s'" % (et, lt))
 
         if len(tokenMatch) > 0:
             replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)], et, lt, s)
@@ -171,7 +183,7 @@ class Token:
                                     # logger.debugv("Currentts: %s" % currentts)
                                     if type(currentts) != datetime.datetime:
                                         # Total fail
-                                        logger.error("Can't find strptime format for this timestamp '%s' in the list of formats.  Returning original value" % old)
+                                        self.logger.error("Can't find strptime format for this timestamp '%s' in the list of formats.  Returning original value" % old)
                                         return old
                                 except ValueError:
                                     # Not JSON, try to read as text
@@ -182,10 +194,10 @@ class Token:
                                             currentts = datetime.datetime.fromtimestamp(ts)
                                         else:
                                             currentts = datetime.datetime.strptime(old, timeformat)
-                                        # logger.debug("Timeformat '%s' currentts '%s'" % (timeformat, currentts))
+                                        # self.logger.debug("Timeformat '%s' currentts '%s'" % (timeformat, currentts))
                                     except ValueError:
                                         # Total fail
-                                        logger.error("Can't match strptime format ('%s') to this timestamp '%s'.  Returning original value" % (timeformat, old))
+                                        self.logger.error("Can't match strptime format ('%s') to this timestamp '%s'.  Returning original value" % (timeformat, old))
                                         return old
                                     
                                     # Can't parse as strptime, try JSON
@@ -198,7 +210,7 @@ class Token:
                                 if self._replaytd == None:
                                     self._replaytd = replacementTime - currentts
                                 
-                                # logger.debug("replaytd %s" % self._replaytd)
+                                # self.logger.debug("replaytd %s" % self._replaytd)
                                 replacementTime = currentts + self._replaytd
                                 
                                 # Randomize time a bit between last event and this one
@@ -220,11 +232,11 @@ class Token:
                                 self._lastts = replacementTime
                                 replacement = timeformat.replace('%s', str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
                                 replacementTime = replacementTime.strftime(replacement)
-                                # logger.debugv("ReplacementTime: %s" % replacementTime)
-                                # logger.debug("Old '%s' Timeformat '%s' currentts '%s' replacementTime '%s' replaytd '%s' randomtd '%s'" \
+                                # self.logger.debugv("ReplacementTime: %s" % replacementTime)
+                                # self.logger.debug("Old '%s' Timeformat '%s' currentts '%s' replacementTime '%s' replaytd '%s' randomtd '%s'" \
                                 #             % (old, timeformat, currentts, replacementTime, self._replaytd, randomtd))
                             else:
-                                logger.error("Could not find old value, needed for replaytimestamp")
+                                self.logger.error("Could not find old value, needed for replaytimestamp")
                                 return old
                         else:
                             replacement = self.replacement.replace('%s', str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
@@ -233,17 +245,17 @@ class Token:
                         if replacementTime != self.replacement.replace('%', ''):
                             return replacementTime
                         else:
-                            logger.error("Invalid strptime specifier '%s' detected; will not replace" \
+                            self.logger.error("Invalid strptime specifier '%s' detected; will not replace" \
                                         % (self.replacement) )
                             return old
                     ## earliestTime/latestTime not proper
                     else:
-                        logger.error("Earliest specifier '%s', value '%s' is greater than latest specifier '%s', value '%s' for sample '%s'; will not replace" \
+                        self.logger.error("Earliest specifier '%s', value '%s' is greater than latest specifier '%s', value '%s' for sample '%s'; will not replace" \
                                     % (s.earliest, earliestTime, s.latest, latestTime, s.name) )
                         return old
             ## earliest/latest not proper
             else:
-                logger.error('Earliest or latest specifier were not set; will not replace')
+                self.logger.error('Earliest or latest specifier were not set; will not replace')
                 return old
         elif self.replacementType in ('random', 'rated'):
             ## Validations:
@@ -334,7 +346,7 @@ class Token:
                             except KeyError:
                                 import traceback
                                 stack =  traceback.format_exc()
-                                logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
+                                self.logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
                         if type(s.dayOfWeekRate) == dict:
                             try:
                                 weekday = datetime.date.weekday(s.now())
@@ -346,12 +358,12 @@ class Token:
                             except KeyError:
                                 import traceback
                                 stack =  traceback.format_exc()
-                                logger.error("Day of week rate failed.  Stacktrace %s" % stack)
+                                self.logger.error("Day of week rate failed.  Stacktrace %s" % stack)
                         replacementInt = int(round(replacementInt * rateFactor, 0))
                     replacement = str(replacementInt)
                     return replacement
                 else:
-                    logger.error("Start integer %s greater than end integer %s; will not replace" % (startInt, endInt) )
+                    self.logger.error("Start integer %s greater than end integer %s; will not replace" % (startInt, endInt) )
                     return old
             elif floatMatch:
                 try:
@@ -369,7 +381,7 @@ class Token:
                                 except KeyError:
                                     import traceback
                                     stack =  traceback.format_exc()
-                                    logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
+                                    self.logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
                             if type(s.dayOfWeekRate) == dict:
                                 try:
                                     weekday = datetime.date.weekday(now)
@@ -381,15 +393,15 @@ class Token:
                                 except KeyError:
                                     import traceback
                                     stack =  traceback.format_exc()
-                                    logger.error("Day of week rate failed.  Stacktrace %s" % stack)
+                                    self.logger.error("Day of week rate failed.  Stacktrace %s" % stack)
                             floatret = round(floatret * rateFactor, len(floatMatch.group(2)))
                         floatret = str(floatret)
                         return floatret
                     else:
-                        logger.error("Start float %s greater than end float %s; will not replace" % (startFloat, endFloat))
+                        self.logger.error("Start float %s greater than end float %s; will not replace" % (startFloat, endFloat))
                         return old
                 except ValueError:
-                    logger.error("Could not parse float[%s.%s:%s.%s]" % (floatMatch.group(1), floatMatch.group(2), \
+                    self.logger.error("Could not parse float[%s.%s:%s.%s]" % (floatMatch.group(1), floatMatch.group(2), \
                                 floatMatch.group(3), floatMatch.group(4)))
                     return old
             elif stringMatch:
@@ -406,7 +418,7 @@ class Token:
                     
                     return replacement
                 else:
-                    logger.error("Length specifier %s for string replacement must be greater than 0; will not replace" % (strLength) )
+                    self.logger.error("Length specifier %s for string replacement must be greater than 0; will not replace" % (strLength) )
                     return old
             elif hexMatch:
                 strLength = int(hexMatch.group(1))
@@ -421,12 +433,12 @@ class Token:
                 try:
                     value = json.loads(listMatch.group(1))
                 except:
-                    logger.error("Could not parse json for '%s' in sample '%s'" % (listMatch.group(1), s.name))
+                    self.logger.error("Could not parse json for '%s' in sample '%s'" % (listMatch.group(1), s.name))
                     return old
                 return random.choice(value)
 
             else:
-                logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
+                self.logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
                 return old
         elif self.replacementType in ('file', 'mvfile'):
             if self._replacementFile != None:
@@ -448,7 +460,7 @@ class Token:
                     else:
                         replacementFile = s.pathParser(self.replacement)
                 except ValueError, e:
-                    logger.error("Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column" % (self.replacement))
+                    self.logger.error("Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column" % (self.replacement))
                     return old
                 self._replacementFile = replacementFile
                 self._replacementColumn = replacementColumn
@@ -458,10 +470,10 @@ class Token:
             # return the same random pick on every iteration
             if replacementColumn > 0 and replacementFile in self.mvhash:
                 if replacementColumn > len(self.mvhash[replacementFile]):
-                    logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
+                    self.logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
                     return old
                 else:
-                    # logger.debug("Returning mvhash: %s" % self.mvhash[replacementFile][replacementColumn-1])
+                    # self.logger.debug("Returning mvhash: %s" % self.mvhash[replacementFile][replacementColumn-1])
                     return self.mvhash[replacementFile][replacementColumn-1]
             else:
                 # Adding caching of the token file to avoid reading it every iteration
@@ -469,21 +481,21 @@ class Token:
                     replacementLines = self._tokenfile
                 ## Otherwise, lets read the file and build our cached results, pick a result and return it
                 else:
-                    # logger.debug("replacementFile: %s replacementColumn: %s" % (replacementFile, replacementColumn))
+                    # self.logger.debug("replacementFile: %s replacementColumn: %s" % (replacementFile, replacementColumn))
                     replacementFile = os.path.abspath(replacementFile)
-                    logger.debug("Normalized replacement file %s" % replacementFile)
+                    self.logger.debug("Normalized replacement file %s" % replacementFile)
                     if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
                         replacementFH = open(replacementFile, 'rU')
                         replacementLines = replacementFH.readlines()
                         replacementFH.close()
 
                         if len(replacementLines) == 0:
-                            logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
+                            self.logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile) )
                             return old
                         else:
                             self._tokenfile = replacementLines
                     else:
-                        logger.error("File '%s' does not exist" % (replacementFile))
+                        self.logger.error("File '%s' does not exist" % (replacementFile))
                         return old
 
                 replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
@@ -492,7 +504,7 @@ class Token:
                     self.mvhash[replacementFile] = replacement.split(',')
 
                     if replacementColumn > len(self.mvhash[replacementFile]):
-                        logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
+                        self.logger.error("Index for column '%s' in replacement file '%s' is out of bounds" % (replacementColumn, replacementFile))
                         return old
                     else:
                         return self.mvhash[replacementFile][replacementColumn-1]
@@ -504,5 +516,5 @@ class Token:
             return temp
 
         else:
-            logger.error("Unknown replacementType '%s'; will not replace" % (replacementType) )
+            self.logger.error("Unknown replacementType '%s'; will not replace" % (replacementType) )
             return old

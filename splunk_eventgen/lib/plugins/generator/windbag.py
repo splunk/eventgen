@@ -6,15 +6,6 @@ class WindbagGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
-        # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'WindbagGenerator', 'sample': sample.name})
-        globals()['logger'] = adapter
-
-        from eventgenconfig import Config
-        globals()['c'] = Config()
-
     def gen(self, count, earliest, latest, samplename=None):
         eventlist = []
         for i in xrange(count):

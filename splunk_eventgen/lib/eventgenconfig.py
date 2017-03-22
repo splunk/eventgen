@@ -16,27 +16,6 @@ import random
 from generatorworker import GeneratorThreadWorker, GeneratorProcessWorker
 from outputworker import OutputThreadWorker, OutputProcessWorker
 
-
-# 6/7/14 CS   Adding a new logger adapter class which we will use to override the formatting
-#             for all messsages to include the sample they came from
-class EventgenAdapter(logging.LoggerAdapter):
-    """
-    Pass in a sample parameter and prepend sample to all logs
-    """
-    def process(self, msg, kwargs):
-        # Useful for multiprocess debugging to add pid, commented by default
-        # return "pid=%s module='%s' sample='%s': %s" % (os.getpid(), self.extra['module'], self.extra['sample'], msg), kwargs
-        return "module='%s' sample='%s': %s" % (self.extra['module'], self.extra['sample'], msg), kwargs
-
-    def debugv(self, msg, *args, **kwargs):
-        """
-        Delegate a debug call to the underlying logger, after adding
-        contextual information from this adapter instance.
-        """
-        msg, kwargs = self.process(msg, kwargs)
-        self.logger.debugv(msg, *args, **kwargs)
-
-
 # 4/21/14 CS  Adding a defined constant whether we're running in standalone mode or not
 #             Standalone mode is when we know we're Splunk embedded but we want to force
 #             configs to be read from a file instead of via Splunk's REST endpoint.
@@ -50,8 +29,6 @@ class EventgenAdapter(logging.LoggerAdapter):
 #             because we interpret all those as config overrides.
 
 STANDALONE = False
-
-
 
 # 5/10/12 CS Some people consider Singleton to be lazy.  Dunno, I like it for convenience.
 # My general thought on that sort of stuff is if you don't like it, reimplement it.  I'll consider
@@ -138,42 +115,15 @@ class Config(object):
             if args:
                 self.args = args
 
-            # Setup logger
-            # 12/8/13 CS Adding new verbose log level to make this a big more manageable
-            DEBUG_LEVELV_NUM = 9
-            logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
-            logging.__dict__['DEBUGV'] = DEBUG_LEVELV_NUM
-            def debugv(self, message, *args, **kws):
-                # Yes, logger takes its '*args' as 'args'.
-                if self.isEnabledFor(DEBUG_LEVELV_NUM):
-                    self._log(DEBUG_LEVELV_NUM, message, args, **kws)
-            logging.Logger.debugv = debugv
-
-            logger = logging.getLogger('eventgen')
-            logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
-            logger.setLevel(logging.INFO)
-            formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-            streamHandler = logging.StreamHandler(sys.stderr)
-            streamHandler.setFormatter(formatter)
             # 2/1/15 CS  Adding support for command line arguments.  In this case, if we're running from the command
             # line and we have arguments, we only want output from logger if we're in verbose
             if self.args:
-                if self.args.verbosity >= 1:
-                    logger.addHandler(streamHandler)
-                else:
-                    logger.addHandler(logging.NullHandler())
-
                 if self.args.multiprocess:
                     self.threading = 'process'
                 if self.args.profiler:
                     self.profiler = True
-            else:
-                logger.addHandler(streamHandler)
-            # logging.disable(logging.INFO)
 
-            adapter = EventgenAdapter(logger, {'sample': 'null', 'module': 'config'})
-            # Having logger as a global is just damned convenient
-            self.logger = adapter
+            self._setup_logging()
 
             # Determine some path names in our environment
             self.grandparentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -228,7 +178,19 @@ class Config(object):
     def __repr__(self):
         return self.__str__()
 
+    # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
+    def __getstate__(self):
+        temp = self.__dict__
+        if getattr(self, 'logger', None):
+            temp.pop('logger', None)
+        return temp
 
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self._setup_logging()
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen')
 
     def getPlugin(self, name, s=None):
         """Return a reference to a Python object (not an instance) referenced by passed name"""

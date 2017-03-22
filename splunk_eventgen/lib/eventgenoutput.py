@@ -14,20 +14,13 @@ class Output(object):
 
     def __init__(self, sample):
         self.__plugins = {}
-
-        # Logger already setup by config, just get an instance
-        logobj = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logobj, {'module': 'Output', 'sample': sample.name})
-        self.logger = adapter
-
         self._app = sample.app
         self._sample = sample
         self._outputMode = sample.outputMode
         self.MAXQUEUELENGTH = sample.maxQueueLength
-        
         self._queue = deque([])
         self._workers = [ ]
+        self._setup_logging()
 
 
     def __str__(self):
@@ -39,6 +32,20 @@ class Output(object):
 
     def __repr__(self):
         return self.__str__()
+
+    # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
+    def __getstate__(self):
+        temp = self.__dict__
+        if getattr(self, 'logger', None):
+            temp.pop('logger', None)
+        return temp
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self._setup_logging()
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen')
 
     def _update_outputqueue(self, queue):
         self.outputQueue = queue

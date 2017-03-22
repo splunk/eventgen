@@ -16,12 +16,6 @@ class GeneratorPlugin(object):
 
     def __init__(self, sample):
         self._sample = sample
-        # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'GeneratorPlugin', 'sample': self._sample.name})
-        self.logger = adapter
-        self.logger.debug("GeneratorPlugin being initialized for sample '%s'" % self._sample.name)
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
@@ -32,6 +26,19 @@ class GeneratorPlugin(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def __getstate__(self):
+        temp = self.__dict__
+        if getattr(self, 'logger', None):
+            temp.pop('logger', None)
+        return temp
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self._setup_logging()
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen')
 
     def updateSample(self, samplename):
         self._sample = self._samples[samplename]

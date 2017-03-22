@@ -12,13 +12,7 @@ class OutputPlugin(object):
         self._sample = sample
         self._outputMode = sample.outputMode
         self.events = None
-
-        # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'OutputPlugin', 'sample': self._sample.name})
-        self.logger = adapter
-
+        self._setup_logging()
         self.logger.debug("Starting OutputPlugin for sample '%s' with output '%s'" % (self._sample.name, self._sample.outputMode))
 
         self._queue = deque([])
@@ -32,6 +26,20 @@ class OutputPlugin(object):
 
     def __repr__(self):
         return self.__str__()
+
+    # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
+    def __getstate__(self):
+        temp = self.__dict__
+        if getattr(self, 'logger', None):
+            temp.pop('logger', None)
+        return temp
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self._setup_logging()
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen')
 
     def save(obj):
         return (obj.__class__, obj.__dict__)

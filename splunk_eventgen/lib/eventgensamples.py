@@ -100,18 +100,12 @@ class Sample:
     _latestParsed = None
     
     def __init__(self, name):
-        # 9/2/15 CS Can't make logger an attribute of the object like we do in other classes
-        # because it borks deepcopy of the sample object
-        logger = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'Sample', 'sample': name})
-        globals()['logger'] = adapter
-        
+
         self.name = name
         self.tokens = [ ]
         self._lockedSettings = [ ]
-
         self.backfilldone = False
+        self._setup_logging()
         
         # Import config
         from eventgenconfig import Config
@@ -125,7 +119,22 @@ class Sample:
         
     def __repr__(self):
         return self.__str__()
-        
+
+    # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
+    def __getstate__(self):
+        temp = copy.copy(self.__dict__)
+        if getattr(self, 'logger', None):
+            temp.pop('logger', None)
+        return temp
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self._setup_logging()
+
+    def _setup_logging(self):
+        logger = logging.getLogger('eventgen')
+        self.logger = logger
+
     ## Replaces $SPLUNK_HOME w/ correct pathing
     def pathParser(self, path):
         greatgreatgrandparentdir = os.path.dirname(os.path.dirname(c.grandparentdir)) 
@@ -172,19 +181,19 @@ class Sample:
         for token in tokens:
             try:
                 formats.append(token.token)
-                # logger.debug("Searching for token '%s' in event '%s'" % (token.token, event))
+                # self.logger.debug("Searching for token '%s' in event '%s'" % (token.token, event))
                 results = token._search(event)
                 if results:
                     timeFormat = token.replacement
                     group = 0 if len(results.groups()) == 0 else 1
                     timeString = results.group(group)
-                    # logger.debug("Testing '%s' as a time string against '%s'" % (timeString, timeFormat))
+                    # self.logger.debug("Testing '%s' as a time string against '%s'" % (timeString, timeFormat))
                     if timeFormat == "%s":
                         ts = float(timeString) if len(timeString) < 10 else float(timeString) / (10**(len(timeString)-10))
-                        # logger.debugv("Getting time for timestamp '%s'" % ts)
+                        # self.logger.debugv("Getting time for timestamp '%s'" % ts)
                         currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
-                        # logger.debugv("Getting time for timeFormat '%s' and timeString '%s'" % (timeFormat, timeString))
+                        # self.logger.debugv("Getting time for timeFormat '%s' and timeString '%s'" % (timeFormat, timeString))
                         # Working around Python bug with a non thread-safe strptime.  Randomly get AttributeError
                         # when calling strptime, so if we get that, try again
                         while currentTime == None:
@@ -192,15 +201,15 @@ class Sample:
                                 currentTime = datetime.datetime.strptime(timeString, timeFormat)
                             except AttributeError:
                                 pass
-                    # logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
+                    # self.logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
                     if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
-                logger.warning("Match found ('%s') but time parse failed. Timeformat '%s' Event '%s'" % (timeString, timeFormat, event))
+                self.logger.warning("Match found ('%s') but time parse failed. Timeformat '%s' Event '%s'" % (timeString, timeFormat, event))
         if type(currentTime) != datetime.datetime:
             # Total fail
             if passed_token == None: # If we're running for autotimestamp don't log error
-                logger.warning("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
+                self.logger.warning("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
             raise ValueError("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
         # Check to make sure we parsed a year
         if currentTime.year == 1900:
@@ -221,7 +230,7 @@ class Sample:
                 stateFile.close()
 
     def now(self, utcnow=False, realnow=False):
-        # logger.info("Getting time (timezone %s)" % (self.timezone))
+        # self.logger.info("Getting time (timezone %s)" % (self.timezone))
         if not self.backfilldone and not self.backfillts == None and not realnow:
             return self.backfillts
         elif self.timezone.days > 0:
@@ -234,7 +243,7 @@ class Sample:
         # as an offset of now if they're relative times
         if self._earliestParsed != None:
             earliestTime = self.now() - self._earliestParsed
-            logger.debugv("Using cached earliest time: %s" % earliestTime)
+            self.logger.debugv("Using cached earliest time: %s" % earliestTime)
         else:
             if self.earliest.strip()[0:1] == '+' or \
                     self.earliest.strip()[0:1] == '-' or \
@@ -243,10 +252,10 @@ class Sample:
                 temptd = self.now(realnow=True) - tempearliest
                 self._earliestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
                 earliestTime = self.now() - self._earliestParsed
-                logger.debugv("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self._earliestParsed, earliestTime, tempearliest))
+                self.logger.debugv("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self._earliestParsed, earliestTime, tempearliest))
             else:
                 earliestTime = timeParser(self.earliest, timezone=self.timezone)
-                logger.debugv("earliestTime as absolute time '%s'" % earliestTime)
+                self.logger.debugv("earliestTime as absolute time '%s'" % earliestTime)
 
         return earliestTime
 
@@ -254,7 +263,7 @@ class Sample:
     def latestTime(self):
         if self._latestParsed != None:
             latestTime = self.now() - self._latestParsed
-            logger.debugv("Using cached latestTime: %s" % latestTime)
+            self.logger.debugv("Using cached latestTime: %s" % latestTime)
         else:
             if self.latest.strip()[0:1] == '+' or \
                     self.latest.strip()[0:1] == '-' or \
@@ -263,10 +272,10 @@ class Sample:
                 temptd = self.now(realnow=True) - templatest
                 self._latestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
                 latestTime = self.now() - self._latestParsed
-                logger.debugv("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self._latestParsed, latestTime, templatest))
+                self.logger.debugv("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self._latestParsed, latestTime, templatest))
             else:
                 latestTime = timeParser(self.latest, timezone=self.timezone)
-                logger.debugv("latstTime as absolute time '%s'" % latestTime)
+                self.logger.debugv("latstTime as absolute time '%s'" % latestTime)
 
         return latestTime
 
@@ -274,14 +283,16 @@ class Sample:
         return self.now(utcnow=True)
 
     def _openSampleFile(self):
-        logger.debugv("Opening sample '%s' in app '%s'" % (self.name, self.app))
+        self.logger.debugv("Opening sample '%s' in app '%s'" % (self.name, self.app))
         self._sampleFH = open(self.filePath, 'rU')
 
     def _closeSampleFile(self):
-        logger.debugv("Closing sample '%s' in app '%s'" % (self.name, self.app))
+        self.logger.debugv("Closing sample '%s' in app '%s'" % (self.name, self.app))
         self._sampleFH.close()
 
     def loadSample(self):
+        if not self.logger:
+            self._setup_logging()
         """Load sample from disk into self._sample.sampleLines and self._sample.sampleDict, 
         using cached copy if possible"""
         if self.sampletype == 'raw':
@@ -289,23 +300,23 @@ class Sample:
             if self.sampleDict == None:
                 self._openSampleFile()
                 if self.breaker == c.breaker:
-                    logger.debugv("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
+                    self.logger.debugv("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
                     sampleLines = self._sampleFH.readlines()
                 # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time instead of on every generation
                 else:
-                    logger.debugv("Non-default breaker '%s' detected for sample '%s' in app '%s'" \
+                    self.logger.debugv("Non-default breaker '%s' detected for sample '%s' in app '%s'" \
                                     % (self.breaker, self.name, self.app) ) 
 
                     sampleData = self._sampleFH.read()
                     sampleLines = [ ]
 
-                    logger.debug("Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s" \
+                    self.logger.debug("Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s" \
                                     % (self.name, self.app, len(sampleData), self.breaker))
 
                     try:
                         breakerRE = re.compile(self.breaker, re.M)
                     except:
-                        logger.error("Line breaker '%s' for sample '%s' in app '%s' could not be compiled; using default breaker" \
+                        self.logger.error("Line breaker '%s' for sample '%s' in app '%s' could not be compiled; using default breaker" \
                                     % (self.breaker, self.name, self.app) )
                         self.breaker = c.breaker
 
@@ -315,7 +326,7 @@ class Sample:
                     searchpos = 0
                     breakerMatch = breakerRE.search(sampleData, searchpos)
                     while breakerMatch:
-                        logger.debugv("Breaker found at: %d, %d" % (breakerMatch.span()[0], breakerMatch.span()[1]))
+                        self.logger.debugv("Breaker found at: %d, %d" % (breakerMatch.span()[0], breakerMatch.span()[1]))
                         # Ignore matches at the beginning of the file
                         if breakerMatch.span()[0] != 0:
                             sampleLines.append(sampleData[extractpos:breakerMatch.span()[0]])
@@ -327,11 +338,11 @@ class Sample:
                 self._closeSampleFile()
 
                 self.sampleDict = [ { '_raw': line, 'index': self.index, 'host': self.host, 'source': self.source, 'sourcetype': self.sourcetype } for line in sampleLines ]
-                logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(sampleLines), len(self.sampleDict)))
+                self.logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(sampleLines), len(self.sampleDict)))
         elif self.sampletype == 'csv':
             if self.sampleDict == None:
                 self._openSampleFile()
-                logger.debugv("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
+                self.logger.debugv("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
                 self.sampleDict = [ ]
                 # Fix to load large csv files, work with python 2.5 onwards
                 csv.field_size_limit(sys.maxint)
@@ -340,9 +351,9 @@ class Sample:
                     if '_raw' in line:
                         self.sampleDict.append(line)
                     else:
-                        logger.error("Missing _raw in line '%s'" % pprint.pformat(line))
+                        self.logger.error("Missing _raw in line '%s'" % pprint.pformat(line))
                 self._closeSampleFile()
-                logger.debug("Finished creating sampleDict & sampleLines for sample '%s'.  Len sampleDict: %d" % (self.name, len(self.sampleDict)))
+                self.logger.debug("Finished creating sampleDict & sampleLines for sample '%s'.  Len sampleDict: %d" % (self.name, len(self.sampleDict)))
 
         # Ensure all lines have a newline
         for i in xrange(0, len(self.sampleDict)):

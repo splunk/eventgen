@@ -1,7 +1,7 @@
 import logging
 import sys
 import datetime, time
-import pickle
+import copy
 
 class Timer(object):
     """
@@ -25,7 +25,7 @@ class Timer(object):
     countdown = None
 
     # Added by CS 5/7/12 to emulate threading.Timer
-    def __init__(self, time, sample=None, config=None, genqueue=None, outputqueue=None):
+    def __init__(self, time, sample=None, config=None, genqueue=None, outputqueue=None, loggingqueue=None):
         # Logger already setup by config, just get an instance
         # setup default options
         self.profiler = config.profiler
@@ -39,18 +39,26 @@ class Timer(object):
         self.stopping = False
         self.countdown = 0
         #enable the logger
-        logobj = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        if sample == None:
-            adapter = EventgenAdapter(logobj, {'module': 'Timer', 'sample': 'null'})
-        else:
-            adapter = EventgenAdapter(logobj, {'module': 'Timer', 'sample': sample.name})
-        self.logger = adapter
+        self._setup_logging()
         self.logger.debug('Initializing timer for %s' % sample.name if sample is not None else "None")
         # load plugins
         if self.sample != None:
             self.rater = self.config.getPlugin('rater.'+self.sample.rater)(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.'+self.sample.generator, self.sample)
+
+    # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
+    def __getstate__(self):
+        temp = self.__dict__
+        if getattr(self, 'logger', None):
+            temp.pop('logger', None)
+        return temp
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self._setup_logging()
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen')
 
     def run(self):
         """
@@ -136,18 +144,15 @@ class Timer(object):
                         start_time=(time.mktime(et.timetuple())*(10**6)+et.microsecond)
                         end_time=(time.mktime(lt.timetuple())*(10**6)+lt.microsecond)
                         # self.generatorPlugin is only an instance, now we need a real plugin.
-                        genPlugin = self.generatorPlugin(sample=self.sample)
+                        # make a copy of the sample so if it's mutated by another process, it won't mess up geeneration
+                        # for this generator.
+                        copy_sample = copy.copy(self.sample)
+                        genPlugin = self.generatorPlugin(sample=copy_sample)
                         # need to make sure we set the queue right if we're using multiprocessing or thread modes
                         genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                         genPlugin.updateCounts(count=count,
                                                start_time=start_time,
                                                end_time=end_time)
-                        if self.config.threading == 'process':
-                            # Remove things that aren't pickleable.
-                            genPlugin.logger = None
-                            genPlugin.config.logger = None
-                            genPlugin._out.config = None
-                            genPlugin._out.logger = None
                         self.generatorQueue.put(genPlugin)
                         self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
                     #TODO: put this back to just catching a full queue
