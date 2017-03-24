@@ -11,16 +11,8 @@ class PerDayVolume(ConfigRater):
 
     def __init__(self, sample):
         # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'PerDayVolume', 'sample': sample.name})
-        self.logger = adapter
-
-        from eventgenconfig import Config
-        globals()['c'] = Config()
-
+        self._setup_logging()
         self.logger.debug('Starting PerDayVolumeRater for %s' % sample.name if sample is not None else "None")
-
         self._sample = sample
 
     def rate(self):

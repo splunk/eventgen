@@ -13,7 +13,7 @@ from timeparser import timeParser, timeDelta2secs
 import urllib
 import uuid
 
-class Token:
+class Token(object):
     """Contains data and methods for replacing a token in a given sample"""
     token = None
     replacementType = None
@@ -89,6 +89,8 @@ class Token:
         
     def replace(self, event, et=None, lt=None, s=None):
         """Replaces all instances of this token in provided event and returns event"""
+        if not getattr(self, 'logger', None):
+            self._setup_logging()
         offset = 0
         tokenMatch = list(self._finditer(event))
         self.logger.debugv("Found %d matches for token: '%s' of type '%s' in sample '%s'" % (len(tokenMatch), self.token, self.replacementType, s.name))
@@ -145,7 +147,10 @@ class Token:
 
                             ## Compute timeDelta as total_seconds
                             td = latestTime - earliestTime
-                            maxDelta = timeDelta2secs(td)
+                            if not type(td) == float:
+                                maxDelta = timeDelta2secs(td)
+                            else:
+                                maxDelta = td
 
                             ## Get random timeDelta
                             randomDelta = datetime.timedelta(seconds=random.randint(minDelta, maxDelta), microseconds=random.randint(0, latestTime.microsecond if latestTime.microsecond > 0 else 999999))

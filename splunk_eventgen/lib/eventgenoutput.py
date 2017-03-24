@@ -19,7 +19,6 @@ class Output(object):
         self._outputMode = sample.outputMode
         self.MAXQUEUELENGTH = sample.maxQueueLength
         self._queue = deque([])
-        self._workers = [ ]
         self._setup_logging()
 
 
@@ -108,8 +107,6 @@ class Output(object):
             outputer.set_events(q)
             if self.config.useOutputQueue:
                 try:
-                    #TODO: FIX THIS LOGGING CRAP!!!!
-                    outputer.logger = None
                     self.outputQueue.put(outputer)
                 except Full:
                     self.logger.warning("Output Queue full, looping again")
@@ -123,3 +120,4 @@ class Output(object):
                             'sample': self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)}))
                 tmp = None
                 outputer.run()
+        pass

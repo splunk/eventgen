@@ -1,5 +1,5 @@
 [csv]
-sampleDir = tests/bundlelines
+sampleDir = tests/sample_eventgen_conf/bundlelines
 outputMode = stdout
 count = 3
 earliest = -3s

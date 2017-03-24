@@ -74,7 +74,6 @@ class Config(object):
     plugins = { }
     outputQueue = None
     generatorQueue = None
-
     args = None
 
     ## Validations
@@ -85,7 +84,7 @@ class Config(object):
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
                     'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
-                    'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength',
+                    'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort',
                     'verbose', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
@@ -139,10 +138,6 @@ class Config(object):
                 for i in c.items(s):
                     if i[0] == 'threading' and self.threading == None:
                         self.threading = i[1]
-
-            # Set a global variables to signal to our plugins the threading model without having
-            # to load config.  Kinda hacky, but easier than other methods.
-            globals()['threadmodel'] = self.threading
 
             self._complexSettings['timezone'] = self._validateTimezone
 
@@ -453,7 +448,11 @@ class Config(object):
                 self.logger.debug("Sample directory specified in config, checking for relative")
                 # Allow for relative paths to the base directory
                 if not os.path.exists(s.sampleDir):
-                    s.sampleDir = os.path.join(self.grandparentdir, s.sampleDir)
+                    temp_sampleDir = os.path.join(self.grandparentdir, s.sampleDir)
+                    # check the greatgrandparent just incase for the sample file.
+                    if not os.path.exists(temp_sampleDir):
+                        temp_sampleDir = os.path.join(self.greatgrandparentdir, s.sampleDir)
+                    s.sampleDir = temp_sampleDir
                 else:
                     s.sampleDir = s.sampleDir
 
@@ -642,8 +641,7 @@ class Config(object):
                 s.rater = 'perdayvolume'
                 s.count = 1
                 s.generator = 'perdayvolumegenerator'
-
-            if s.mode == 'replay':
+            elif s.mode == 'replay':
                 self.logger.debug("Setting defaults for replay samples")
                 s.earliest = 'now'
                 s.latest = 'now'
@@ -655,9 +653,6 @@ class Config(object):
                 s.interval = 0
                 # 12/29/13 CS Moved replay generation to a new replay generator plugin
                 s.generator = 'replay'
-
-            #TODO: move plugins to the parent class
-            #self.__setPlugin(s)
 
         self.samples = tempsamples
         self._confDict = None
@@ -927,24 +922,6 @@ class Config(object):
                 ret[section]['eai:acl'] = { 'app': self.grandparentdir.split(os.sep)[-1] }
             self._confDict = ret
 
-        # Have to look in the data structure before normalization between what Splunk returns
-        # versus what ConfigParser returns.
-        logobj = logging.getLogger('eventgen')
-        if self._confDict['global']['debug'].lower() == 'true' \
-                or self._confDict['global']['debug'].lower() == '1':
-            logobj.setLevel(logging.DEBUG)
-        if self._confDict['global']['verbose'].lower() == 'true' \
-                or self._confDict['global']['verbose'].lower() == '1':
-            logobj.setLevel(logging.DEBUGV)
-
-        # 2/1/15 CS  Adding support for command line options
-        if self.args:
-            if self.args.verbosity >= 2:
-                self.debug = True
-                logobj.setLevel(logging.DEBUG)
-            if self.args.verbosity >= 3:
-                self.verbose = True
-                logobj.setLevel(logging.DEBUGV)
         self.logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
 
 

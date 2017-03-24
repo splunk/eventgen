@@ -298,7 +298,7 @@ class EventGenerator(object):
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
-            if s.interval > 0 or s.mode == 'replay':
+            if s.interval > 0 or s.mode == 'replay' or s.end > 0:
                 self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
                 # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
                 t = Timer(1.0, sample=s, config=self.config,

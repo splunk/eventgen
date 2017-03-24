@@ -151,8 +151,8 @@ class Timer(object):
                         # need to make sure we set the queue right if we're using multiprocessing or thread modes
                         genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                         genPlugin.updateCounts(count=count,
-                                               start_time=start_time,
-                                               end_time=end_time)
+                                               start_time=et,
+                                               end_time=lt)
                         self.generatorQueue.put(genPlugin)
                         self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
                     #TODO: put this back to just catching a full queue
@@ -191,9 +191,11 @@ class Timer(object):
                         if self.executions >= self.end:
                             self.logger.info("End executions %d reached, ending generation of sample '%s'" % (self.end, self.sample.name))
                             self.stopping = True
+                            end = True
                     elif lt >= self.endts:
                         self.logger.info("End Time '%s' reached, ending generation of sample '%s'" % (self.sample.endts, self.sample.name))
                         self.stopping = True
+                        end = True
             else:
                 self.countdown -= self.time
                 time.sleep(self.time)

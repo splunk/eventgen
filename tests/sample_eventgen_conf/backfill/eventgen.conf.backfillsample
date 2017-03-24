@@ -1,5 +1,5 @@
 [sample]
-sampleDir = tests/sample
+sampleDir = tests/sample_eventgen_conf/sample
 outputMode = stdout
 count = 10
 earliest = now

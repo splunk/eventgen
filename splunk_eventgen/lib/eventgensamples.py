@@ -4,17 +4,12 @@ from __future__ import division, with_statement
 import os, sys
 import logging
 import pprint
-import random
 import datetime
 import re
 import csv
-import json
 import copy
 import urllib
-from eventgenoutput import Output
-from eventgentoken import Token
 from timeparser import timeParser, timeDelta2secs
-from eventgencounter import Counter
 
 class Sample:
     """
