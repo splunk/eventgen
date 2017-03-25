@@ -7,8 +7,9 @@ import logging.config
 import os
 import sys
 import imp
-from Queue import Queue
+from Queue import Queue, Empty, Full
 from threading import Thread
+import time
 
 # Since i'm including a new library but external sources may not have access to pip (like splunk embeded), I need to
 # be able to load this library directly from src if it's not installed.
@@ -39,6 +40,7 @@ class EventGenerator(object):
         localized .conf entries.
         :param args: __main__ parse_args() object.
         '''
+        self.stopping = False
         self._setup_loggers()
         # attach to the logging queue
         self.logger.debug("Logging Setup Complete.")
@@ -73,7 +75,9 @@ class EventGenerator(object):
         self.sampleQueue = Queue(maxsize=0)
         num_threads = threadcount
         for i in range(num_threads):
-            worker = Thread(target=self._worker_do_work, args=(self.sampleQueue, self.loggingQueue, ))
+            worker = Thread(target=self._worker_do_work,
+                            args=(self.sampleQueue, self.loggingQueue, ),
+                            name="TimeThread{0}".format(i))
             worker.setDaemon(True)
             worker.start()
 
@@ -93,7 +97,9 @@ class EventGenerator(object):
             self.outputQueue = Queue(maxsize=10000)
         num_threads = threadcount
         for i in range(num_threads):
-            worker = Thread(target=self._worker_do_work, args=(self.outputQueue, self.loggingQueue, ))
+            worker = Thread(target=self._worker_do_work,
+                            args=(self.outputQueue, self.loggingQueue, ),
+                            name="OutputThread{0}".format(i))
             worker.setDaemon(True)
             worker.start()
 
@@ -109,8 +115,13 @@ class EventGenerator(object):
         if self.args.multiprocess:
             import multiprocessing
             self.manager = multiprocessing.Manager()
+            self.loggingQueue = self.manager.Queue()
+            self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue,), name="LoggerThread")
+            self.logging_pool.start()
             # since we're now in multiprocess, we need to use better queues.
             self.workerQueue = multiprocessing.JoinableQueue(maxsize=500)
+            self.genconfig = self.manager.dict()
+            self.genconfig["stopping"] = False
         else:
             self.workerQueue = Queue(maxsize=500)
             worker_threads = workercount
@@ -122,9 +133,13 @@ class EventGenerator(object):
     def _create_generator_workers(self, workercount=10):
         if self.args.multiprocess:
             import multiprocessing
-            self.workerPool = multiprocessing.Pool(processes=workercount,
-                                                   initializer=self._proc_worker_do_work,
-                                                   initargs=(self.workerQueue, self.loggingQueue,))
+            self.workerPool = []
+            for worker in xrange(workercount):
+                #builds a list of tuples to use the map function
+                process = multiprocessing.Process(target=self._proc_worker_do_work,
+                                                  args=(self.workerQueue, self.loggingQueue, self.genconfig, ))
+                self.workerPool.append(process)
+                process.start()
         else:
             pass
 
@@ -184,44 +199,60 @@ class EventGenerator(object):
             if self.isEnabledFor(DEBUG_LEVELV_NUM):
                 self._log(DEBUG_LEVELV_NUM, message, args, **kws)
         logging.Logger.debugv = debugv
-        self.loggingQueue = Queue()
         self.logger = logging.getLogger('eventgen')
-        self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue,))
-        self.logging_pool.start()
+        self.loggingQueue = None
+
+    def _worker_do_work(self, work_queue, logging_queue):
+        while not self.stopping:
+            try:
+                item = work_queue.get(timeout=10)
+                item.run()
+                work_queue.task_done()
+            except Empty:
+                pass
+            except Exception as e:
+                self.logger.exception(e)
+                sys.exit(1)
 
 
     @staticmethod
-    def _worker_do_work(work_queue, logging_queue):
-        while True:
-            item = work_queue.get()
-            item.run()
-            work_queue.task_done()
-
-    @staticmethod
-    def _proc_worker_do_work(work_queue, logging_queue):
+    def _proc_worker_do_work(work_queue, logging_queue, config):
+        genconfig = config
+        stopping = genconfig['stopping']
         qh = logutils.queue.QueueHandler(logging_queue)
         root = logging.getLogger()
         root.setLevel(logging.DEBUG)
         root.addHandler(qh)
-        while True:
-            item = work_queue.get()
-            # TODO: Actually make real loggers for all the layers in this object, and then set them correctly.
-            item.logger = root
-            item.config._setup_logging()
-            item._out.updateConfig(item.config)
-            item._out._setup_logging()
-            item.run()
-            work_queue.task_done()
+        while not stopping:
+            try:
+                root.info("Checking for work")
+                item = work_queue.get(timeout=10)
+                item.logger = root
+                item.config._setup_logging()
+                item._out.updateConfig(item.config)
+                item._out._setup_logging()
+                item.run()
+                work_queue.task_done()
+                stopping = genconfig['stopping']
+            except Empty:
+                stopping = genconfig['stopping']
+            except Exception as e:
+                raise e
+        else:
+            root.info("Stopping Process")
+            sys.exit(0)
 
-    @staticmethod
-    def logger_thread(loggingQueue):
-        while True:
-            record = loggingQueue.get()
-            if record is None:
-                break
-            logger = logging.getLogger(record.name)
-            logger.handle(record)
-            loggingQueue.task_done()
+    def logger_thread(self, loggingQueue):
+        while not self.stopping:
+            try:
+                record = loggingQueue.get(timeout=10)
+                logger = logging.getLogger(record.name)
+                logger.handle(record)
+                loggingQueue.task_done()
+            except Empty:
+                pass
+            except Exception as e:
+                self.logger.exception(e)
 
     def _initializePlugins(self, dirname, plugins, plugintype, name=None):
         """Load a python module dynamically and add to internal dictionary of plugins (only accessed by getPlugin)"""
@@ -294,20 +325,41 @@ class EventGenerator(object):
 
         return ret
 
+    def set_exit_handler(self, func):
+        """Catch signals and call handle_exit when we're supposed to shut down"""
+        if os.name == "nt":
+            try:
+                import win32api
+                win32api.SetConsoleCtrlHandler(func, True)
+            except ImportError:
+                version = ".".join(map(str, sys.version_info[:2]))
+                raise Exception("pywin32 not installed for Python " + version)
+        else:
+            import signal
+            signal.signal(signal.SIGTERM, func)
+            signal.signal(signal.SIGINT, func)
+
+    def handle_exit(self, sig=None, func=None):
+        self.stopping = True
+
     def start(self):
-        if len(self.config.samples) <= 0:
-            self.logger.info("No samples found.  Exiting.")
-        for s in self.config.samples:
-            if s.interval > 0 or s.mode == 'replay' or s.end > 0:
-                self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
-                # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
-                t = Timer(1.0, sample=s, config=self.config,
-                         genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
-                self.sampleQueue.put(t)
         try:
-            ## Only need to start timers once
             if os.name != "nt":
-                self.config.set_exit_handler(self.config.handle_exit)
+                self.set_exit_handler(self.handle_exit)
+            if len(self.config.samples) <= 0:
+                self.logger.info("No samples found.  Exiting.")
+            for s in self.config.samples:
+                if s.interval > 0 or s.mode == 'replay' or s.end > 0:
+                    self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
+                    # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
+                    t = Timer(1.0, sample=s, config=self.config,
+                             genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
+                    self.sampleQueue.put(t)
+            self.logger.info("All timers started, joining queue until it's empty.")
+            self.sampleQueue.join()
+            self.logger.info("All timers have finished, signalling workers to exit.")
+            self.stop()
+            ## Only need to start timers once
             # Every 5 seconds, get values and output basic statistics about our operations
             #TODO: Figure out how to do this better...
             #generatorsPerSec = (generatorDecrements - generatorQueueCounter) / 5
@@ -319,14 +371,25 @@ class EventGenerator(object):
             #gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
             #eventsPerSec = self.config.eventsSent.valueAndClear() / 5
             #self.logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
-
         except KeyboardInterrupt:
-            self.config.handle_exit()
-
+            self.handle_exit()
 
     def stop(self):
         # empty the sample queue:
         self.config.stopping = True
+        self.logger.info("All timers exited, joining generation queue until it's empty.")
+        self.workerQueue.join()
+        # if we're in multiprocess, make sure that since all the timers stopped, we don't let any more generators get added.
+        if self.args.multiprocess:
+            self.genconfig["stopping"] = True
+            for worker in self.workerPool:
+                while worker.exitcode == None:
+                    self.logger.info("Worker {0} still working, waiting for it to finish.".format(worker._name))
+                    time.sleep(1)
+        self.logger.info("All generators working/exited, joining output queue until it's empty.")
+        self.outputQueue.join()
+        self.logger.info("All items fully processed, exiting.")
+        self.stopping = True
 
     def reload_conf(self, config=None):
         '''
