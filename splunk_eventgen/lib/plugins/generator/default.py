@@ -11,14 +11,7 @@ class DefaultGenerator(GeneratorPlugin):
         GeneratorPlugin.__init__(self, sample)
 
     def gen(self, count, earliest, latest, samplename=None):
-        self.updateSample(samplename)
         s = self._sample
-        try:
-            s.loadSample()
-        except TypeError:
-            self.logger.error("Error loading sample file for sample '%s'" % s.name)
-            return
-            
 
         self.logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (s.name, s.app, count, earliest, latest))
         startTime = datetime.datetime.now()
