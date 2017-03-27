@@ -31,7 +31,7 @@ class Timer(object):
         self.profiler = config.profiler
         self.config = config
         self.sample = sample
-        self.end = int(getattr(self.sample, "end", None))
+        self.end = getattr(self.sample, "end", None)
         self.endts = getattr(self.sample, "endts", None)
         self.generatorQueue = genqueue
         self.outputQueue = outputqueue

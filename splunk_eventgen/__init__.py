@@ -234,6 +234,7 @@ class EventGenerator(object):
                 item.run()
                 work_queue.task_done()
                 stopping = genconfig['stopping']
+                item.logger.debug("Current Worker Stopping: {0}".format(stopping))
             except Empty:
                 stopping = genconfig['stopping']
             except Exception as e:
