@@ -105,63 +105,29 @@ class Timer(object):
                         self.sample.backfilldone = True
                     else:
                         self.logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.sample.name, self.sample.backfillts))
-
-                if not self.generatorPlugin.queueable:
-                    try:
-                        partialInterval = self.generatorPlugin.gen(count, et, lt)
-                    # 11/24/13 CS Blanket catch for any errors
-                    # If we've gotten here, all error correction has failed and we
-                    # need to gracefully exit providing some error context like what sample
-                    # we came from
-                    except (KeyboardInterrupt, SystemExit):
-                        raise
-                    except:
-                        import traceback
-                        self.logger.error('Exception in sample: %s\n%s' % (self.sample.name, \
-                                traceback.format_exc()))
-                        sys.stderr.write('Exception in sample: %s\n%s' % (self.sample.name, \
-                                traceback.format_exc()))
-                        sys.exit(1)
-
-                    self.countdown = partialInterval
-                    self.executions += 1
-
-                    ## Sleep for partial interval
-                    # If we're going to sleep for longer than the default check for kill interval
-                    # go ahead and flush output so we're not just waiting
-                    # if partialInterval > self.time:
-                    #     self.logger.debugv("Flushing because we're sleeping longer than a polling interval")
-                    #     self.sample.out.flush()
-
-
-                    self.logger.debug("Generation of sample '%s' in app '%s' sleeping for %f seconds" \
-                                % (self.sample.name, self.sample.app, partialInterval) )
-                    # logger.debug("Queue depth for sample '%s' in app '%s': %d" % (self.sample.name, self.sample.app, c.outputQueue.qsize()))
-                else:
-                    # Put into the queue to be generated
-                    try:
-                        # create a generator object, then place it in the generator queue.
-                        start_time=(time.mktime(et.timetuple())*(10**6)+et.microsecond)
-                        end_time=(time.mktime(lt.timetuple())*(10**6)+lt.microsecond)
-                        # self.generatorPlugin is only an instance, now we need a real plugin.
-                        # make a copy of the sample so if it's mutated by another process, it won't mess up geeneration
-                        # for this generator.
-                        copy_sample = copy.copy(self.sample)
-                        genPlugin = self.generatorPlugin(sample=copy_sample)
-                        # need to make sure we set the queue right if we're using multiprocessing or thread modes
-                        genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
-                        genPlugin.updateCounts(count=count,
-                                               start_time=et,
-                                               end_time=lt)
-                        self.generatorQueue.put(genPlugin)
-                        self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
-                    #TODO: put this back to just catching a full queue
-                    except Exception as e:
-                        self.logger.exception(e)
-                        self.logger.warning("Generator Queue Full, looping")
-                        if self.stopping:
-                            stop = True
-                        pass
+                try:
+                    # create a generator object, then place it in the generator queue.
+                    start_time=(time.mktime(et.timetuple())*(10**6)+et.microsecond)
+                    end_time=(time.mktime(lt.timetuple())*(10**6)+lt.microsecond)
+                    # self.generatorPlugin is only an instance, now we need a real plugin.
+                    # make a copy of the sample so if it's mutated by another process, it won't mess up geeneration
+                    # for this generator.
+                    copy_sample = copy.copy(self.sample)
+                    genPlugin = self.generatorPlugin(sample=copy_sample)
+                    # need to make sure we set the queue right if we're using multiprocessing or thread modes
+                    genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
+                    genPlugin.updateCounts(count=count,
+                                           start_time=et,
+                                           end_time=lt)
+                    self.generatorQueue.put(genPlugin)
+                    self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
+                #TODO: put this back to just catching a full queue
+                except Exception as e:
+                    self.logger.exception(e)
+                    self.logger.warning("Generator Queue Full, looping")
+                    if self.stopping:
+                        stop = True
+                    pass
 
 
                     # Sleep until we're supposed to wake up and generate more events
