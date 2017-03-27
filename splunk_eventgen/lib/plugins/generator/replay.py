@@ -21,17 +21,6 @@ class ReplayGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
-        self._sample = sample
-
-        # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'ReplayGenerator', 'sample': sample.name})
-        globals()['logger'] = adapter
-
-        from eventgenconfig import Config
-        globals()['c'] = Config()
-
         self._currentevent = 0
         self._timeSinceSleep = datetime.timedelta()
         self._times = [ ]
@@ -76,7 +65,7 @@ class ReplayGenerator(GeneratorPlugin):
             self.logger.error("Exception during backfill for sample '%s': '%s'" % (s.name, str(e)))
 
 
-    def gen(self, count, earliest, latest):
+    def gen(self, count, earliest, latest, samplename=None):
         # 9/8/15 CS Check to make sure we have events to replay
         if len(self._rpevents) == 0:
             # Return insanely large sleep time
@@ -85,7 +74,7 @@ class ReplayGenerator(GeneratorPlugin):
         # For shortness sake, we're going to call the sample s
         s = self._sample
 
-        logger.debug("Generating sample '%s' in app '%s'" % (s.name, s.app))
+        self.logger.debug("Generating sample '%s' in app '%s'" % (s.name, s.app))
         startTime = datetime.datetime.now()
 
         # If we are replaying then we need to set the current sampleLines to the event
@@ -95,7 +84,7 @@ class ReplayGenerator(GeneratorPlugin):
         # 9/2/2015 Commenting out, can't find a use for this anymore.
         # self.setOutputMetadata(self.sampleDict[0])
 
-        logger.debugv("Finding timestamp to compute interval for events")
+        self.logger.debugv("Finding timestamp to compute interval for events")
         if self._lastts == None:
             self._lastts = s.getTSFromEvent(self._rpevents[self._currentevent][s.timeField])
         if (self._currentevent+1) < len(self._rpevents):
@@ -110,10 +99,10 @@ class ReplayGenerator(GeneratorPlugin):
                 avgtimes = 1
             interval = datetime.timedelta(seconds=int(math.modf(avgtimes)[1]), microseconds=int(round(math.modf(avgtimes)[0] * 1000000, 0)))
             nextts = self._lastts + interval
-            logger.debugv("Setting nextts to '%s' with avgtimes '%d' and interval '%s'" % (nextts, avgtimes, interval))
+            self.logger.debugv("Setting nextts to '%s' with avgtimes '%d' and interval '%s'" % (nextts, avgtimes, interval))
             self._times = [ ]
 
-        logger.debugv('Computing timeDiff nextts: "%s" lastts: "%s"' % (nextts, self._lastts))
+        self.logger.debugv('Computing timeDiff nextts: "%s" lastts: "%s"' % (nextts, self._lastts))
 
         timeDiff = nextts - self._lastts
         if timeDiff.days >= 0 and timeDiff.seconds >= 0 and timeDiff.microseconds >= 0:
@@ -124,7 +113,7 @@ class ReplayGenerator(GeneratorPlugin):
         if s.timeMultiple > 0:
             partialInterval *= s.timeMultiple
 
-        logger.debugv("Setting partialInterval for replay mode with timeMultiple %s: %s %s" % (s.timeMultiple, timeDiff, partialInterval))
+        self.logger.debugv("Setting partialInterval for replay mode with timeMultiple %s: %s %s" % (s.timeMultiple, timeDiff, partialInterval))
         self._lastts = nextts
 
         for x in range(len(self.sampleDict)):
@@ -172,7 +161,7 @@ class ReplayGenerator(GeneratorPlugin):
 
         # If we roll over the max number of lines, roll over the counter and start over
         if (self._currentevent+1) >= len(self._rpevents):
-            logger.debug("At end of the sample file, starting replay from the top")
+            self.logger.debug("At end of the sample file, starting replay from the top")
             self._currentevent = 0
             self._lastts = None
         else:
@@ -186,7 +175,7 @@ class ReplayGenerator(GeneratorPlugin):
 
         if partialInterval > 0:
             timeDiffFrac = "%d.%06d" % (self._timeSinceSleep.seconds, self._timeSinceSleep.microseconds)
-            logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
+            self.logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds.  Sleeping for %f seconds" \
                         % (s.name, s.app, timeDiffFrac, partialInterval) )
             self._timeSinceSleep = datetime.timedelta()
 
