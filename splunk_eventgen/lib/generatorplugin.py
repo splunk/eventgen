@@ -16,7 +16,7 @@ class GeneratorPlugin(object):
 
     def __init__(self, sample):
         self._sample = sample
-        self.logger = logging.getLogger("eventgen")
+        self._setup_logging()
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
