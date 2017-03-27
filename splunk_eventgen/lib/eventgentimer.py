@@ -75,8 +75,6 @@ class Timer(object):
         """
         Worker function of the Timer class.  Determine whether a plugin is queueable, and either
         place an item in the generator queue for that plugin or call the plugin's gen method directly.
-
-        Actual work for queueable plugins is done in lib/plugins/generatorworker.py
         """
         if self.sample.delay > 0:
             self.logger.info("Sample set to delay %s, sleeping." % s.delay)
