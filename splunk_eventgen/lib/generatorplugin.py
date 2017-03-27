@@ -41,9 +41,6 @@ class GeneratorPlugin(object):
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen')
 
-    def updateSample(self, samplename):
-        self._sample = self._samples[samplename]
-
     def updateConfig(self, config, outqueue):
         self.config = config
         self.outputQueue = outqueue

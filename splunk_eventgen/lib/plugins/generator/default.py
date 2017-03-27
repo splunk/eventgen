@@ -2,26 +2,16 @@
 #       copy of whats needed without the whole object.
 
 from __future__ import division
-from generatorplugin import GeneratorPlugin
-import os
-import logging
+from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
 import datetime, time
 import random
-import copy
-from eventgenoutput import Output
 
 class DefaultGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
     def gen(self, count, earliest, latest, samplename=None):
-        # 6/9/14 CS If we get an exception loading the sample, fail
-        try:
-            self._sample.loadSample()
-        except TypeError:
-            self.logger.error("Error loading sample file for sample '%s'" % self._sample.name)
-            return
-            
+        s = self._sample
 
         self.logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (self._sample.name, self._sample.app, count, earliest, latest))
         startTime = datetime.datetime.now()
