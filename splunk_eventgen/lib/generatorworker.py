@@ -120,7 +120,6 @@ class GeneratorRealWorker:
                     self.working = True
                     if samplename in self._pluginCache:
                         plugin = self._pluginCache[samplename]
-                        plugin.updateSample(samplename)
                     else:
                         for s in c.samples:
                             if s.name == samplename:

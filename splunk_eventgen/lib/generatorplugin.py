@@ -16,6 +16,7 @@ class GeneratorPlugin(object):
 
     def __init__(self, sample):
         self._sample = sample
+        self._setup_logging()
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
@@ -39,9 +40,6 @@ class GeneratorPlugin(object):
 
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen')
-
-    def updateSample(self, samplename):
-        self._sample = self._samples[samplename]
 
     def updateConfig(self, config, outqueue):
         self.config = config
