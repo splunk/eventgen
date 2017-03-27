@@ -2,22 +2,21 @@
 #       copy of whats needed without the whole object.
 
 from __future__ import division
-from generatorplugin import GeneratorPlugin
-import os
-import logging
+from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
 import datetime, time
 import random
-import copy
-from eventgenoutput import Output
 
 class DefaultGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
     def gen(self, count, earliest, latest, samplename=None):
-        # 2/10/14 CS set s to our local copy of the sample
-        s = self._samples[samplename]
-        self._sample = s
+        if samplename is not None:
+            # 2/10/14 CS set s to our local copy of the sample
+            for s in self.config.samples:
+                if s.name == samplename:
+                    self._sample = s
+                    break
 
         # 6/9/14 CS If we get an exception loading the sample, fail
         try:
