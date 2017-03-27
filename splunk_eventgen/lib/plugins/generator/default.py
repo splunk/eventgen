@@ -11,14 +11,8 @@ class DefaultGenerator(GeneratorPlugin):
         GeneratorPlugin.__init__(self, sample)
 
     def gen(self, count, earliest, latest, samplename=None):
-        if samplename is not None:
-            # 2/10/14 CS set s to our local copy of the sample
-            for s in self.config.samples:
-                if s.name == samplename:
-                    self._sample = s
-                    break
-
-        # 6/9/14 CS If we get an exception loading the sample, fail
+        self.updateSample(samplename)
+        s = self._sample
         try:
             s.loadSample()
         except TypeError:

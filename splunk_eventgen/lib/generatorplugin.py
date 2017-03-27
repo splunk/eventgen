@@ -42,7 +42,10 @@ class GeneratorPlugin(object):
         self.logger = logging.getLogger('eventgen')
 
     def updateSample(self, samplename):
-        self._sample = self._samples[samplename]
+        if samplename is not None:
+            for s in self.config.samples:
+                if s.name == samplename:
+                    self._sample = s
 
     def updateConfig(self, config, outqueue):
         self.config = config
