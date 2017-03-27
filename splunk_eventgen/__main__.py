@@ -6,11 +6,8 @@ from __future__ import division
 import sys, os
 path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.append(path_prepend)
-import logging
 import time
-import splunk_eventgen.__init__ as splunk_eventgen_init
-from eventgenconfig import Config
-from eventgentimer import Timer
+import __init__ as splunk_eventgen_init
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
 
@@ -86,63 +83,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    c = Config(args)
-    # Logger is setup by Config, just have to get an instance
-    logobj = logging.getLogger('eventgen')
-    from eventgenconfig import EventgenAdapter
-    adapter = EventgenAdapter(logobj, {'sample': 'null', 'module': 'main'})
-    logger = adapter
-    logger.info('Starting eventgen')
+    eventgen = splunk_eventgen_init.EventGenerator(args=args)
+    eventgen.start()
 
-    c.parse()
-
-    t = Timer(1.0, interruptcatcher=True)
-
-    for s in c.samples:
-        if s.interval > 0 or s.mode == 'replay':
-            logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
-            t = Timer(1.0, s)
-            c.sampleTimers.append(t)
-
-
-    first = True
-    outputQueueCounter = 0
-    generatorQueueCounter = 0
-    while (1):
-        try:
-            ## Only need to start timers once
-            if first:
-                if os.name != "nt":
-                    c.set_exit_handler(c.handle_exit)
-                c.start()
-                first = False
-
-            # Every 5 seconds, get values and output basic statistics about our operations
-            generatorDecrements = c.generatorQueueSize.totaldecrements()
-            outputDecrements = c.outputQueueSize.totaldecrements()
-            generatorsPerSec = (generatorDecrements - generatorQueueCounter) / 5
-            outputtersPerSec = (outputDecrements - outputQueueCounter) / 5
-            outputQueueCounter = outputDecrements
-            generatorQueueCounter = generatorDecrements
-            logger.info('OutputQueueDepth=%d  GeneratorQueueDepth=%d GeneratorsPerSec=%d OutputtersPerSec=%d' % (c.outputQueueSize.value(), c.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
-            kiloBytesPerSec = c.bytesSent.valueAndClear() / 5 / 1024
-            gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
-            eventsPerSec = c.eventsSent.valueAndClear() / 5
-            logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
-
-            # 8/20/15 CS Since we added support for ending a certain time, see if all timers are stopped
-            stop = True
-            for t in c.sampleTimers:
-                if t.stopping == False:
-                    stop = False
-            if stop:
-                c.handle_exit()
-
-            time.sleep(5)
-
-        except KeyboardInterrupt:
-            c.handle_exit()
-
-
-if __name__=="__main__":
-    main()
+    sys.exit(0)

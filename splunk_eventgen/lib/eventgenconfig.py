@@ -2,12 +2,9 @@ from __future__ import division
 from ConfigParser import ConfigParser
 import os
 import datetime, time
-import imp
 import sys
 import re
-import __main__
 import logging, logging.handlers
-import traceback
 import json
 import pprint
 import copy
@@ -16,32 +13,8 @@ from eventgentoken import Token
 import urllib
 import types
 import random
-from eventgencounter import Counter
-from eventgenqueue import Queue
-import threading, multiprocessing
 from generatorworker import GeneratorThreadWorker, GeneratorProcessWorker
 from outputworker import OutputThreadWorker, OutputProcessWorker
-
-
-# 6/7/14 CS   Adding a new logger adapter class which we will use to override the formatting
-#             for all messsages to include the sample they came from
-class EventgenAdapter(logging.LoggerAdapter):
-    """
-    Pass in a sample parameter and prepend sample to all logs
-    """
-    def process(self, msg, kwargs):
-        # Useful for multiprocess debugging to add pid, commented by default
-        # return "pid=%s module='%s' sample='%s': %s" % (os.getpid(), self.extra['module'], self.extra['sample'], msg), kwargs
-        return "module='%s' sample='%s': %s" % (self.extra['module'], self.extra['sample'], msg), kwargs
-
-    def debugv(self, msg, *args, **kwargs):
-        """
-        Delegate a debug call to the underlying logger, after adding
-        contextual information from this adapter instance.
-        """
-        msg, kwargs = self.process(msg, kwargs)
-        self.logger.debugv(msg, *args, **kwargs)
-
 
 # 4/21/14 CS  Adding a defined constant whether we're running in standalone mode or not
 #             Standalone mode is when we know we're Splunk embedded but we want to force
@@ -57,12 +30,10 @@ class EventgenAdapter(logging.LoggerAdapter):
 
 STANDALONE = False
 
-
-
 # 5/10/12 CS Some people consider Singleton to be lazy.  Dunno, I like it for convenience.
 # My general thought on that sort of stuff is if you don't like it, reimplement it.  I'll consider
 # your patch.
-class Config:
+class Config(object):
     """Reads configuration from files or Splunk REST endpoint and stores them in a 'Borg' global.
     Borg is a variation on the Singleton design pattern which allows us to continually instantiate
     the configuration object throughout the application and maintain state."""
@@ -87,8 +58,6 @@ class Config:
     outputWorkers = None
     generatorWorkers = None
     sampleTimers = [ ]
-    __generatorworkers = [ ]
-    __outputworkers = [ ]
 
     # Config file options.  We do not define defaults here, rather we pull them in
     # from eventgen.conf.
@@ -99,11 +68,12 @@ class Config:
     disabled = None
     blacklist = ".*\.part"
 
-    __outputPlugins = { }
-    __plugins = { }
+    __generatorworkers = [ ]
+    __outputworkers = [ ]
+    outputPlugins = { }
+    plugins = { }
     outputQueue = None
     generatorQueue = None
-
     args = None
 
     ## Validations
@@ -114,12 +84,12 @@ class Config:
                     'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
                     'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
-                    'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength',
+                    'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort',
                     'verbose', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
-    _validOutputModes = [ ]
+    validOutputModes = [ ]
     _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp']
@@ -144,42 +114,15 @@ class Config:
             if args:
                 self.args = args
 
-            # Setup logger
-            # 12/8/13 CS Adding new verbose log level to make this a big more manageable
-            DEBUG_LEVELV_NUM = 9
-            logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
-            logging.__dict__['DEBUGV'] = DEBUG_LEVELV_NUM
-            def debugv(self, message, *args, **kws):
-                # Yes, logger takes its '*args' as 'args'.
-                if self.isEnabledFor(DEBUG_LEVELV_NUM):
-                    self._log(DEBUG_LEVELV_NUM, message, args, **kws)
-            logging.Logger.debugv = debugv
-
-            logger = logging.getLogger('eventgen')
-            logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
-            logger.setLevel(logging.INFO)
-            formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-            streamHandler = logging.StreamHandler(sys.stderr)
-            streamHandler.setFormatter(formatter)
             # 2/1/15 CS  Adding support for command line arguments.  In this case, if we're running from the command
             # line and we have arguments, we only want output from logger if we're in verbose
             if self.args:
-                if self.args.verbosity >= 1:
-                    logger.addHandler(streamHandler)
-                else:
-                    logger.addHandler(logging.NullHandler())
-
                 if self.args.multiprocess:
                     self.threading = 'process'
                 if self.args.profiler:
                     self.profiler = True
-            else:
-                logger.addHandler(streamHandler)
-            # logging.disable(logging.INFO)
 
-            adapter = EventgenAdapter(logger, {'sample': 'null', 'module': 'config'})
-            # Having logger as a global is just damned convenient
-            self.logger = adapter
+            self._setup_logging()
 
             # Determine some path names in our environment
             self.grandparentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -196,30 +139,14 @@ class Config:
                     if i[0] == 'threading' and self.threading == None:
                         self.threading = i[1]
 
-            # Set a global variables to signal to our plugins the threading model without having
-            # to load config.  Kinda hacky, but easier than other methods.
-            globals()['threadmodel'] = self.threading
-
-            # Initialize plugins
-            self.__outputPlugins = { }
-            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'output'), self.__outputPlugins, 'output')
-            self.outputQueue = Queue(100, self.threading)
-            self._validOutputModes.extend(plugins)
-
-            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'generator'), self.__plugins, 'generator')
-            self.generatorQueue = Queue(10000, self.threading)
-
-            plugins = self.__initializePlugins(os.path.join(self.grandparentdir, 'lib', 'plugins', 'rater'), self.__plugins, 'rater')
-            self._complexSettings['rater'] = plugins
-
-
             self._complexSettings['timezone'] = self._validateTimezone
 
             self._complexSettings['count'] = self._validateCount
 
             self._complexSettings['seed'] = self._validateSeed
 
-            self.generatorQueueSize = Counter(0, self.threading)
+            #TODO: Figure out how to deal with counters.
+            '''self.generatorQueueSize = Counter(0, self.threading)
             self.outputQueueSize = Counter(0, self.threading)
             self.eventsSent = Counter(0, self.threading)
             self.bytesSent = Counter(0, self.threading)
@@ -227,12 +154,12 @@ class Config:
             self.timersStarted = Counter(0, self.threading)
             self.pluginsStarting = Counter(0, self.threading)
             self.pluginsStarted = Counter(0, self.threading)
-            self.stopping = Counter(0, self.threading)
+            '''
+            self.stopping = False
 
-            self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
+            #self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
 
             self._firsttime = False
-            self.intervalsSinceFlush = { }
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
@@ -245,83 +172,20 @@ class Config:
 
     def __repr__(self):
         return self.__str__()
-    '''
-    APPPERF-263: add default name param. If name is supplied then only
-    attempt to load <name>.py
-    '''
-    def __initializePlugins(self, dirname, plugins, plugintype, name=None):
-        """Load a python module dynamically and add to internal dictionary of plugins (only accessed by getPlugin)"""
-        ret = []
 
-        dirname = os.path.abspath(dirname)
-        self.logger.debugv("looking for plugin(s) in {}".format(dirname))
-        if not os.path.isdir(dirname):
-            self.logger.debugv("directory {} does not exist ... moving on".format(dirname))
-            return ret
+    # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
+    def __getstate__(self):
+        temp = self.__dict__
+        if getattr(self, 'logger', None):
+            temp.pop('logger', None)
+        return temp
 
-        # Include all plugin directories in sys.path for includes
-        if not dirname in sys.path:
-            sys.path.append(dirname)
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self._setup_logging()
 
-        # Loop through all files in passed dirname looking for plugins
-        for filename in os.listdir(dirname):
-            filename = dirname + os.sep + filename
-
-            # If the file exists
-            if os.path.isfile(filename):
-                # Split file into a base name plus extension
-                basename = os.path.basename(filename)
-                base, extension = os.path.splitext(basename)
-
-                # If we're a python file and we don't start with _
-                #if extension == ".py" and not basename.startswith("_"):
-                # APPPERF-263: If name param is supplied, only attempt to load
-                # {name}.py from {app}/bin directory
-                if extension == ".py" and ((name is None and not basename.startswith("_")) or base == name):
-                    self.logger.debugv("Searching for plugin in file '%s'" % filename)
-                    try:
-                        # Import the module
-                        module = imp.load_source(base, filename)
-                        # Signal to the plugin by adding a module level variable which indicates
-                        # our threading model, thread or process
-                        module.__dict__.update({ 'threadmodel': self.threading })
-                        # Load will now return a threading.Thread or multiprocessing.Process based object
-                        plugin = module.load()
-
-                        # set plugin to something like output.file or generator.default
-                        pluginname = plugintype + '.' + base
-                        # self.logger.debugv("Filename: %s os.sep: %s pluginname: %s" % (filename, os.sep, pluginname))
-                        plugins[pluginname] = plugin
-
-                        # Return is used to determine valid configs, so only return the base name of the plugin
-                        ret.append(base)
-
-                        self.logger.debug("Loading module '%s' from '%s'" % (pluginname, basename))
-
-                        # 12/3/13 If we haven't loaded a plugin right or we haven't initialized all the variables
-                        # in the plugin, we will get an exception and the plan is to not handle it
-                        if 'validSettings' in dir(plugin):
-                            self._validSettings.extend(plugin.validSettings)
-                        if 'defaultableSettings' in dir(plugin):
-                            self._defaultableSettings.extend(plugin.defaultableSettings)
-                        if 'intSettings' in dir(plugin):
-                            self._intSettings.extend(plugin.intSettings)
-                        if 'floatSettings' in dir(plugin):
-                            self._floatSettings.extend(plugin.floatSettings)
-                        if 'boolSettings' in dir(plugin):
-                            self._boolSettings.extend(plugin.boolSettings)
-                        if 'jsonSettings' in dir(plugin):
-                            self._jsonSettings.extend(plugin.jsonSettings)
-                        if 'complexSettings' in dir(plugin):
-                            self._complexSettings.update(plugin.complexSettings)
-                    except ValueError:
-                        self.logger.error("Error loading plugin '%s' of type '%s'" % (base, plugintype))
-                        self.logger.debug(traceback.format_exc())
-
-        # Chop off the path we added
-        sys.path = sys.path[0:-1]
-        return ret
-
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen')
 
     def getPlugin(self, name, s=None):
         """Return a reference to a Python object (not an instance) referenced by passed name"""
@@ -331,7 +195,7 @@ class Config:
         make sure we look in __outputPlugins as well. For some reason we
         keep 2 separate dicts of plugins.
         '''
-        if not name in self.__plugins and not name in self.__outputPlugins:
+        if not name in self.plugins and not name in self.outputPlugins:
             # 2/1/15 CS If we haven't already seen the plugin, try to load it
             # Note, this will only work for plugins which do not specify config validation
             # parameters.  If they do, configs may not validate for user provided plugins.
@@ -344,7 +208,7 @@ class Config:
                     if plugin != None:
                         self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'"
                                      % (plugintype, plugin, s.name))
-                        pluginsdict = self.__plugins if plugintype in ('generator', 'rater') else self.__outputPlugins
+                        pluginsdict = self.plugins if plugintype in ('generator', 'rater') else self.outputPlugins
                         bindir = os.path.join(s.sampleDir, os.pardir, 'bin')
                         libdir = os.path.join(s.sampleDir, os.pardir, 'lib')
                         plugindir = os.path.join(libdir, 'plugins', plugintype)
@@ -356,35 +220,13 @@ class Config:
                         self.__initializePlugins(plugindir, pluginsdict, plugintype)
 
         # APPPERF-263: consult both __outputPlugins and __plugins
-        if not name in self.__plugins and not name in self.__outputPlugins:
+        if not name in self.plugins and not name in self.outputPlugins:
             raise KeyError('Plugin ' + name + ' not found')
 
         # return in order of precedence:  __plugins, __outputPlugins, None
         # Note: because of the above KeyError Exception we should never return
         # None, but it is the sane behavior for a getter method
-        return self.__plugins.get(name,self.__outputPlugins.get(name,None))
-
-    def __setPlugin(self, s):
-        """Called during setup, assigns which output plugin to use based on configured outputMode"""
-        # 12/2/13 CS Adding pluggable output modules, need to set array to map sample name to output plugin
-        # module instances
-
-        name = s.outputMode.lower()
-        key = "{type}.{name}".format(type="output", name=name)
-
-        try:
-            self.__plugins[s.name] = self.__outputPlugins[key](s)
-            plugin = self.__plugins[s.name]
-        except KeyError:
-            try:
-                # APPPERF-263: now attempt to dynamically load plugin
-                self.getPlugin(key, s)
-                self.__plugins[s.name] = self.__outputPlugins[key](s)
-                plugin = self.__plugins[s.name]
-            except KeyError:
-                # APPPERF-264:  dynamic loading has failed
-                raise KeyError('Output plugin %s does not exist' % s.outputMode.lower())
-
+        return self.plugins.get(name,self.outputPlugins.get(name,None))
 
     def makeSplunkEmbedded(self, sessionKey=None):
         """Setup operations for being Splunk Embedded.  This is legacy operations mode, just a little bit obfuscated now.
@@ -562,7 +404,7 @@ class Config:
                 # Set defaults for items not included in the config file
                 for setting in self._defaultableSettings:
                     if not hasattr(s, setting) or getattr(s, setting) == None:
-                        setattr(s, setting, getattr(self, setting))
+                        setattr(s, setting, getattr(self, setting, None))
 
                 # Append to temporary holding list
                 if not s.disabled:
@@ -606,7 +448,11 @@ class Config:
                 self.logger.debug("Sample directory specified in config, checking for relative")
                 # Allow for relative paths to the base directory
                 if not os.path.exists(s.sampleDir):
-                    s.sampleDir = os.path.join(self.grandparentdir, s.sampleDir)
+                    temp_sampleDir = os.path.join(self.grandparentdir, s.sampleDir)
+                    # check the greatgrandparent just incase for the sample file.
+                    if not os.path.exists(temp_sampleDir):
+                        temp_sampleDir = os.path.join(self.greatgrandparentdir, s.sampleDir)
+                    s.sampleDir = temp_sampleDir
                 else:
                     s.sampleDir = s.sampleDir
 
@@ -795,8 +641,7 @@ class Config:
                 s.rater = 'perdayvolume'
                 s.count = 1
                 s.generator = 'perdayvolumegenerator'
-
-            if s.mode == 'replay':
+            elif s.mode == 'replay':
                 self.logger.debug("Setting defaults for replay samples")
                 s.earliest = 'now'
                 s.latest = 'now'
@@ -808,9 +653,6 @@ class Config:
                 s.interval = 0
                 # 12/29/13 CS Moved replay generation to a new replay generator plugin
                 s.generator = 'replay'
-
-            self.__setPlugin(s)
-            self.intervalsSinceFlush[s.name] = Counter(0, self.threading)
 
         self.samples = tempsamples
         self._confDict = None
@@ -1080,116 +922,4 @@ class Config:
                 ret[section]['eai:acl'] = { 'app': self.grandparentdir.split(os.sep)[-1] }
             self._confDict = ret
 
-        # Have to look in the data structure before normalization between what Splunk returns
-        # versus what ConfigParser returns.
-        logobj = logging.getLogger('eventgen')
-        if self._confDict['global']['debug'].lower() == 'true' \
-                or self._confDict['global']['debug'].lower() == '1':
-            logobj.setLevel(logging.DEBUG)
-        if self._confDict['global']['verbose'].lower() == 'true' \
-                or self._confDict['global']['verbose'].lower() == '1':
-            logobj.setLevel(logging.DEBUGV)
-
-        # 2/1/15 CS  Adding support for command line options
-        if self.args:
-            if self.args.verbosity >= 2:
-                self.debug = True
-                logobj.setLevel(logging.DEBUG)
-            if self.args.verbosity >= 3:
-                self.verbose = True
-                logobj.setLevel(logging.DEBUGV)
         self.logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))
-
-
-    # Copied from http://danielkaes.wordpress.com/2009/06/04/how-to-catch-kill-events-with-python/
-    def set_exit_handler(self, func):
-        """Catch signals and call handle_exit when we're supposed to shut down"""
-        if os.name == "nt":
-            try:
-                import win32api
-                win32api.SetConsoleCtrlHandler(func, True)
-            except ImportError:
-                version = ".".join(map(str, sys.version_info[:2]))
-                raise Exception("pywin32 not installed for Python " + version)
-        else:
-            import signal
-            signal.signal(signal.SIGTERM, func)
-            signal.signal(signal.SIGINT, func)
-
-    def handle_exit(self, sig=None, func=None):
-        """Clean up and shut down threads"""
-        self.logger.info("Stopping additional generation")
-        self.stopping.increment()
-
-        # Loop through all threads/processes and mark them for death
-        # This does not actually kill the plugin, but they should check to see if
-        # they are set to stop with every iteration
-        self.logger.info("Stopping timers")
-        for sampleTimer in self.sampleTimers:
-            sampleTimer.stop()
-
-        time.sleep(0.5)
-
-        # 7/4/16 Stop generator workers first
-        self.logger.info("Stopping generators")
-        for worker in self.__generatorworkers:
-            worker.stop()
-
-        time.sleep(0.5)
-
-        self.logger.info("Stopping outputers")
-        for worker in self.__outputworkers:
-            worker.stop()
-
-        # Wait for all the queues to finish off before we exit.
-        while self.generatorQueueSize.value() > 0 or self.outputQueueSize.value() > 0:
-            self.logger.debug("Generator Size: {0}, Output Size: {1}".format(self.generatorQueueSize.value(), self.outputQueueSize.value()))
-            time.sleep(5)
-        else:
-            self.logger.info("All queues are stopped")
-        self.logger.info("Exiting main thread.")
-        time.sleep(1)
-        sys.exit(0)
-
-    def start(self):
-        """Start up worker threads"""
-        # Only start output workers if we're going to use them
-        if self.useOutputQueue:
-            for x in xrange(0, self.outputWorkers):
-                self.logger.info("Starting OutputWorker %d" % x)
-                if self.threading == "process":
-                    worker = OutputProcessWorker(x)
-                else:
-                    worker = OutputThreadWorker(x)
-                worker.daemon = True
-                worker.start()
-                self.__outputworkers.append(worker)
-
-        # Start X instantiations of GeneratorWorkers, controlled by the generators configuration
-        # or command line parameter
-        for x in xrange(0, self.generatorWorkers):
-            self.logger.info("Starting GeneratorWorker %d" % x)
-            if self.threading == "process":
-                worker = GeneratorProcessWorker(x, self.generatorQueue, self.outputQueue)
-            else:
-                worker = GeneratorThreadWorker(x, self.generatorQueue, self.outputQueue)
-            worker.daemon = True
-            worker.start()
-            self.__generatorworkers.append(worker)
-
-        self.logger.debug("Waiting for workers to start for %d workers" % self.generatorWorkers)
-        while self.pluginsStarted.value() < self.generatorWorkers:
-            self.logger.debug("pluginsStarted value of '%d' is less than total '%d'" % (self.pluginsStarted.value(), self.generatorWorkers))
-            time.sleep(0.1)
-
-        # Start a Timer thread for every sample which will either run a non-Queueable Plugin
-        # in the thread or send work to a queue which will be fulfilled by a GeneratorWorker
-        for sampleTimer in self.sampleTimers:
-            sampleTimer.daemon = True
-            sampleTimer.start()
-            self.logger.info("Starting timer for sample '%s'" % sampleTimer.sample.name)
-
-        self.logger.debug("Waiting for timers to start for %d timers" % len(self.sampleTimers))
-        while self.timersStarted.value() < len(self.sampleTimers):
-            self.logger.debug("timersStarted value of '%d' is less than total '%d'" % (self.timersStarted.value(), len(self.sampleTimers)))
-            time.sleep(0.1)

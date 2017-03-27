@@ -44,5 +44,6 @@ setup(
         'boto3',
         'requests>=2.10.0',
         'requests[security]',
+        'logutils>=0.3.4.1',
         'futures>=3.0.5']
     )

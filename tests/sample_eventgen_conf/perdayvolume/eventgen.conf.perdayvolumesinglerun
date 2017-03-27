@@ -1,9 +1,9 @@
 [perdayvolume]
-sampleDir = tests/perdayvolume
-mode = replay
+sampleDir = tests/sample_eventgen_conf/perdayvolume
+#mode = replay
 end = 1
 interval=0
-perDayVolume = .1
+perDayVolume = .01
 
 outputMode = stdout
 index = main

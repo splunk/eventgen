@@ -1,5 +1,5 @@
 [sample.mobilemusic.csv]
-sampleDir = tests/replaytimestamp
+sampleDir = tests/sample_eventgen_conf/replaytimestamp
 outputMode = stdout
 sampletype = csv
 interval = 3

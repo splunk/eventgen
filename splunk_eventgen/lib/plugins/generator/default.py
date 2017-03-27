@@ -14,15 +14,6 @@ class DefaultGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
-        # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'DefaultGenerator', 'sample': sample.name})
-        globals()['logger'] = adapter
-
-        from eventgenconfig import Config
-        globals()['c'] = Config()
-
     def gen(self, count, earliest, latest, samplename=None):
         # 2/10/14 CS set s to our local copy of the sample
         s = self._samples[samplename]
@@ -32,18 +23,18 @@ class DefaultGenerator(GeneratorPlugin):
         try:
             s.loadSample()
         except TypeError:
-            logger.error("Error loading sample file for sample '%s'" % s.name)
+            self.logger.error("Error loading sample file for sample '%s'" % s.name)
             return
             
 
-        logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (s.name, s.app, count, earliest, latest))
+        self.logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (s.name, s.app, count, earliest, latest))
         startTime = datetime.datetime.now()
 
         # If we're random, fill random events from sampleDict into eventsDict
         if s.randomizeEvents:
             eventsDict = [ ]
             sdlen = len(s.sampleDict)
-            logger.debugv("Random filling eventsDict for sample '%s' in app '%s' with %d events" % (s.name, s.app, count))
+            self.logger.debugv("Random filling eventsDict for sample '%s' in app '%s' with %d events" % (s.name, s.app, count))
             # Count is -1, replay the whole file, but in randomizeEvents I think we'd want it to actually 
             # just put as many events as there are in the file
             if count == -1:
@@ -53,7 +44,7 @@ class DefaultGenerator(GeneratorPlugin):
         # If we're bundlelines, create count copies of the sampleDict
         elif s.bundlelines:
             eventsDict = [ ]
-            logger.debugv("Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" % (s.name, s.app, count))
+            self.logger.debugv("Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" % (s.name, s.app, count))
             for x in xrange(count):
                 eventsDict.extend(s.sampleDict)
         # Otherwise fill count events into eventsDict or keep making copies of events out of sampleDict until
@@ -66,15 +57,15 @@ class DefaultGenerator(GeneratorPlugin):
 
             ## Continue to fill events array until len(events) == count
             if len(eventsDict) < count:
-                logger.debugv("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (s.name, s.app, len(eventsDict), count) )
-                logger.debugv("Current eventsDict: %s" % eventsDict)
+                self.logger.debugv("Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" % (s.name, s.app, len(eventsDict), count) )
+                self.logger.debugv("Current eventsDict: %s" % eventsDict)
                 # run a modulus on the size of the eventdict to figure out what the last event was.  Populate to count
                 # from there.
                 while len(eventsDict) < count:
                     nextEventToUse = s.sampleDict[len(eventsDict) % len(s.sampleDict)]
-                    logger.debugv("Next event to add: %s" % nextEventToUse)
+                    self.logger.debugv("Next event to add: %s" % nextEventToUse)
                     eventsDict.append(nextEventToUse)
-                logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" % (s.name, s.app, len(eventsDict)))
+                self.logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" % (s.name, s.app, len(eventsDict)))
 
         eventcount=0
         for targetevent in eventsDict:
@@ -89,10 +80,10 @@ class DefaultGenerator(GeneratorPlugin):
                 ## Iterate tokens
                 for token in s.tokens:
                     token.mvhash = mvhash
-                    # logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
-                    logger.debugv("Sending event to token replacement: Event:{0} Token:{1}".format(event, token))
+                    # self.logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
+                    self.logger.debugv("Sending event to token replacement: Event:{0} Token:{1}".format(event, token))
                     event = token.replace(event, et=earliest, lt=latest, s=s)
-                    logger.debugv("finished replacing token")
+                    self.logger.debugv("finished replacing token")
                     if token.replacementType == 'timestamp' and s.timeField != '_raw':
                         s.timestamp = None
                         token.replace(targetevent[s.timeField], et=s.earliestTime(), lt=s.latestTime(), s=s)
@@ -113,7 +104,7 @@ class DefaultGenerator(GeneratorPlugin):
                         'source': targetevent['source'],
                         'sourcetype': targetevent['sourcetype'],
                         '_time': int(time.mktime(s.timestamp.timetuple())) } ]
-                logger.debugv("Finished Processing event: %s" % eventcount)
+                self.logger.debugv("Finished Processing event: %s" % eventcount)
                 eventcount += 1
                 self._out.bulksend(l)
                 s.timestamp = None
@@ -123,9 +114,9 @@ class DefaultGenerator(GeneratorPlugin):
         endTime = datetime.datetime.now()
         timeDiff = endTime - startTime
         timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
-        logger.debugv("Interval complete, flushing feed")
+        self.logger.debugv("Interval complete, flushing feed")
         self._out.flush(endOfInterval=True)
-        logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
+        self.logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (s.name, s.app, timeDiffFrac) )
 
 def load():
     return DefaultGenerator

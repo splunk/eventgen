@@ -1,51 +1,26 @@
 from __future__ import division
-import os, sys
 import logging
 import logging.handlers
-import httplib, httplib2
-import urllib
-import re
-import base64
-from xml.dom import minidom
-import time
 from collections import deque
-import shutil
-import pprint
-import base64
-import threading
-import copy
 from Queue import Full
 import json
 import time
-import marshal
 
-class Output:
+#TODO: Figure out why we load plugins from here instead of the base plugin class.
+class Output(object):
     """
     Base class which loads output plugins in BASE_DIR/lib/plugins/output and handles queueing
     """
 
     def __init__(self, sample):
         self.__plugins = {}
-
-        # Logger already setup by config, just get an instance
-        logobj = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logobj, {'module': 'Output', 'sample': sample.name})
-        globals()['logger'] = adapter
-
-        from eventgenconfig import Config
-        globals()['c'] = Config()
         self._app = sample.app
         self._sample = sample
         self._outputMode = sample.outputMode
-        
+        self.MAXQUEUELENGTH = sample.maxQueueLength
         self._queue = deque([])
-        self._workers = [ ]
+        self._setup_logging()
 
-        if self._sample.maxQueueLength == 0:
-            self.MAXQUEUELENGTH = c.getPlugin(self._sample.name).MAXQUEUELENGTH
-        else:
-            self.MAXQUEUELENGTH = self._sample.maxQueueLength
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
@@ -56,6 +31,28 @@ class Output:
 
     def __repr__(self):
         return self.__str__()
+
+    # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
+    def __getstate__(self):
+        temp = self.__dict__
+        if getattr(self, 'logger', None):
+            temp.pop('logger', None)
+        return temp
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self._setup_logging()
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen')
+
+    def _update_outputqueue(self, queue):
+        self.outputQueue = queue
+
+    def updateConfig(self, config):
+        self.config = config
+        #TODO: This is where the actual output plugin is loaded, and pushed out.  This should be handled way better...
+        self.outputPlugin = self.config.getPlugin('output.' + self._sample.outputMode, self._sample)
 
     def send(self, msg):
         """
@@ -85,7 +82,8 @@ class Output:
         more than maxIntervalsBeforeFlush tunable.
         """
         flushing = False
-        if endOfInterval:
+        #TODO: Fix interval flushing somehow with a queue, not sure I even want to support this feature anymore.
+        '''if endOfInterval:
             logger.debugv("Sample calling flush, checking increment against maxIntervalsBeforeFlush")
             c.intervalsSinceFlush[self._sample.name].increment()
             if c.intervalsSinceFlush[self._sample.name].value() >= self._sample.maxIntervalsBeforeFlush:
@@ -96,31 +94,30 @@ class Output:
                 logger.debugv("Not enough events to flush, passing flush routine.")
         else:
             logger.debugv("maxQueueLength exceeded, flushing")
-            flushing = True
+            flushing = True'''
 
+        #TODO: This is set this way just for the time being while I decide if we want this feature.
+        flushing = True
         if flushing:
             # q = deque(list(self._queue)[:])
             q = list(self._queue)
-            logger.debugv("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
+            self.logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue.clear()
-            if c.useOutputQueue:
-                while True:
-                    try:
-                        c.outputQueue.put((self._sample.name, q), block=True, timeout=1.0)
-                        c.outputQueueSize.increment()
-                        # logger.info("Outputting queue")
-                        break
-                    except Full:
-                        logger.warning("Output Queue full, looping again")
-                        pass
+            outputer = self.outputPlugin(self._sample)
+            outputer.set_events(q)
+            if self.config.useOutputQueue:
+                try:
+                    self.outputQueue.put(outputer)
+                except Full:
+                    self.logger.warning("Output Queue full, looping again")
             else:
                 tmp = [len(s['_raw']) for s in q]
-                c.eventsSent.add(len(tmp))
-                c.bytesSent.add(sum(tmp))
-                if c.splunkEmbedded and len(tmp)>0:
+                self.config.eventsSent.add(len(tmp))
+                self.config.bytesSent.add(sum(tmp))
+                if self.config.splunkEmbedded and len(tmp)>0:
                     metrics = logging.getLogger('eventgen_metrics')
                     metrics.error(json.dumps({'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 
-                            'sample': name, 'events': len(tmp), 'bytes': sum(tmp)}))
+                            'sample': self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)}))
                 tmp = None
-                plugin = c.getPlugin(self._sample.name)
-                plugin.flush(deque(q[:]))
+                outputer.run()
+        pass
