@@ -1,8 +1,7 @@
 from __future__ import division
 from ConfigParser import ConfigParser
 import os
-import datetime, time
-import sys
+import datetime
 import re
 import logging, logging.handlers
 import json
@@ -13,8 +12,6 @@ from eventgentoken import Token
 import urllib
 import types
 import random
-from generatorworker import GeneratorThreadWorker, GeneratorProcessWorker
-from outputworker import OutputThreadWorker, OutputProcessWorker
 
 # 4/21/14 CS  Adding a defined constant whether we're running in standalone mode or not
 #             Standalone mode is when we know we're Splunk embedded but we want to force
