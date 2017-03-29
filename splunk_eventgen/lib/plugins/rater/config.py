@@ -5,7 +5,7 @@ import datetime
 import random
 
 
-class ConfigRater:
+class ConfigRater(object):
     name = 'ConfigRater'
     stopping = False
 
