@@ -12,9 +12,6 @@ class ConfigRater:
     def __init__(self, sample):
 
         self._setup_logging()
-        from splunk_eventgen.lib.eventgenconfig import Config
-        globals()['c'] = Config()
-
         self.logger.debug('Starting ConfigRater for %s' % sample.name if sample is not None else "None")
 
         self._sample = sample

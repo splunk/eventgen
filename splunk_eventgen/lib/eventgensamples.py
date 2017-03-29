@@ -104,7 +104,7 @@ class Sample:
         self._setup_logging()
         
         # Import config
-        from splunk_eventgen.lib.eventgenconfig import Config
+        from eventgenconfig import Config
         globals()['c'] = Config()
         
     def __str__(self):

@@ -1,5 +1,5 @@
 from __future__ import division
-from splunk_eventgen.lib.outputplugin import OutputPlugin
+from outputplugin import OutputPlugin
 import requests
 import boto3
 import botocore.exceptions
@@ -44,9 +44,6 @@ class AwsS3OutputPlugin(OutputPlugin):
 
         # disable any "requests" warnings
         requests.packages.urllib3.disable_warnings()
-
-        from splunk_eventgen.lib.eventgenconfig import Config
-        globals()['c'] = Config()
 
         # Bind passed in samples to the outputter.
         self.awsS3compressiontype = sample.awsS3CompressionType if hasattr(

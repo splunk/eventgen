@@ -1,7 +1,7 @@
 # Note as implemented this plugin is not threadsafe, file should only be used with one output worker
 
 from __future__ import division
-from splunk_eventgen.lib.outputplugin import OutputPlugin
+from outputplugin import OutputPlugin
 import os
 
 
@@ -14,9 +14,6 @@ class FileOutputPlugin(OutputPlugin):
 
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
-
-        from splunk_eventgen.lib.eventgenconfig import Config
-        globals()['c'] = Config()
 
         if sample.fileName == None:
             self.logger.error('outputMode file but file not specified for sample %s' % self._sample.name)

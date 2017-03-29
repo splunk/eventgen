@@ -1,9 +1,8 @@
 from __future__ import division
-from splunk_eventgen.lib.outputplugin import OutputPlugin
+from outputplugin import OutputPlugin
 from xml.dom import minidom
 import httplib, httplib2
 import urllib
-import logging
 from collections import deque
 
 

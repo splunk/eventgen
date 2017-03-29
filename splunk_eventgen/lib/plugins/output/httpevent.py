@@ -1,12 +1,11 @@
 from __future__ import division
-from splunk_eventgen.lib.outputplugin import OutputPlugin
+from outputplugin import OutputPlugin
 try:
     import requests
 except ImportError:
     pass
 import json
 import random
-import logging
 
 class NoServers(Exception):
     def __init__(self,*args,**kwargs):
@@ -37,9 +36,6 @@ class HTTPEventOutputPlugin(OutputPlugin):
 
         #disable any "requests" warnings
         requests.packages.urllib3.disable_warnings()
-
-        from splunk_eventgen.lib.eventgenconfig import Config
-        globals()['c'] = Config()
 
         #Bind passed in samples to the outputter.
         self.logger.debug("Outputmode: %s" % sample.httpeventOutputMode)

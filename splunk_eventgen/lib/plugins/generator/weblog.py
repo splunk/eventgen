@@ -1,5 +1,5 @@
 from __future__ import division
-from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
+from generatorplugin import GeneratorPlugin
 import time
 import random
 
