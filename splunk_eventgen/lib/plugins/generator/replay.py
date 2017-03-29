@@ -1,14 +1,10 @@
 # TODO Add timestamp detection for common timestamp format
 
 from __future__ import division
-from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
-import os
-import logging
+from generatorplugin import GeneratorPlugin
 import datetime, time
 import math
-import re
-from eventgentoken import Token
-from eventgenoutput import Output
+
 
 class ReplayGenerator(GeneratorPlugin):
     queueable = False

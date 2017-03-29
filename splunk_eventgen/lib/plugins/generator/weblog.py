@@ -1,26 +1,12 @@
 from __future__ import division
 from generatorplugin import GeneratorPlugin
-import os
-import logging
-import datetime, time
-import itertools
-from collections import deque
+import time
 import random
-import subprocess
-from eventgenoutput import Output
+
 
 class WeblogGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
-
-        # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'WeblogGenerator', 'sample': sample.name})
-        globals()['logger'] = adapter
-
-        from eventgenconfig import Config
-        globals()['c'] = Config()
 
         f = open('tests/perf/weblog/external_ips.sample')
         self.external_ips = [x.strip() for x in f.readlines()]
