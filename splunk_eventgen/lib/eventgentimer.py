@@ -79,7 +79,7 @@ class Timer(object):
         Actual work for queueable plugins is done in lib/plugins/generatorworker.py
         """
         if self.sample.delay > 0:
-            self.logger.info("Sample set to delay %s, sleeping." % s.delay)
+            self.logger.info("Sample set to delay %s, sleeping." % self.sample.delay)
             time.sleep(self.sample.delay)
             
         self.logger.debug("Timer creating plugin for '%s'" % self.sample.name)
