@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from lib.eventgenconfig import Config
-from lib.eventgentimer import Timer
+from splunk_eventgen.lib.eventgenconfig import Config
+from splunk_eventgen.lib.eventgentimer import Timer
 import logging
 import logging.config
 import os

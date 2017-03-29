@@ -4,19 +4,11 @@ Copyright (C) 2005-2012 Splunk Inc. All Rights Reserved.
 from __future__ import division
 
 import sys, os
-path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
-sys.path.append(path_prepend)
-
 import logging
-import threading
-import multiprocessing
 import time
-import datetime
-from select import select
-from eventgenconfig import Config
-from eventgentimer import Timer
+from splunk_eventgen.lib.eventgenconfig import Config
+from splunk_eventgen.lib.eventgentimer import Timer
 import xml.dom.minidom
-import pprint
 
 SCHEME = """<scheme>
     <title>SA-Eventgen</title>

@@ -4,8 +4,7 @@ try:
 except ImportError, e:
     import multiprocessing
 import logging
-import json
-import threading
+
 
 class Queue:
     """

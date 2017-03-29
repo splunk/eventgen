@@ -9,7 +9,8 @@ import re
 import csv
 import copy
 import urllib
-from timeparser import timeParser, timeDelta2secs
+from timeparser import timeParser
+
 
 class Sample:
     """
@@ -103,7 +104,7 @@ class Sample:
         self._setup_logging()
         
         # Import config
-        from eventgenconfig import Config
+        from splunk_eventgen.lib.eventgenconfig import Config
         globals()['c'] = Config()
         
     def __str__(self):

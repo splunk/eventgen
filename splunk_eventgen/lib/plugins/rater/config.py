@@ -1,12 +1,9 @@
 from __future__ import division
-import os, sys
 import logging
 import logging.handlers
-from collections import deque
-import threading
-from Queue import Empty
 import datetime
 import random
+
 
 class ConfigRater:
     name = 'ConfigRater'
@@ -15,7 +12,7 @@ class ConfigRater:
     def __init__(self, sample):
 
         self._setup_logging()
-        from eventgenconfig import Config
+        from splunk_eventgen.lib.eventgenconfig import Config
         globals()['c'] = Config()
 
         self.logger.debug('Starting ConfigRater for %s' % sample.name if sample is not None else "None")

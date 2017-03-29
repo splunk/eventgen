@@ -1,8 +1,6 @@
 from __future__ import division
-import os, sys
 import logging
 import logging.handlers
-from collections import deque
 import threading
 try:
     import billiard as multiprocessing
@@ -10,8 +8,8 @@ except ImportError, e:
     import multiprocessing
 import Queue
 import datetime, time
-import marshal
 import random
+
 
 class GeneratorProcessWorker(multiprocessing.Process):
     def __init__(self, num, q1, q2):
@@ -53,14 +51,13 @@ class GeneratorThreadWorker(threading.Thread):
 class GeneratorRealWorker:
 
     def __init__(self, num, q1, q2, stop):
-        from eventgenconfig import Config
-        
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
         adapter = EventgenAdapter(logger, {'module': 'GeneratorRealWorker', 'sample': 'null'})
         globals()['logger'] = adapter
 
+        from splunk_eventgen.lib.eventgenconfig import Config
         globals()['c'] = Config()
 
         self.stopping = False

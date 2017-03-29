@@ -1,5 +1,4 @@
 from __future__ import division
-import os, sys
 import logging
 import logging.handlers
 from collections import deque
@@ -9,11 +8,10 @@ try:
     import billiard as multiprocessing
 except ImportError, e:
     import multiprocessing
-import json
 import time
-import marshal
 import json
 import datetime
+
 
 class OutputProcessWorker(multiprocessing.Process):
     def __init__(self, num):
@@ -48,14 +46,13 @@ class OutputThreadWorker(threading.Thread):
 class OutputRealWorker:
 
     def __init__(self, num, stop):
-        from eventgenconfig import Config
-        
         # Logger already setup by config, just get an instance
         logger = logging.getLogger('eventgen')
         from eventgenconfig import EventgenAdapter
         adapter = EventgenAdapter(logger, {'module': 'OutputRealWorker', 'sample': 'null'})
         globals()['logger'] = adapter
 
+        from splunk_eventgen.lib.eventgenconfig import Config
         globals()['c'] = Config()
 
         self.stopping = False

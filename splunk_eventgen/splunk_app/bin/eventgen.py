@@ -5,14 +5,10 @@ Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 from __future__ import division
 
 import os
-import sys
-path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
-sys.path.append(path_prepend)
-
 import logging
 import time
-from eventgenconfig import Config
-from eventgentimer import Timer
+from splunk_eventgen.lib.eventgenconfig import Config
+from splunk_eventgen.lib.eventgentimer import Timer
 
 
 def parse_args():
