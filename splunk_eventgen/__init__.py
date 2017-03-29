@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from splunk_eventgen.lib.eventgenconfig import Config
-from splunk_eventgen.lib.eventgentimer import Timer
+from lib.eventgenconfig import Config
+from lib.eventgentimer import Timer
 import logging
 import logging.config
 import os
 import sys
 import imp
-from Queue import Queue, Empty, Full
+from Queue import Queue, Empty
 from threading import Thread
 import time
 

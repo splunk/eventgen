@@ -25,7 +25,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
 
-        from splunk_eventgen.lib.eventgenconfig import Config
+        from eventgenconfig import Config
         globals()['c'] = Config()
 
         self._splunkUrl, self._splunkMethod, self._splunkHost, self._splunkPort = c.getSplunkUrl(self._sample)
