@@ -1,7 +1,8 @@
 import logging
-import sys
 import datetime, time
 import copy
+from timeparser import timeParserTimeMath
+from Queue import Full
 
 class Timer(object):
     """
@@ -89,6 +90,42 @@ class Timer(object):
             # referenced in the config object, while, self.stopping will only stop this one.
             if self.config.stopping or self.stopping:
                 end = True
+            count = self.rater.rate()
+            #First run of the generator, see if we have any backfill work to do.
+            #TODO: I think self.countdown can just go away.
+            if self.countdown == 0 and self.sample.backfill and not self.sample.backfilldone:
+                realtime = self.sample.now(realnow=True)
+                if "-" in self.sample.backfill[0]:
+                    mathsymbol = "-"
+                else:
+                    mathsymbol = "+"
+                backfillnumber = ""
+                backfillletter = ""
+                for char in self.sample.backfill:
+                    if char.isdigit():
+                        backfillnumber += char
+                    elif char != "-":
+                        backfillletter += char
+                backfillearliest = timeParserTimeMath(plusminus=mathsymbol,
+                                                      num=backfillnumber,
+                                                      unit=backfillletter,
+                                                      ret=realtime)
+                while backfillearliest < realtime:
+                    et = backfillearliest
+                    lt = timeParserTimeMath(plusminus="+", num=self.sample.interval, unit="s", ret=et)
+                    genPlugin = self.generatorPlugin(sample=self.sample)
+                    # need to make sure we set the queue right if we're using multiprocessing or thread modes
+                    genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
+                    genPlugin.updateCounts(count=count,
+                                           start_time=et,
+                                           end_time=lt)
+                    try:
+                        self.generatorQueue.put(genPlugin)
+                    except Full:
+                        self.logger.warning("Generator Queue Full. Skipping current generation.")
+                    backfillearliest = lt
+                self.sample.backfilldone = True
+
             if self.countdown <= 0:
                 # 12/15/13 CS Moving the rating to a separate plugin architecture
                 count = self.rater.rate()
@@ -117,7 +154,10 @@ class Timer(object):
                     genPlugin.updateCounts(count=count,
                                            start_time=et,
                                            end_time=lt)
-                    self.generatorQueue.put(genPlugin)
+                    try:
+                        self.generatorQueue.put(genPlugin)
+                    except Full:
+                        self.logger.warning("Generator Queue Full. Skipping current generation.")
                     self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
                 #TODO: put this back to just catching a full queue
                 except Exception as e:
@@ -131,20 +171,6 @@ class Timer(object):
                     # Sleep until we're supposed to wake up and generate more events
                     self.countdown = self.sample.interval
                     self.executions += 1
-
-                # Clear cache for timestamp
-                # self.sample.timestamp = None
-
-                # No rest for the wicked!  Or while we're doing backfill
-                if self.sample.backfill != None and not self.sample.backfilldone:
-                    # Since we would be sleeping, increment the timestamp by the amount of time we're sleeping
-                    incsecs = round(self.countdown / 1, 0)
-                    incmicrosecs = self.countdown % 1
-                    self.sample.backfillts += datetime.timedelta(seconds=incsecs, microseconds=incmicrosecs)
-                    self.countdown = 0
-
-                if self.countdown > 0:
-                    self.sample.saveState()
 
                 # 8/20/15 CS Adding support for ending generation at a certain time
                 if self.end != None:
