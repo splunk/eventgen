@@ -132,14 +132,6 @@ class Timer(object):
 
                 et = self.sample.earliestTime()
                 lt = self.sample.latestTime()
-
-                # Override earliest and latest during backfill until we're at current time
-                if self.sample.backfill != None and not self.sample.backfilldone:
-                    if self.sample.backfillts >= self.sample.now(realnow=True):
-                        self.logger.info("Backfill complete")
-                        self.sample.backfilldone = True
-                    else:
-                        self.logger.debug("Still backfilling for sample '%s'.  Currently at %s" % (self.sample.name, self.sample.backfillts))
                 try:
                     # create a generator object, then place it in the generator queue.
                     start_time=(time.mktime(et.timetuple())*(10**6)+et.microsecond)
@@ -162,7 +154,6 @@ class Timer(object):
                 #TODO: put this back to just catching a full queue
                 except Exception as e:
                     self.logger.exception(e)
-                    self.logger.warning("Generator Queue Full, looping")
                     if self.stopping:
                         stop = True
                     pass
