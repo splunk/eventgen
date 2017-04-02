@@ -162,7 +162,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 payloadsize = 0
                 logger.debug("Currently being called with %d events" % len(q))
                 for event in q:
-                    logger.debugv("HTTPEvent proccessing event: %s" % event)
+                    logger.debugv("HTTPEvent processing event: %s" % event)
                     payloadFragment = {}
                     if event.get('_raw') == None or event['_raw'] == "\n":
                         logger.error('failure outputting event, does not contain _raw')
