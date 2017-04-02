@@ -150,7 +150,7 @@ class Sample:
         ## Iterate path segments
         for x in range(0, len(path)):
             segment = path[x].lstrip('$')
-            ## If segement is an environment variable then replace
+            ## If segment is an environment variable then replace
             if os.environ.has_key(segment):
                 path[x] = os.environ[segment]
 
