@@ -41,7 +41,7 @@ First, we import the OutputPlugin superclass.  For output plugins, they define a
 
 ``__init__()`` is very simple.  It calls its superclass init and sets one variable, firsttime.  ``flush()`` is also very simple.  If its the first time, open the file /dev/null, otherwise, output the queue by writing it to the already open file.
 
-Every Eventgen plugin defines a class and a ``load()`` method. The load() method is a universal function for determinig the class defined in the file.
+Every Eventgen plugin defines a class and a ``load()`` method. The load() method is a universal function for determining the class defined in the file.
 
 Now, lets look at a slightly more complicated plugin, splunkstream.py in ``lib/plugins/output/splunkstream.py``.  We're going to look just at the top of the class as its being defined:
 
