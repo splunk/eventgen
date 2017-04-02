@@ -82,7 +82,7 @@ class OutputRealWorker:
                 # logger.debugv("Got %d output items from python queue for plugin '%s'" % (len(queue), name))
                 # name, queue = c.outputQueue.get(False, 0)
                 c.outputQueueSize.decrement()
-                # we throw an exception if the queue is emtpy, if no exception is thrown it must have work...
+                # we throw an exception if the queue is empty, if no exception is thrown it must have work...
                 self.working = True
                 tmp = [len(s['_raw']) for s in queue]
                 c.eventsSent.add(len(tmp))
