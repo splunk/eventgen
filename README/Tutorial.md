@@ -160,7 +160,7 @@ This should now replay random events from the file we have configured.  Go ahead
 
 ## Second example, building events from scratch
 
-Replaying random events from a file is an easy way to build an eventgen.  Sometimes, like in the eventgen we're building for VMware, the events you're modeling are so complicated it's simplest way to do it without investing a lot of time modeling all the tokens you want to subtitute etc.  Also, sometimes so many tokens need to move together, it's easiest just to replay the file with new timestamps.  However, if we're building a new demo from scratch, a lot of times we're going to want to generate events from a basic template with values we're providing from files.  Let's look at an example:
+Replaying random events from a file is an easy way to build an eventgen.  Sometimes, like in the eventgen we're building for VMware, the events you're modeling are so complicated it's simplest way to do it without investing a lot of time modeling all the tokens you want to substitute etc.  Also, sometimes so many tokens need to move together, it's easiest just to replay the file with new timestamps.  However, if we're building a new demo from scratch, a lot of times we're going to want to generate events from a basic template with values we're providing from files.  Let's look at an example:
 
     [sample.tutorial3]
     interval = 3
