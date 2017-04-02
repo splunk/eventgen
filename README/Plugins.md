@@ -54,7 +54,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
     intSettings = [ 'splunkPort' ]
 ```
 
-MAXQUEUELENGTH should look normal, but these other class variables bear a little explaination.
+MAXQUEUELENGTH should look normal, but these other class variables bear a little explanation.
 
 ### Configuration Validation
 Config validation is a modular system in Eventgen, and plugins must be allowed to specify additional configuration parameters that the main Eventgen will consider valid and store.  *Note that eventgen.conf.spec generation is not yet automated, which means plugins must ship with the default distribution and eventgen.conf.spec must be maintained manually.*  Eventually spec file generation will be automated as well.
