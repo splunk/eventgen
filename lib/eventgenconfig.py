@@ -24,7 +24,7 @@ from outputworker import OutputThreadWorker, OutputProcessWorker
 
 
 # 6/7/14 CS   Adding a new logger adapter class which we will use to override the formatting
-#             for all messsages to include the sample they came from
+#             for all messages to include the sample they came from
 class EventgenAdapter(logging.LoggerAdapter):
     """
     Pass in a sample parameter and prepend sample to all logs
