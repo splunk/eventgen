@@ -14,7 +14,7 @@ I'm sure had either David or I considered that we'd eventually want to scale thi
 
 The first obstacle to scaling a Python application is the Global Interpreter Lock.  Lots of information online, but long story short, only one Thread running Python code can be executed simultaneously.  Python functions written in C can run in different threads.  Threads in Python are lightweight, similar to OS threads, but they will only gain concurrency in the event that your Python program is primarily I/O bound or is spending a good portion of its time executing C-written python functions.
 
-In the case of Eventgen, we do a non-insignificant amount of I/O, so our first step to scaling is to utilizing threading.  In Eventgen, we create a thread for each sample.  The sample acts as the master timer for that sample.  In the case of a queuable generator plugin, it will place an entry in the generator queue for generator workers to pick up.  With a non-queueable plugin, it will call the generator's `gen()` function directly.
+In the case of Eventgen, we do a non-insignificant amount of I/O, so our first step to scaling is to utilizing threading.  In Eventgen, we create a thread for each sample.  The sample acts as the master timer for that sample.  In the case of a queueable generator plugin, it will place an entry in the generator queue for generator workers to pick up.  With a non-queueable plugin, it will call the generator's `gen()` function directly.
 
 ## Growing beyond a single process
 
