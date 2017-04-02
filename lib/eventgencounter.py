@@ -11,7 +11,7 @@ class Counter:
         Initialize the counter with initval.
 
         Chooses threading model based on passed thread parameter.
-            'thread'          : Utlizes threading.Lock()
+            'thread'          : Utilizes threading.Lock()
             'multiprocessing' : Utilizes multiprocessing.Lock()
         """
 
