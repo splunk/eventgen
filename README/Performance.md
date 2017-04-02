@@ -58,7 +58,7 @@ To test out our performance, we wanted to push the system to its limits.  For th
     2014-02-02 21:18:59,606 INFO Output Queue depth: 100  Generator Queue depth: 6201 Generators Per Sec: 9 Outputters Per Sec: 9
     2014-02-02 21:18:59,666 INFO Events/Sec: 490000.0 Kilobytes/Sec: 21533.203125 GB/Day: 1774.281263
 
-Windbag is entirely optimized for events per second.  With longer events, we could certainly up the total bytes/sec throughput.  Now, lets see if we can get better performance by seperating generating and outputting to their own process.  Running the same again, setting ``threading = process`` in ``[global]``, we get:
+Windbag is entirely optimized for events per second.  With longer events, we could certainly up the total bytes/sec throughput.  Now, lets see if we can get better performance by separating generating and outputting to their own process.  Running the same again, setting ``threading = process`` in ``[global]``, we get:
 
     csharp-mbp15:eventgen csharp$ python bin/eventgen.py tests/perf/eventgen.conf.perfwindbag
     2014-02-02 21:19:53,254 INFO Output Queue depth: 100  Generator Queue depth: 8491 Generators Per Sec: 8 Outputters Per Sec: 5
