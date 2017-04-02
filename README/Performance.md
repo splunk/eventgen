@@ -35,7 +35,7 @@ By default, Eventgen will run one generator thread and one output thread.  This 
     generatorWorkers = 1
     outputWorkers = 1
 
-Spawning multiple generators is configurable also by passing `--generators` on the comamnd line.
+Spawning multiple generators is configurable also by passing `--generators` on the command line.
 
 By default we're setup to output as a Splunk modular input, which is very fast writing to stdout.  If you're outputting to stdout, even maxing out CPU, we often only need one output worker.  If you're outputting to something which is over the network or has a higher latency, you may want to increase output workers to allow for more concurrency.
 
