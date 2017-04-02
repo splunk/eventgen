@@ -8,7 +8,7 @@ Prior to v4, Eventgen scaling was available only by increasing the number of sam
 
 # Scaling, despite Python
 
-I'm sure had either David or I considered that we'd eventually want to scale this thing, writing it in Python wouldn't have been the first choice.  Lets face it, Python is slow, and there's plenty of emperical evidence a quick Google away.   However, Python affords us a lot of advantages in developer productivity, and it is possible to write a minimal amount of code in other environments (C/Java/etc), write the majority in Python, and get good performance.  There's a few things we must design around, which we'll explain in detail and will lead us to a quick walkthrough of some configuration tunables we've built into Eventgen.
+I'm sure had either David or I considered that we'd eventually want to scale this thing, writing it in Python wouldn't have been the first choice.  Lets face it, Python is slow, and there's plenty of empirical evidence a quick Google away.   However, Python affords us a lot of advantages in developer productivity, and it is possible to write a minimal amount of code in other environments (C/Java/etc), write the majority in Python, and get good performance.  There's a few things we must design around, which we'll explain in detail and will lead us to a quick walkthrough of some configuration tunables we've built into Eventgen.
 
 ## The Global Interpreter Lock
 
