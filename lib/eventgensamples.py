@@ -243,7 +243,7 @@ class Sample:
                 temptd = self.now(realnow=True) - tempearliest
                 self._earliestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
                 earliestTime = self.now() - self._earliestParsed
-                logger.debugv("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self._earliestParsed, earliestTime, tempearliest))
+                logger.debugv("Calculating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self._earliestParsed, earliestTime, tempearliest))
             else:
                 earliestTime = timeParser(self.earliest, timezone=self.timezone)
                 logger.debugv("earliestTime as absolute time '%s'" % earliestTime)
@@ -263,7 +263,7 @@ class Sample:
                 temptd = self.now(realnow=True) - templatest
                 self._latestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
                 latestTime = self.now() - self._latestParsed
-                logger.debugv("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self._latestParsed, latestTime, templatest))
+                logger.debugv("Calculating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self._latestParsed, latestTime, templatest))
             else:
                 latestTime = timeParser(self.latest, timezone=self.timezone)
                 logger.debugv("latstTime as absolute time '%s'" % latestTime)
