@@ -84,7 +84,7 @@ class Timer(threading.Thread):
 
         # 12/29/13 CS Queueable plugins pull from the worker queue as soon as items
         # are in it and farm it out to a pool of workers to generate.
-        # Non-Queueable plugins will run as a seperate process all on their own generating
+        # Non-Queueable plugins will run as a separate process all on their own generating
         # events, and is the same as we used to operate.
 
         # 12/29/13 Non Queueable, same as before

@@ -8,13 +8,13 @@ Prior to v4, Eventgen scaling was available only by increasing the number of sam
 
 # Scaling, despite Python
 
-I'm sure had either David or I considered that we'd eventually want to scale this thing, writing it in Python wouldn't have been the first choice.  Lets face it, Python is slow, and there's plenty of emperical evidence a quick Google away.   However, Python affords us a lot of advantages in developer productivity, and it is possible to write a minimal amount of code in other environments (C/Java/etc), write the majority in Python, and get good performance.  There's a few things we must design around, which we'll explain in detail and will lead us to a quick walkthrough of some configuration tunables we've built into Eventgen.
+I'm sure had either David or I considered that we'd eventually want to scale this thing, writing it in Python wouldn't have been the first choice.  Lets face it, Python is slow, and there's plenty of empirical evidence a quick Google away.   However, Python affords us a lot of advantages in developer productivity, and it is possible to write a minimal amount of code in other environments (C/Java/etc), write the majority in Python, and get good performance.  There's a few things we must design around, which we'll explain in detail and will lead us to a quick walkthrough of some configuration tunables we've built into Eventgen.
 
 ## The Global Interpreter Lock
 
 The first obstacle to scaling a Python application is the Global Interpreter Lock.  Lots of information online, but long story short, only one Thread running Python code can be executed simultaneously.  Python functions written in C can run in different threads.  Threads in Python are lightweight, similar to OS threads, but they will only gain concurrency in the event that your Python program is primarily I/O bound or is spending a good portion of its time executing C-written python functions.
 
-In the case of Eventgen, we do a non-insignificant amount of I/O, so our first step to scaling is to utilizing threading.  In Eventgen, we create a thread for each sample.  The sample acts as the master timer for that sample.  In the case of a queuable generator plugin, it will place an entry in the generator queue for generator workers to pick up.  With a non-queueable plugin, it will call the generator's `gen()` function directly.
+In the case of Eventgen, we do a non-insignificant amount of I/O, so our first step to scaling is to utilizing threading.  In Eventgen, we create a thread for each sample.  The sample acts as the master timer for that sample.  In the case of a queueable generator plugin, it will place an entry in the generator queue for generator workers to pick up.  With a non-queueable plugin, it will call the generator's `gen()` function directly.
 
 ## Growing beyond a single process
 
@@ -35,7 +35,7 @@ By default, Eventgen will run one generator thread and one output thread.  This 
     generatorWorkers = 1
     outputWorkers = 1
 
-Spawning multiple generators is configurable also by passing `--generators` on the comamnd line.
+Spawning multiple generators is configurable also by passing `--generators` on the command line.
 
 By default we're setup to output as a Splunk modular input, which is very fast writing to stdout.  If you're outputting to stdout, even maxing out CPU, we often only need one output worker.  If you're outputting to something which is over the network or has a higher latency, you may want to increase output workers to allow for more concurrency.
 
@@ -58,7 +58,7 @@ To test out our performance, we wanted to push the system to its limits.  For th
     2014-02-02 21:18:59,606 INFO Output Queue depth: 100  Generator Queue depth: 6201 Generators Per Sec: 9 Outputters Per Sec: 9
     2014-02-02 21:18:59,666 INFO Events/Sec: 490000.0 Kilobytes/Sec: 21533.203125 GB/Day: 1774.281263
 
-Windbag is entirely optimized for events per second.  With longer events, we could certainly up the total bytes/sec throughput.  Now, lets see if we can get better performance by seperating generating and outputting to their own process.  Running the same again, setting ``threading = process`` in ``[global]``, we get:
+Windbag is entirely optimized for events per second.  With longer events, we could certainly up the total bytes/sec throughput.  Now, lets see if we can get better performance by separating generating and outputting to their own process.  Running the same again, setting ``threading = process`` in ``[global]``, we get:
 
     csharp-mbp15:eventgen csharp$ python bin/eventgen.py tests/perf/eventgen.conf.perfwindbag
     2014-02-02 21:19:53,254 INFO Output Queue depth: 100  Generator Queue depth: 8491 Generators Per Sec: 8 Outputters Per Sec: 5
