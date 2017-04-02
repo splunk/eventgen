@@ -79,7 +79,7 @@ autotimestamp = false
         * random -> hex([integer])
         * rated -> integer[<start>:<end>]
         * rated -> float[<start.numzerosforprecision>:<end.numzerosforprecision>]
-        * file -> <replacment file name>
+        * file -> <replacement file name>
         * mvfile -> <replacement file name, expects CSV file>:<column number>
         
 disabled = true | false
