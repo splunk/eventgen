@@ -119,7 +119,7 @@ This version is nearly 2 years in the making.  We have nearly completely refacto
   * Simply point eventgen at your app directory `python eventgen.py <path/to/app>`
   * Test a single sample easily, overriding output to stdout for easy viewing
   * Turn up verbosity to investigate eventgen internals while testing
-  * Scalability tuneables available in command line options for performance testing (Geneartors, Outputters, disabling output queue, etc)
+  * Scalability tuneables available in command line options for performance testing (Generators, Outputters, disabling output queue, etc)
 * Specify time range to generate events for
   * Generate events for a fixed or relative time range
   * Easily generate a file, for example, for an entire month
