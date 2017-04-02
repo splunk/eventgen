@@ -102,7 +102,7 @@ class ReplayGenerator(GeneratorPlugin):
             nextts = s.getTSFromEvent(self._rpevents[self._currentevent+1][s.timeField])
         else:
             logger.debugv("At end of _rpevents")
-            # At the end of the buffer, we sould wait the average amount of time at the end 
+            # At the end of the buffer, we should wait the average amount of time at the end 
             # return 0
             try:
                 avgtimes = sum(list(self._times)) / len(self._times) / s.timeMultiple
