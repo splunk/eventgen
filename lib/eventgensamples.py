@@ -266,7 +266,7 @@ class Sample:
                 logger.debugv("Calculating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self._latestParsed, latestTime, templatest))
             else:
                 latestTime = timeParser(self.latest, timezone=self.timezone)
-                logger.debugv("latstTime as absolute time '%s'" % latestTime)
+                logger.debugv("latestTime as absolute time '%s'" % latestTime)
 
         return latestTime
 
