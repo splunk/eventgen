@@ -2,9 +2,10 @@
 #       copy of whats needed without the whole object.
 
 from __future__ import division
-from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
+from generatorplugin import GeneratorPlugin
 import datetime, time
 import random
+
 
 class DefaultGenerator(GeneratorPlugin):
     def __init__(self, sample):

@@ -3,7 +3,6 @@ from outputplugin import OutputPlugin
 
 import struct
 import socket
-import datetime
 
 
 class S2S:
@@ -32,7 +31,7 @@ class S2S:
         Open a connection to Splunk and return a socket
         """
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.connect((host, port))
+        self.s.connect((host, int(port)))
 
     def _encode_sig(self, serverName='s2s-api', mgmtPort='9997'):
         """
@@ -172,20 +171,13 @@ class S2SOutputPlugin(OutputPlugin):
         OutputPlugin.__init__(self, sample)
 
     def flush(self, q):
-        if self.s2s == None:
+        if len(q) < 1:
+            return
+        if self.s2s is None:
             self.s2s = S2S(self._sample.splunkHost, self._sample.splunkPort)
-        if len(q) > 0:
-            m = q.popleft()
-            while m:
-                try:
-                    self.s2s.send_event(m['index'], m['host'], m['source'], m['sourcetype'], m['_raw'], m['_time'])
-                except KeyError:
-                    pass
-            
-                try:
-                    m = q.popleft()
-                except IndexError:
-                    m = False
+        for m in q:
+            self.s2s.send_event(m['index'], m['host'], m['source'], m['sourcetype'], m['_raw'], m['_time'])
+
 
 def load():
     """Returns an instance of the plugin"""

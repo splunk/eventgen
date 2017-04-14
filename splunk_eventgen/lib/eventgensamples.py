@@ -9,9 +9,10 @@ import re
 import csv
 import copy
 import urllib
-from timeparser import timeParser, timeDelta2secs
+from timeparser import timeParser
 
-class Sample:
+
+class Sample(object):
     """
     The Sample class is the primary configuration holder for Eventgen.  Contains all of our configuration
     information for any given sample, and is passed to most objects in Eventgen and a copy is maintained

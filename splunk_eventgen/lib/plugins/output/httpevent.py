@@ -1,15 +1,11 @@
 from __future__ import division
 from outputplugin import OutputPlugin
-import json
-from time import sleep
-import sys
 try:
     import requests
 except ImportError:
     pass
 import json
 import random
-import logging
 
 class NoServers(Exception):
     def __init__(self,*args,**kwargs):
@@ -40,7 +36,6 @@ class HTTPEventOutputPlugin(OutputPlugin):
 
         #disable any "requests" warnings
         requests.packages.urllib3.disable_warnings()
-        # set default output mode to round robin
 
         #Bind passed in samples to the outputter.
         self.lastsourcetype = None
@@ -48,6 +43,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
             if hasattr(config, 'httpeventServers') == False:
                 self.logger.error('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
                 raise NoServers('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+            # set default output mode to round robin
             if hasattr(config, 'httpeventOutputMode') and sample.congig.httpeventOutputMode:
                 self.httpeventoutputmode = config.httpeventOutputMode
             else:
@@ -82,6 +78,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     self.logger.error('requested a connection to a httpevent server, but no protocol specified for server %s' % server)
                     raise ValueError('requested a connection to a httpevent server, but no protocol specified for server %s' % server)
                 self.logger.debug("Validation Passed, Creating a requests object for server: %s" % server.get('address'))
+
                 setserver = {}
                 setserver['url'] = "%s://%s:%s/services/collector" % (server.get('protocol'), server.get('address'), server.get('port'))
                 setserver['header'] = "Splunk %s" % server.get('key')

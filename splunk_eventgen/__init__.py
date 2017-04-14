@@ -7,7 +7,7 @@ import logging.config
 import os
 import sys
 import imp
-from Queue import Queue, Empty, Full
+from Queue import Queue, Empty
 from threading import Thread
 import time
 

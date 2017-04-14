@@ -4,7 +4,7 @@
 # from eventgenoutputtemplates import OutputTemplate
 
 from __future__ import division
-from splunk_eventgen.lib.outputplugin import OutputPlugin
+from outputplugin import OutputPlugin
 import time
 import os
 

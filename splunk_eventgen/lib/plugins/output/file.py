@@ -3,7 +3,7 @@
 from __future__ import division
 from outputplugin import OutputPlugin
 import os
-import logging
+
 
 class FileOutputPlugin(OutputPlugin):
     name = 'file'
@@ -15,17 +15,8 @@ class FileOutputPlugin(OutputPlugin):
     def __init__(self, sample, config=None):
         OutputPlugin.__init__(self, sample)
 
-        # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        from eventgenconfig import EventgenAdapter
-        adapter = EventgenAdapter(logger, {'module': 'FileOutputPlugin', 'sample': sample.name})
-        globals()['logger'] = adapter
-
-        from eventgenconfig import Config
-        globals()['c'] = Config()
-
         if sample.fileName == None:
-            logger.error('outputMode file but file not specified for sample %s' % self._sample.name)
+            self.logger.error('outputMode file but file not specified for sample %s' % self._sample.name)
             raise ValueError('outputMode file but file not specified for sample %s' % self._sample.name)
             
         self._file = sample.pathParser(sample.fileName)
@@ -34,7 +25,7 @@ class FileOutputPlugin(OutputPlugin):
 
         self._fileHandle = open(self._file, 'a')
         self._fileLength = os.stat(self._file).st_size
-        logger.debug("Configured to log to '%s' with maxBytes '%s' with backupCount '%s'" % \
+        self.logger.debug("Configured to log to '%s' with maxBytes '%s' with backupCount '%s'" % \
                         (self._file, self._fileMaxBytes, self._fileBackupFiles))
 
     def flush(self, q):
@@ -42,7 +33,7 @@ class FileOutputPlugin(OutputPlugin):
             metamsg = q.popleft()
             msg = metamsg['_raw']
 
-            logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample.name, self._app, self._sample.source))
+            self.logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample.name, self._app, self._sample.source))
 
             try:
                 while msg:
@@ -58,12 +49,12 @@ class FileOutputPlugin(OutputPlugin):
                         self._fileHandle.flush()
                         self._fileHandle.close()
                         if os.path.exists(self._file+'.'+str(self._fileBackupFiles)):
-                            logger.debug('File Output: Removing file: %s' % self._file+'.'+str(self._fileBackupFiles))
+                            self.logger.debug('File Output: Removing file: %s' % self._file+'.'+str(self._fileBackupFiles))
                             os.unlink(self._file+'.'+str(self._fileBackupFiles))
                         for x in range(1, self._fileBackupFiles)[::-1]:
-                            logger.debug('File Output: Checking for file: %s' % self._file+'.'+str(x))
+                            self.logger.debug('File Output: Checking for file: %s' % self._file+'.'+str(x))
                             if os.path.exists(self._file+'.'+str(x)):
-                                logger.debug('File Output: Renaming file %s to %s' % (self._file+'.'+str(x), self._file+'.'+str(x+1)))
+                                self.logger.debug('File Output: Renaming file %s to %s' % (self._file+'.'+str(x), self._file+'.'+str(x+1)))
                                 os.rename(self._file+'.'+str(x), self._file+'.'+str(x+1))
                         os.rename(self._file, self._file+'.1')
                         self._fileHandle = open(self._file, 'w')
@@ -71,9 +62,9 @@ class FileOutputPlugin(OutputPlugin):
 
                     msg = q.popleft()['_raw']
 
-                logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
+                    self.logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
             except IndexError:
-                logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
+                self.logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
 
             if not self._fileHandle.closed:
                 self._fileHandle.flush()

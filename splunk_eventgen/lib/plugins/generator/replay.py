@@ -2,13 +2,9 @@
 
 from __future__ import division
 from generatorplugin import GeneratorPlugin
-import os
-import logging
 import datetime, time
 import math
-import re
-from eventgentoken import Token
-from eventgenoutput import Output
+
 
 class ReplayGenerator(GeneratorPlugin):
     queueable = False
@@ -90,7 +86,7 @@ class ReplayGenerator(GeneratorPlugin):
         if (self._currentevent+1) < len(self._rpevents):
             nextts = s.getTSFromEvent(self._rpevents[self._currentevent+1][s.timeField])
         else:
-            logger.debugv("At end of _rpevents")
+            self.logger.debugv("At end of _rpevents")
             # At the end of the buffer, we sould wait the average amount of time at the end 
             # return 0
             try:

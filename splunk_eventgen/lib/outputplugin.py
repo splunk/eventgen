@@ -1,5 +1,4 @@
 from __future__ import division
-import os, sys
 import logging
 import logging.handlers
 from collections import deque

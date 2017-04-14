@@ -1,7 +1,5 @@
 from __future__ import division
 from config import ConfigRater
-import logging
-import logging.handlers
 import datetime
 import random
 
