@@ -94,14 +94,17 @@ class Sample:
     _earliestParsed = None
     _latestParsed = None
     
-    def __init__(self, name, config):
+    def __init__(self, name):
         self.name = name
         self.tokens = [ ]
         self._lockedSettings = [ ]
         self.backfilldone = False
         self._setup_logging()
-        self.config = config
-        
+
+        # Import config
+        from eventgenconfig import Config
+        globals()['c'] = Config()
+
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this sample"""
         filter_list = [ 'sampleLines', 'sampleDict' ]
@@ -128,7 +131,7 @@ class Sample:
 
     ## Replaces $SPLUNK_HOME w/ correct pathing
     def pathParser(self, path):
-        greatgreatgrandparentdir = os.path.dirname(os.path.dirname(self.config.grandparentdir))
+        greatgreatgrandparentdir = os.path.dirname(os.path.dirname(c.grandparentdir))
         sharedStorage = ['$SPLUNK_HOME/etc/apps', '$SPLUNK_HOME/etc/users/', '$SPLUNK_HOME/var/run/splunk']
 
         ## Replace windows os.sep w/ nix os.sep
@@ -290,7 +293,7 @@ class Sample:
             # 5/27/12 CS Added caching of the sample file
             if self.sampleDict == None:
                 self._openSampleFile()
-                if self.breaker == self.config.breaker:
+                if self.breaker == c.breaker:
                     self.logger.debugv("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
                     sampleLines = self._sampleFH.readlines()
                 # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time instead of on every generation
@@ -309,7 +312,7 @@ class Sample:
                     except:
                         self.logger.error("Line breaker '%s' for sample '%s' in app '%s' could not be compiled; using default breaker" \
                                     % (self.breaker, self.name, self.app) )
-                        self.breaker = self.config.breaker
+                        self.breaker = c.breaker
 
                     # Loop through data, finding matches of the regular expression and breaking them up into
                     # "lines".  Each match includes the breaker itself.

@@ -18,7 +18,7 @@ class SpoolOutputPlugin(OutputPlugin):
     _spoolDir = None
     _spoolFile = None
 
-    def __init__(self, sample):
+    def __init__(self, sample, config=None):
         OutputPlugin.__init__(self, sample)
         self._spoolDir = sample.pathParser(sample.spoolDir)
         self._spoolFile = sample.spoolFile

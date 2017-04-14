@@ -7,7 +7,7 @@ from collections import deque
 class OutputPlugin(object):
     name = 'OutputPlugin'
 
-    def __init__(self, sample):
+    def __init__(self, sample, config=None):
         self._app = sample.app
         self._sample = sample
         self._outputMode = sample.outputMode

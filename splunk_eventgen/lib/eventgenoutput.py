@@ -104,7 +104,7 @@ class Output(object):
             q = list(self._queue)
             self.logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue.clear()
-            outputer = self.outputPlugin(self._sample)
+            outputer = self.outputPlugin(self._sample, self.config)
             outputer.set_events(q)
             if self.config.useOutputQueue:
                 try:

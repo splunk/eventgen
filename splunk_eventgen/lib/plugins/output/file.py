@@ -12,7 +12,7 @@ class FileOutputPlugin(OutputPlugin):
     validSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
     intSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
 
-    def __init__(self, sample):
+    def __init__(self, sample, config=None):
         OutputPlugin.__init__(self, sample)
 
         # Logger already setup by config, just get an instance

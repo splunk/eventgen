@@ -35,7 +35,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
     defaultableSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     jsonSettings = ['httpeventServers']
 
-    def __init__(self, sample):
+    def __init__(self, sample, config=None):
         OutputPlugin.__init__(self, sample)
 
         #disable any "requests" warnings
@@ -45,19 +45,19 @@ class HTTPEventOutputPlugin(OutputPlugin):
         #Bind passed in samples to the outputter.
         self.lastsourcetype = None
         try:
-            if hasattr(sample.config, 'httpeventServers') == False:
+            if hasattr(config, 'httpeventServers') == False:
                 self.logger.error('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
                 raise NoServers('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
-            if hasattr(sample.config, 'httpeventOutputMode') and sample.congig.httpeventOutputMode:
-                self.httpeventoutputmode = sample.config.httpeventOutputMode
+            if hasattr(config, 'httpeventOutputMode') and sample.congig.httpeventOutputMode:
+                self.httpeventoutputmode = config.httpeventOutputMode
             else:
                 self.httpeventoutputmode = 'roundrobin'
-            if hasattr(sample.config, 'httpeventMaxPayloadSize') and sample.config.httpeventMaxPayloadSize:
-                self.httpeventmaxsize = sample.config.httpeventMaxPayloadSize
+            if hasattr(config, 'httpeventMaxPayloadSize') and config.httpeventMaxPayloadSize:
+                self.httpeventmaxsize = config.httpeventMaxPayloadSize
             else:
                 self.httpeventmaxsize = 10000
             self.logger.debug("Currentmax size: %s " % self.httpeventmaxsize)
-            self.httpeventServers = json.loads(sample.config.httpeventServers)
+            self.httpeventServers = json.loads(config.httpeventServers)
             self.logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
             self.createConnections()
             self.logger.debug("Pool created.")

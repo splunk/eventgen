@@ -33,7 +33,7 @@ class AwsS3OutputPlugin(OutputPlugin):
                            'awsS3CompressionType', 'awsS3ObjectPrefix',
                            'awsS3ObjectSuffix']
 
-    def __init__(self, sample):
+    def __init__(self, sample, config=None):
 
         # Override maxQueueLength to EventPerKey so that each flush
         # will generate one aws key

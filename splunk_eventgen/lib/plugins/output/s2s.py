@@ -168,7 +168,7 @@ class S2SOutputPlugin(OutputPlugin):
 
     s2s = None
 
-    def __init__(self, sample):
+    def __init__(self, sample, config=None):
         OutputPlugin.__init__(self, sample)
 
     def flush(self, q):

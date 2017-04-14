@@ -337,7 +337,7 @@ class Config(object):
 
             # If we see the sample in two places, use the first and ignore the second
             if not sampleexists:
-                s = Sample(stanza, self)
+                s = Sample(stanza)
                 for key, value in settings.items():
                     oldvalue = value
                     try:
@@ -534,9 +534,7 @@ class Config(object):
                 if not s.disabled and not (s.generator == "default" or s.generator == "replay"):
                     tempsamples2.append(copy.deepcopy(s))
             for f in foundFiles:
-                logger = self.logger
                 news = copy.deepcopy(s)
-                self.logger = logger
                 news.filePath = f
                 # 12/3/13 CS TODO These are hard coded but should be handled via the modular config system
                 # Maybe a generic callback for all plugins which will modify sample based on the filename
