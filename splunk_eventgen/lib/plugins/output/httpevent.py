@@ -39,12 +39,15 @@ class HTTPEventOutputPlugin(OutputPlugin):
 
         #Bind passed in samples to the outputter.
         self.lastsourcetype = None
+
+    def updateConfig(self, config):
+        OutputPlugin.updateConfig(self, config)
         try:
             if hasattr(config, 'httpeventServers') == False:
                 self.logger.error('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
                 raise NoServers('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
             # set default output mode to round robin
-            if hasattr(config, 'httpeventOutputMode') and sample.congig.httpeventOutputMode:
+            if hasattr(config, 'httpeventOutputMode') and congig.httpeventOutputMode:
                 self.httpeventoutputmode = config.httpeventOutputMode
             else:
                 self.httpeventoutputmode = 'roundrobin'
@@ -60,6 +63,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
             self.logger.debug("Finished init of httpevent plugin.")
         except Exception as e:
             self.logger.exception(e)
+
 
     def createConnections(self):
         self.serverPool = []
