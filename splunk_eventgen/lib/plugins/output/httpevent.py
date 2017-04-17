@@ -31,7 +31,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
     defaultableSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     jsonSettings = ['httpeventServers']
 
-    def __init__(self, sample, config=None):
+    def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
 
         #disable any "requests" warnings

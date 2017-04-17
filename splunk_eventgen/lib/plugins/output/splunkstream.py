@@ -22,7 +22,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
     _splunkPass = None
     _splunkhttp = None
 
-    def __init__(self, sample, config=None):
+    def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
 
         from eventgenconfig import Config

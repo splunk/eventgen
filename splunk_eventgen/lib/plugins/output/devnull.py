@@ -6,7 +6,7 @@ class DevNullOutputPlugin(OutputPlugin):
     name = 'devnull'
     MAXQUEUELENGTH = 1000
 
-    def __init__(self, sample, config=None):
+    def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
         self.firsttime = True
 

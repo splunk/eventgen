@@ -12,7 +12,7 @@ class FileOutputPlugin(OutputPlugin):
     validSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
     intSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
 
-    def __init__(self, sample, config=None):
+    def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
 
         if sample.fileName == None:
