@@ -38,22 +38,32 @@ class HTTPEventOutputPlugin(OutputPlugin):
         requests.packages.urllib3.disable_warnings()
 
         #Bind passed in samples to the outputter.
-        self.logger.debug("Outputmode: %s" % sample.httpeventOutputMode)
         self.lastsourcetype = None
+
+    def updateConfig(self, config):
+        OutputPlugin.updateConfig(self, config)
         try:
-            if hasattr(sample, 'httpeventServers') == False:
+            if hasattr(config, 'httpeventServers') == False:
                 self.logger.error('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
                 raise NoServers('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
-            self.httpeventoutputmode = sample.httpeventOutputMode if hasattr(sample, 'httpeventOutputMode') and sample.httpeventOutputMode else 'roundrobin'
-            self.httpeventmaxsize = sample.httpeventMaxPayloadSize if hasattr(sample, 'httpeventMaxPayloadSize') and sample.httpeventMaxPayloadSize else 10000
+            # set default output mode to round robin
+            if hasattr(config, 'httpeventOutputMode') and congig.httpeventOutputMode:
+                self.httpeventoutputmode = config.httpeventOutputMode
+            else:
+                self.httpeventoutputmode = 'roundrobin'
+            if hasattr(config, 'httpeventMaxPayloadSize') and config.httpeventMaxPayloadSize:
+                self.httpeventmaxsize = config.httpeventMaxPayloadSize
+            else:
+                self.httpeventmaxsize = 10000
             self.logger.debug("Currentmax size: %s " % self.httpeventmaxsize)
-            self.httpeventServers = sample.httpeventServers
+            self.httpeventServers = json.loads(config.httpeventServers)
             self.logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
             self.createConnections()
             self.logger.debug("Pool created.")
             self.logger.debug("Finished init of httpevent plugin.")
         except Exception as e:
             self.logger.exception(e)
+
 
     def createConnections(self):
         self.serverPool = []
@@ -71,7 +81,8 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 if not ((server.get('protocol') == 'http') or (server.get('protocol') == 'https')):
                     self.logger.error('requested a connection to a httpevent server, but no protocol specified for server %s' % server)
                     raise ValueError('requested a connection to a httpevent server, but no protocol specified for server %s' % server)
-                    self.logger.debug("Validation Passed, Creating a requests object for server: %s" % server.get('address'))
+                self.logger.debug("Validation Passed, Creating a requests object for server: %s" % server.get('address'))
+
                 setserver = {}
                 setserver['url'] = "%s://%s:%s/services/collector" % (server.get('protocol'), server.get('address'), server.get('port'))
                 setserver['header'] = "Splunk %s" % server.get('key')

@@ -43,6 +43,9 @@ class OutputPlugin(object):
     def set_events(self, events):
         self.events = events
 
+    def updateConfig(self, config):
+        self.config = config
+
     def run(self):
         if self.events:
             self.flush(q=self.events)
