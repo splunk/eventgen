@@ -211,8 +211,8 @@ class Timer(threading.Thread):
                                 self.logger.info("End Time '%s' reached, ending generation of sample '%s'" % (self.sample.endts, self.sample.name))
                                 self.stopping = True
                     else:
-                        self.countdown -= self.time
-                        time.sleep(self.time)
+                        time.sleep(self.countdown)
+                        self.countdown = 0
                 else:
                     time.sleep(self.time)
             else:
