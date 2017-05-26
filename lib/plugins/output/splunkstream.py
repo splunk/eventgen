@@ -7,7 +7,7 @@ from __future__ import division
 from outputplugin import OutputPlugin
 from xml.dom import minidom
 import re
-import httplib, httplib2
+import httplib, httplib2, ssl
 import urllib
 import logging
 from collections import deque
@@ -106,7 +106,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                             connmethod = httplib.HTTPSConnection
                         else:
                             connmethod = httplib.HTTPConnection
-                        splunkhttp = connmethod(self._splunkHost, self._splunkPort)
+                        splunkhttp = connmethod(self._splunkHost, self._splunkPort, context=ssl._create_unverified_context())
                         splunkhttp.connect()
                         urlparms = [ ]
                         if index != None:
