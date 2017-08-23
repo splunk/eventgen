@@ -8,6 +8,7 @@ path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.append(path_prepend)
 import __init__ as splunk_eventgen_init
 import logging
+import eventgen_core
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
 logger = logging.getLogger()
@@ -84,7 +85,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    eventgen = splunk_eventgen_init.EventGenerator(args=args)
+    eventgen = eventgen_core.EventGenerator(args=args)
     eventgen.start()
 
     sys.exit(0)
