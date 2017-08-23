@@ -39,15 +39,12 @@ class HTTPEventOutputPlugin(OutputPlugin):
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
 
-        #disable any "requests" warnings
-        requests.packages.urllib3.disable_warnings()
-
-        #Bind passed in samples to the outputter.
-        self.lastsourcetype = None
-        self._setup_REST_workers()
-
     #TODO: make workers a param that can be set in eventgen.conf
     def _setup_REST_workers(self, session=None, workers=10):
+        #disable any "requests" warnings
+        requests.packages.urllib3.disable_warnings()
+        #Bind passed in samples to the outputter.
+        self.lastsourcetype = None
         if not session:
             session = Session()
         self.session = FuturesSession(session=session, executor=ThreadPoolExecutor(max_workers=workers))
@@ -197,6 +194,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         self.logger.debug("Flush called on httpevent plugin")
+        self._setup_REST_workers()
         if len(q) > 0:
             try:
                 payload = []
