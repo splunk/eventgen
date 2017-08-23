@@ -159,9 +159,9 @@ class Timer(object):
                     pass
 
 
-                    # Sleep until we're supposed to wake up and generate more events
-                    self.countdown = self.sample.interval
-                    self.executions += 1
+                # Sleep until we're supposed to wake up and generate more events
+                self.countdown = self.sample.interval
+                self.executions += 1
 
                 # 8/20/15 CS Adding support for ending generation at a certain time
                 if self.end != None:
@@ -169,8 +169,8 @@ class Timer(object):
                     # Should be fine with storing state in this sample object since each sample has it's own unique
                     # timer thread
                     if self.endts == None:
-                        if self.executions >= self.end:
-                            self.logger.info("End executions %d reached, ending generation of sample '%s'" % (self.end, self.sample.name))
+                        if self.executions >= int(self.end):
+                            self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(self.end), self.sample.name))
                             self.stopping = True
                             end = True
                     elif lt >= self.endts:

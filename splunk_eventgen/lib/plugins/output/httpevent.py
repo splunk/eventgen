@@ -2,10 +2,15 @@ from __future__ import division
 from outputplugin import OutputPlugin
 try:
     import requests
+    import requests_futures
+    from requests import Session
+    from requests_futures.sessions import FuturesSession
+    from concurrent.futures import ThreadPoolExecutor
 except ImportError:
     pass
 import json
 import random
+import urllib
 
 class NoServers(Exception):
     def __init__(self,*args,**kwargs):
@@ -39,22 +44,64 @@ class HTTPEventOutputPlugin(OutputPlugin):
 
         #Bind passed in samples to the outputter.
         self.lastsourcetype = None
+        self._setup_REST_workers()
+
+    #TODO: make workers a param that can be set in eventgen.conf
+    def _setup_REST_workers(self, session=None, workers=10):
+        if not session:
+            session = Session()
+        self.session = FuturesSession(session=session, executor=ThreadPoolExecutor(max_workers=workers))
+        self.active_sessions = []
+
+    @staticmethod
+    def _urlencode(value):
+        '''
+        Takes a value and make sure everything int he string is URL safe.
+        :param value: string
+        :return: urlencoded string
+        '''
+        return urllib.quote(value)
+
+    @staticmethod
+    def _bg_convert_json(sess, resp):
+        '''
+        Takes a futures session object, and will set the data to a parsed json output.  Use this as a background task
+        for the sesssion queue.  Example: future = session.get('http://httpbin.org/get', background_callback=_bg_convert_json)
+        :param sess: futures session object. Automatically called on a background_callback as aruguments.
+        :param resp: futures resp object.  Automatically called on a background_callback as aruguments.
+        :return:
+        '''
+        if resp.status_code == 200:
+            if getattr(resp, "json", None):
+                resp.data = resp.json()
+            else:
+                if type(resp.data) == str:
+                    resp.data = json.loads(resp.data)
 
     def updateConfig(self, config):
         OutputPlugin.updateConfig(self, config)
         try:
-            if hasattr(config, 'httpeventServers') == False:
-                self.logger.error('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
-                raise NoServers('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+            if hasattr(self.config, 'httpeventServers') == False:
+                if hasattr(self._sample, 'httpeventServers'):
+                    self.config.httpeventServers = self._sample.httpeventServers
+                else:
+                    self.logger.error('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+                    raise NoServers('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
             # set default output mode to round robin
-            if hasattr(config, 'httpeventOutputMode') and congig.httpeventOutputMode:
+            if hasattr(self.config, 'httpeventOutputMode') and self.config.httpeventOutputMode:
                 self.httpeventoutputmode = config.httpeventOutputMode
             else:
-                self.httpeventoutputmode = 'roundrobin'
-            if hasattr(config, 'httpeventMaxPayloadSize') and config.httpeventMaxPayloadSize:
-                self.httpeventmaxsize = config.httpeventMaxPayloadSize
+                if hasattr(self._sample, 'httpeventOutputMode') and self._sample.httpeventOutputMode:
+                    self.httpeventoutputmode = self._sample.httpeventOutputMode
+                else:
+                    self.httpeventoutputmode = 'roundrobin'
+            if hasattr(self.config, 'httpeventMaxPayloadSize') and self.config.httpeventMaxPayloadSize:
+                self.httpeventmaxsize = self.config.httpeventMaxPayloadSize
             else:
-                self.httpeventmaxsize = 10000
+                if hasattr(self._sample, 'httpeventMaxPayloadSize') and self._sample.httpeventMaxPayloadSize:
+                    self.httpeventmaxsize = self._sample.httpeventMaxPayloadSize
+                else:
+                    self.httpeventmaxsize = 10000
             self.logger.debug("Currentmax size: %s " % self.httpeventmaxsize)
             self.httpeventServers = json.loads(config.httpeventServers)
             self.logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
@@ -140,12 +187,8 @@ class HTTPEventOutputPlugin(OutputPlugin):
             headers['content-type'] = 'application/json'
             try:
                 payloadsize = len(payloadstring)
-                response = requests.post(url, data=payloadstring, headers=headers, verify=False)
-                if not response.raise_for_status():
-                    self.logger.debug("Payload successfully sent to httpevent server.")
-                else:
-                    self.logger.error("Server returned an error while trying to send, response code: %s" % response.status_code)
-                    raise BadConnection("Server returned an error while sending, response code: %s" % response.status_code)
+                #response = requests.post(url, data=payloadstring, headers=headers, verify=False)
+                self.active_sessions.append(self.session.post(url=url, data=payloadstring, headers=headers, verify=False))
             except Exception as e:
                 self.logger.error("Failed for exception: %s" % e)
                 self.logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" % (url, self.lastsourcetype, payloadsize))
@@ -188,6 +231,16 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     payload.append(payloadFragment)
                 self.logger.debug("Finished processing events, sending all to splunk")
                 self._sendHTTPEvents(payload)
+                if self.config.httpeventWaitResponse:
+                    for session in self.active_sessions:
+                        response = session.result()
+                        if not response.raise_for_status():
+                            self.logger.debug("Payload successfully sent to httpevent server.")
+                        else:
+                            self.logger.error("Server returned an error while trying to send, response code: %s" % response.status_code)
+                            raise BadConnection("Server returned an error while sending, response code: %s" % response.status_code)
+                else:
+                    self.logger.debug("Ignoring response from HTTP server, leaving httpevent outputter")
             except Exception as e:
                 self.logger.error('failed indexing events, reason: %s ' % e)
 

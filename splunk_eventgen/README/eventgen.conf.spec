@@ -62,6 +62,7 @@ maxQueueLength = 0
 autotimestamps = [ <jsonlist> ]
 autotimestamp = false
 
+
 [<sample file name>]
     * This stanza defines a given sample file contained within the samples directory.
     * This stanza can be specified as a PCRE.
@@ -126,6 +127,9 @@ httpeventOutputMode = roundrobin | mirror
 
 httpeventMaxPayloadSize = <int>
     * the max payload size that is currently configured for HTTP event
+
+httpeventWaitResponse = <bool>
+    * wait for all responses on a generator output before returning the outputter.  Defaults to true.
 
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.

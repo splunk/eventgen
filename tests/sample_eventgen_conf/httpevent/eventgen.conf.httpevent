@@ -4,5 +4,6 @@ earliest = -3s
 latest = now
 interval = 3
 count = 5
+end = 3
 outputMode = httpevent
-httpeventServers = {"servers":[{ "protocol":"http", "address":"127.0.0.1", "port":"8088", "key":"12345-12345-123123123123123123"}]}
+httpeventServers = {"servers":[{ "protocol":"https", "address":"127.0.0.1", "port":"8088", "key":"8d5ab52c-3759-49e3-b66a-5213ce525692"}]}
