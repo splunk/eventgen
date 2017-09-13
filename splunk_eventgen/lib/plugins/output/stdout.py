@@ -2,6 +2,7 @@ from __future__ import division
 from outputplugin import OutputPlugin
 
 class StdOutOutputPlugin(OutputPlugin):
+    queueable = True
     name = 'stdout'
     MAXQUEUELENGTH = 10
 

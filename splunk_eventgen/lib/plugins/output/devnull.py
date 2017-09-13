@@ -5,6 +5,7 @@ import sys
 class DevNullOutputPlugin(OutputPlugin):
     name = 'devnull'
     MAXQUEUELENGTH = 1000
+    queueable = False
 
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)

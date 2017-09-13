@@ -107,7 +107,7 @@ class Output(object):
             outputer = self.outputPlugin(self._sample)
             outputer.updateConfig(self.config)
             outputer.set_events(q)
-            if self.config.useOutputQueue:
+            if self.outputPlugin.queueable or self.config.useOutputQueue:
                 try:
                     self.outputQueue.put(outputer)
                 except Full:
