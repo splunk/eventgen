@@ -100,7 +100,6 @@ class Output(object):
         #TODO: This is set this way just for the time being while I decide if we want this feature.
         flushing = True
         if flushing:
-            # q = deque(list(self._queue)[:])
             q = list(self._queue)
             self.logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue.clear()

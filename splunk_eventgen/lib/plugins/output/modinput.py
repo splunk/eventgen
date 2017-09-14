@@ -12,7 +12,7 @@ from xml.sax.saxutils import escape
 class ModInputOutputPlugin(OutputPlugin):
     name = 'modinput'
     MAXQUEUELENGTH = 10
-    queueable = False
+    queueable = True
 
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
