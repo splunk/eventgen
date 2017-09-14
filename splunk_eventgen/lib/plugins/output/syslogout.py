@@ -3,6 +3,7 @@ from outputplugin import OutputPlugin
 import logging, logging.handlers
 
 class SyslogOutOutputPlugin(OutputPlugin):
+    queueable = True
     name = 'syslogout'
     MAXQUEUELENGTH = 10
     validSettings = [ 'syslogDestinationHost', 'syslogDestinationPort' ]

@@ -17,6 +17,7 @@ class S2S:
 
     s = None
     signature_sent = None
+    queueable = False
 
     def __init__(self, host='localhost', port=9997):
         """

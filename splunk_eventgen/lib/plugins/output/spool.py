@@ -9,6 +9,7 @@ import time
 import os
 
 class SpoolOutputPlugin(OutputPlugin):
+    queueable = False
     name = 'spool'
     MAXQUEUELENGTH = 10
 

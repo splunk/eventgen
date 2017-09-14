@@ -7,6 +7,7 @@ from collections import deque
 
 
 class SplunkStreamOutputPlugin(OutputPlugin):
+    queueable = True
     name = 'splunkstream'
     MAXQUEUELENGTH = 100
 

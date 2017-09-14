@@ -8,6 +8,7 @@ import os
 class FileOutputPlugin(OutputPlugin):
     name = 'file'
     MAXQUEUELENGTH = 10
+    queueable = False
 
     validSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
     intSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]

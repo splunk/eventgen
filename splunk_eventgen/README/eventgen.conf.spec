@@ -109,7 +109,7 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout
+outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpoutput
     * Specifies how to output log data.  Modinput is default.
     * If setting spool, should set spoolDir
     * If setting file, should set logFile
@@ -123,6 +123,12 @@ syslogDestinationHost = <host>
 syslogDestinationPort = <port>
     * Defaults to port 1514
     * Only supports UDP ports
+
+tcplogDestinationHost = <host>
+    * Defaults to 127.0.0.1
+
+tcplogDestinationPort = <port>
+    * Defaults to port 3333
 
 httpeventServers = <valid json>
     * valid json that contains a list of server objects

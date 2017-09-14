@@ -32,6 +32,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
     '''
     name = 'httpevent'
     MAXQUEUELENGTH = 1000
+    queueable = True
     validSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     defaultableSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     jsonSettings = ['httpeventServers']

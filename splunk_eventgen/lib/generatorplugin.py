@@ -10,7 +10,6 @@ from xml.parsers.expat import ExpatError
 from eventgenoutput import Output
 
 class GeneratorPlugin(object):
-    queueable = True
     sampleLines = None
     sampleDict = None
 
@@ -52,7 +51,7 @@ class GeneratorPlugin(object):
         # Output = output process, not the plugin.  The plugin is loaded by the output process.
         self._out = Output(self._sample)
         self._out.updateConfig(self.config)
-        if self.config.useOutputQueue:
+        if self.outputPlugin.queueable or self.config.useOutputQueue:
             self._out._update_outputqueue(self.outputQueue)
 
     def updateCounts(self, sample=None, count=None, start_time=None, end_time=None):
