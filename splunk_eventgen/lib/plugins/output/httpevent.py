@@ -11,6 +11,7 @@ except ImportError:
 import json
 import random
 import urllib
+import logging
 
 class NoServers(Exception):
     def __init__(self,*args,**kwargs):
@@ -242,6 +243,9 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     self.logger.debug("Ignoring response from HTTP server, leaving httpevent outputter")
             except Exception as e:
                 self.logger.error('failed indexing events, reason: %s ' % e)
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen_httpeventout')
 
 def load():
     """Returns an instance of the plugin"""

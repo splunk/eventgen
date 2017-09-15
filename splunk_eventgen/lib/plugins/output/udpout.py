@@ -10,9 +10,6 @@ class UdpOutputPlugin(OutputPlugin):
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
 
-        self._l = logging.getLogger('UdpOutput'+ sample.name)
-        self._l.setLevel(logging.INFO)
-
         self._udpDestinationHost = sample.udpDestinationHost if hasattr(sample,'udpDestinationHost') and sample.udpDestinationHost else '127.0.0.1'
         self._udpDestinationPort = sample.udpDestinationPort if hasattr(sample,'udpDestinationPort') and sample.udpDestinationPort else '3333'
 
@@ -23,7 +20,10 @@ class UdpOutputPlugin(OutputPlugin):
         for x in q:
             msg = x['_raw'].rstrip() + '\n'
             self.s.sendto(msg, (self._udpDestinationHost, int(self._udpDestinationPort)))
-            self._l.info("Sent msg to Host:{0} Port:{1}".format(self._udpDestinationHost, self._udpDestinationPort))
+        self.logger.info("Flushing in udpout.")
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen_udpout')
 
 def load():
     """Returns an instance of the plugin"""
