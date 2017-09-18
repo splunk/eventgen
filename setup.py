@@ -45,5 +45,6 @@ setup(
         'requests>=2.10.0',
         'requests[security]',
         'logutils>=0.3.4.1',
+        'cherrypy',
         'futures>=3.0.5']
     )

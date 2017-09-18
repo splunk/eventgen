@@ -9,6 +9,10 @@ sys.path.append(path_prepend)
 import __init__ as splunk_eventgen_init
 import logging
 import eventgen_core
+import cherrypy
+from eventgen_wsgiserver import NamedPart
+from cherrypy.process.plugins import Daemonizer
+from eventgen_wsgiserver import EventgenApiServer
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
 logger = logging.getLogger()
@@ -40,6 +44,8 @@ def parse_args():
     generate_subparser.add_argument("--profiler", action="store_true", help="Turn on cProfiler")
     build_subparser = subparsers.add_parser('build', help="Will build different forms of sa-eventgen")
     build_subparser.add_argument("splunk-app", help="Will create an SPL to use with splunk in an embedded mode.")
+    wsgi_subparser = subparsers.add_parser('wsgi', help="start a wsgi server to interact with eventgen.")
+    wsgi_subparser.add_argument("--daemon", action="store_true", help="Daemon will tell the wsgi server to start in a daemon mode and will release the cli.")
     # Help subparser
     # NOTE: Keep this at the end so we can use the subparser_dict.keys() to display valid commands
     help_subparser = subparsers.add_parser('help', help="Display usage on a subcommand")
@@ -48,6 +54,7 @@ def parse_args():
     # add subparsers to the subparser dict, this will be used later for usage / help statements.
     subparser_dict['generate'] = generate_subparser
     subparser_dict['build'] = build_subparser
+    subparser_dict['wsgi'] = wsgi_subparser
     subparser_dict['help'] = help_subparser
 
     if len(sys.argv) == 1:
@@ -77,15 +84,22 @@ def parse_args():
         sys.exit(0)
 
     # Allow passing of a Splunk app on the command line and expand the full path before passing up the chain
-    if not os.path.exists(args.configfile):
+    if hasattr(args, "configfile") and not os.path.exists(args.configfile):
         if 'SPLUNK_HOME' in os.environ:
             if os.path.isdir(os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', args.configfile)):
                 args.configfile = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', args.configfile)
+        else:
+            args.configfile = None
     return args
 
 if __name__ == '__main__':
     args = parse_args()
-    eventgen = eventgen_core.EventGenerator(args=args)
-    eventgen.start()
-
+    if args.subcommand == "generate":
+        eventgen = eventgen_core.EventGenerator(args=args)
+        eventgen.start()
+    if args.subcommand == "wsgi":
+        cherrypy._cpreqbody.Entity.part_class = NamedPart
+        if args.daemon:
+            Daemonizer(cherrypy.engine).subscribe()
+        cherrypy.quickstart(EventgenApiServer(), "/", os.path.join(os.path.dirname(__file__),"web.conf"))
     sys.exit(0)
