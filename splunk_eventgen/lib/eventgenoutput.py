@@ -100,25 +100,27 @@ class Output(object):
         #TODO: This is set this way just for the time being while I decide if we want this feature.
         flushing = True
         if flushing:
-            # q = deque(list(self._queue)[:])
             q = list(self._queue)
             self.logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue.clear()
             outputer = self.outputPlugin(self._sample)
             outputer.updateConfig(self.config)
             outputer.set_events(q)
-            if self.config.useOutputQueue:
+            # When an outputPlugin is queueable, it can be ran by multiple processes or threads. Therefore, no need to put the outputer back into the Queue. Just execute it.
+            # When an outputPlugin is nonqueueable, it needs to run in a single threaded nature which requires to be put back into the outputqueue so a single thread worker can execute it.
+            if not self.outputPlugin.queueable or self.config.useOutputQueue:
                 try:
                     self.outputQueue.put(outputer)
                 except Full:
                     self.logger.warning("Output Queue full, looping again")
             else:
                 tmp = [len(s['_raw']) for s in q]
-                self.config.eventsSent.add(len(tmp))
-                self.config.bytesSent.add(sum(tmp))
+                # TODO: clean out eventsSend and bytesSent if they are not being used in config
+                # self.config.eventsSent.add(len(tmp))
+                # self.config.bytesSent.add(sum(tmp))
                 if self.config.splunkEmbedded and len(tmp)>0:
                     metrics = logging.getLogger('eventgen_metrics')
-                    metrics.error(json.dumps({'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 
+                    metrics.error(json.dumps({'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'),
                             'sample': self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)}))
                 tmp = None
                 outputer.run()

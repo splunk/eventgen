@@ -7,8 +7,10 @@ from __future__ import division
 from outputplugin import OutputPlugin
 import time
 import os
+import logging
 
 class SpoolOutputPlugin(OutputPlugin):
+    queueable = False
     name = 'spool'
     MAXQUEUELENGTH = 10
 
@@ -40,6 +42,9 @@ class SpoolOutputPlugin(OutputPlugin):
                 except:
                     time.sleep(0.1)
             self.logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen_spoolout')
 
 
 def load():

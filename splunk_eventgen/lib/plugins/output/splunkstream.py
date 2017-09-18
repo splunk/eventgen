@@ -4,9 +4,11 @@ from xml.dom import minidom
 import httplib, httplib2
 import urllib
 from collections import deque
+import logging
 
 
 class SplunkStreamOutputPlugin(OutputPlugin):
+    queueable = True
     name = 'splunkstream'
     MAXQUEUELENGTH = 100
 
@@ -138,6 +140,9 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                     if splunkhttp != None:
                         splunkhttp.close()
                         splunkhttp = None
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen_splunkstreamout')
 
 
 def load():

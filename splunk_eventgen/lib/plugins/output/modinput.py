@@ -5,13 +5,14 @@
 
 from __future__ import division
 from outputplugin import OutputPlugin
-import datetime, time
 import sys
 from xml.sax.saxutils import escape
+import logging
 
 class ModInputOutputPlugin(OutputPlugin):
     name = 'modinput'
     MAXQUEUELENGTH = 10
+    queueable = True
 
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
@@ -41,6 +42,9 @@ class ModInputOutputPlugin(OutputPlugin):
         # out += '</stream>'
         print out
         sys.stdout.flush()
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen_modinputout')
 
 def load():
     """Returns an instance of the plugin"""

@@ -3,11 +3,13 @@
 from __future__ import division
 from outputplugin import OutputPlugin
 import os
+import logging
 
 
 class FileOutputPlugin(OutputPlugin):
     name = 'file'
     MAXQUEUELENGTH = 10
+    queueable = False
 
     validSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
     intSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
@@ -68,6 +70,9 @@ class FileOutputPlugin(OutputPlugin):
 
             if not self._fileHandle.closed:
                 self._fileHandle.flush()
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen_fileout')
 
 def load():
     """Returns an instance of the plugin"""

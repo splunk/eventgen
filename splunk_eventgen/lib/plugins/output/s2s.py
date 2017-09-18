@@ -3,6 +3,7 @@ from outputplugin import OutputPlugin
 
 import struct
 import socket
+import logging
 
 
 class S2S:
@@ -17,6 +18,7 @@ class S2S:
 
     s = None
     signature_sent = None
+    queueable = False
 
     def __init__(self, host='localhost', port=9997):
         """
@@ -177,6 +179,9 @@ class S2SOutputPlugin(OutputPlugin):
             self.s2s = S2S(self._sample.splunkHost, self._sample.splunkPort)
         for m in q:
             self.s2s.send_event(m['index'], m['host'], m['source'], m['sourcetype'], m['_raw'], m['_time'])
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen_s2sout')
 
 
 def load():
