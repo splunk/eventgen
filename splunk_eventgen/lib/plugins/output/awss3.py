@@ -6,6 +6,7 @@ import botocore.exceptions
 import uuid
 import datetime
 import threading
+import logging
 
 
 def threaded(fn):
@@ -167,6 +168,9 @@ class AwsS3OutputPlugin(OutputPlugin):
                 import traceback
                 self.logger.error(traceback.print_exc())
                 self.logger.error('failed sending events, reason: %s ' % e)
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen_awss3out')
 
 
 def load():
