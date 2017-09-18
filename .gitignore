@@ -14,3 +14,4 @@ cached_build_info.properties
 local.build.properties
 stage/
 local/
+.log
