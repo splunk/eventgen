@@ -341,6 +341,7 @@ class EventGenerator(object):
         self.stopping = True
 
     def start(self):
+        #TODO: Find out if we need a try except here
         try:
             if os.name != "nt":
                 self.set_exit_handler(self.handle_exit)
@@ -369,8 +370,9 @@ class EventGenerator(object):
             #gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
             #eventsPerSec = self.config.eventsSent.valueAndClear() / 5
             #self.logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
-        except KeyboardInterrupt:
-            self.handle_exit()
+        except Exception as e:
+            self.logger.exception(e)
+            sys.exit(1)
 
     def stop(self):
         # empty the sample queue:
