@@ -33,7 +33,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
     '''
     name = 'httpevent'
     MAXQUEUELENGTH = 1000
-    queueable = True
+    queueable = False
     validSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     defaultableSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     jsonSettings = ['httpeventServers']
@@ -162,6 +162,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     currentreadsize = 0
                     stringpayload = targetline
                 except Exception as e:
+                    self.logger.exception(e)
                     raise e
         else:
             try:
@@ -169,6 +170,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 self.logger.debug("End of for loop hit for sending events to splunk, total bytes sent: %s ---- out of %s -----" % (totalbytessent, totalbytesexpected))
                 self._transmitEvents(stringpayload)
             except Exception as e:
+                self.logger.exception(e)
                 raise e
 
     def _transmitEvents(self, payloadstring):

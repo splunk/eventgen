@@ -209,8 +209,7 @@ class EventGenerator(object):
                 pass
             except Exception as e:
                 self.logger.exception(e)
-                sys.exit(1)
-
+                raise e
 
     @staticmethod
     def _proc_worker_do_work(work_queue, logging_queue, config):
@@ -235,6 +234,7 @@ class EventGenerator(object):
             except Empty:
                 stopping = genconfig['stopping']
             except Exception as e:
+                root.exception(e)
                 raise e
         else:
             root.info("Stopping Process")
@@ -251,6 +251,7 @@ class EventGenerator(object):
                 pass
             except Exception as e:
                 self.logger.exception(e)
+                raise e
 
     def _initializePlugins(self, dirname, plugins, plugintype, name=None):
         """Load a python module dynamically and add to internal dictionary of plugins (only accessed by getPlugin)"""
@@ -320,59 +321,52 @@ class EventGenerator(object):
                             self.config._complexSettings.update(plugin.complexSettings)
                     except ValueError:
                         self.logger.error("Error loading plugin '%s' of type '%s'" % (base, plugintype))
+                    except Exception as e:
+                        self.logger.exception(e)
+                        raise e
 
         return ret
 
-    def set_exit_handler(self, func):
-        """Catch signals and call handle_exit when we're supposed to shut down"""
-        if os.name == "nt":
-            try:
-                import win32api
-                win32api.SetConsoleCtrlHandler(func, True)
-            except ImportError:
-                version = ".".join(map(str, sys.version_info[:2]))
-                raise Exception("pywin32 not installed for Python " + version)
-        else:
-            import signal
-            signal.signal(signal.SIGTERM, func)
-            signal.signal(signal.SIGINT, func)
-
-    def handle_exit(self, sig=None, func=None):
-        self.stopping = True
-
-    def start(self):
-        #TODO: Find out if we need a try except here
-        try:
-            if os.name != "nt":
-                self.set_exit_handler(self.handle_exit)
-            if len(self.config.samples) <= 0:
-                self.logger.info("No samples found.  Exiting.")
-            for s in self.config.samples:
-                if s.interval > 0 or s.mode == 'replay' or s.end != "0":
-                    self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
-                    # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
-                    t = Timer(1.0, sample=s, config=self.config,
-                              genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
-                    self.sampleQueue.put(t)
+    def start(self, join_after_start=True):
+        if len(self.config.samples) <= 0:
+            self.logger.info("No samples found.  Exiting.")
+        for s in self.config.samples:
+            if s.interval > 0 or s.mode == 'replay' or s.end != "0":
+                self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
+                # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
+                t = Timer(1.0, sample=s, config=self.config,
+                          genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
+                self.sampleQueue.put(t)
+        if join_after_start:
             self.logger.info("All timers started, joining queue until it's empty.")
-            self.sampleQueue.join()
+            self.join_process()
+        ## Only need to start timers once
+        # Every 5 seconds, get values and output basic statistics about our operations
+        #TODO: Figure out how to do this better...
+        #generatorsPerSec = (generatorDecrements - generatorQueueCounter) / 5
+        #outputtersPerSec = (outputDecrements - outputQueueCounter) / 5
+        #outputQueueCounter = outputDecrements
+        #generatorQueueCounter = generatorDecrements
+        #self.logger.info('OutputQueueDepth=%d  GeneratorQueueDepth=%d GeneratorsPerSec=%d OutputtersPerSec=%d' % (self.config.outputQueueSize.value(), self.config.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
+        #kiloBytesPerSec = self.config.bytesSent.valueAndClear() / 5 / 1024
+        #gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
+        #eventsPerSec = self.config.eventsSent.valueAndClear() / 5
+        #self.logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
+
+    def join_process(self):
+        '''
+        This method will attach the current object to the queues existing for generation and will call stop after all
+        generation is complete.  If the queue never finishes, this will lock the main process to the child indefinitly.
+        :return:
+        '''
+        try:
+            while not self.sampleQueue.empty():
+                time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
-            ## Only need to start timers once
-            # Every 5 seconds, get values and output basic statistics about our operations
-            #TODO: Figure out how to do this better...
-            #generatorsPerSec = (generatorDecrements - generatorQueueCounter) / 5
-            #outputtersPerSec = (outputDecrements - outputQueueCounter) / 5
-            #outputQueueCounter = outputDecrements
-            #generatorQueueCounter = generatorDecrements
-            #self.logger.info('OutputQueueDepth=%d  GeneratorQueueDepth=%d GeneratorsPerSec=%d OutputtersPerSec=%d' % (self.config.outputQueueSize.value(), self.config.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
-            #kiloBytesPerSec = self.config.bytesSent.valueAndClear() / 5 / 1024
-            #gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
-            #eventsPerSec = self.config.eventsSent.valueAndClear() / 5
-            #self.logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
         except Exception as e:
             self.logger.exception(e)
-            sys.exit(1)
+            raise e
 
     def stop(self):
         # empty the sample queue:
