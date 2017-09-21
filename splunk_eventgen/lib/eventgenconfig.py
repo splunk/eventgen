@@ -102,23 +102,26 @@ class Config(object):
                          'mode': ['sample', 'replay'],
                          'threading': ['thread', 'process']}
 
-    def __init__(self, args=None):
+    def __init__(self, configfile, sample=None, override_outputter=False, override_count=False,
+                 override_interval=False, override_backfill=False, override_end=False,
+                 threading="thread", override_generators=None, override_outputqueue=False,
+                 profiler=False):
         """Setup Config object.  Sets up Logging and path related variables."""
         # Rebind the internal datastore of the class to an Instance variable
         self.__dict__ = self.__sharedState
+        self.threading = threading
+        self.profiler = profiler
+        self.override_outputter = override_outputter
+        self.override_count = override_count
+        self.override_interval = override_interval
+        self.override_backfill = override_backfill
+        self.override_end = override_end
+        if override_generators >= 0:
+            self.generatorWorkers = self.override_generators
+        if override_outputqueue:
+            self.useOutputQueue = False
+
         if self._firsttime:
-            # 2/1/15 CS  Adding support for command line arguments
-            if args:
-                self.args = args
-
-            # 2/1/15 CS  Adding support for command line arguments.  In this case, if we're running from the command
-            # line and we have arguments, we only want output from logger if we're in verbose
-            if self.args:
-                if self.args.multiprocess:
-                    self.threading = 'process'
-                if self.args.profiler:
-                    self.profiler = True
-
             self._setup_logging()
 
             # Determine some path names in our environment
@@ -131,10 +134,6 @@ class Config(object):
             c = ConfigParser()
             c.optionxform = str
             c.read([os.path.join(self.grandparentdir, 'default', 'eventgen.conf')])
-            for s in c.sections():
-                for i in c.items(s):
-                    if i[0] == 'threading' and self.threading == None:
-                        self.threading = i[1]
 
             self._complexSettings['timezone'] = self._validateTimezone
 
@@ -142,16 +141,6 @@ class Config(object):
 
             self._complexSettings['seed'] = self._validateSeed
 
-            #TODO: Figure out how to deal with counters.
-            '''self.generatorQueueSize = Counter(0, self.threading)
-            self.outputQueueSize = Counter(0, self.threading)
-            self.eventsSent = Counter(0, self.threading)
-            self.bytesSent = Counter(0, self.threading)
-            self.timersStarting = Counter(0, self.threading)
-            self.timersStarted = Counter(0, self.threading)
-            self.pluginsStarting = Counter(0, self.threading)
-            self.pluginsStarted = Counter(0, self.threading)
-            '''
             self.stopping = False
 
             #self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
@@ -425,9 +414,9 @@ class Config(object):
                 else:
                     # 2/1/15 CS  Adding support for looking for samples based on the config file specified on
                     # the command line.
-                    if self.args:
-                        if os.path.isdir(self.args.configfile):
-                            s.sampleDir = os.path.join(self.args.configfile, 'samples')
+                    if self.configfile:
+                        if os.path.isdir(self.configfile):
+                            s.sampleDir = os.path.join(self.configfile, 'samples')
                         else:
                             s.sampleDir = os.path.join(os.getcwd(), 'samples')
                     else:
@@ -455,49 +444,43 @@ class Config(object):
 
             # 2/1/15 CS Adding support for command line options, specifically running a single sample
             # from the command line
-            if self.args:
-                if self.args.sample:
+                if self.run_sample:
                     # Name doesn't match, disable
-                    if s.name != self.args.sample:
+                    if s.name != self.run_sample:
                         self.logger.debug("Disabling sample '%s' because of command line override" % s.name)
                         s.disabled = True
                     # Name matches
                     else:
                         self.logger.debug("Sample '%s' selected from command line" % s.name)
-                        # Also, can't backfill search if we don't know how to talk to Splunk
-                        s.backfillSearch = None
-                        s.backfillSearchUrl = None
-                        # Since the user is running this for debug output, lets assume that they
-                        # always want to see output
-                        self.maxIntervalsBeforeFlush = 1
-                        s.maxIntervalsBeforeFlush = 1
-                        s.maxQueueLength = 1
-                        if self.args.devnull:
-                            self.logger.debug("Sample '%s' redirecting to devnull from command line" % s.name)
-                            s.outputMode = 'devnull'
-                        elif self.args.modinput:
-                            self.logger.debug("Sample '%s' setting output to modinput from command line" % s.name)
-                            s.outputMode = 'modinput'
-                        elif not self.args.keepoutput:
-                            s.outputMode = 'stdout'
+                    # Also, can't backfill search if we don't know how to talk to Splunk
+                    s.backfillSearch = None
+                    s.backfillSearchUrl = None
+                    # Since the user is running this for debug output, lets assume that they
+                    # always want to see output
+                    self.maxIntervalsBeforeFlush = 1
+                    s.maxIntervalsBeforeFlush = 1
+                    s.maxQueueLength = 1
+                    if self.override_outputter:
+                        self.logger.debug("Sample '%s' setting output to '%s' from command line" % s.name, self.override_outputter)
+                        s.outputMode = self.override_outputter
 
-                        if self.args.count:
-                            self.logger.debug("Overriding count to '%d' for sample '%s'" % (self.args.count, s.name))
-                            s.count = self.args.count
-                            # If we're specifying a count, turn off backfill
-                            s.backfill = None
+                    if self.override_count:
+                        self.logger.debug("Overriding count to '%d' for sample '%s'" % (self.override_count, s.name))
+                        s.count = self.override_count
+                        # If we're specifying a count, turn off backfill
+                        s.backfill = None
 
-                        if self.args.interval:
-                            self.logger.debug("Overriding interval to '%d' for sample '%s'" % (self.args.interval, s.name))
-                            s.interval = self.args.interval
+                    if self.override_interval:
+                        self.logger.debug("Overriding interval to '%d' for sample '%s'" % (self.override_interval, s.name))
+                        s.interval = self.override_interval
 
-                        if self.args.backfill:
-                            self.logger.debug("Overriding backfill to '%s' for sample '%s'" % (self.args.backfill, s.name))
-                            s.backfill = self.args.backfill.lstrip()
+                    if self.override_backfill:
+                        self.logger.debug("Overriding backfill to '%s' for sample '%s'" % (self.override_backfill, s.name))
+                        s.backfill = self.override_backfill.lstrip()
 
-                        if self.args.end:
-                            self.logger.debug("Overriding end to '%s' for sample '%s'" % (self.args.end, s.name))
-                            s.end = self.args.end.lstrip()
+                    if self.override_end:
+                        self.logger.debug("Overriding end to '%s' for sample '%s'" % (self.override_end, s.name))
+                        s.end = self.override_end.lstrip()
 
 
             # Now that we know where samples will be written,
@@ -654,18 +637,7 @@ class Config(object):
         self.samples = tempsamples
         self._confDict = None
 
-        # 2/1/15 CS  Adding support for command line arguments to modify the config
-        if self.args:
-            if self.args.generators >= 0:
-                self.generatorWorkers = self.args.generators
-            if self.args.outputters >= 0:
-                self.outputWorkers = self.args.outputters
-            if self.args.disableOutputQueue:
-                self.useOutputQueue = False
-            if self.args.multiprocess:
-                self.threading = 'process'
-            if self.args.profiler:
-                self.profiler = True
+
 
         # 9/2/15 Try autotimestamp values, add a timestamp if we find one
         for s in self.samples:
@@ -890,19 +862,18 @@ class Config(object):
 
             conffiles = [ ]
             # 2/1/15 CS  Moving to argparse way of grabbing command line parameters
-            if self.args:
-                if self.args.configfile:
-                    if os.path.exists(self.args.configfile):
-                        # 2/1/15 CS Adding a check to see whether we're instead passed a directory
-                        # In which case we'll assume it's a splunk app and look for config files in
-                        # default and local
-                        if os.path.isdir(self.args.configfile):
-                            conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
-                                    os.path.join(self.args.configfile, 'default', 'eventgen.conf'),
-                                    os.path.join(self.args.configfile, 'local', 'eventgen.conf')]
-                        else:
-                            conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
-                                    self.args.configfile]
+            if self.configfile:
+                if os.path.exists(self.configfile):
+                    # 2/1/15 CS Adding a check to see whether we're instead passed a directory
+                    # In which case we'll assume it's a splunk app and look for config files in
+                    # default and local
+                    if os.path.isdir(self.configfile):
+                        conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
+                                os.path.join(self.configfile, 'default', 'eventgen.conf'),
+                                os.path.join(self.configfile, 'local', 'eventgen.conf')]
+                    else:
+                        conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
+                                self.configfile]
             if len(conffiles) == 0:
                 conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
                             os.path.join(self.grandparentdir, 'local', 'eventgen.conf')]

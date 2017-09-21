@@ -28,7 +28,7 @@ file_path=os.path.dirname(os.path.realpath(__file__))
 
 
 class EventGenerator(object):
-    def __init__(self, args):
+    def __init__(self, args=None):
         '''
         This object will allow you to generate and control eventgen.  It should be handed the parse_args object
         from __main__ and will hand the argument object to the config parser of eventgen5.  This will provide the
@@ -45,7 +45,45 @@ class EventGenerator(object):
         self.config = None
         self.args = args
         if getattr(self.args, "configfile"):
-            self.reload_conf()
+            self._load_config(self.args.configfile, args=args)
+
+    def _load_config(self, configfile, **kwargs):
+        '''
+        This method will use a configfile and set self.confg as a processeded config object,
+        kwargs will need to match eventgenconfig.py
+        :param configfile:
+        :return:
+        '''
+        #TODO: The old eventgne had strange cli args, and usage of args.  We should probably update the module args
+        #to match more of what this is doing...
+        new_args={}
+        if "args" in kwargs:
+            args = kwargs["args"]
+            outputer = [key for key in ["keepoutput","devnull","modinput"] if getattr(args, key)]
+            if len(outputer) > 0:
+                new_args["override_outputter"]=outputer[0]
+            if getattr(args, "count"):
+                new_args["override_count"]=args.count
+            if getattr(args, "interval"):
+                new_args["override_interval"]=args.interval
+            if getattr(args, "backfill"):
+                new_args["override_backfill"]=args.backfill
+            if getattr(args, "end"):
+                new_args["override_end"]=args.end
+            if getattr(args, "multiprocess"):
+                new_args["threading"]="process"
+            if getattr(args, "generators"):
+                new_args["override_generators"]=args.generators
+            if getattr(args, "disableOutputQueue"):
+                new_args["override_outputqueue"]=args.disableOutputQueue
+            if getattr(args, "profiler"):
+                new_args["profiler"]=args.profiler
+        self.config = Config(configfile, new_args.iteritems())
+        self._reload_plugins()
+        #TODO: Probably should destroy pools better so processes are cleaned.
+        self._setup_pools()
+
+    def _reload_plugins(self):
         # Initialize plugins
         # Plugins must be loaded before objects that do work, otherwise threads and processes generated will not have
         # the modules loaded in active memory.
@@ -55,6 +93,13 @@ class EventGenerator(object):
         self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'generator'), self.config.plugins, 'generator')
         plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'rater'), self.config.plugins, 'rater')
         self.config._complexSettings['rater'] = plugins
+
+    def _setup_pools(self):
+        '''
+        This method is an internal method called on init to generate pools needed for processing.
+
+        :return:
+        '''
         # Load the things that actually do the work.
         self._create_generator_pool()
         self._create_timer_threadpool()
@@ -385,14 +430,11 @@ class EventGenerator(object):
         self.logger.info("All items fully processed, exiting.")
         self.stopping = True
 
-    def reload_conf(self, config=None):
+    def reload_conf(self, configfile):
         '''
         This method will allow a user to supply a new .conf file for generation and reload the sample files.
-        :param config:
+        :param configfile:
         :return:
         '''
-        if config:
-            self.args.configfile = config
-        self.config = Config(self.args)
-        self.config.parse()
+        self._load_config(configfile=configfile)
         self.logger.debug("Config File Loading Complete.")
