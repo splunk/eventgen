@@ -79,6 +79,7 @@ class EventGenerator(object):
             if getattr(args, "profiler"):
                 new_args["profiler"]=args.profiler
         self.config = Config(configfile, new_args.iteritems())
+        self.config.parse()
         self._reload_plugins()
         #TODO: Probably should destroy pools better so processes are cleaned.
         self._setup_pools()

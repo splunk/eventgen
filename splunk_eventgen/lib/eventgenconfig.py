@@ -109,6 +109,7 @@ class Config(object):
         """Setup Config object.  Sets up Logging and path related variables."""
         # Rebind the internal datastore of the class to an Instance variable
         self.__dict__ = self.__sharedState
+        self.configfile = configfile
         self.threading = threading
         self.profiler = profiler
         self.override_outputter = override_outputter
