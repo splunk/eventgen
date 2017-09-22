@@ -156,9 +156,6 @@ class Config(object):
 
         return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
 
-    def __repr__(self):
-        return self.__str__()
-
     # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
     def __getstate__(self):
         temp = self.__dict__
@@ -703,10 +700,7 @@ class Config(object):
                                 except ValueError:
                                     pass
                         line_puncts.append(p)
-
-
-
-        self.logger.debug("Finished parsing.  Config str:\n%s" % self)
+        self.logger.debug("Finished parsing")
 
     def _punct(self, string):
         """Quick method of attempting to normalize like events"""
