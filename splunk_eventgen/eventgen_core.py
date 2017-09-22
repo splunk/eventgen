@@ -406,7 +406,7 @@ class EventGenerator(object):
         :return:
         '''
         try:
-            while not self.sampleQueue.empty():
+            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0:
                 time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
