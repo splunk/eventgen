@@ -117,14 +117,13 @@ class Config(object):
         self.override_interval = override_interval
         self.override_backfill = override_backfill
         self.override_end = override_end
+        self._setup_logging()
         if override_generators >= 0:
             self.generatorWorkers = self.override_generators
         if override_outputqueue:
             self.useOutputQueue = False
 
         if self._firsttime:
-            self._setup_logging()
-
             # Determine some path names in our environment
             self.grandparentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             self.greatgrandparentdir = os.path.dirname(self.grandparentdir)
@@ -325,6 +324,7 @@ class Config(object):
             # If we see the sample in two places, use the first and ignore the second
             if not sampleexists:
                 s = Sample(stanza)
+                s.updateConfig(self)
                 for key, value in settings.items():
                     oldvalue = value
                     try:
@@ -515,7 +515,9 @@ class Config(object):
                 if not s.disabled and not (s.generator == "default" or s.generator == "replay"):
                     tempsamples2.append(copy.deepcopy(s))
             for f in foundFiles:
-                news = copy.deepcopy(s)
+                # TODO: Not sure why we use deepcopy here, seems point less.
+                #news = copy.deepcopy(s)
+                news = s
                 news.filePath = f
                 # 12/3/13 CS TODO These are hard coded but should be handled via the modular config system
                 # Maybe a generic callback for all plugins which will modify sample based on the filename
@@ -606,10 +608,10 @@ class Config(object):
                                 pass
 
                     # Now prepend all the tokens to the beginning of the list so they'll be sure to match first
-                    newtokens = copy.deepcopy(s.tokens)
+                    newtokens = s.tokens
                     # self.logger.debug("Prepending tokens from sample '%s' to sample '%s' in app '%s': %s" \
                     #             % (overridesample._origName, s.name, s.app, pprint.pformat(newtokens)))
-                    newtokens.extend(copy.deepcopy(overridesample.tokens))
+                    newtokens.extend(overridesample.tokens)
                     s.tokens = newtokens
 
         # We've added replay mode, so lets loop through the samples again and set the earliest and latest
