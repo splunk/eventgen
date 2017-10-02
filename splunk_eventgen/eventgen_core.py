@@ -38,13 +38,14 @@ class EventGenerator(object):
         :param args: __main__ parse_args() object.
         '''
         self.stopping = False
+        self.config = None
+        self.args = args
+
         self._setup_loggers()
         # attach to the logging queue
         self.logger.debug("Logging Setup Complete.")
 
-        self.config = None
-        self.args = args
-        if getattr(self.args, "configfile"):
+        if self.args and getattr(args, "configfile"):
             self._load_config(self.args.configfile, args=args)
 
     def _load_config(self, configfile, **kwargs):
@@ -61,23 +62,23 @@ class EventGenerator(object):
             args = kwargs["args"]
             outputer = [key for key in ["keepoutput","devnull","modinput"] if getattr(args, key)]
             if len(outputer) > 0:
-                new_args["override_outputter"]=outputer[0]
+                new_args["override_outputter"] = outputer[0]
             if getattr(args, "count"):
-                new_args["override_count"]=args.count
+                new_args["override_count"] = args.count
             if getattr(args, "interval"):
-                new_args["override_interval"]=args.interval
+                new_args["override_interval"] = args.interval
             if getattr(args, "backfill"):
-                new_args["override_backfill"]=args.backfill
+                new_args["override_backfill"] = args.backfill
             if getattr(args, "end"):
-                new_args["override_end"]=args.end
+                new_args["override_end"] = args.end
             if getattr(args, "multiprocess"):
-                new_args["threading"]="process"
+                new_args["threading"] = "process"
             if getattr(args, "generators"):
-                new_args["override_generators"]=args.generators
+                new_args["override_generators"] = args.generators
             if getattr(args, "disableOutputQueue"):
-                new_args["override_outputqueue"]=args.disableOutputQueue
+                new_args["override_outputqueue"] = args.disableOutputQueue
             if getattr(args, "profiler"):
-                new_args["profiler"]=args.profiler
+                new_args["profiler"] = args.profiler
         self.config = Config(configfile, new_args.iteritems())
         self.config.parse()
         self._reload_plugins()
@@ -219,7 +220,7 @@ class EventGenerator(object):
                         'mode': 'w',
                         'level': 'ERROR',
                         'formatter': 'detailed',
-                    },
+                    }
                 },
                 'loggers': {
                     'eventgen': {
@@ -233,6 +234,7 @@ class EventGenerator(object):
             }
         else:
             self.logger_config = config
+
         logging.config.dictConfig(self.logger_config)
         # We need to have debugv from the olderversions of eventgen.
         DEBUG_LEVELV_NUM = 9
