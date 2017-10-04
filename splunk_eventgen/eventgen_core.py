@@ -466,8 +466,9 @@ class EventGenerator(object):
                     time.sleep(1)
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
-        self.logger.info("All items fully processed, exiting.")
+        self.logger.info("All items fully processed, stopping.")
         self.stopping = False
+        self.config.stopping = False
 
 
     def reload_conf(self, configfile):

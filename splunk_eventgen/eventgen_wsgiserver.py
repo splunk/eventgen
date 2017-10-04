@@ -197,12 +197,10 @@ class EventgenApiServer(object):
         '''
         if cherrypy.request.method == "POST":
             try:
-                self.eventgen.stop()
-                if self.eventgen.stopping:
+                if self.eventgen.check_running():
+                    self.eventgen.stop()
                     return "Eventgen is stopped."
-                else:
-                    cherrypy.response.status = 500
-                    return "Eventgen failed to stop."
+                return "There is no eventgen process running."
             except Exception as e:
                 cherrypy.response.status = 500
                 return "Exception: {}".format(e.message)
@@ -219,9 +217,9 @@ class EventgenApiServer(object):
         '''
         if cherrypy.request.method == "POST":
             self.stop()
-            time.sleep(1)
+            time.sleep(2)
             self.start()
-            return self.status()
+            return 'hello'
         else:
             cherrypy.response.status = 400
             return "Unsupported request method. Please use POST."
