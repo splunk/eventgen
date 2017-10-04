@@ -50,6 +50,7 @@ class EventgenApiServer(object):
         self.host = socket.gethostname()
         self.configured = False
         self.configfile = 'N/A'
+        self.setup_loggers()
 
     def configure_default_args(self):
         self.args.backfill = None
@@ -70,6 +71,9 @@ class EventgenApiServer(object):
         self.args.verbosity = 1
         self.args.wsgi = True
 
+    def setup_loggers(self):
+        self.logger = logging.getLogger('eventgen_wsgi')
+
     @cherrypy.expose
     def index(self):
         if cherrypy.request.method == "GET":
@@ -78,6 +82,10 @@ class EventgenApiServer(object):
             <p>Eventgen Status: {1}</p>
             <p>Eventgen Config file exists: {2}</p>
             <p>Eventgen Config file path: {3}</p>
+            <p>Worker Queue Status: {4}</p>
+            <p>Sample Queue Status: {5}</p>
+            <p>Output Queue Status: {6}</p>
+            
             '''
             # appName = "None"
             # app_conf_path = os.path.join(self.data_path,"app","default","app.conf")
@@ -88,8 +96,22 @@ class EventgenApiServer(object):
             #         appName = c.get("ui","label")
             #     except ConfigParser.NoOptionError:
             #         appName = "default"
-            status = "running" if self.get_status()[eventgenapi_common.EVENTGEN_STATUS_TAG] else "stopped"
-            return home_page.format(self.host, status, self.configured, self.configfile)
+            status = self.get_status()
+            eventgen_status = "running" if status["EVENTGEN_STATUS"] else "stopped"
+            host = status["EVENTGEN_HOST"]
+            configured = status["CONFIGURED"]
+            config_file = status["CONFIG_FILE"]
+            worker_queue_status = status["QUEUE_STATUS"]["WORKER_QUEUE"]
+            sample_queue_status = status["QUEUE_STATUS"]["SAMPLE_QUEUE"]
+            output_queue_status = status["QUEUE_STATUS"]["OUTPUT_QUEUE"]
+
+            return home_page.format(host,
+                                    eventgen_status,
+                                    configured,
+                                    config_file,
+                                    worker_queue_status,
+                                    sample_queue_status,
+                                    output_queue_status)
         else:
             cherrypy.response.status = 400
             return "Unsupported method. Please use GET."
@@ -97,13 +119,40 @@ class EventgenApiServer(object):
     def get_status(self):
         '''
         Get status of eventgen
+
+        return value structure
+        {
+            "EVENTGEN_STATUS" :
+            "EVENTGEN_HOST" :
+            "CONFIGURED" :
+            "CONFIG_FILE" :
+            "QUEUE_STATUS" : { "SAMPLE_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': },
+                               "OUTPUT_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': },
+                               "WORKER_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': }}
+        }
         '''
         res = dict()
         if self.eventgen.check_running():
-            status = eventgenapi_common.EVENTGEN_STATUS_RUNNING
+            status = 1
         else:
-            status = eventgenapi_common.EVENTGEN_STATUS_STOPPED
-        res[eventgenapi_common.EVENTGEN_STATUS_TAG] = status
+            status = 0
+        res["EVENTGEN_STATUS"] = status
+        res["EVENTGEN_HOST"] = self.host
+        res["CONFIGURED"] = self.configured
+        res["CONFIG_FILE"] = self.configfile
+        res["QUEUE_STATUS"] = {'SAMPLE_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
+                               'OUTPUT_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
+                               'WORKER_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}}
+
+        if hasattr(self.eventgen, "sampleQueue"):
+            res["QUEUE_STATUS"]['SAMPLE_QUEUE']['UNFINISHED_TASK'] = self.eventgen.sampleQueue.unfinished_tasks
+            res["QUEUE_STATUS"]['SAMPLE_QUEUE']['QUEUE_LENGTH'] = self.eventgen.sampleQueue.qsize()
+        if hasattr(self.eventgen, "outputQueue"):
+            res["QUEUE_STATUS"]['SAMPLE_QUEUE']['UNFINISHED_TASK'] = self.eventgen.outputQueue.unfinished_tasks
+            res["QUEUE_STATUS"]['SAMPLE_QUEUE']['QUEUE_LENGTH'] = self.eventgen.outputQueue.qsize()
+        if hasattr(self.eventgen, "workerQueue"):
+            res["QUEUE_STATUS"]['SAMPLE_QUEUE']['UNFINISHED_TASK'] = self.eventgen.workerQueue.unfinished_tasks
+            res["QUEUE_STATUS"]['SAMPLE_QUEUE']['QUEUE_LENGTH'] = self.eventgen.workerQueue.qsize()
         return res
 
     @cherrypy.expose
@@ -183,7 +232,21 @@ class EventgenApiServer(object):
         POST: configfile[string]: path to config file. i.e. tests/sample_eventgen_conf/windbag/eventgen.conf.windbag
         '''
         if cherrypy.request.method == "GET":
-            return self.configfile
+            try:
+                if not self.configured:
+                    cherrypy.response.status = 404
+                    return "There is no conf file known to eventgen."
+                config = ConfigParser.ConfigParser()
+                config.read(os.path.abspath(os.path.join(EventgenApiServer.EVENTGEN_DIR, self.configfile)))
+                out_json = dict()
+                for section in config.sections():
+                    out_json[section] = dict()
+                    for k, v in config.items(section):
+                        out_json[section][k] = v
+                return json.dumps(out_json, indent=4)
+            except Exception as e:
+                cherrypy.response.status = 500
+            return "Exception: {}".format(e.message)
 
         elif cherrypy.request.method == "POST":
             valid_file = os.path.isfile(
@@ -201,6 +264,7 @@ class EventgenApiServer(object):
                 except Exception as e:
                     cherrypy.response.status = 500
                     return "Exception: {}".format(e.message)
+
         else:
             cherrypy.response.status = 400
             return "Unsupported request method. Please use GET or POST."
