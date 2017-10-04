@@ -422,7 +422,6 @@ class EventGenerator(object):
         if join_after_start:
             self.logger.info("All timers started, joining queue until it's empty.")
             self.join_process()
-        self.started = False
         ## Only need to start timers once
         # Every 5 seconds, get values and output basic statistics about our operations
         #TODO: Figure out how to do this better...

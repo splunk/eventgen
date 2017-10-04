@@ -148,11 +148,11 @@ class EventgenApiServer(object):
             res["QUEUE_STATUS"]['SAMPLE_QUEUE']['UNFINISHED_TASK'] = self.eventgen.sampleQueue.unfinished_tasks
             res["QUEUE_STATUS"]['SAMPLE_QUEUE']['QUEUE_LENGTH'] = self.eventgen.sampleQueue.qsize()
         if hasattr(self.eventgen, "outputQueue"):
-            res["QUEUE_STATUS"]['SAMPLE_QUEUE']['UNFINISHED_TASK'] = self.eventgen.outputQueue.unfinished_tasks
-            res["QUEUE_STATUS"]['SAMPLE_QUEUE']['QUEUE_LENGTH'] = self.eventgen.outputQueue.qsize()
+            res["QUEUE_STATUS"]['OUTPUT_QUEUE']['UNFINISHED_TASK'] = self.eventgen.outputQueue.unfinished_tasks
+            res["QUEUE_STATUS"]['OUTPUT_QUEUE']['QUEUE_LENGTH'] = self.eventgen.outputQueue.qsize()
         if hasattr(self.eventgen, "workerQueue"):
-            res["QUEUE_STATUS"]['SAMPLE_QUEUE']['UNFINISHED_TASK'] = self.eventgen.workerQueue.unfinished_tasks
-            res["QUEUE_STATUS"]['SAMPLE_QUEUE']['QUEUE_LENGTH'] = self.eventgen.workerQueue.qsize()
+            res["QUEUE_STATUS"]['WORKER_QUEUE']['UNFINISHED_TASK'] = self.eventgen.workerQueue.unfinished_tasks
+            res["QUEUE_STATUS"]['WORKER_QUEUE']['QUEUE_LENGTH'] = self.eventgen.workerQueue.qsize()
         return res
 
     @cherrypy.expose
@@ -252,11 +252,10 @@ class EventgenApiServer(object):
             return "Exception: {}".format(e.message)
 
         elif cherrypy.request.method == "POST":
-            valid_file = os.path.isfile(
-                os.path.abspath(os.path.join(EventgenApiServer.EVENTGEN_DIR, configfile)))
-            if not configfile or not valid_file:
-                cherrypy.response.status = 400
-                return 'Specify the correct path to the config file.'
+            if not configfile or not os.path.isfile(
+                os.path.abspath(os.path.join(EventgenApiServer.EVENTGEN_DIR, configfile))):
+                cherrypy.response.status = 409
+                return 'Provide the correct config file.'
             else:
                 try:
                     cherrypy.response.status = 200
