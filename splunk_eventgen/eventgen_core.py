@@ -38,6 +38,7 @@ class EventGenerator(object):
         :param args: __main__ parse_args() object.
         '''
         self.stopping = False
+        self.started = False
         self.config = None
         self.args = args
 
@@ -407,8 +408,8 @@ class EventGenerator(object):
         return ret
 
     def start(self, join_after_start=True):
-        if self.stopping:
-            self.stopping = False
+        self.stopping = False
+        self.started = True
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
@@ -421,6 +422,7 @@ class EventGenerator(object):
         if join_after_start:
             self.logger.info("All timers started, joining queue until it's empty.")
             self.join_process()
+        self.started = False
         ## Only need to start timers once
         # Every 5 seconds, get values and output basic statistics about our operations
         #TODO: Figure out how to do this better...
@@ -452,6 +454,8 @@ class EventGenerator(object):
     def stop(self):
         # empty the sample queue:
         self.config.stopping = True
+        self.stopping = True
+        self.started = False
         self.logger.info("All timers exited, joining generation queue until it's empty.")
         self.workerQueue.join()
         # if we're in multiprocess, make sure that since all the timers stopped, we don't let any more generators get added.
@@ -464,7 +468,8 @@ class EventGenerator(object):
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
         self.logger.info("All items fully processed, exiting.")
-        self.stopping = True
+        self.stopping = False
+
 
     def reload_conf(self, configfile):
         '''
