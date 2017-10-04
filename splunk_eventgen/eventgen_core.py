@@ -45,7 +45,7 @@ class EventGenerator(object):
         # attach to the logging queue
         self.logger.debug("Logging Setup Complete.")
 
-        if self.args and getattr(args, "configfile"):
+        if self.args and 'configfile' in self.args:
             self._load_config(self.args.configfile, args=args)
 
     def _load_config(self, configfile, **kwargs):
@@ -235,6 +235,9 @@ class EventGenerator(object):
         else:
             self.logger_config = config
 
+        if self.args and 'wsgi' in self.args and self.args.wsgi:
+            self.setup_cherrpy_logger()
+
         logging.config.dictConfig(self.logger_config)
         # We need to have debugv from the olderversions of eventgen.
         DEBUG_LEVELV_NUM = 9
@@ -246,6 +249,34 @@ class EventGenerator(object):
         logging.Logger.debugv = debugv
         self.logger = logging.getLogger('eventgen')
         self.loggingQueue = None
+
+    def setup_cherrpy_logger(self):
+        self.logger_config['handlers']['cherrypy_console'] = {'level': 'INFO',
+                                                              'class': 'logging.StreamHandler',
+                                                              'formatter': 'detailed',
+                                                              'stream': 'ext://sys.stdout'}
+        self.logger_config['handlers']['cherrypy_access'] = {'level': 'INFO',
+                                                             'class': 'logging.handlers.RotatingFileHandler',
+                                                             'formatter': 'detailed',
+                                                             'filename': 'wsgi_access.log',
+                                                             'maxBytes': 10485760,
+                                                             'backupCount': 20,
+                                                             'encoding': 'utf8'}
+        self.logger_config['handlers']['cherrypy_error'] = {'level': 'INFO',
+                                                            'class': 'logging.handlers.RotatingFileHandler',
+                                                            'formatter': 'detailed',
+                                                            'filename': 'wsgi_errors.log',
+                                                            'maxBytes': 10485760,
+                                                            'backupCount': 20,
+                                                            'encoding': 'utf8'}
+        self.logger_config['loggers']['cherrypy.access'] = {'handlers': ['cherrypy_access'],
+                                                            'level': 'INFO',
+                                                            'propagate': False}
+        self.logger_config['loggers']['cherrypy.error'] = {'handlers': ['cherrypy_console', 'cherrypy_error'],
+                                                           'level': 'INFO',
+                                                           'propagate': False}
+        self.logger_config['root']['handlers'].extend(['cherrypy_console', 'cherrypy_error', 'cherrypy_access'])
+
 
     def _worker_do_work(self, work_queue, logging_queue):
         while not self.stopping:
@@ -376,6 +407,8 @@ class EventGenerator(object):
         return ret
 
     def start(self, join_after_start=True):
+        if self.stopping:
+            self.stopping = False
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
@@ -441,3 +474,22 @@ class EventGenerator(object):
         '''
         self._load_config(configfile=configfile)
         self.logger.debug("Config File Loading Complete.")
+
+    def check_running(self):
+        '''
+
+        :return: if eventgen is running, return True else False
+        '''
+        if hasattr(self, "outputQueue") and hasattr(self, "sampleQueue") and hasattr(self, "workerQueue"):
+            # If all queues are not empty, eventgen is running.
+            # If all queues are empty and all tasks are finished, eventgen is not running.
+            # If all queues are empty and there is an unfinished task, eventgen is running.
+            if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty():
+                self.logger.info("Queues are all empty")
+                return (self.outputQueue.unfinished_tasks +
+                        self.sampleQueue.unfinished_tasks +
+                        self.workerQueue.unfinished_tasks) > 0
+            return True
+        return False
+
+

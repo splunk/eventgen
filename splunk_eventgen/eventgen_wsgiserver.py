@@ -40,30 +40,182 @@ class EventgenApiServer(object):
     '''
     Provides a RESTful interface for controlling and managing Eventgen
     '''
-    EVENTGEN_MAIN_PATH = os.path.abspath(os.path.join(FILE_PATH, "__main__.py"))
-    EVENTGEN_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen.conf"))
-    EVENTGEN_MANAGER_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default","eventgen_manager.conf"))
     EVENTGEN_DIR = os.path.dirname(os.path.normpath(os.path.join(__file__, "..")))
-    MODULE_DIR = os.path.join(EVENTGEN_DIR, "splunk_eventgen")
 
-    def __init__(self):
-        self.process = None
+    def __init__(self, args=None):
+        self.args = args
+        if args:
+            self.configure_default_args()
+        self.eventgen = eventgen_core.EventGenerator(args)
         self.host = socket.gethostname()
-        self.set_eventgen_executable("python {} generate {}".format(EventgenApiServer.MODULE_DIR,
-                                                                    EventgenApiServer.EVENTGEN_MANAGER_CONF_PATH))
-        self._setup_cherrypy_logger()
+        self.configured = False
+        self.configfile = 'N/A'
 
-    def set_eventgen_executable(self, eventgencmd):
-        self.eventgencmd = eventgencmd
-        # self.data_path = os.path.join(SPLUNK_HOME,"etc","apps","datamix")
-        # self.app_path = os.path.join(self.data_path,"app")
-        # self.state_path = os.path.join(self.app_path,"lookups")
-        # app_conf refers to app's eventgen.conf
-        # self.app_conf_path = os.path.join(self.app_path,"default","eventgen.conf")
-        # eventgen_conf refers to eventgen's eventgen.conf
-        # if not os.path.isdir(self.data_path):
-        #     os.mkdir(self.data_path)
+    def configure_default_args(self):
+        self.args.backfill = None
+        self.args.count = None
+        self.args.devnull = False
+        self.args.disableOutputQueue = False
+        self.args.end = None
+        self.args.generatros = None
+        self.args.interval = None
+        self.args.keepoutput = False
+        self.args.modinput = False
+        self.args.multiprocess = False
+        self.args.outputters = None
+        self.args.profiler = False
+        self.args.sample = None
+        self.args.version = False
+        self.args.subcommand = 'generate'
+        self.args.verbosity = 1
+        self.args.wsgi = True
 
+    @cherrypy.expose
+    def index(self):
+        if cherrypy.request.method == "GET":
+            home_page = '''<h1>Eventgen WSGI</h1>
+            <p>Host: {0}</p>
+            <p>Eventgen Status: {1}</p>
+            <p>Eventgen Config file exists: {2}</p>
+            <p>Eventgen Config file path: {3}</p>
+            '''
+            # appName = "None"
+            # app_conf_path = os.path.join(self.data_path,"app","default","app.conf")
+            # if os.path.isfile(app_conf_path):
+            #     c = ConfigParser.ConfigParser()
+            #     c.read(app_conf_path)
+            #     try:
+            #         appName = c.get("ui","label")
+            #     except ConfigParser.NoOptionError:
+            #         appName = "default"
+            status = "running" if self.get_status()[eventgenapi_common.EVENTGEN_STATUS_TAG] else "stopped"
+            return home_page.format(self.host, status, self.configured, self.configfile)
+        else:
+            cherrypy.response.status = 400
+            return "Unsupported method. Please use GET."
+
+    def get_status(self):
+        '''
+        Get status of eventgen
+        '''
+        res = dict()
+        if self.eventgen.check_running():
+            status = eventgenapi_common.EVENTGEN_STATUS_RUNNING
+        else:
+            status = eventgenapi_common.EVENTGEN_STATUS_STOPPED
+        res[eventgenapi_common.EVENTGEN_STATUS_TAG] = status
+        return res
+
+    @cherrypy.expose
+    def status(self):
+        '''
+        Wrapper to convert dict to string
+        :return: returns status
+        :rtype: string
+        '''
+        if cherrypy.request.method == "GET":
+            return json.dumps(self.get_status(), indent=4)
+        else:
+            cherrypy.response.status = 400
+            return "Unsupported method. Please use GET."
+
+    @cherrypy.expose
+    def start(self):
+        '''
+        Starts eventgen process
+        '''
+        if cherrypy.request.method == "POST":
+            if not self.configured:
+                cherrypy.response.status = 400
+                return "There is not config file known to eventgen. Pass in the config file to /conf before you start."
+            try:
+                self.eventgen.start(join_after_start=False)
+                return "Eventgen has successfully started."
+            except Exception as e:
+                cherrypy.response.status = 500
+                return "Exception: {}".format(e.message)
+        else:
+            cherrypy.response.status = 400
+            return "Unsupported request method. Please use POST."
+
+    @cherrypy.expose
+    def stop(self):
+        '''
+        Stops the eventgen process
+        '''
+        if cherrypy.request.method == "POST":
+            try:
+                self.eventgen.stop()
+                if self.eventgen.stopping:
+                    return "Eventgen is stopped."
+                else:
+                    cherrypy.response.status = 500
+                    return "Eventgen failed to stop."
+            except Exception as e:
+                cherrypy.response.status = 500
+                return "Exception: {}".format(e.message)
+        else:
+            cherrypy.response.status = 400
+            return "Unsupported request method. Please use POST."
+
+    @cherrypy.expose
+    def restart(self):
+        '''
+        Stops then starts the Eventgen process
+
+        POST: no params
+        '''
+        if cherrypy.request.method == "POST":
+            self.stop()
+            time.sleep(1)
+            self.start()
+            return self.status()
+        else:
+            cherrypy.response.status = 400
+            return "Unsupported request method. Please use POST."
+
+    @cherrypy.expose
+    def conf(self, configfile=None):
+        '''
+        Manages the Eventgen config file
+
+        GET: no params
+        POST: configfile[string]: path to config file. i.e. tests/sample_eventgen_conf/windbag/eventgen.conf.windbag
+        '''
+        if cherrypy.request.method == "GET":
+            return self.configfile
+
+        elif cherrypy.request.method == "POST":
+            valid_file = os.path.isfile(
+                os.path.abspath(os.path.join(EventgenApiServer.EVENTGEN_DIR, configfile)))
+            if not configfile or not valid_file:
+                cherrypy.response.status = 400
+                return 'Specify the correct path to the config file.'
+            else:
+                try:
+                    cherrypy.response.status = 200
+                    self.eventgen.reload_conf(configfile)
+                    self.configfile = configfile
+                    self.configured = True
+                    return 'Loaded the conf file: {}'.format(self.configfile)
+                except Exception as e:
+                    cherrypy.response.status = 500
+                    return "Exception: {}".format(e.message)
+        else:
+            cherrypy.response.status = 400
+            return "Unsupported request method. Please use GET or POST."
+
+    # def set_eventgen_executable(self, eventgencmd):
+    #     self.eventgencmd = eventgencmd
+    #     self.data_path = os.path.join(SPLUNK_HOME,"etc","apps","datamix")
+    #     self.app_path = os.path.join(self.data_path,"app")
+    #     self.state_path = os.path.join(self.app_path,"lookups")
+    #     app_conf refers to app's eventgen.conf
+    #     self.app_conf_path = os.path.join(self.app_path,"default","eventgen.conf")
+    #     eventgen_conf refers to eventgen's eventgen.conf
+    #     if not os.path.isdir(self.data_path):
+    #         os.mkdir(self.data_path)
+    #
     # def set_eventgen_baseoptions(self):
     #     self.load_eventgen_conf()
     #     self.load_app_conf()
@@ -76,7 +228,7 @@ class EventgenApiServer(object):
     #     self.eventgen_conf.set("global","maxIntervalsBeforeFlush","1")
     #     self.servers = []
     #     self.save()
-
+    #
     # def validate_app(self,app_path):
     #     '''
     #     Verifies the app has at least a eventgen.conf and samples folder. Returns false otherwise
@@ -157,25 +309,7 @@ class EventgenApiServer(object):
     #     if self.process:
     #         self.restart()
     #     return "Success"
-
-    @cherrypy.expose
-    def index(self):
-        home_page = '''<h1>Eventgen WSGI</h1>
-        <p>Host: {0}</p>
-        <p>Status: {1}</p>
-        '''
-        # appName = "None"
-        # app_conf_path = os.path.join(self.data_path,"app","default","app.conf")
-        # if os.path.isfile(app_conf_path):
-        #     c = ConfigParser.ConfigParser()
-        #     c.read(app_conf_path)
-        #     try:
-        #         appName = c.get("ui","label")
-        #     except ConfigParser.NoOptionError:
-        #         appName = "default"
-        status = "running" if self.get_status()[eventgenapi_common.EVENTGEN_STATUS_TAG] else "stopped"
-        return home_page.format(self.host, status)
-
+    #
     # def untar_app(self,file_path):
     #     '''
     #     Untars the package. Does basic validation tests.
@@ -238,82 +372,7 @@ class EventgenApiServer(object):
     #     with open(sample_path,"wb") as f:
     #         f.write(sample)
     #     return "Success"
-
-    def get_status(self):
-        '''
-        Get status and PID
-        :return: returns status
-        :rtype: dict
-        '''
-        res = dict()
-        if self.process is None:
-            res[eventgenapi_common.EVENTGEN_PID_TAG] = None
-            res[eventgenapi_common.EVENTGEN_STATUS_TAG] = 0
-        else:
-            if self.process and self.process.poll() is None:
-                status = eventgenapi_common.EVENTGEN_STATUS_RUNNING
-            else:
-                status = eventgenapi_common.EVENTGEN_STATUS_STOPPED
-            res[eventgenapi_common.EVENTGEN_STATUS_TAG] = status
-            res[eventgenapi_common.EVENTGEN_PID_TAG] = self.process.pid
-        return res
-
-    @cherrypy.expose
-    def status(self):
-        '''
-        Wrapper to convert dict to string
-        :return: returns status
-        :rtype: string
-        '''
-        return json.dumps(self.get_status(),indent=4)
-
-    @cherrypy.expose
-    def start(self, validate=False):
-        '''
-        Starts eventgen
-        :param validate: check if eventgen started
-        :type validate: boolean
-        :return: returns status
-        :rtype: string
-        '''
-        try:
-            self.process = subprocess.Popen(self.eventgencmd.split(' '))
-            return self.status()
-        except Exception as e:
-            cherrypy.response.status = 404
-            return "Exception: {}".format(e.message)
-
-    @cherrypy.expose
-    def stop(self):
-        '''
-        Stops the eventgen process
-        '''
-        if self.process != None:
-            self.process.terminate()
-            if self.process.poll() is None:
-                self.process.kill()
-            time.sleep(1)
-            if self.process.poll() != None:
-                self.process = None
-                cherrypy.response.status = 200
-                return self.status()
-            else:
-                cherrypy.response.status = 500
-                return "Failed to terminate eventgen process"
-        else:
-            return "No process is running. Nothing happens."
-
-    @cherrypy.expose
-    def restart(self):
-        '''
-        Stops then starts the eventgen process
-        '''
-        self.stop()
-        time.sleep(1)
-        self.start()
-        cherrypy.response.status = 200
-        return self.status()
-
+    #
     # @cherrypy.expose
     # def setup(self,mode="roundrobin", addr_template="idx{0}", protocol="https",key="00000000-0000-0000-0000-000000000000",key_name="eventgen",password="changed",hec_port=8088, mgmt_port=8089,auto_save=True, new_key=True):
     #     '''
@@ -338,7 +397,7 @@ class EventgenApiServer(object):
     #         self.save()
     #     cherrypy.response.status = 200
     #     return self.index()
-
+    #
     # @cherrypy.expose
     # def addcluster(self, cluster_master="master", mode="roundrobin", protocol="https",key="00000000-0000-0000-0000-000000000000",key_name="eventgen",password="changed",hec_port=8088, mgmt_port=8089,auto_save=True, new_key=True):
     #     '''
@@ -367,7 +426,7 @@ class EventgenApiServer(object):
     #         self.save()
     #     cherrypy.response.status = 200
     #     return self.index()
-
+    #
     # @cherrypy.expose
     # def reset(self):
     #     '''
@@ -378,7 +437,7 @@ class EventgenApiServer(object):
     #     self.save()
     #     cherrypy.response.status = 200
     #     return self.index()
-
+    #
     # @cherrypy.expose
     # def add(self,address,protocol="https",key="00000000-0000-0000-0000-000000000000",port=8088,auto_save=True):
     #     '''
@@ -396,46 +455,7 @@ class EventgenApiServer(object):
     #     cherrypy.response.headers['Content-Type'] = "text"
     #     cherrypy.response.status = 200
     #     return str(self.servers)
-
-    @cherrypy.expose
-    @cherrypy.tools.json_out()
-    def get_eventgenconf(self):
-        '''
-        Returns the contents of eventgen's eventgen.conf
-        '''
-        try:
-            config = ConfigParser.ConfigParser()
-            config.read(EventgenApiServer.EVENTGEN_MANAGER_CONF_PATH)
-            out_json = {}
-            for section in config.sections():
-                out_json[section] = {}
-                for k, v in config.items(section):
-                    out_json[section][k] = v
-            return out_json
-        except Exception as e:
-            cherrypy.response.status = 500
-            return "Exception: {}".format(e.message)
-
-    @cherrypy.expose
-    @cherrypy.tools.json_in()
-    def set_eventgenconf(self):
-        try:
-            config = ConfigParser.ConfigParser()
-            config.optionxform = str
-            input_json = cherrypy.request.json
-            for sample in input_json.keys():
-                config.add_section(sample)
-                for k, v in input_json[sample].items():
-                    config.set(sample, k, v)
-
-            with open(EventgenApiServer.EVENTGEN_MANAGER_CONF_PATH, 'w') as configfile:
-                config.write(configfile)
-
-            return "Config file is written to {}".format(EventgenApiServer.EVENTGEN_MANAGER_CONF_PATH)
-        except Exception as e:
-            cherrypy.response.status = 500
-            return "Exception: {}".format(e.message)
-
+    #
     # @cherrypy.expose
     # def appconf(self,sample=None,field="perDayVolume", value=0):
     #     '''
@@ -452,51 +472,3 @@ class EventgenApiServer(object):
     #     except IOError:
     #         cherrypy.response.status = 404
     #         return "File not found"
-
-    def _setup_cherrypy_logger(self):
-        self.logger_config = {
-            'version': 1,
-            'formatters': {
-                'detailed': {
-                    'class': 'logging.Formatter',
-                    'format': '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
-                }
-            },
-            'handlers': {
-                'console': {
-                    'class': 'logging.StreamHandler',
-                    'level': 'INFO',
-                },
-            },
-            'loggers': {},
-            'root': {
-                'level': 'DEBUG',
-                'handlers': ['cherrypy_console', 'cherrypy_access', 'cherrypy_error']
-            },
-        }
-        self.logger_config['handlers']['cherrypy_console'] = {'level': 'INFO',
-                                                              'class': 'logging.StreamHandler',
-                                                              'formatter': 'detailed',
-                                                              'stream': 'ext://sys.stdout'}
-        self.logger_config['handlers']['cherrypy_access'] = {'level': 'INFO',
-                                                             'class': 'logging.handlers.RotatingFileHandler',
-                                                             'formatter': 'detailed',
-                                                             'filename': 'wsgi_access.log',
-                                                             'maxBytes': 10485760,
-                                                             'backupCount': 20,
-                                                             'encoding': 'utf8'}
-        self.logger_config['handlers']['cherrypy_error'] = {'level': 'INFO',
-                                                            'class': 'logging.handlers.RotatingFileHandler',
-                                                            'formatter': 'detailed',
-                                                            'filename': 'wsgi_errors.log',
-                                                            'maxBytes': 10485760,
-                                                            'backupCount': 20,
-                                                            'encoding': 'utf8'}
-        self.logger_config['loggers']['cherrypy.access'] = {'handlers': ['cherrypy_access'],
-                                                            'level': 'INFO',
-                                                            'propagate': False}
-        self.logger_config['loggers']['cherrypy.error'] = {'handlers': ['cherrypy_console', 'cherrypy_error'],
-                                                           'level': 'INFO',
-                                                           'propagate': False}
-        logging.config.dictConfig(self.logger_config)
-        self.logger = logging.getLogger('eventgen_wsgi')
