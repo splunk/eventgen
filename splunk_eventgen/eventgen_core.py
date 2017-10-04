@@ -408,6 +408,7 @@ class EventGenerator(object):
     def start(self, join_after_start=True):
         self.stopping = False
         self.started = True
+        self.config.stopping = False
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
@@ -466,7 +467,7 @@ class EventGenerator(object):
         self.outputQueue.join()
         self.logger.info("All items fully processed, stopping.")
         self.stopping = False
-        self.config.stopping = False
+
 
 
     def reload_conf(self, configfile):
