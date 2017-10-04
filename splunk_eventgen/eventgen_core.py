@@ -253,9 +253,7 @@ class EventGenerator(object):
 
     def setup_cherrpy_logger(self):
         self.logger_config['handlers']['cherrypy_console'] = {'level': 'INFO',
-                                                              'class': 'logging.StreamHandler',
-                                                              'formatter': 'detailed',
-                                                              'stream': 'ext://sys.stdout'}
+                                                              'class': 'logging.StreamHandler'}
         self.logger_config['handlers']['cherrypy_access'] = {'level': 'INFO',
                                                              'class': 'logging.handlers.RotatingFileHandler',
                                                              'formatter': 'detailed',
