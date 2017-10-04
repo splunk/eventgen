@@ -177,6 +177,9 @@ class EventgenApiServer(object):
             if not self.configured:
                 cherrypy.response.status = 400
                 return "There is not config file known to eventgen. Pass in the config file to /conf before you start."
+            if self.eventgen.check_running():
+                cherrypy.response.status = 409
+                return "Eventgen already started."
             try:
                 self.eventgen.start(join_after_start=False)
                 return "Eventgen has successfully started."
@@ -234,7 +237,7 @@ class EventgenApiServer(object):
         if cherrypy.request.method == "GET":
             try:
                 if not self.configured:
-                    cherrypy.response.status = 404
+                    cherrypy.response.status = 409
                     return "There is no conf file known to eventgen."
                 config = ConfigParser.ConfigParser()
                 config.read(os.path.abspath(os.path.join(EventgenApiServer.EVENTGEN_DIR, self.configfile)))
