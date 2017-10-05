@@ -38,13 +38,15 @@ class EventGenerator(object):
         :param args: __main__ parse_args() object.
         '''
         self.stopping = False
+        self.started = False
+        self.config = None
+        self.args = args
+
         self._setup_loggers()
         # attach to the logging queue
         self.logger.debug("Logging Setup Complete.")
 
-        self.config = None
-        self.args = args
-        if getattr(self.args, "configfile"):
+        if self.args and 'configfile' in self.args:
             self._load_config(self.args.configfile, args=args)
 
     def _load_config(self, configfile, **kwargs):
@@ -61,23 +63,23 @@ class EventGenerator(object):
             args = kwargs["args"]
             outputer = [key for key in ["keepoutput","devnull","modinput"] if getattr(args, key)]
             if len(outputer) > 0:
-                new_args["override_outputter"]=outputer[0]
+                new_args["override_outputter"] = outputer[0]
             if getattr(args, "count"):
-                new_args["override_count"]=args.count
+                new_args["override_count"] = args.count
             if getattr(args, "interval"):
-                new_args["override_interval"]=args.interval
+                new_args["override_interval"] = args.interval
             if getattr(args, "backfill"):
-                new_args["override_backfill"]=args.backfill
+                new_args["override_backfill"] = args.backfill
             if getattr(args, "end"):
-                new_args["override_end"]=args.end
+                new_args["override_end"] = args.end
             if getattr(args, "multiprocess"):
-                new_args["threading"]="process"
+                new_args["threading"] = "process"
             if getattr(args, "generators"):
-                new_args["override_generators"]=args.generators
+                new_args["override_generators"] = args.generators
             if getattr(args, "disableOutputQueue"):
-                new_args["override_outputqueue"]=args.disableOutputQueue
+                new_args["override_outputqueue"] = args.disableOutputQueue
             if getattr(args, "profiler"):
-                new_args["profiler"]=args.profiler
+                new_args["profiler"] = args.profiler
         self.config = Config(configfile, new_args.iteritems())
         self.config.parse()
         self._reload_plugins()
@@ -219,7 +221,7 @@ class EventGenerator(object):
                         'mode': 'w',
                         'level': 'ERROR',
                         'formatter': 'detailed',
-                    },
+                    }
                 },
                 'loggers': {
                     'eventgen': {
@@ -233,6 +235,10 @@ class EventGenerator(object):
             }
         else:
             self.logger_config = config
+
+        if self.args and 'wsgi' in self.args and self.args.wsgi:
+            self.setup_cherrpy_logger()
+
         logging.config.dictConfig(self.logger_config)
         # We need to have debugv from the olderversions of eventgen.
         DEBUG_LEVELV_NUM = 9
@@ -244,6 +250,32 @@ class EventGenerator(object):
         logging.Logger.debugv = debugv
         self.logger = logging.getLogger('eventgen')
         self.loggingQueue = None
+
+    def setup_cherrpy_logger(self):
+        self.logger_config['handlers']['cherrypy_console'] = {'level': 'INFO',
+                                                              'class': 'logging.StreamHandler'}
+        self.logger_config['handlers']['cherrypy_access'] = {'level': 'INFO',
+                                                             'class': 'logging.handlers.RotatingFileHandler',
+                                                             'formatter': 'detailed',
+                                                             'filename': 'wsgi_access.log',
+                                                             'maxBytes': 10485760,
+                                                             'backupCount': 20,
+                                                             'encoding': 'utf8'}
+        self.logger_config['handlers']['cherrypy_error'] = {'level': 'INFO',
+                                                            'class': 'logging.handlers.RotatingFileHandler',
+                                                            'formatter': 'detailed',
+                                                            'filename': 'wsgi_errors.log',
+                                                            'maxBytes': 10485760,
+                                                            'backupCount': 20,
+                                                            'encoding': 'utf8'}
+        self.logger_config['loggers']['cherrypy.access'] = {'handlers': ['cherrypy_access'],
+                                                            'level': 'INFO',
+                                                            'propagate': False}
+        self.logger_config['loggers']['cherrypy.error'] = {'handlers': ['cherrypy_console', 'cherrypy_error'],
+                                                           'level': 'INFO',
+                                                           'propagate': False}
+        self.logger_config['root']['handlers'].extend(['cherrypy_console', 'cherrypy_error', 'cherrypy_access'])
+
 
     def _worker_do_work(self, work_queue, logging_queue):
         while not self.stopping:
@@ -374,6 +406,9 @@ class EventGenerator(object):
         return ret
 
     def start(self, join_after_start=True):
+        self.stopping = False
+        self.started = True
+        self.config.stopping = False
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
@@ -417,6 +452,8 @@ class EventGenerator(object):
     def stop(self):
         # empty the sample queue:
         self.config.stopping = True
+        self.stopping = True
+        self.started = False
         self.logger.info("All timers exited, joining generation queue until it's empty.")
         self.workerQueue.join()
         # if we're in multiprocess, make sure that since all the timers stopped, we don't let any more generators get added.
@@ -428,8 +465,10 @@ class EventGenerator(object):
                     time.sleep(1)
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
-        self.logger.info("All items fully processed, exiting.")
-        self.stopping = True
+        self.logger.info("All items fully processed, stopping.")
+        self.stopping = False
+
+
 
     def reload_conf(self, configfile):
         '''
@@ -439,3 +478,22 @@ class EventGenerator(object):
         '''
         self._load_config(configfile=configfile)
         self.logger.debug("Config File Loading Complete.")
+
+    def check_running(self):
+        '''
+
+        :return: if eventgen is running, return True else False
+        '''
+        if hasattr(self, "outputQueue") and hasattr(self, "sampleQueue") and hasattr(self, "workerQueue"):
+            # If all queues are not empty, eventgen is running.
+            # If all queues are empty and all tasks are finished, eventgen is not running.
+            # If all queues are empty and there is an unfinished task, eventgen is running.
+            if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty():
+                self.logger.info("Queues are all empty")
+                return (self.outputQueue.unfinished_tasks +
+                        self.sampleQueue.unfinished_tasks +
+                        self.workerQueue.unfinished_tasks) > 0
+            return True
+        return False
+
+

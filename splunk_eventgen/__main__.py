@@ -101,5 +101,5 @@ if __name__ == '__main__':
         cherrypy._cpreqbody.Entity.part_class = NamedPart
         if args.daemon:
             Daemonizer(cherrypy.engine).subscribe()
-        cherrypy.quickstart(EventgenApiServer(), "/", os.path.join(os.path.dirname(__file__),"web.conf"))
+        cherrypy.quickstart(EventgenApiServer(args=args), "/", os.path.join(os.path.dirname(__file__), "web.conf"))
     sys.exit(0)
