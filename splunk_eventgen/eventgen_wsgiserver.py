@@ -58,7 +58,7 @@ class EventgenApiServer(object):
         self.args.devnull = False
         self.args.disableOutputQueue = False
         self.args.end = None
-        self.args.generatros = None
+        self.args.generators = None
         self.args.interval = None
         self.args.keepoutput = False
         self.args.modinput = False
