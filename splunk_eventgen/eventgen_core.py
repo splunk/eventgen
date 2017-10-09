@@ -236,8 +236,9 @@ class EventGenerator(object):
         else:
             self.logger_config = config
 
-        if self.args and 'wsgi' in self.args and self.args.wsgi:
-            self.setup_cherrpy_logger()
+        # cherrypy logic
+        # if self.args and 'wsgi' in self.args and self.args.wsgi:
+            # self.setup_cherrpy_logger()
 
         logging.config.dictConfig(self.logger_config)
         # We need to have debugv from the olderversions of eventgen.
