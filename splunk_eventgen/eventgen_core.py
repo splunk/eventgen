@@ -42,6 +42,7 @@ class EventGenerator(object):
         self.config = None
         self.args = args
 
+
         self._setup_loggers()
         # attach to the logging queue
         self.logger.debug("Logging Setup Complete.")

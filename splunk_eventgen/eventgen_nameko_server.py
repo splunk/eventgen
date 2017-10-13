@@ -1,5 +1,5 @@
-from nameko.rpc import rpc
 from nameko.web.handlers import http
+from nameko.events import EventDispatcher, event_handler, BROADCAST
 import ConfigParser
 import json
 import os
@@ -10,8 +10,8 @@ import eventgen_nameko_dependency
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
 
-class EventgenApiServer:
-    name = "eventgen_api_server"
+class EventgenListener:
+    name = "eventgen_listner"
 
     eventgen_dependency = eventgen_nameko_dependency.EventgenDependency()
 
@@ -58,10 +58,9 @@ class EventgenApiServer:
         return res
 
     ##############################################
-    ################ RPC Methods #################
+    ############### Real Methods #################
     ##############################################
 
-    @rpc
     def index(self):
         print "index method called"
         home_page = '''
@@ -91,12 +90,10 @@ class EventgenApiServer:
                                 sample_queue_status,
                                 output_queue_status)
 
-    @rpc
     def status(self):
         print 'Status method called.'
         return json.dumps(self.get_status(), indent=4)
 
-    @rpc
     def start(self):
         print "start method called. Config is {}".format(self.eventgen_dependency.configfile)
         try:
@@ -107,9 +104,8 @@ class EventgenApiServer:
             self.eventgen_dependency.eventgen.start(join_after_start=False)
             return "Eventgen has successfully started."
         except Exception as e:
-            return "Exception: {}".format(e.message)
+            return '500', "Exception: {}".format(e.message)
 
-    @rpc
     def stop(self):
         print "stop method called"
         try:
@@ -118,32 +114,33 @@ class EventgenApiServer:
                 return "Eventgen is stopped."
             return "There is no eventgen process running."
         except Exception as e:
-            return "Exception: {}".format(e.message)
+            return '500', "Exception: {}".format(e.message)
 
-    @rpc
     def restart(self):
         print "restart method called."
         self.stop()
         time.sleep(2)
         self.start()
 
-    @rpc
     def get_conf(self):
         print "get_conf method called."
-        if self.eventgen_dependency.configured:
-            config = ConfigParser.ConfigParser()
-            config.read(os.path.abspath(os.path.join(EVENTGEN_DIR, self.eventgen_dependency.configfile)))
-            out_json = dict()
-            for section in config.sections():
-                out_json[section] = dict()
-                for k, v in config.items(section):
-                    out_json[section][k] = v
-            return json.dumps(out_json, indent=4)
-        return "N/A"
+        try:
+            if self.eventgen_dependency.configured:
+                config = ConfigParser.ConfigParser()
+                config.read(os.path.abspath(os.path.join(EVENTGEN_DIR, self.eventgen_dependency.configfile)))
+                out_json = dict()
+                for section in config.sections():
+                    out_json[section] = dict()
+                    for k, v in config.items(section):
+                        out_json[section][k] = v
+                return json.dumps(out_json, indent=4)
+            return "N/A"
+        except Exception as e:
+            return '500', "Exception: {}".format(e.message)
 
-    @rpc
     def set_conf(self, configfile=None):
-        print "set_conf method called."
+        print configfile
+        print "set_conf method called"
         if not configfile or not os.path.isfile(os.path.abspath(os.path.join(EVENTGEN_DIR, configfile))):
             return 'Provide the correct config file.'
         else:
@@ -154,7 +151,39 @@ class EventgenApiServer:
                 self.eventgen_dependency.configured = True
                 return 'Loaded the conf file: {}'.format(configfile)
             except Exception as e:
-                return "Exception: {}".format(e.message)
+                return '500', "Exception: {}".format(e.message)
+
+    ##############################################
+    ############ Event Handler Methods ###########
+    ##############################################
+
+    @event_handler("eventgen_controller", "index", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_index(self, payload):
+        return self.index()
+
+    @event_handler("eventgen_controller", "status", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_status(self, payload):
+        return self.status()
+
+    @event_handler("eventgen_controller", "start", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_start(self, payload):
+        return self.start()
+
+    @event_handler("eventgen_controller", "stop", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_stop(self, payload):
+        return self.stop()
+
+    @event_handler("eventgen_controller", "restart", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_restart(self, payload):
+        return self.restart()
+
+    @event_handler("eventgen_controller", "get_conf", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_get_conf(self, payload):
+        return self.get_conf()
+
+    @event_handler("eventgen_controller", "set_conf", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_set_conf(self, payload):
+        return self.set_conf(configfile=payload)
 
     ##############################################
     ################ HTTP Methods ################
@@ -188,7 +217,7 @@ class EventgenApiServer:
     def http_set_conf(self, request):
         for pair in request.values.lists():
             if pair[0] == "configfile":
-                return self.set_conf(pair[1][0])
+                return self.set_conf(configfile=pair[1][0])
         else:
             return '404', 'POST body should be configfile=YOUR_CONFIG_FILE.'
 
