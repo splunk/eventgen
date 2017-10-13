@@ -1,13 +1,13 @@
 from nameko.rpc import rpc
 from nameko.events import EventDispatcher, event_handler, BROADCAST
 from nameko.web.handlers import http
+import nameko
 
 class EventgenController(object):
     name = "eventgen_controller"
 
     dispatch = EventDispatcher()
-    NODES = 'not_all_nodes'
-    PAYLOAD = 'Noneeee'
+    PAYLOAD = 'Payload'
 
     ##############################################
     ################ RPC Methods #################
@@ -19,8 +19,8 @@ class EventgenController(object):
             if nodes == "all":
                 self.dispatch("all_index", self.PAYLOAD)
             else:
-                self.dispatch("index", self.PAYLOAD)
-            return "Index event dispatched"
+                self.dispatch("{}_index".format(nodes), self.PAYLOAD)
+            return "Index event dispatched to {}".format(nodes)
         except Exception as e:
             return '500', "Exception: {}".format(e.message)
 
@@ -30,8 +30,8 @@ class EventgenController(object):
             if nodes == "all":
                 self.dispatch("all_status", self.PAYLOAD)
             else:
-                self.dispatch("status", self.PAYLOAD)
-            return "Status event dispatched"
+                self.dispatch("{}_status".format(nodes), self.PAYLOAD)
+            return "Status event dispatched to {}".format(nodes)
         except Exception as e:
             return '500', "Exception: {}".format(e.message)
 
@@ -41,8 +41,8 @@ class EventgenController(object):
             if nodes == "all":
                 self.dispatch("all_start", self.PAYLOAD)
             else:
-                self.dispatch("start", self.PAYLOAD)
-            return "Start event dispatched"
+                self.dispatch("{}_start".format(nodes), self.PAYLOAD)
+            return "Start event dispatched to {}".format(nodes)
         except Exception as e:
             return '500', "Exception: {}".format(e.message)
 
@@ -52,8 +52,8 @@ class EventgenController(object):
             if nodes == "all":
                 self.dispatch("all_stop", self.PAYLOAD)
             else:
-                self.dispatch("stop", self.PAYLOAD)
-            return 'Stop event dispatched'
+                self.dispatch("{}_stop".format(nodes), self.PAYLOAD)
+            return "Stop event dispatched to {}".format(nodes)
         except Exception as e:
             return '500', "Exception: {}".format(e.message)
 
@@ -63,8 +63,8 @@ class EventgenController(object):
             if nodes == "all":
                 self.dispatch("all_restart", self.PAYLOAD)
             else:
-                self.dispatch("restart", self.PAYLOAD)
-            return 'Restart event dispatched'
+                self.dispatch("{}_restart".format(nodes), self.PAYLOAD)
+            return "Restart event dispatched to {}".format(nodes)
         except Exception as e:
             return '500', "Exception: {}".format(e.message)
 
@@ -74,8 +74,8 @@ class EventgenController(object):
             if nodes == "all":
                 self.dispatch("all_get_conf", self.PAYLOAD)
             else:
-                self.dispatch("get_conf", self.PAYLOAD)
-            return 'Get_conf event dispatched'
+                self.dispatch("{}_get_conf".format(nodes), self.PAYLOAD)
+            return "Get_conf event dispatched to {}".format(nodes)
         except Exception as e:
             return '500', "Exception: {}".format(e.message)
 
@@ -85,8 +85,8 @@ class EventgenController(object):
             if nodes == "all":
                 self.dispatch("all_set_conf", configfile)
             else:
-                self.dispatch("set_conf", configfile)
-            return 'Set_conf event dispatched'
+                self.dispatch("{}_set_conf".format(nodes), configfile)
+            return "Set_conf event dispatched to {}".format(nodes)
         except Exception as e:
             return '500', "Exception: {}".format(e.message)
 
@@ -96,33 +96,43 @@ class EventgenController(object):
 
     @http('GET', '/index')
     def http_index(self, request):
-        return self.index(nodes=self.NODES)
+        self.get_nodes(request)
+        return self.index(nodes=self.get_nodes(request))
 
     @http('GET', '/status')
     def http_status(self, request):
-        return self.status(nodes=self.NODES)
+        return self.status(nodes=self.get_nodes(request))
 
     @http('POST', '/start')
     def http_start(self, request):
-        return self.start(nodes=self.NODES)
+        return self.start(nodes=self.get_nodes(request))
 
     @http('POST', '/stop')
     def http_stop(self, request):
-        return self.stop(nodes=self.NODES)
+        return self.stop(nodes=self.get_nodes(request))
 
     @http('POST', '/restart')
     def http_restart(self, request):
-        return self.restart(nodes=self.NODES)
+        return self.restart(nodes=self.get_nodes(request))
 
     @http('GET', '/conf')
     def http_get_conf(self, request):
-        return self.get_conf(nodes=self.NODES)
+        return self.get_conf(nodes=self.get_nodes(request))
 
     @http('POST', '/conf')
     def http_set_conf(self, request):
         for pair in request.values.lists():
             if pair[0] == "configfile":
-                return self.set_conf(nodes=self.NODES, configfile=pair[1][0])
+                return self.set_conf(nodes=self.get_nodes(request), configfile=pair[1][0])
         else:
             return '400', 'POST body should be configfile=YOUR_CONFIG_FILE.'
 
+    ##############################################
+    ############### Helper Methods ###############
+    ##############################################
+
+    def get_nodes(self, request):
+        for pair in request.values.lists():
+            if pair[0] == "nodes":
+                return pair[1][0]
+        return "all"

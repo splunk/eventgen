@@ -1,6 +1,7 @@
 from nameko.web.handlers import http
 from nameko.events import EventDispatcher, event_handler, BROADCAST
 import ConfigParser
+import yaml
 import json
 import os
 import socket
@@ -10,10 +11,17 @@ import eventgen_nameko_dependency
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
 
+def get_eventgen_name_from_conf():
+    with open(os.path.abspath(os.path.join(FILE_PATH, "listener_conf.yml"))) as config_yml:
+        loaded_yml = yaml.load(config_yml)
+        return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else 'Noname'
+
 class EventgenListener:
     name = "eventgen_listner"
 
     eventgen_dependency = eventgen_nameko_dependency.EventgenDependency()
+    eventgen_name = get_eventgen_name_from_conf()
+    print "Eventgen_name is {}".format(eventgen_name)
 
     def __init__(self):
         self.host = socket.gethostname()
@@ -157,33 +165,62 @@ class EventgenListener:
     ############ Event Handler Methods ###########
     ##############################################
 
-    @event_handler("eventgen_controller", "index", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "all_index", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_index(self, payload):
+        return self.index()
+
+    @event_handler("eventgen_controller", "all_status", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_status(self, payload):
+        return self.status()
+
+    @event_handler("eventgen_controller", "all_start", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_start(self, payload):
+        return self.start()
+
+    @event_handler("eventgen_controller", "all_stop", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_stop(self, payload):
+        return self.stop()
+
+    @event_handler("eventgen_controller", "all_restart", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_restart(self, payload):
+        return self.restart()
+
+    @event_handler("eventgen_controller", "all_get_conf", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_get_conf(self, payload):
+        return self.get_conf()
+
+    @event_handler("eventgen_controller", "all_set_conf", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_set_conf(self, payload):
+        return self.set_conf(configfile=payload)
+
+    @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_index(self, payload):
         return self.index()
 
-    @event_handler("eventgen_controller", "status", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_status".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_status(self, payload):
         return self.status()
 
-    @event_handler("eventgen_controller", "start", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_start".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_start(self, payload):
         return self.start()
 
-    @event_handler("eventgen_controller", "stop", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_stop".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_stop(self, payload):
         return self.stop()
 
-    @event_handler("eventgen_controller", "restart", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_restart".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_restart(self, payload):
         return self.restart()
 
-    @event_handler("eventgen_controller", "get_conf", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_get_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_get_conf(self, payload):
         return self.get_conf()
 
-    @event_handler("eventgen_controller", "set_conf", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_set_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_set_conf(self, payload):
         return self.set_conf(configfile=payload)
+
 
     ##############################################
     ################ HTTP Methods ################
