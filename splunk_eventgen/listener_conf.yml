@@ -1,6 +1,6 @@
 AMQP_URI: 'pyamqp://guest:guest@localhost'
-WEB_SERVER_ADDRESS: '0.0.0.0:8002'
-EVENTGEN_NAME: 'eg2'
+WEB_SERVER_ADDRESS: '0.0.0.0:9501'
+EVENTGEN_NAME: 'eg1'
 
 LOGGING:
     version: 1

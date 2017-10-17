@@ -1,7 +1,6 @@
 from nameko.rpc import rpc
 from nameko.events import EventDispatcher, event_handler, BROADCAST
 from nameko.web.handlers import http
-import nameko
 
 class EventgenController(object):
     name = "eventgen_controller"
