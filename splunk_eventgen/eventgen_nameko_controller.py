@@ -79,12 +79,22 @@ class EventgenController(object):
             return '500', "Exception: {}".format(e.message)
 
     @rpc
-    def set_conf(self, nodes, configfile):
+    def set_conf(self, nodes, configfile=None, custom_config_json=None):
         try:
-            if nodes == "all":
-                self.dispatch("all_set_conf", configfile)
+            payload = {}
+            if configfile:
+                payload['type'] = 'configfile'
+                payload['data'] = configfile
+            elif custom_config_json:
+                payload['type'] = 'custom_config_json'
+                payload['data'] = custom_config_json
             else:
-                self.dispatch("{}_set_conf".format(nodes), configfile)
+                return "Pass in a valid configfile or custom_config_json"
+
+            if nodes == "all":
+                self.dispatch("all_set_conf", payload)
+            else:
+                self.dispatch("{}_set_conf".format(nodes), payload)
             return "Set_conf event dispatched to {}".format(nodes)
         except Exception as e:
             return '500', "Exception: {}".format(e.message)
@@ -123,8 +133,9 @@ class EventgenController(object):
         for pair in request.values.lists():
             if pair[0] == "configfile":
                 return self.set_conf(nodes=self.get_nodes(request), configfile=pair[1][0])
-        else:
-            return '400', 'POST body should be configfile=YOUR_CONFIG_FILE.'
+            elif "custom_config_json" in pair[0]:
+                return self.set_conf(nodes=self.get_nodes(request), custom_config_json=pair[1][0])
+        return '400', 'Please pass the valid parameters.'
 
     ##############################################
     ############### Helper Methods ###############

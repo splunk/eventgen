@@ -10,6 +10,8 @@ import eventgen_nameko_dependency
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
+CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default/eventgen_wsgi.conf"))
+print CUSTOM_CONFIG_PATH
 
 def get_eventgen_name_from_conf():
     with open(os.path.abspath(os.path.join(FILE_PATH, "listener_conf.yml"))) as config_yml:
@@ -135,31 +137,55 @@ class EventgenListener:
         try:
             if self.eventgen_dependency.configured:
                 config = ConfigParser.ConfigParser()
-                config.read(os.path.abspath(os.path.join(EVENTGEN_DIR, self.eventgen_dependency.configfile)))
-                out_json = dict()
-                for section in config.sections():
-                    out_json[section] = dict()
-                    for k, v in config.items(section):
-                        out_json[section][k] = v
-                return json.dumps(out_json, indent=4)
+                config.optionxform = str
+                config_path = self.eventgen_dependency.configfile
+                if os.path.isfile(config_path):
+                    config.read(config_path)
+                    out_json = dict()
+                    for section in config.sections():
+                        out_json[section] = dict()
+                        for k, v in config.items(section):
+                            out_json[section][k] = v
+                    return json.dumps(out_json, indent=4)
             return "N/A"
         except Exception as e:
             return '500', "Exception: {}".format(e.message)
 
-    def set_conf(self, configfile=None):
-        print configfile
+    def set_conf(self, configfile=None, custom_config_json={}):
+        '''
+
+        customconfig data format
+        {sample: {key: value}, sample2: {key: value}}
+        '''
         print "set_conf method called"
-        if not configfile or not os.path.isfile(os.path.abspath(os.path.join(EVENTGEN_DIR, configfile))):
-            return 'Provide the correct config file.'
-        else:
-            try:
+        try:
+            if configfile and os.path.isfile(os.path.abspath(os.path.join(EVENTGEN_DIR, configfile))):
                 modified_path_configfile = os.path.join('..', configfile)
                 self.eventgen_dependency.eventgen.reload_conf(modified_path_configfile)
-                self.eventgen_dependency.configfile = configfile
                 self.eventgen_dependency.configured = True
+                self.eventgen_dependency.customconfigured = False
+                self.eventgen_dependency.configfile = configfile
                 return 'Loaded the conf file: {}'.format(configfile)
-            except Exception as e:
-                return '500', "Exception: {}".format(e.message)
+            elif custom_config_json:
+                config = ConfigParser.ConfigParser()
+                config.optionxform = str
+                print "custom_config_json is {}".format(custom_config_json)
+                custom_config_json = json.loads(custom_config_json)
+                for sample in custom_config_json.iteritems():
+                    sample_name = sample[0]
+                    sample_key_value_pairs = sample[1]
+                    config.add_section(sample_name)
+                    for pair in sample_key_value_pairs.iteritems():
+                        config.set(sample_name, pair[0], pair[1])
+                with open(CUSTOM_CONFIG_PATH, 'wb') as customconfigfile:
+                    config.write(customconfigfile)
+                self.eventgen_dependency.configured = True
+                self.eventgen_dependency.customconfigured = True
+                self.eventgen_dependency.configfile = CUSTOM_CONFIG_PATH
+                self.eventgen_dependency.eventgen.reload_conf(CUSTOM_CONFIG_PATH)
+                return 'Loaded the custom conf file: {}'.format(CUSTOM_CONFIG_PATH)
+        except Exception as e:
+            return '500', "Exception: {}".format(e.message)
 
     ##############################################
     ############ Event Handler Methods ###########
@@ -191,7 +217,10 @@ class EventgenListener:
 
     @event_handler("eventgen_controller", "all_set_conf", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_set_conf(self, payload):
-        return self.set_conf(configfile=payload)
+        if payload['type'] == 'configfile':
+            return self.set_conf(configfile=payload['data'])
+        elif payload['type'] == 'custom_config_json':
+            return self.set_conf(custom_config_json=payload['data'])
 
     @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_index(self, payload):
@@ -219,7 +248,10 @@ class EventgenListener:
 
     @event_handler("eventgen_controller", "{}_set_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_set_conf(self, payload):
-        return self.set_conf(configfile=payload)
+        if payload['type'] == 'configfile':
+            return self.set_conf(configfile=payload['data'])
+        elif payload['type'] == 'custom_config_json':
+            return self.set_conf(custom_config_json=payload['data'])
 
 
     ##############################################
@@ -255,7 +287,9 @@ class EventgenListener:
         for pair in request.values.lists():
             if pair[0] == "configfile":
                 return self.set_conf(configfile=pair[1][0])
+            elif "custom_config_json" in pair[0]:
+                return self.set_conf(custom_config_json=pair[1][0])
         else:
-            return '404', 'POST body should be configfile=YOUR_CONFIG_FILE.'
+            return '400', 'Please pass the valid parameters.'
 
 

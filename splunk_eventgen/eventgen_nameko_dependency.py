@@ -33,6 +33,7 @@ class EventgenDependency(DependencyProvider):
 
     def __init__(self):
         self.configured = False
+        self.customconfigured = False
         self.configfile = 'N/A'
         print "mem reference to eventgen: %s" % self.eventgen
 
