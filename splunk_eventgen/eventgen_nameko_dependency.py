@@ -1,41 +1,42 @@
 from nameko.extensions import DependencyProvider
+from nameko.cli.main import setup_parser
 import eventgen_core
 
-class EventgenDependency():
+def create_args():
+    parser = setup_parser()
+    args = parser.parse_args()
+    args.daemon = False
+    args.verbosity = None
+    args.version = False
+    args.backfill = None
+    args.count = None
+    args.devnull = False
+    args.disableOutputQueue = False
+    args.end = None
+    args.generators = None
+    args.interval = None
+    args.keepoutput = False
+    args.modinput = False
+    args.multiprocess = False
+    args.outputters = None
+    args.profiler = False
+    args.sample = None
+    args.version = False
+    args.subcommand = 'generate'
+    args.verbosity = 1
+    args.wsgi = True
+    return args
+
+class EventgenDependency(DependencyProvider):
+
+    eventgen = eventgen_core.EventGenerator(create_args())
 
     def __init__(self):
-        print 'Eventgen Dependency initialized'
         self.configured = False
         self.configfile = 'N/A'
-        self.create_args()
-        self.configure_default_args()
-        self.eventgen = eventgen_core.EventGenerator(self.args)
+        print "mem reference to eventgen: %s" % self.eventgen
 
-    def create_args(self):
-        from nameko.cli.main import setup_parser
-        parser = setup_parser()
-        self.args = parser.parse_args()
-        self.args.daemon = False
-        self.args.subcommand = 'wsgi'
-        self.verbosity = None
-        self.version = False
+    def get_dependency(self, worker_ctx):
+        return self
 
-    def configure_default_args(self):
-        self.args.backfill = None
-        self.args.count = None
-        self.args.devnull = False
-        self.args.disableOutputQueue = False
-        self.args.end = None
-        self.args.generators = None
-        self.args.interval = None
-        self.args.keepoutput = False
-        self.args.modinput = False
-        self.args.multiprocess = False
-        self.args.outputters = None
-        self.args.profiler = False
-        self.args.sample = None
-        self.args.version = False
-        self.args.subcommand = 'generate'
-        self.args.verbosity = 1
-        self.args.wsgi = True
 
