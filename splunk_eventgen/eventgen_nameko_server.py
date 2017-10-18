@@ -51,6 +51,7 @@ class EventgenListener:
         res["EVENTGEN_STATUS"] = status
         res["EVENTGEN_HOST"] = self.host
         res["CONFIGURED"] = self.eventgen_dependency.configured
+        res["CUSTOMCONFIGURED"] = self.eventgen_dependency.customconfigured
         res["CONFIG_FILE"] = self.eventgen_dependency.configfile
         res["QUEUE_STATUS"] = {'SAMPLE_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
                                'OUTPUT_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
@@ -78,16 +79,18 @@ class EventgenListener:
         <p>Host: {0}</p>
         <p>Eventgen Status: {1}</p>
         <p>Eventgen Config file exists: {2}</p>
-        <p>Eventgen Config file path: {3}</p>
-        <p>Worker Queue Status: {4}</p>
-        <p>Sample Queue Status: {5}</p>
-        <p>Output Queue Status: {6}</p>
+        <p>Eventgen Custom Configured?: {3}</p>
+        <p>Eventgen Config file path: {4}</p>
+        <p>Worker Queue Status: {5}</p>
+        <p>Sample Queue Status: {6}</p>
+        <p>Output Queue Status: {7}</p>
         '''
         status = self.get_status()
         eventgen_status = "running" if status["EVENTGEN_STATUS"] else "stopped"
         host = status["EVENTGEN_HOST"]
         configured = status["CONFIGURED"]
         config_file = status["CONFIG_FILE"]
+        custom_configured = status["CUSTOMCONFIGURED"]
         worker_queue_status = status["QUEUE_STATUS"]["WORKER_QUEUE"]
         sample_queue_status = status["QUEUE_STATUS"]["SAMPLE_QUEUE"]
         output_queue_status = status["QUEUE_STATUS"]["OUTPUT_QUEUE"]
@@ -95,6 +98,7 @@ class EventgenListener:
         return home_page.format(host,
                                 eventgen_status,
                                 configured,
+                                custom_configured,
                                 config_file,
                                 worker_queue_status,
                                 sample_queue_status,
