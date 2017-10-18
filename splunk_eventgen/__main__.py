@@ -97,9 +97,4 @@ if __name__ == '__main__':
     if args.subcommand == "generate":
         eventgen = eventgen_core.EventGenerator(args=args)
         eventgen.start()
-    if args.subcommand == "wsgi":
-        cherrypy._cpreqbody.Entity.part_class = NamedPart
-        if args.daemon:
-            Daemonizer(cherrypy.engine).subscribe()
-        cherrypy.quickstart(EventgenApiServer(args=args), "/", os.path.join(os.path.dirname(__file__), "web.conf"))
     sys.exit(0)

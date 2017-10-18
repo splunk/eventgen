@@ -1,0 +1,11 @@
+AMQP_URI: 'pyamqp://guest:guest@localhost'
+WEB_SERVER_ADDRESS: '0.0.0.0:9500'
+
+LOGGING:
+    version: 1
+    handlers:
+        console:
+            class: logging.StreamHandler
+    root:
+        level: DEBUG
+        handlers: [console]
