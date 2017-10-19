@@ -289,6 +289,7 @@ class Config(object):
         We get called manually instead of in __init__ because we need find out if we're Splunk embedded before
         we figure out how to configure ourselves.
         """
+        self.samples = []
         self.logger.debug("Parsing configuration files.")
         self._buildConfDict()
         # Set defaults config instance variables to 'global' section
