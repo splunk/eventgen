@@ -6,7 +6,6 @@ import re
 import logging, logging.handlers
 import json
 import pprint
-import copy
 from eventgensamples import Sample
 from eventgentoken import Token
 import urllib
@@ -322,6 +321,7 @@ class Config(object):
             # If we see the sample in two places, use the first and ignore the second
             if not sampleexists:
                 s = Sample(stanza)
+
                 s.updateConfig(self)
                 for key, value in settings.items():
                     oldvalue = value
@@ -359,7 +359,6 @@ class Config(object):
                         s._lockedSettings.append(key)
                         # self.logger.debug("Appending '%s' to locked settings for sample '%s'" % (key, s.name))
 
-
                 # Validate all the tokens are fully setup, can't do this in _validateSettings
                 # because they come over multiple lines
                 # Don't error out at this point, just log it and remove the token and move on
@@ -381,11 +380,11 @@ class Config(object):
                         newtokens.append(s.tokens[i])
                 s.tokens = newtokens
 
+
                 # Must have eai:acl key to determine app name which determines where actual files are
                 if s.app == None:
                     self.logger.error("App not set for sample '%s' in stanza '%s'" % (s.name, stanza))
                     raise ValueError("App not set for sample '%s' in stanza '%s'" % (s.name, stanza))
-
                 # Set defaults for items not included in the config file
                 for setting in self._defaultableSettings:
                     if not hasattr(s, setting) or getattr(s, setting) == None:
@@ -511,7 +510,7 @@ class Config(object):
                 # 1/23/14 Change in behavior, go ahead and add the sample even if we don't find a file
                 # 9/16/15 Change bit us, now only append if we're a generator other than the two stock generators
                 if not s.disabled and not (s.generator == "default" or s.generator == "replay"):
-                    tempsamples2.append(copy.deepcopy(s))
+                    tempsamples2.append(s)
             for f in foundFiles:
                 # TODO: Not sure why we use deepcopy here, seems point less.
                 #news = copy.deepcopy(s)
@@ -702,6 +701,7 @@ class Config(object):
                                     pass
                         line_puncts.append(p)
         self.logger.debug("Finished parsing")
+
 
     def _punct(self, string):
         """Quick method of attempting to normalize like events"""

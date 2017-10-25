@@ -9,10 +9,6 @@ sys.path.append(path_prepend)
 import __init__ as splunk_eventgen_init
 import logging
 import eventgen_core
-import cherrypy
-from eventgen_wsgiserver import NamedPart
-from cherrypy.process.plugins import Daemonizer
-from eventgen_wsgiserver import EventgenApiServer
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
 logger = logging.getLogger()

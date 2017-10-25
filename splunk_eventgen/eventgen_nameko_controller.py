@@ -1,15 +1,29 @@
 from nameko.rpc import rpc
 from nameko.events import EventDispatcher, event_handler, BROADCAST
 from nameko.web.handlers import http
+import ConfigParser
 import logging
+import os
 from logger.logger_config import controller_logger_config
+from logger import splunk_hec_logging_handler
+
+FILE_PATH = os.path.dirname(os.path.realpath(__file__))
+EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
+
+def get_hec_info_from_conf():
+    hec_info = [None, None]
+    config = ConfigParser.ConfigParser()
+    if os.path.isfile(EVENTGEN_ENGINE_CONF_PATH):
+        config.read(EVENTGEN_ENGINE_CONF_PATH)
+        hec_info[0] = config.get('heclogger', 'hec_url', 1)
+        hec_info[1] = config.get('heclogger', 'hec_key', 1)
+    return hec_info
 
 class EventgenController(object):
     name = "eventgen_controller"
 
     dispatch = EventDispatcher()
     PAYLOAD = 'Payload'
-    logging.config.dictConfig(controller_logger_config)
     _log = logging.getLogger('eventgen_controller')
     _log.info("Logger set as eventgen_controller")
 

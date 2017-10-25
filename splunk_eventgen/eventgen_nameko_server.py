@@ -12,23 +12,22 @@ import logging
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
 CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default/eventgen_wsgi.conf"))
+EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
 
 def get_eventgen_name_from_conf():
     with open(os.path.abspath(os.path.join(FILE_PATH, "listener_conf.yml"))) as config_yml:
         loaded_yml = yaml.load(config_yml)
-        return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else 'Noname'
+        return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else None
+    return None
 
 class EventgenListener:
-    name = "eventgen_listner"
+    name = "eventgen_listener"
 
     eventgen_dependency = eventgen_nameko_dependency.EventgenDependency()
     eventgen_name = get_eventgen_name_from_conf()
-    _log = logging.getLogger('eventgen_listener')
-    _log.info("Eventgen name is set to {}".format(eventgen_name))
-
-    def __init__(self):
-        self.host = socket.gethostname()
-        self._log.info("Host name is {}".format(self.host))
+    host = socket.gethostname()
+    _log = logging.getLogger(name)
+    _log.info("Eventgen name is set to [{}] at host [{}]".format(eventgen_name, host))
 
     def get_status(self):
         '''
@@ -68,7 +67,6 @@ class EventgenListener:
         if hasattr(self.eventgen_dependency.eventgen, "workerQueue"):
             res["QUEUE_STATUS"]['WORKER_QUEUE']['UNFINISHED_TASK'] = self.eventgen_dependency.eventgen.workerQueue.unfinished_tasks
             res["QUEUE_STATUS"]['WORKER_QUEUE']['QUEUE_LENGTH'] = self.eventgen_dependency.eventgen.workerQueue.qsize()
-        self._log.info(res)
         return res
 
     ##############################################
