@@ -304,5 +304,3 @@ class EventgenListener:
         else:
             self._log.exception(e)
             return '400', 'Please pass the valid parameters.'
-
-

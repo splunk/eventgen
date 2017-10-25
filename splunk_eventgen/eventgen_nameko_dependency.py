@@ -40,8 +40,3 @@ class EventgenDependency(DependencyProvider):
 
     def get_dependency(self, worker_ctx):
         return self
-
-
-
-
-
