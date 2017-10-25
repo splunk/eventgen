@@ -15,7 +15,7 @@ CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default/eventgen_
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
 
 def get_eventgen_name_from_conf():
-    with open(os.path.abspath(os.path.join(FILE_PATH, "listener_conf.yml"))) as config_yml:
+    with open(os.path.abspath(os.path.join(FILE_PATH, "server_conf.yml"))) as config_yml:
         loaded_yml = yaml.load(config_yml)
         return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else None
     return None
