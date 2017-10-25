@@ -24,7 +24,11 @@ class EventgenController(object):
 
     dispatch = EventDispatcher()
     PAYLOAD = 'Payload'
-    _log = logging.getLogger('eventgen_controller')
+    logging.config.dictConfig(controller_logger_config)
+    _log = logging.getLogger(name)
+    hec_info = get_hec_info_from_conf()
+    handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1], eventgen_name=name)
+    _log.addHandler(handler)
     _log.info("Logger set as eventgen_controller")
 
     ##############################################

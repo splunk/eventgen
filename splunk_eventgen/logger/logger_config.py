@@ -26,7 +26,7 @@ controller_logger_config = {
     },
     'root': {
         'level': 'DEBUG',
-        'handlers': ['console', 'main']
+        'handlers': ['console']
     },
 }
 
