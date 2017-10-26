@@ -45,8 +45,8 @@ class SplunkHECHandler(logging.Handler):
         self.eventgen_name = eventgen_name
         atexit.register(self._stopFlushTimer)
 
-        self._log = logging.getLogger(self._name)
-        self._log.info("SplunkHECHandler logger is initialized")
+        self.log = logging.getLogger(self._name)
+        self.log.info("SplunkHECHandler logger is initialized")
 
         try:
             self.ip = [l for l in ([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][:1], [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in[socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
@@ -56,7 +56,7 @@ class SplunkHECHandler(logging.Handler):
         self.session = sessions.FuturesSession(max_workers=32)
 
         if not targetserver or not hec_token:
-            self._log.warn("Please provide valid targetserver and hec_token in default/eventgen_engine.conf.")
+            self.log.warn("Please provide valid targetserver and hec_token in default/eventgen_engine.conf.")
             self.send = False
 
         super(SplunkHECHandler, self).__init__()
@@ -138,11 +138,11 @@ class SplunkHECHandler(logging.Handler):
                               verify=False)
             time.sleep(20)
         except Exception as e:
-            self._log.exception(e)
+            self.log.exception(e)
             raise e
 
     def flush(self):
-        self._log.debug('Flush Running. Num of events: {}.'.format(len(self.events)))
+        self.log.debug('Flush Running. Num of events: {}.'.format(len(self.events)))
         events = self.events
         self.events = []
         self._sendHTTPEvents(events)

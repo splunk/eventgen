@@ -31,8 +31,8 @@ def create_args():
 class EventgenDependency(DependencyProvider):
 
     eventgen = eventgen_core.EventGenerator(create_args())
-    _log = logging.getLogger('eventgen_dependency')
-    _log.info("EventgenDependency Init. Memory reference to eventgen object: {}".format(eventgen))
+    log = logging.getLogger('eventgen_dependency')
+    log.info("EventgenDependency Init. Memory reference to eventgen object: {}".format(eventgen))
 
     configured = False
     customconfigured = False

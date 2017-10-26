@@ -25,11 +25,11 @@ class EventgenController(object):
     dispatch = EventDispatcher()
     PAYLOAD = 'Payload'
     logging.config.dictConfig(controller_logger_config)
-    _log = logging.getLogger(name)
+    log = logging.getLogger(name)
     hec_info = get_hec_info_from_conf()
     handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1], eventgen_name=name)
-    _log.addHandler(handler)
-    _log.info("Logger set as eventgen_controller")
+    log.addHandler(handler)
+    log.info("Logger set as eventgen_controller")
 
     ##############################################
     ################ RPC Methods #################
@@ -42,10 +42,10 @@ class EventgenController(object):
                 self.dispatch("all_index", self.PAYLOAD)
             else:
                 self.dispatch("{}_index".format(nodes), self.PAYLOAD)
-            self._log.info("Index event dispatched to {}".format(nodes))
+            self.log.info("Index event dispatched to {}".format(nodes))
             return "Index event dispatched to {}".format(nodes)
         except Exception as e:
-            self._log.exception(e)
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -55,10 +55,10 @@ class EventgenController(object):
                 self.dispatch("all_status", self.PAYLOAD)
             else:
                 self.dispatch("{}_status".format(nodes), self.PAYLOAD)
-            self._log.info("Status event dispatched to {}".format(nodes))
+            self.log.info("Status event dispatched to {}".format(nodes))
             return "Status event dispatched to {}".format(nodes)
         except Exception as e:
-            self._log.exception(e)
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -68,10 +68,10 @@ class EventgenController(object):
                 self.dispatch("all_start", self.PAYLOAD)
             else:
                 self.dispatch("{}_start".format(nodes), self.PAYLOAD)
-            self._log.info("Start event dispatched to {}".format(nodes))
+            self.log.info("Start event dispatched to {}".format(nodes))
             return "Start event dispatched to {}".format(nodes)
         except Exception as e:
-            self._log.exception(e)
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -81,10 +81,10 @@ class EventgenController(object):
                 self.dispatch("all_stop", self.PAYLOAD)
             else:
                 self.dispatch("{}_stop".format(nodes), self.PAYLOAD)
-            self._log.info("Stop event dispatched to {}".format(nodes))
+            self.log.info("Stop event dispatched to {}".format(nodes))
             return "Stop event dispatched to {}".format(nodes)
         except Exception as e:
-            self._log.exception(e)
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -94,10 +94,10 @@ class EventgenController(object):
                 self.dispatch("all_restart", self.PAYLOAD)
             else:
                 self.dispatch("{}_restart".format(nodes), self.PAYLOAD)
-            self._log.info("Restart event dispatched to {}".format(nodes))
+            self.log.info("Restart event dispatched to {}".format(nodes))
             return "Restart event dispatched to {}".format(nodes)
         except Exception as e:
-            self._log.exception(e)
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -107,10 +107,10 @@ class EventgenController(object):
                 self.dispatch("all_get_conf", self.PAYLOAD)
             else:
                 self.dispatch("{}_get_conf".format(nodes), self.PAYLOAD)
-            self._log.info("Get_conf event dispatched to {}".format(nodes))
+            self.log.info("Get_conf event dispatched to {}".format(nodes))
             return "Get_conf event dispatched to {}".format(nodes)
         except Exception as e:
-            self._log.exception(e)
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -124,17 +124,17 @@ class EventgenController(object):
                 payload['type'] = 'custom_config_json'
                 payload['data'] = custom_config_json
             else:
-                self._log.info("Pass in a valid configfile or custom_config_json")
+                self.log.info("Pass in a valid configfile or custom_config_json")
                 return "Pass in a valid configfile or custom_config_json"
 
             if nodes == "all":
                 self.dispatch("all_set_conf", payload)
             else:
                 self.dispatch("{}_set_conf".format(nodes), payload)
-            self._log.info("Set_conf event dispatched to {}".format(nodes))
+            self.log.info("Set_conf event dispatched to {}".format(nodes))
             return "Set_conf event dispatched to {}".format(nodes)
         except Exception as e:
-            self._log.exception(e)
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     ##############################################
