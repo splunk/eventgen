@@ -65,10 +65,12 @@ class SplunkHECHandler(logging.Handler):
 
     @setInterval(1)
     def _flushAndRepeatTimer(self):
-        self.flush()
+        if self.send:
+            self.flush()
 
     def _stopFlushTimer(self):
-        self.flush()
+        if self.send:
+            self.flush()
 
     def _getEndpoint(self):
         targeturi = "{0}/services/collector/event".format(self.targetserver)
