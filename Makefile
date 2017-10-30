@@ -5,7 +5,8 @@ CURTIME ?= $(shell date +%s)
 EVENTGEN_TEST_IMAGE = "eventgen-test-container"
 TESTS ?= large
 TEST_ARGS += ${TESTS}
-DESTROY_TEST ?= 0
+DESTROY_TEST ?= 0]
+ENGINE_CONF_SOURCE = ${ENGINE_CONF_SOURCE}
 
 .PHONY: tests
 
@@ -19,7 +20,7 @@ clean:
 	docker rmi ${EVENTGEN_TAG} || true
 
 setup_eventgen:
-	wget https://repo.splunk.com/artifactory/Solutions/Common/misc/eventgen_engine.conf
+	wget ${ENGINE_CONF_SOURCE}
 	mv eventgen_engine.conf splunk_eventgen/default/eventgen_engine.conf
 
 run_server:
