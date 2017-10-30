@@ -9,9 +9,11 @@ build
 *.spl
 eventgen.spl
 package.json
+package-lock.json
 node_modules
 cached_build_info.properties
 local.build.properties
 stage/
 local/
-.log
+eventgen_wsgi.conf
+*.log

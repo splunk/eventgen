@@ -5,7 +5,8 @@ CURTIME ?= $(shell date +%s)
 EVENTGEN_TEST_IMAGE = "eventgen-test-container"
 TESTS ?= large
 TEST_ARGS += ${TESTS}
-DESTROY_TEST ?= 0
+DESTROY_TEST ?= 0]
+ENGINE_CONF_SOURCE = ${ENGINE_CONF_SOURCE}
 
 .PHONY: tests
 
@@ -17,3 +18,13 @@ egg:
 clean:
 	rm -rf dist
 	docker rmi ${EVENTGEN_TAG} || true
+
+setup_eventgen:
+	wget ${ENGINE_CONF_SOURCE}
+	mv eventgen_engine.conf splunk_eventgen/default/eventgen_engine.conf
+
+run_server:
+	cd splunk_eventgen && nameko run eventgen_nameko_server --config ./server_conf.yml
+
+run_controller:
+	cd splunk_eventgen && nameko run eventgen_nameko_controller --config ./controller_conf.yml

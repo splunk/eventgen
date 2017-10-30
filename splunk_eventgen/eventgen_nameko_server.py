@@ -7,26 +7,27 @@ import os
 import socket
 import time
 import eventgen_nameko_dependency
+import logging
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
 CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default/eventgen_wsgi.conf"))
-print CUSTOM_CONFIG_PATH
+EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
 
 def get_eventgen_name_from_conf():
-    with open(os.path.abspath(os.path.join(FILE_PATH, "listener_conf.yml"))) as config_yml:
+    with open(os.path.abspath(os.path.join(FILE_PATH, "server_conf.yml"))) as config_yml:
         loaded_yml = yaml.load(config_yml)
-        return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else 'Noname'
+        return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else None
+    return None
 
 class EventgenListener:
-    name = "eventgen_listner"
+    name = "eventgen_listener"
 
     eventgen_dependency = eventgen_nameko_dependency.EventgenDependency()
     eventgen_name = get_eventgen_name_from_conf()
-    print "Eventgen_name is {}".format(eventgen_name)
-
-    def __init__(self):
-        self.host = socket.gethostname()
+    host = socket.gethostname()
+    log = logging.getLogger(name)
+    log.info("Eventgen name is set to [{}] at host [{}]".format(eventgen_name, host))
 
     def get_status(self):
         '''
@@ -73,7 +74,7 @@ class EventgenListener:
     ##############################################
 
     def index(self):
-        print "index method called"
+        self.log.info("index method called")
         home_page = '''
         <h1>Eventgen WSGI</h1>
         <p>Host: {0}</p>
@@ -105,11 +106,11 @@ class EventgenListener:
                                 output_queue_status)
 
     def status(self):
-        print 'Status method called.'
+        self.log.info('Status method called.')
         return json.dumps(self.get_status(), indent=4)
 
     def start(self):
-        print "start method called. Config is {}".format(self.eventgen_dependency.configfile)
+        self.log.info("start method called. Config is {}".format(self.eventgen_dependency.configfile))
         try:
             if not self.eventgen_dependency.configured:
                 return "There is not config file known to eventgen. Pass in the config file to /conf before you start."
@@ -118,26 +119,28 @@ class EventgenListener:
             self.eventgen_dependency.eventgen.start(join_after_start=False)
             return "Eventgen has successfully started."
         except Exception as e:
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def stop(self):
-        print "stop method called"
+        self.log.info("stop method called")
         try:
             if self.eventgen_dependency.eventgen.check_running():
                 self.eventgen_dependency.eventgen.stop()
                 return "Eventgen is stopped."
             return "There is no eventgen process running."
         except Exception as e:
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def restart(self):
-        print "restart method called."
+        self.log.info("restart method called.")
         self.stop()
         time.sleep(2)
         self.start()
 
     def get_conf(self):
-        print "get_conf method called."
+        self.log.info("get_conf method called.")
         try:
             if self.eventgen_dependency.configured:
                 config = ConfigParser.ConfigParser()
@@ -150,9 +153,11 @@ class EventgenListener:
                         out_json[section] = dict()
                         for k, v in config.items(section):
                             out_json[section][k] = v
+                    self.log.info(out_json)
                     return json.dumps(out_json, indent=4)
             return "N/A"
         except Exception as e:
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def set_conf(self, configfile=None, custom_config_json={}):
@@ -161,7 +166,7 @@ class EventgenListener:
         customconfig data format
         {sample: {key: value}, sample2: {key: value}}
         '''
-        print "set_conf method called"
+        self.log.info("set_conf method called")
         try:
             if configfile and os.path.isfile(os.path.abspath(os.path.join(EVENTGEN_DIR, configfile))):
                 modified_path_configfile = os.path.join('..', configfile)
@@ -169,11 +174,12 @@ class EventgenListener:
                 self.eventgen_dependency.configured = True
                 self.eventgen_dependency.customconfigured = False
                 self.eventgen_dependency.configfile = configfile
-                return 'Loaded the conf file: {}'.format(configfile)
+                msg = 'Loaded the conf file: {}'.format(configfile)
+                self.log.info(msg)
+                return msg
             elif custom_config_json:
                 config = ConfigParser.ConfigParser()
                 config.optionxform = str
-                print "custom_config_json is {}".format(custom_config_json)
                 custom_config_json = json.loads(custom_config_json)
                 for sample in custom_config_json.iteritems():
                     sample_name = sample[0]
@@ -187,8 +193,10 @@ class EventgenListener:
                 self.eventgen_dependency.customconfigured = True
                 self.eventgen_dependency.configfile = CUSTOM_CONFIG_PATH
                 self.eventgen_dependency.eventgen.reload_conf(CUSTOM_CONFIG_PATH)
+                self.log.info("custom_config_json is {}".format(custom_config_json))
                 return 'Loaded the custom conf file: {}'.format(CUSTOM_CONFIG_PATH)
         except Exception as e:
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     ##############################################
@@ -295,5 +303,3 @@ class EventgenListener:
                 return self.set_conf(custom_config_json=pair[1][0])
         else:
             return '400', 'Please pass the valid parameters.'
-
-
