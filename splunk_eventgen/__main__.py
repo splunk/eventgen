@@ -9,10 +9,8 @@ sys.path.append(path_prepend)
 import __init__ as splunk_eventgen_init
 import logging
 import eventgen_core
-import cherrypy
-from eventgen_wsgiserver import NamedPart
-from cherrypy.process.plugins import Daemonizer
-from eventgen_wsgiserver import EventgenApiServer
+import os
+import shutil
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
 logger = logging.getLogger()
@@ -43,7 +41,9 @@ def parse_args():
     generate_subparser.add_argument("--multiprocess", action="store_true", help="Use multiprocesing instead of threading")
     generate_subparser.add_argument("--profiler", action="store_true", help="Turn on cProfiler")
     build_subparser = subparsers.add_parser('build', help="Will build different forms of sa-eventgen")
-    build_subparser.add_argument("splunk-app", help="Will create an SPL to use with splunk in an embedded mode.")
+    build_subparser.add_argument("--mode", type=str, default="splunk-app", help="Specify what type of package to build, defaults to splunk-app mode.")
+    build_subparser.add_argument("--destination", help="Specify where to store the output of the build command.")
+    build_subparser.add_argument("--remove", default=True, help="Remove the build directory after completion.  Defaults to True")
     wsgi_subparser = subparsers.add_parser('wsgi', help="start a wsgi server to interact with eventgen.")
     wsgi_subparser.add_argument("--daemon", action="store_true", help="Daemon will tell the wsgi server to start in a daemon mode and will release the cli.")
     # Help subparser
@@ -68,7 +68,6 @@ def parse_args():
         sys.exit(0)
 
     if 'subcommand' not in args:
-        logger.warn("Please specify a valid subcommand to run")
         parser.print_help()
         sys.exit(2)
 
@@ -82,6 +81,8 @@ def parse_args():
         else:
             parser.print_help()
         sys.exit(0)
+    elif args.subcommand == "build" and not args.destination:
+        print("No destination passed for storing output file, attempting to use the current working dir.")
 
     # Allow passing of a Splunk app on the command line and expand the full path before passing up the chain
     if hasattr(args, "configfile") and not os.path.exists(args.configfile):
@@ -92,9 +93,37 @@ def parse_args():
             args.configfile = None
     return args
 
+def make_tarfile(output_filename, source_dir):
+    import tarfile
+    with tarfile.open(output_filename, "w:gz") as tar:
+        tar.add(source_dir, arcname=os.path.basename(source_dir))
+
+def build_splunk_app(dest, remove=True):
+    import errno, imp
+    directory = os.path.join(dest, 'SA-Eventgen')
+    target_file = os.path.join(dest, 'sa_eventgen.spl')
+    module_file, module_path, module_description = imp.find_module('splunk_eventgen')
+    splunk_app = os.path.join(module_path, 'splunk_app')
+    lib_dir = os.path.join(module_path, 'lib')
+    try:
+        shutil.copytree(splunk_app, directory)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            print("Directory already exists. Please remove before continuing")
+    directory_lib_dir = os.path.join(directory, 'lib')
+    shutil.copytree(lib_dir, directory_lib_dir)
+    make_tarfile(target_file, directory)
+    if remove:
+        shutil.rmtree(directory)
+
 if __name__ == '__main__':
+    cwd = os.getcwd()
     args = parse_args()
     if args.subcommand == "generate":
         eventgen = eventgen_core.EventGenerator(args=args)
         eventgen.start()
+    elif args.subcommand == "build":
+        if not args.destination:
+            args.destination = cwd
+        build_splunk_app(dest=args.destination, remove=args.remove)
     sys.exit(0)

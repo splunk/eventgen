@@ -511,7 +511,7 @@ class Config(object):
                 # 1/23/14 Change in behavior, go ahead and add the sample even if we don't find a file
                 # 9/16/15 Change bit us, now only append if we're a generator other than the two stock generators
                 if not s.disabled and not (s.generator == "default" or s.generator == "replay"):
-                    tempsamples2.append(copy.deepcopy(s))
+                    tempsamples2.append(s)
             for f in foundFiles:
                 # TODO: Not sure why we use deepcopy here, seems point less.
                 #news = copy.deepcopy(s)
