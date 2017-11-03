@@ -3,14 +3,12 @@ Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 '''
 
 from __future__ import division
-import sys, os
+import sys, os, shutil
 path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.append(path_prepend)
 import __init__ as splunk_eventgen_init
 import logging
 import eventgen_core
-import os
-import shutil
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
 logger = logging.getLogger()
