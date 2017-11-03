@@ -106,8 +106,11 @@ def build_splunk_app(dest, remove=True):
     try:
         shutil.copytree(splunk_app, directory)
     except OSError as e:
-        if e.errno != errno.EEXIST:
+        if e.errno == errno.EEXIST:
             print("Directory already exists. Please remove before continuing")
+            sys.exit(3)
+        else:
+            raise
     directory_lib_dir = os.path.join(directory, 'lib')
     shutil.copytree(lib_dir, directory_lib_dir)
     make_tarfile(target_file, directory)
