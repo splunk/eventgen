@@ -10,10 +10,14 @@ ENGINE_CONF_SOURCE = ${ENGINE_CONF_SOURCE}
 
 .PHONY: tests
 
-all: egg image
+all: egg
 
 egg:
-	python scripts/eventgen_CD.py
+	python setup.py sdist
+
+image: egg
+	cp dist/splunk_eventgen-*.tar.gz dockerfiles/splunk_eventgen.tgz
+	cd dockerfiles && docker build . -t eventgen
 
 clean:
 	rm -rf dist
