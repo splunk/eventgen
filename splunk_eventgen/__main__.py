@@ -119,6 +119,7 @@ def main():
     if args.subcommand == "service":
         # Running nameko imports here so that Eventgen as a module does not require nameko to run.
         from nameko.runners import ServiceRunner
+        sys.path.insert(0, FILE_LOCATION)
         with open(args.config) as f:
             config_dict = yaml.load(f)
         runner = ServiceRunner(config=config_dict)

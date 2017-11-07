@@ -2,6 +2,12 @@ from nameko.extensions import DependencyProvider
 import eventgen_core
 import logging
 import argparse
+import sys
+
+# For some reason, the args from __main__ get passed to eventgen_nameko_dependency and causes this error:
+# usage: eventgen_nameko_dependency [-h]
+# eventgen_nameko_dependency: error: unrecognized arguments: --role master --config server_conf.yml
+sys.argv = [sys.argv.pop(0)]
 
 def create_args():
     parser = argparse.ArgumentParser(prog="eventgen_nameko_dependency")
