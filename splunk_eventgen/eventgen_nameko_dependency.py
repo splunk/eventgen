@@ -1,10 +1,10 @@
 from nameko.extensions import DependencyProvider
-from nameko.cli.main import setup_parser
 import eventgen_core
 import logging
+import argparse
 
 def create_args():
-    parser = setup_parser()
+    parser = argparse.ArgumentParser(prog="eventgen_nameko_dependency")
     args = parser.parse_args()
     args.daemon = False
     args.verbosity = None
@@ -30,7 +30,8 @@ def create_args():
 
 class EventgenDependency(DependencyProvider):
 
-    eventgen = eventgen_core.EventGenerator(create_args())
+    arguments = create_args()
+    eventgen = eventgen_core.EventGenerator(arguments)
     log = logging.getLogger('eventgen_dependency')
     log.info("EventgenDependency Init. Memory reference to eventgen object: {}".format(eventgen))
 

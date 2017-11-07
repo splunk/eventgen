@@ -3,8 +3,11 @@ Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 '''
 
 from __future__ import division
-import sys, os
-path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
+import os
+import sys
+import yaml
+FILE_LOCATION = os.path.dirname(os.path.abspath(__file__))
+path_prepend = os.path.join(FILE_LOCATION, 'lib')
 sys.path.append(path_prepend)
 import __init__ as splunk_eventgen_init
 import logging
@@ -23,6 +26,7 @@ def parse_args():
     parser.add_argument("-v", "--verbosity", action="count", help="increase output verbosity")
     parser.add_argument("--version", action='version', default=False, version='%(prog)s ' + EVENTGEN_VERSION)
     subparsers = parser.add_subparsers(title='commands', help="valid subcommands", dest='subcommand')
+    # Generate subparser
     generate_subparser = subparsers.add_parser('generate', help="Generate events using a supplied config file")
     generate_subparser.add_argument("configfile", help="Location of eventgen.conf, app folder, or name of an app in $SPLUNK_HOME/etc/apps to run")
     generate_subparser.add_argument("-s", "--sample", help="Run specified sample only, overriding outputMode to stdout, disabling all other samples")
@@ -38,10 +42,16 @@ def parse_args():
     generate_subparser.add_argument("--disableOutputQueue", action="store_true", help="Disable reducer step")
     generate_subparser.add_argument("--multiprocess", action="store_true", help="Use multiprocesing instead of threading")
     generate_subparser.add_argument("--profiler", action="store_true", help="Turn on cProfiler")
+    # Build subparser
     build_subparser = subparsers.add_parser('build', help="Will build different forms of sa-eventgen")
     build_subparser.add_argument("splunk-app", help="Will create an SPL to use with splunk in an embedded mode.")
+    # WSGI subparser
     wsgi_subparser = subparsers.add_parser('wsgi', help="start a wsgi server to interact with eventgen.")
     wsgi_subparser.add_argument("--daemon", action="store_true", help="Daemon will tell the wsgi server to start in a daemon mode and will release the cli.")
+    # Service subparser
+    service_subparser = subparsers.add_parser('service', help="Run Eventgen as a Nameko service")
+    service_subparser.add_argument("--role", "-r", type=str, default=None, choices=["master", "slave"], help="Define the role for this Eventgen node. Options: master, slave")
+    service_subparser.add_argument("--config", "-c", type=str, default=None, help="Path to YAML config for Eventgen Nameko service properties.")
     # Help subparser
     # NOTE: Keep this at the end so we can use the subparser_dict.keys() to display valid commands
     help_subparser = subparsers.add_parser('help', help="Display usage on a subcommand")
@@ -67,6 +77,19 @@ def parse_args():
         logger.warn("Please specify a valid subcommand to run")
         parser.print_help()
         sys.exit(2)
+    
+    if args.subcommand == "service":
+        if not args.role:
+            msg = "Role is undefined. Please specify a role for this Eventgen service using --role/-r."
+            logger.exception(msg)
+            raise Exception(msg)
+        if not args.config:
+            # Apply default configs based on role
+            if args.role == "master":
+                args.config = os.path.join(FILE_LOCATION, "controller_conf.yml")
+            else:
+                args.config = os.path.join(FILE_LOCATION, "server_conf.yml")
+            logger.info("Using config '{}' for role '{}'.".format(args.config, args.role))
 
     if args.subcommand == "help" and args.command == "default":
         parser.print_help()
@@ -88,9 +111,27 @@ def parse_args():
             args.configfile = None
     return args
 
-if __name__ == '__main__':
+def main():
     args = parse_args()
     if args.subcommand == "generate":
         eventgen = eventgen_core.EventGenerator(args=args)
         eventgen.start()
+    if args.subcommand == "service":
+        # Running nameko imports here so that Eventgen as a module does not require nameko to run.
+        from nameko.runners import ServiceRunner
+        with open(args.config) as f:
+            config_dict = yaml.load(f)
+        runner = ServiceRunner(config=config_dict)
+        if args.role == "master":
+            from eventgen_nameko_controller import EventgenController
+            runner.add_service(EventgenController)
+        else:
+            from eventgen_nameko_server import EventgenListener
+            runner.add_service(EventgenListener)
+        runner.start()
+        runner.wait()
     sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
