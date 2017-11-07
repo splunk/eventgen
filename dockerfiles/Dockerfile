@@ -28,6 +28,7 @@ RUN apk --no-cache upgrade && \
 	curl -sL https://www.rabbitmq.com/releases/rabbitmq-server/v${RABBITMQ_VERSION}/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.xz | tar -xJ -C /usr/local && \
 	ln -s /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/sbin/rabbitmq-server /usr/sbin/rabbitmq-server && \
 	ln -s /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/sbin/rabbitmq-env /usr/sbin/rabbitmq-env && \
+	/usr/local/rabbitmq_server-${RABBITMQ_VERSION}/sbin/rabbitmq-plugins enable rabbitmq_management && \
 	rm -rf /tmp/* && \
 	ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa && \
 	mkdir -p /var/run/sshd && \
@@ -37,9 +38,10 @@ RUN apk --no-cache upgrade && \
 COPY sshd_config /etc/ssh/sshd_config
 COPY entrypoint.sh /sbin/entrypoint.sh
 COPY splunk_eventgen.tgz /root/splunk_eventgen.tgz
+COPY rabbitmq.config /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/rabbitmq.config
 
 RUN pip install /root/splunk_eventgen.tgz
 
-EXPOSE 2222 5673 25672
+EXPOSE 2222 5673 15672
 WORKDIR /root
 ENTRYPOINT ["/sbin/entrypoint.sh"]

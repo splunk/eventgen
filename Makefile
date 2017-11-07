@@ -20,7 +20,7 @@ image: egg
 	cd dockerfiles && docker build . -t eventgen
 
 clean:
-	rm -rf dist
+	rm -rf dist *.egg-info 
 	docker rmi ${EVENTGEN_TAG} || true
 
 setup_eventgen:
