@@ -33,11 +33,9 @@ eg_network:
 run_server:
 	docker kill eg_server 2>/dev/null; true
 	docker rm eg_server 2>/dev/null; true
-	docker run --network eg_network --name eg_server -d -p 9501 eventgen:latest server
-	#cd splunk_eventgen && nameko run eventgen_nameko_server --config ./server_conf.yml
+	docker run --network eg_network --name eg_server -d -p 9500 -p 9501 eventgen:latest server
 
 run_controller: eg_network
 	docker kill eg_controller 2>/dev/null; true
 	docker rm eg_controller 2>/dev/null; true
-	docker run --name eg_controller --network eg_network --network-alias rabbitmq -d -p 5672 -p 15672 -p 9500 eventgen:latest controller
-	#cd splunk_eventgen && nameko run eventgen_nameko_controller --config ./controller_conf.yml
+	docker run --name eg_controller --network eg_network --network-alias rabbitmq -d -p 5672 -p 15672 -p 9500 -p 9501 eventgen:latest controller

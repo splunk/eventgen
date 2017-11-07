@@ -5,8 +5,9 @@ Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 from __future__ import division
 import os
 import sys
+import time
 import yaml
-import platform
+import requests
 FILE_LOCATION = os.path.dirname(os.path.abspath(__file__))
 path_prepend = os.path.join(FILE_LOCATION, 'lib')
 sys.path.append(path_prepend)
@@ -112,27 +113,76 @@ def parse_args():
             args.configfile = None
     return args
 
+def wait_for_response(address):
+    RETRY_COUNT = 10
+    protocol, url = address.split("://")
+    creds, addr = url.split("@")
+    host, port = addr.split(":")
+    userid, password = creds.split(":")
+    for i in range(RETRY_COUNT):
+        try:
+            # TODO: HTTP port is set to 15672, but this should be dynamic
+            r = requests.get("http://{}:15672".format(host))
+            r.raise_for_status()
+            break
+        except requests.exceptions.ConnectionError as e:
+            time.sleep(3)
+    if i == RETRY_COUNT-1:
+        msg = "Unable to contact broker URL."
+        logger.exception(msg)
+        raise Exception(msg)
+
+def run_nameko(args):
+    # Running nameko imports here so that Eventgen as a module does not require nameko to run.
+    import eventlet
+    eventlet.monkey_patch()
+    from nameko.runners import ServiceRunner
+    # Read in config file and set Eventgen name
+    with open(args.config) as f:
+        config_dict = yaml.load(f)
+    # Wait up to 30s for RMQ service to be up
+    if "AMQP_URI" not in config_dict.keys() or not config_dict["AMQP_URI"]:
+        msg = "AMQP_URI not defined in config."
+        logger.exception(msg)
+        raise Exception(msg)
+    wait_for_response(config_dict["AMQP_URI"])
+    # Start Nameko service
+    runner = ServiceRunner(config=config_dict)
+    if args.role == "controller":
+        from eventgen_nameko_controller import EventgenController
+        runner.add_service(EventgenController)
+    else:
+        from eventgen_nameko_server import EventgenListener
+        runner.add_service(EventgenListener)
+    runner.start()
+    runnlet = eventlet.spawn(runner.wait)
+    while True:
+        try:
+            runnlet.wait()
+        except OSError as exc:
+            if exc.errno == errno.EINTR:
+                # this is the OSError(4) caused by the signalhandler.
+                # ignore and go back to waiting on the runner
+                continue
+            raise
+        except KeyboardInterrupt:
+            print()  # looks nicer with the ^C e.g. bash prints in the terminal
+            try:
+                service_runner.stop()
+            except KeyboardInterrupt:
+                print()  # as above
+                service_runner.kill()
+        else:
+            # runner.wait completed
+            break
+
 def main():
     args = parse_args()
     if args.subcommand == "generate":
         eventgen = eventgen_core.EventGenerator(args=args)
         eventgen.start()
     if args.subcommand == "service":
-        # Running nameko imports here so that Eventgen as a module does not require nameko to run.
-        from nameko.runners import ServiceRunner
-        # Read in config file and set Eventgen name
-        with open(args.config) as f:
-            config_dict = yaml.load(f)
-        # Start Nameko service
-        runner = ServiceRunner(config=config_dict)
-        if args.role == "controller":
-            from eventgen_nameko_controller import EventgenController
-            runner.add_service(EventgenController)
-        else:
-            from eventgen_nameko_server import EventgenListener
-            runner.add_service(EventgenListener)
-        runner.start()
-        runner.wait()
+        run_nameko(args)
     sys.exit(0)
 
 
