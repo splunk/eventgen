@@ -20,15 +20,24 @@ image: egg
 	cd dockerfiles && docker build . -t eventgen
 
 clean:
-	rm -rf dist *.egg-info 
+	rm -rf dist *.egg-info *.log
 	docker rmi ${EVENTGEN_TAG} || true
 
 setup_eventgen:
 	wget ${ENGINE_CONF_SOURCE}
 	mv eventgen_engine.conf splunk_eventgen/default/eventgen_engine.conf
 
-run_server:
-	cd splunk_eventgen && nameko run eventgen_nameko_server --config ./server_conf.yml
+eg_network:
+	docker network create --attachable --driver bridge eg_network 2>/dev/null; true
 
-run_controller:
-	cd splunk_eventgen && nameko run eventgen_nameko_controller --config ./controller_conf.yml
+run_server:
+	docker kill eg_server 2>/dev/null; true
+	docker rm eg_server 2>/dev/null; true
+	docker run --network eg_network --name eg_server -d -p 9501 eventgen:latest server
+	#cd splunk_eventgen && nameko run eventgen_nameko_server --config ./server_conf.yml
+
+run_controller: eg_network
+	docker kill eg_controller 2>/dev/null; true
+	docker rm eg_controller 2>/dev/null; true
+	docker run --name eg_controller --network eg_network --network-alias rabbitmq -d -p 5672 -p 15672 -p 9500 eventgen:latest controller
+	#cd splunk_eventgen && nameko run eventgen_nameko_controller --config ./controller_conf.yml

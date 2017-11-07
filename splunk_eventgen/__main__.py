@@ -6,6 +6,7 @@ from __future__ import division
 import os
 import sys
 import yaml
+import platform
 FILE_LOCATION = os.path.dirname(os.path.abspath(__file__))
 path_prepend = os.path.join(FILE_LOCATION, 'lib')
 sys.path.append(path_prepend)
@@ -50,7 +51,7 @@ def parse_args():
     wsgi_subparser.add_argument("--daemon", action="store_true", help="Daemon will tell the wsgi server to start in a daemon mode and will release the cli.")
     # Service subparser
     service_subparser = subparsers.add_parser('service', help="Run Eventgen as a Nameko service")
-    service_subparser.add_argument("--role", "-r", type=str, default=None, choices=["master", "slave"], help="Define the role for this Eventgen node. Options: master, slave")
+    service_subparser.add_argument("--role", "-r", type=str, default=None, choices=["controller", "server"], help="Define the role for this Eventgen node. Options: master, slave")
     service_subparser.add_argument("--config", "-c", type=str, default=None, help="Path to YAML config for Eventgen Nameko service properties.")
     # Help subparser
     # NOTE: Keep this at the end so we can use the subparser_dict.keys() to display valid commands
@@ -85,7 +86,7 @@ def parse_args():
             raise Exception(msg)
         if not args.config:
             # Apply default configs based on role
-            if args.role == "master":
+            if args.role == "controller":
                 args.config = os.path.join(FILE_LOCATION, "controller_conf.yml")
             else:
                 args.config = os.path.join(FILE_LOCATION, "server_conf.yml")
@@ -119,11 +120,12 @@ def main():
     if args.subcommand == "service":
         # Running nameko imports here so that Eventgen as a module does not require nameko to run.
         from nameko.runners import ServiceRunner
-        sys.path.insert(0, FILE_LOCATION)
+        # Read in config file and set Eventgen name
         with open(args.config) as f:
             config_dict = yaml.load(f)
+        # Start Nameko service
         runner = ServiceRunner(config=config_dict)
-        if args.role == "master":
+        if args.role == "controller":
             from eventgen_nameko_controller import EventgenController
             runner.add_service(EventgenController)
         else:

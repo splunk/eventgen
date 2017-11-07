@@ -1,12 +1,14 @@
 FROM alpine:3.6
 
-ENV RABBITMQ_VERSION=3.6.13 \
-	ERLANG_VERSION=20.1.2-r1
+ENV RABBITMQ_VERSION=3.6.13
 
 RUN apk --no-cache upgrade && \
 	apk add --no-cache --update \
 	python2-dev \
     py2-pip \
+    gcc \
+    build-base \
+    libffi-dev \
 	openssl-dev \
 	openssh \
 	erlang \
@@ -40,8 +42,12 @@ COPY entrypoint.sh /sbin/entrypoint.sh
 COPY splunk_eventgen.tgz /root/splunk_eventgen.tgz
 COPY rabbitmq.config /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/rabbitmq.config
 
-RUN pip install /root/splunk_eventgen.tgz
+RUN pip install \
+	/root/splunk_eventgen.tgz \
+	requests_futures \
+	nameko \
+	pyOpenSSL
 
-EXPOSE 2222 5673 15672
+EXPOSE 2222 5672 15672 9501 9500
 WORKDIR /root
 ENTRYPOINT ["/sbin/entrypoint.sh"]
