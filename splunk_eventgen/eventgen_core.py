@@ -178,7 +178,6 @@ class EventGenerator(object):
                 worker.setDaemon(True)
                 worker.start()
 
-
     def _create_generator_workers(self, workercount=10):
         if self.args.multiprocess:
             import multiprocessing
