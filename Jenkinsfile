@@ -22,6 +22,7 @@ withSplunkWrapNode('orca_ci') {
         }
 
         stage('Run tests') {
+            echo "test"
             sh 'make test'
         }
 
