@@ -44,6 +44,12 @@ test: egg
 	@echo 'Running the super awesome tests'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pytest tests/ --junitxml tests_results.xml"
 
+	echo 'Collecting results'
+	#TODO: Should be paramaterized or generalized so that we don't need to add this here
+	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests_results.xml tests_results.xml || echo "no tests_results.xml"
+
+	docker stop ${EVENTGEN_TEST_IMAGE} || true
+
 clean:
 	rm -rf dist *.egg-info *.log *.xml
 	docker stop ${EVENTGEN_TEST_IMAGE} || true

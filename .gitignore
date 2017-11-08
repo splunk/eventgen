@@ -21,3 +21,4 @@ dist/
 *.egg-info
 **/*.tgz
 .cache
+*.xml
