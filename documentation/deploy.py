@@ -55,7 +55,7 @@ class EventgenDocs(object):
 		placement = docker.types.Placement(constraints=DEFAULT_CONSTRAINTS)
 		task_template = docker.types.TaskTemplate(container_spec=container_spec, placement=placement)
 		service_mode = docker.types.ServiceMode(mode="replicated", replicas=self.replicas)
-		endpoint_spec = docker.types.EndpointSpec(ports={4000:4000})
+		endpoint_spec = docker.types.EndpointSpec(ports={4001:4000})
 		update_config = docker.types.UpdateConfig(parallelism=1, delay=15, failure_action="continue")
 		return  {
 					"TaskTemplate": task_template,
