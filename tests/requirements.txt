@@ -1,0 +1,5 @@
+-i https://repo.splunk.com/artifactory/api/pypi/pypi/simple
+pytest
+pytest-xdist
+mock
+pytest-cov

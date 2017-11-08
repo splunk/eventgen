@@ -20,3 +20,5 @@ eventgen_wsgi.conf
 dist/
 *.egg-info
 **/*.tgz
+.cache
+*.xml
