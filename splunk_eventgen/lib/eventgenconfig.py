@@ -97,7 +97,7 @@ class Config(object):
                             'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
                             'monthOfYearRate', 'perDayVolume', 'sessionKey', 'generator', 'rater', 'timeField', 'maxQueueLength',
                             'maxIntervalsBeforeFlush', 'autotimestamp']
-    _complexSettings = { 'sampletype': ['raw', 'csv'],
+    _complexSettings = { 'sampletype': ['raw', 'csv', 'large_file'],
                          'mode': ['sample', 'replay'],
                          'threading': ['thread', 'process']}
 
@@ -118,7 +118,7 @@ class Config(object):
         self.override_end = override_end
         self._setup_logging()
         if override_generators >= 0:
-            self.generatorWorkers = self.override_generators
+            self.generatorWorkers = override_generators
         if override_outputqueue:
             self.useOutputQueue = False
 
@@ -359,6 +359,8 @@ class Config(object):
                         s._lockedSettings.append(key)
                         # self.logger.debug("Appending '%s' to locked settings for sample '%s'" % (key, s.name))
 
+
+
                 # Validate all the tokens are fully setup, can't do this in _validateSettings
                 # because they come over multiple lines
                 # Don't error out at this point, just log it and remove the token and move on
@@ -442,14 +444,15 @@ class Config(object):
 
             # 2/1/15 CS Adding support for command line options, specifically running a single sample
             # from the command line
+                self.run_sample = True
                 if self.run_sample:
                     # Name doesn't match, disable
-                    if s.name != self.run_sample:
-                        self.logger.debug("Disabling sample '%s' because of command line override" % s.name)
-                        s.disabled = True
-                    # Name matches
-                    else:
-                        self.logger.debug("Sample '%s' selected from command line" % s.name)
+                    # if s.name != self.run_sample:
+                    #     self.logger.debug("Disabling sample '%s' because of command line override" % s.name)
+                    #     s.disabled = True
+                    # # Name matches
+                    # else:
+                    #     self.logger.debug("Sample '%s' selected from command line" % s.name)
                     # Also, can't backfill search if we don't know how to talk to Splunk
                     s.backfillSearch = None
                     s.backfillSearchUrl = None
@@ -480,6 +483,8 @@ class Config(object):
                         self.logger.debug("Overriding end to '%s' for sample '%s'" % (self.override_end, s.name))
                         s.end = self.override_end.lstrip()
 
+                    if s.mode == 'replay' and not s.end:
+                        s.end = 1
 
             # Now that we know where samples will be written,
             # Loop through tokens and load state for any that are integerid replacementType
@@ -637,69 +642,67 @@ class Config(object):
         self.samples = tempsamples
         self._confDict = None
 
-
-
         # 9/2/15 Try autotimestamp values, add a timestamp if we find one
-        for s in self.samples:
-            if s.generator in ('default', 'replay'):
-                s.loadSample()
-
-                if s.autotimestamp:
-                    at = self.autotimestamps
-                    line_puncts = [ ]
-
-                    # Check for _time field, if it exists, add a timestamp to support it
-                    if len(s.sampleDict) > 0:
-                        if '_time' in s.sampleDict[0]:
-                            self.logger.debugv("Found _time field, checking if default timestamp exists")
-                            t = Token()
-                            t.token = "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}"
-                            t.replacementType = "timestamp"
-                            t.replacement = "%Y-%m-%dT%H:%M:%S.%f"
-
-                            found_token = False
-                            # Check to see if we're already a token
-                            for st in s.tokens:
-                                if st.token == t.token and st.replacement == t.replacement:
-                                    found_token = True
-                                    break
-                            if not found_token:
-                                self.logger.debugv("Found _time adding timestamp to support")
-                                s.tokens.append(t)
-                            else:
-                                self.logger.debugv("_time field exists and timestamp already configured")
-
-                    for e in s.sampleDict:
-                        # Run punct against the line, make sure we haven't seen this same pattern
-                        # Not totally exact but good enough for Rock'N'Roll
-                        p = self._punct(e['_raw'])
-                        # self.logger.debugv("Got punct of '%s' for event '%s'" % (p, e[s.timeField]))
-                        if p not in line_puncts:
-                            for x in at:
-                                t = Token()
-                                t.token = x[0]
-                                t.replacementType = "timestamp"
-                                t.replacement = x[1]
-
-                                try:
-                                    # self.logger.debugv("Trying regex '%s' for format '%s' on '%s'" % (x[0], x[1], e[s.timeField]))
-                                    ts = s.getTSFromEvent(e['_raw'], t)
-                                    if type(ts) == datetime.datetime:
-                                        found_token = False
-                                        # Check to see if we're already a token
-                                        for st in s.tokens:
-                                            if st.token == t.token and st.replacement == t.replacement:
-                                                found_token = True
-                                                break
-                                        if not found_token:
-                                            self.logger.debugv("Found timestamp '%s', extending token with format '%s'" % (x[0], x[1]))
-                                            s.tokens.append(t)
-                                            # Drop this pattern from ones we try in the future
-                                            at = [ z for z in at if z[0] != x[0] ]
-                                        break
-                                except ValueError:
-                                    pass
-                        line_puncts.append(p)
+        # for s in self.samples:
+        #     if s.generator in ('default', 'replay'):
+        #         s.loadSample()
+        #
+        #         if s.autotimestamp:
+        #             at = self.autotimestamps
+        #             line_puncts = [ ]
+        #
+        #             # Check for _time field, if it exists, add a timestamp to support it
+        #             if len(s.sampleDict) > 0:
+        #                 if '_time' in s.sampleDict[0]:
+        #                     self.logger.debugv("Found _time field, checking if default timestamp exists")
+        #                     t = Token()
+        #                     t.token = "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}"
+        #                     t.replacementType = "timestamp"
+        #                     t.replacement = "%Y-%m-%dT%H:%M:%S.%f"
+        #
+        #                     found_token = False
+        #                     # Check to see if we're already a token
+        #                     for st in s.tokens:
+        #                         if st.token == t.token and st.replacement == t.replacement:
+        #                             found_token = True
+        #                             break
+        #                     if not found_token:
+        #                         self.logger.debugv("Found _time adding timestamp to support")
+        #                         s.tokens.append(t)
+        #                     else:
+        #                         self.logger.debugv("_time field exists and timestamp already configured")
+        #
+        #             for e in s.sampleDict:
+        #                 # Run punct against the line, make sure we haven't seen this same pattern
+        #                 # Not totally exact but good enough for Rock'N'Roll
+        #                 p = self._punct(e['_raw'])
+        #                 # self.logger.debugv("Got punct of '%s' for event '%s'" % (p, e[s.timeField]))
+        #                 if p not in line_puncts:
+        #                     for x in at:
+        #                         t = Token()
+        #                         t.token = x[0]
+        #                         t.replacementType = "timestamp"
+        #                         t.replacement = x[1]
+        #
+        #                         try:
+        #                             # self.logger.debugv("Trying regex '%s' for format '%s' on '%s'" % (x[0], x[1], e[s.timeField]))
+        #                             ts = s.getTSFromEvent(e['_raw'], t)
+        #                             if type(ts) == datetime.datetime:
+        #                                 found_token = False
+        #                                 # Check to see if we're already a token
+        #                                 for st in s.tokens:
+        #                                     if st.token == t.token and st.replacement == t.replacement:
+        #                                         found_token = True
+        #                                         break
+        #                                 if not found_token:
+        #                                     self.logger.debugv("Found timestamp '%s', extending token with format '%s'" % (x[0], x[1]))
+        #                                     s.tokens.append(t)
+        #                                     # Drop this pattern from ones we try in the future
+        #                                     at = [ z for z in at if z[0] != x[0] ]
+        #                                 break
+        #                         except ValueError:
+        #                             pass
+        #                 line_puncts.append(p)
         self.logger.debug("Finished parsing")
 
 

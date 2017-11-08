@@ -110,7 +110,7 @@ class Timer(object):
                                                       num=backfillnumber,
                                                       unit=backfillletter,
                                                       ret=realtime)
-                while backfillearliest < realtime:
+                while backfillearliest < realtime and self.sample.mode != 'replay':
                     et = backfillearliest
                     lt = timeParserTimeMath(plusminus="+", num=self.sample.interval, unit="s", ret=et)
                     genPlugin = self.generatorPlugin(sample=self.sample)
