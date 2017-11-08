@@ -239,15 +239,16 @@ class Sample(object):
             return current_time
         else:
             if self.backfill[0] == '-':
-                backfill_time = int(self.backfill[1:-1])
+                backfill_time = self.backfill[1:-1]
                 if self.backfill[-2:] == 'ms':
-                    return current_time - datetime.timedelta(miliseconds=backfill_time)
+                    backfill_time = self.backfill[1:-2]
+                    return current_time - datetime.timedelta(milliseconds=int(backfill_time))
                 elif self.backfill[-1] == 's':
-                    return current_time - datetime.timedelta(seconds=backfill_time)
+                    return current_time - datetime.timedelta(seconds=int(backfill_time))
                 elif self.backfill[-1] == 'm':
-                    return current_time - datetime.timedelta(minutes=backfill_time)
+                    return current_time - datetime.timedelta(minutes=int(backfill_time))
                 elif self.backfill[-1] == 'h':
-                    return current_time - datetime.timedelta(hours=backfill_time)
+                    return current_time - datetime.timedelta(hours=int(backfill_time))
         return current_time
 
 
