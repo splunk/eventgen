@@ -51,17 +51,30 @@ withSplunkWrapNode('orca_ci') {
     }
 }
 
-// TODO - move internal methods to jenkinstools library
-def internalCountLastSuccessful(build, maxCount) {
-    passedBuilds = 0
-    for (i = 0; i < maxCount; i++) {
-        build = build.getPreviousBuild()
-        if (build == null) {
-            break
-        }
-        else if (build.result == 'SUCCESS') {
-            passedBuilds += 1
-        }
+def internalNotifyBuild(String buildStatus = 'STARTED') {
+
+    // build status of null means successful
+    buildStatus =  buildStatus ?: 'SUCCESS'
+
+    // Default values
+    def colorName = 'RED'
+    def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+    def summary = "${subject} (${env.BUILD_URL})"
+    def details = """<p>STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+      <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+
+    // Override default values based on build status
+    if (buildStatus == 'STARTED') {
+        color = 'YELLOW'
+        colorCode = '#FFFF00'
+    } else if (buildStatus == 'SUCCESS') {
+        color = 'GREEN'
+        colorCode = '#00FF00'
+    } else {
+        color = 'RED'
+        colorCode = '#FF0000'
     }
-    return passedBuilds
+
+    // Send notifications
+    hipchatSend (color: color, notify: true, message: summary)
 }
