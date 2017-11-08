@@ -168,10 +168,10 @@ def run_nameko(args):
         except KeyboardInterrupt:
             print()  # looks nicer with the ^C e.g. bash prints in the terminal
             try:
-                service_runner.stop()
+                runner.stop()
             except KeyboardInterrupt:
                 print()  # as above
-                service_runner.kill()
+                runner.kill()
         else:
             # runner.wait completed
             break
