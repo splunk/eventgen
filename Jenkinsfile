@@ -30,7 +30,7 @@ withSplunkWrapNode('orca_ci') {
         }
 
         stage('Publish pypi') {
-            sh 'make push_egg_staging'
+            sh 'make push_egg_production'
         }
 
     }
