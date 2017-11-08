@@ -404,6 +404,9 @@ class EventGenerator(object):
                             self.config._complexSettings.update(plugin.complexSettings)
                     except ValueError:
                         self.logger.error("Error loading plugin '%s' of type '%s'" % (base, plugintype))
+                    except ImportError as ie:
+                        self.logger.warn("Could not load plugin: %s, skipping" % mod_name.name)
+                        self.logger.exception(ie)
                     except Exception as e:
                         self.logger.exception(e)
                         raise e
