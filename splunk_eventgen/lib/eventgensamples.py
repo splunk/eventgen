@@ -309,8 +309,6 @@ class Sample(object):
             self._setup_logging()
         """Load sample from disk into self._sample.sampleLines and self._sample.sampleDict, 
         using cached copy if possible"""
-        # if self.generator == 'replay':
-        #     return
         if self.sampletype == 'raw':
             # 5/27/12 CS Added caching of the sample file
             if self.sampleDict == None:
@@ -356,7 +354,7 @@ class Sample(object):
                 for line in self.sampleLines:
                     if line and line[-1] != '\n':
                         line = line + '\n'
-                    self.sampleDict.append({ '_raw': line + '\n', 'index': self.index, 'host': self.host, 'source': self.source, 'sourcetype': self.sourcetype })
+                    self.sampleDict.append({ '_raw': line, 'index': self.index, 'host': self.host, 'source': self.source, 'sourcetype': self.sourcetype })
                 self.logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(self.sampleLines), len(self.sampleDict)))
         elif self.sampletype == 'csv':
             if self.sampleDict == None:

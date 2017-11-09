@@ -124,7 +124,6 @@ class Token(object):
                         # with the same value in multiple matches, here we'll include
                         # ones that need to be replaced for every match
                         if self.replacementType == 'replaytimestamp':
-                            # replacement = self._getReplacement(event[matchStart:matchEnd], et, lt, s)
                             replacement = lt.strftime(self.replacement)
                         offset += len(replacement) - len(match.group(0))
                     # logger.debug("matchStart %d matchEnd %d offset %d" % (matchStart, matchEnd, offset))
