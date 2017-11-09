@@ -103,7 +103,7 @@ class JinjaGenerator(GeneratorPlugin):
             timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
             self.logger.debugv("Interval complete, flushing feed")
             self._out.flush(endOfInterval=True)
-            self.logger.debug("Generation of sample '%s' completed in %s seconds." % (self._sample.name, timeDiffFrac) )
+            self.logger.info("Generation of sample '%s' completed in %s seconds." % (self._sample.name, timeDiffFrac) )
             return 0
         except Exception as e:
             self.logger.exception(e)
