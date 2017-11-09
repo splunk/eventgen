@@ -17,3 +17,5 @@ stage/
 local/
 eventgen_wsgi.conf
 *.log
+dist
+_book

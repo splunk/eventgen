@@ -1,0 +1,30 @@
+{
+    "title": "Eventgen Documentation",
+    "gitbook": "3.1.1",
+    "plugins": [
+        "versions",
+        "expand-active-chapter", 
+        "-sharing", 
+        "fontsettings"
+    ],
+    "pluginsConfig": {
+        "fontsettings": {
+            "theme": "white",
+            "family": "sans",
+            "size": 1
+        },
+        "versions": {
+            "options": [
+                {
+                    "value": "http://go.sv.splunk.com/egdocs",
+                    "text": "latest",
+                    "selected": true
+                },
+                {
+                    "value": "http://go.sv.splunk.com/egdocs",
+                    "text": "develop"
+                }
+            ]
+        }
+    }
+}
