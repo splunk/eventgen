@@ -111,24 +111,31 @@ def parse_args():
             args.configfile = None
     return args
 
-def wait_for_response(address, webport):
-    RETRY_COUNT = 30
+def wait_for_response(address, webport, timeout=300):
+    '''
+    This function extracts the hostname off the given address in the form <protocol>://<user>:<password>@<hostname>:<port>
+    and builds a URL in the form http://<hostname>:<webport>. Using this URL, it tries to verify the endpoint is reachable.
+
+    Retry will occur for ~300s
+    '''
     protocol, url = address.split("://")
     creds, addr = url.split("@")
     host, port = addr.split(":")
     userid, password = creds.split(":")
-    for i in range(RETRY_COUNT):
+    start = time.time()
+    end = start
+    while end-start < timeout:
         try:
-            # TODO: HTTP port is set to 15672, but this should be dynamic
             r = requests.get("http://{}:{}".format(host, webport))
             r.raise_for_status()
-            break
+            return
         except requests.exceptions.ConnectionError as e:
             time.sleep(1)
-    if i == RETRY_COUNT-1:
-        msg = "Unable to contact broker URL."
-        logger.exception(msg)
-        raise Exception(msg)
+        finally:
+            end = time.time()
+    msg = "Unable to contact broker URL."
+    logger.exception(msg)
+    raise Exception(msg)
 
 def parse_service_cli_vars(args):
     config = {}

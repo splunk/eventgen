@@ -43,7 +43,7 @@ COPY entrypoint.sh /sbin/entrypoint.sh
 COPY splunk_eventgen.tgz /root/splunk_eventgen.tgz
 COPY rabbitmq.config /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/rabbitmq.config
 
-RUN pip install /root/splunk_eventgen.tgz
+RUN pip install /root/splunk_eventgen.tgz && rm /root/splunk_eventgen.tgz
 
 EXPOSE 2222 5672 15672 9500
 WORKDIR /root
