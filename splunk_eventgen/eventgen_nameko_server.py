@@ -17,7 +17,7 @@ EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "
 def get_eventgen_name_from_conf():
     with open(os.path.abspath(os.path.join(FILE_PATH, "server_conf.yml"))) as config_yml:
         loaded_yml = yaml.load(config_yml)
-        return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else None
+        return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else socket.gethostname()
     return None
 
 class EventgenListener:
