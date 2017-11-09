@@ -17,8 +17,10 @@ stage/
 local/
 eventgen_wsgi.conf
 *.log
-dist/
+dist
 *.egg-info
 **/*.tgz
 .cache
 *.xml
+dist
+_book
