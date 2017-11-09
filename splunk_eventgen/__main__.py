@@ -52,13 +52,13 @@ def parse_args():
     # Service subparser
     service_subparser = subparsers.add_parser('service', help="Run Eventgen as a Nameko service. Parameters for starting this service can be defined as either environment variables or CLI arguments, where environment variables takes precedence. See help for more info.")
     service_subparser.add_argument("--role", "-r", type=str, default=None, required=True, choices=["controller", "server"], help="Define the role for this Eventgen node. Options: master, slave")
-    service_subparser.add_argument("--amqp-uri", type=str, default=None, help="Full URI to AMQP endpoint in the format pyamqp://<user>:<password>@<host>:<port>. This can also be set using the environment variable EVENTGEN_AMQP_URI. Ex: pyamqp://guest:guest@localhost:5672")
-    service_subparser.add_argument("--amqp-host", type=str, default="localhost", help="Specify AMQP hostname. This can also be set using the environment variable EVENTGEN_AMQP_HOST")
-    service_subparser.add_argument("--amqp-port", type=int, default=5672, help="Specify AMQP port. This can also be set using the environment variable EVENTGEN_AMQP_PORT")
-    service_subparser.add_argument("--amqp-webport", type=int, default=15672, help="Specify AMQP web port. This can also be set using the environment variable EVENTGEN_AMQP_WEBPORT")
-    service_subparser.add_argument("--amqp-user", type=str, default="guest", help="Specify AMQP user. This can also be set using the environment variable EVENTGEN_AMQP_USER")
-    service_subparser.add_argument("--amqp-pass", type=str, default="guest", help="Specify AMQP password. This can also be set using the environment variable EVENTGEN_AMQP_PASS")
-    service_subparser.add_argument("--web-server-address", type=str, default="0.0.0.0:9500", help="Specify nameko webserver address. This can also be set using the environment variable EVENTGEN_WEB_SERVER_ADDR. Ex: 0.0.0.0:9500")
+    service_subparser.add_argument("--amqp-uri", type=str, default=None, help="Full URI to AMQP endpoint in the format pyamqp://<user>:<password>@<host>:<port>. This can also be set using the environment variable EVENTGEN_AMQP_URI")
+    service_subparser.add_argument("--amqp-host", type=str, default=None, help="Specify AMQP hostname. This can also be set using the environment variable EVENTGEN_AMQP_HOST. Default is localhost")
+    service_subparser.add_argument("--amqp-port", type=int, default=None, help="Specify AMQP port. This can also be set using the environment variable EVENTGEN_AMQP_PORT. Default is 5672")
+    service_subparser.add_argument("--amqp-webport", type=int, default=None, help="Specify AMQP web port. This can also be set using the environment variable EVENTGEN_AMQP_WEBPORT. Default is 15672")
+    service_subparser.add_argument("--amqp-user", type=str, default=None, help="Specify AMQP user. This can also be set using the environment variable EVENTGEN_AMQP_USER. Default is 'guest'")
+    service_subparser.add_argument("--amqp-pass", type=str, default=None, help="Specify AMQP password. This can also be set using the environment variable EVENTGEN_AMQP_PASS. Default is 'guest'")
+    service_subparser.add_argument("--web-server-address", type=str, default=None, help="Specify nameko webserver address. This can also be set using the environment variable EVENTGEN_WEB_SERVER_ADDR. Default is 0.0.0.0:9500")
     # Help subparser
     # NOTE: Keep this at the end so we can use the subparser_dict.keys() to display valid commands
     help_subparser = subparsers.add_parser('help', help="Display usage on a subcommand")
@@ -137,26 +137,25 @@ def wait_for_response(address, webport, timeout=300):
     logger.exception(msg)
     raise Exception(msg)
 
-def parse_service_cli_vars(args):
-    config = {}
-    config["AMQP_URI"] = args.amqp_uri
-    config["AMQP_HOST"] = args.amqp_host
-    config["AMQP_PORT"] = args.amqp_port
-    config["AMQP_WEBPORT"] = args.amqp_webport
-    config["AMQP_USER"] = args.amqp_user
-    config["AMQP_PASS"] = args.amqp_pass
-    config["WEB_SERVER_ADDRESS"] = args.web_server_address
+def parse_cli_vars(config, args):
+    config["AMQP_URI"] = args.amqp_uri if args.amqp_uri else config["AMQP_URI"]
+    config["AMQP_HOST"] = args.amqp_host if args.amqp_host else config["AMQP_HOST"]
+    config["AMQP_PORT"] = args.amqp_port if args.amqp_port else config["AMQP_PORT"]
+    config["AMQP_WEBPORT"] = args.amqp_webport if args.amqp_webport else config["AMQP_WEBPORT"]
+    config["AMQP_USER"] = args.amqp_user if args.amqp_user else config["AMQP_USER"]
+    config["AMQP_PASS"] = args.amqp_pass if args.amqp_pass else config["AMQP_PASS"]
+    config["WEB_SERVER_ADDRESS"] = args.web_server_address if args.web_server_address else config["WEB_SERVER_ADDRESS"]
     return config
 
-def parse_service_env_vars(config):
-    osvars = dict(os.environ)
-    config["AMQP_URI"] = osvars.get("EVENTGEN_AMQP_URI", config["AMQP_URI"])
-    config["AMQP_HOST"] = osvars.get("EVENTGEN_AMQP_HOST", config["AMQP_HOST"])
-    config["AMQP_PORT"] = osvars.get("EVENTGEN_AMQP_PORT", config["AMQP_PORT"])
-    config["AMQP_WEBPORT"] = osvars.get("EVENTGEN_AMQP_WEBPORT", config["AMQP_WEBPORT"])
-    config["AMQP_USER"] = osvars.get("EVENTGEN_AMQP_URI", config["AMQP_USER"])
-    config["AMQP_PASS"] = osvars.get("EVENTGEN_AMQP_PASS", config["AMQP_PASS"])
-    config["WEB_SERVER_ADDRESS"] = osvars.get("EVENTGEN_WEB_SERVER_ADDR", config["WEB_SERVER_ADDRESS"])
+def parse_env_vars():
+    osvars, config = dict(os.environ), {}
+    config["AMQP_URI"] = osvars.get("EVENTGEN_AMQP_URI", None)
+    config["AMQP_HOST"] = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
+    config["AMQP_PORT"] = osvars.get("EVENTGEN_AMQP_PORT", 5672)
+    config["AMQP_WEBPORT"] = osvars.get("EVENTGEN_AMQP_WEBPORT", 15672)
+    config["AMQP_USER"] = osvars.get("EVENTGEN_AMQP_URI", "guest")
+    config["AMQP_PASS"] = osvars.get("EVENTGEN_AMQP_PASS", "guest")
+    config["WEB_SERVER_ADDRESS"] = osvars.get("EVENTGEN_WEB_SERVER_ADDR", "0.0.0.0:9500")
     return config
 
 def rectify_config(config):
@@ -183,12 +182,13 @@ def run_nameko(args):
     import eventlet
     eventlet.monkey_patch()
     from nameko.runners import ServiceRunner
-    # In order to make this run locally as well as within a container-ized environment, we're
-    # to pull arguments from both environment variables and CLI vars
-    config = parse_service_cli_vars(args)
-    config = parse_service_env_vars(config)
+    # In order to make this run locally as well as within a container-ized environment, we're to pull variables 
+    # from both environment variables and CLI arguments, where CLI will take precendence.
+    config = parse_env_vars()
+    config = parse_cli_vars(config, args)
     config = rectify_config(config)
     logger.info("Config used: {}".format(config))
+    print "Config used: {}".format(config)
     # Wait up to 30s for RMQ service to be up
     wait_for_response(config["AMQP_URI"], config["AMQP_WEBPORT"])
     # Start Nameko service

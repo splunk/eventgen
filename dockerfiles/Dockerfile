@@ -45,6 +45,9 @@ COPY rabbitmq.config /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq
 
 RUN pip install /root/splunk_eventgen.tgz && rm /root/splunk_eventgen.tgz
 
+HEALTHCHECK --interval=1m --timeout=15s --start-period=5m --retries=3 \
+	CMD curl http://localhost:9500 || exit 1
+
 EXPOSE 2222 5672 15672 9500
 WORKDIR /root
 ENTRYPOINT ["/sbin/entrypoint.sh"]
