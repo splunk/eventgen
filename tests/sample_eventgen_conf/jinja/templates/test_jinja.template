@@ -1,4 +1,4 @@
-{% set large_number = 5 %}
 {% for _ in range(0, large_number) %}
-I like little windbags! I'm at: {{ loop.index }} out of: {{ large_number }}
+{%- now date_format="%Y-%m-%dT%H:%M:%S%z" %}
+{{ time_now }} I like little windbags! I'm at: {{ loop.index }} out of: {{ large_number }}
 {% endfor %}

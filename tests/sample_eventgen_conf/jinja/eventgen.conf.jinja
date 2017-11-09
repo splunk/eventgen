@@ -1,7 +1,9 @@
 [Test_Jinja]
+end = 1
 generator = jinja
 jinja_template_dir = templates
 jinja_target_template = test_jinja.template
+jinja_variables = {"large_number":50000}
 earliest = -3s
 latest = now
 outputMode = stdout
