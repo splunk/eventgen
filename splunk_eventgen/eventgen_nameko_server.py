@@ -107,7 +107,9 @@ class EventgenListener:
 
     def status(self):
         self.log.info('Status method called.')
-        return json.dumps(self.get_status(), indent=4)
+        status = self.get_status()
+        self.log.info(status)
+        return json.dumps(status, indent=4)
 
     def start(self):
         self.log.info("start method called. Config is {}".format(self.eventgen_dependency.configfile))

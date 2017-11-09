@@ -21,10 +21,40 @@ class ReplayGenerator(GeneratorPlugin):
         self._timeSinceSleep = datetime.timedelta()
         self._times = [ ]
 
-    def set_time_and_send(self, rpevent, time):
+    def set_time_and_send(self, rpevent, event_time, earliest, latest):
         # temporary time append
-        rpevent['_raw'] = rpevent['_raw'][:-1] + '  ' + str(time)
-        rpevent['_time'] = time
+        rpevent['_raw'] = rpevent['_raw'][:-1]
+        rpevent['_time'] = event_time
+
+        event = rpevent['_raw']
+
+        # Maintain state for every token in a given event
+        # Hash contains keys for each file name which is assigned a list of values
+        # picked from a random line in that file
+        mvhash = {}
+
+        ## Iterate tokens
+        for token in self._sample.tokens:
+            token.mvhash = mvhash
+            # self.logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
+            self.logger.debugv("Sending event to token replacement: Event:{0} Token:{1}".format(event, token))
+            if token.replacementType == 'timestamp' and self._sample.timeField != '_raw':
+                self._sample.timestamp = None
+                event = token.replace(event[self._sample.timeField], et=event_time, lt=event_time, s=self._sample)
+            elif token.replacementType == 'replaytimestamp' and self._sample.timeField == '_raw':
+                event = token.replace(event, et=event_time, lt=event_time, s=self._sample)
+            else:
+                event = token.replace(event, s=self._sample)
+        self.logger.debugv("finished replacing token")
+        if (self._sample.hostToken):
+            # clear the host mvhash every time, because we need to re-randomize it
+            self._sample.hostToken.mvhash = {}
+
+        host = rpevent['host']
+        if (self._sample.hostToken):
+            rpevent['host'] = self._sample.hostToken.replace(host, s=self._sample)
+
+        rpevent['_raw'] = event
         self._out.bulksend([rpevent])
 
     def gen(self, count, earliest, latest, samplename=None):
@@ -57,7 +87,7 @@ class ReplayGenerator(GeneratorPlugin):
             if previous_event is None:
                 previous_event = rpevent
                 previous_event_timestamp = current_event_timestamp
-                self.set_time_and_send(rpevent, self.backfill_time)
+                self.set_time_and_send(rpevent, self.backfill_time, earliest, latest)
                 continue
 
             # Refer to the last event to calculate the new backfill time
@@ -73,7 +103,7 @@ class ReplayGenerator(GeneratorPlugin):
                 self.backfill_time += time_difference
             previous_event = rpevent
             previous_event_timestamp = current_event_timestamp
-            self.set_time_and_send(rpevent, self.backfill_time)
+            self.set_time_and_send(rpevent, self.backfill_time, earliest, latest)
 
             # TODO: token replacement
 

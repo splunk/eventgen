@@ -99,8 +99,7 @@ class Token(object):
 
         if len(tokenMatch) > 0:
             replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)], et, lt, s)
-            
-            if replacement is not None:
+            if replacement is not None or self.replacementType == 'replaytimestamp':
                 # logger.debug("Replacement: '%s'" % replacement)
                 ## Iterate matches
                 for match in tokenMatch:
@@ -114,7 +113,7 @@ class Token(object):
                         # with the same value in multiple matches, here we'll include
                         # ones that need to be replaced for every match
                         if self.replacementType == 'replaytimestamp':
-                            replacement = self._getReplacement(event[matchStart:matchEnd], et, lt, s)
+                            replacement = lt.strftime(self.replacement)
                         offset += len(replacement) - len(match.group(1))
                     except:
                         matchStart = match.start(0) + offset
@@ -125,20 +124,24 @@ class Token(object):
                         # with the same value in multiple matches, here we'll include
                         # ones that need to be replaced for every match
                         if self.replacementType == 'replaytimestamp':
-                            replacement = self._getReplacement(event[matchStart:matchEnd], et, lt, s)
+                            # replacement = self._getReplacement(event[matchStart:matchEnd], et, lt, s)
+                            replacement = lt.strftime(self.replacement)
                         offset += len(replacement) - len(match.group(0))
                     # logger.debug("matchStart %d matchEnd %d offset %d" % (matchStart, matchEnd, offset))
                     event = startEvent + replacement + endEvent
-                
+
                 # Reset replay internal variables for this token
                 self._replaytd = None
                 self._lastts = None
         return event
                     
-    def _getReplacement(self, old=None, earliestTime=None, latestTime=None, s=None):
+    def  _getReplacement(self, old=None, earliestTime=None, latestTime=None, s=None):
         if self.replacementType == 'static':
             return self.replacement
-        elif self.replacementType in ('timestamp', 'replaytimestamp'):
+        # This logic is done in replay.py
+        elif self.replacementType == 'replaytimestamp':
+            pass
+        elif self.replacementType == 'timestamp':
             if s.earliest and s.latest:
                 if earliestTime and latestTime:
                     if latestTime>=earliestTime:
@@ -162,90 +165,9 @@ class Token(object):
                             replacementTime = s.timestamp
 
                         # logger.debug("Generating timestamp for sample '%s' with randomDelta %s, minDelta %s, maxDelta %s, earliestTime %s, latestTime %s, earliest: %s, latest: %s" % (s.name, randomDelta, minDelta, maxDelta, earliestTime, latestTime, s.earliest, s.latest))
-                        
-                        if self.replacementType == 'replaytimestamp':
-                            if old != None and len(old) > 0:
-                                # Determine type of timestamp to use for this token
-                                # We can either be a string with one strptime format
-                                # or we can be a json formatted list of strptime formats
-                                currentts = None
-                                try:
-                                    strptimelist = json.loads(self.replacement)   
-                                    # logger.debugv("Replaytimestamp formats: %s" % json.dumps(strptimelist))  
-                                    for currentformat in strptimelist:
-                                        try:
-                                            timeformat = currentformat
-                                            if timeformat == "%s":
-                                                ts = float(old) if  len(old) < 10 else float(old) / (10**(len(old)-10))
-                                                currentts = datetime.datetime.fromtimestamp(ts)
-                                            else:
-                                                currentts = datetime.datetime.strptime(old, timeformat)
-                                            # logger.debug("Old '%s' Timeformat '%s' currentts '%s'" % (old, timeformat, currentts))
-                                            if type(currentts) == datetime.datetime:
-                                                break
-                                        except ValueError:
-                                            pass
-                                    # logger.debugv("Currentts: %s" % currentts)
-                                    if type(currentts) != datetime.datetime:
-                                        # Total fail
-                                        self.logger.error("Can't find strptime format for this timestamp '%s' in the list of formats.  Returning original value" % old)
-                                        return old
-                                except ValueError:
-                                    # Not JSON, try to read as text
-                                    timeformat = self.replacement
-                                    try:
-                                        if timeformat == "%s":
-                                            ts = float(old) if  len(old) < 10 else float(old) / (10**(len(old)-10))
-                                            currentts = datetime.datetime.fromtimestamp(ts)
-                                        else:
-                                            currentts = datetime.datetime.strptime(old, timeformat)
-                                        # self.logger.debug("Timeformat '%s' currentts '%s'" % (timeformat, currentts))
-                                    except ValueError:
-                                        # Total fail
-                                        self.logger.error("Can't match strptime format ('%s') to this timestamp '%s'.  Returning original value" % (timeformat, old))
-                                        return old
-                                    
-                                    # Can't parse as strptime, try JSON
-                                
-                                # Check to make sure we parsed a year
-                                if currentts.year == 1900:
-                                    currentts = currentts.replace(year=s.now().year)
-                                # We should now know the timeformat and currentts associated with this event
-                                # If we're the first, save those values        
-                                if self._replaytd == None:
-                                    self._replaytd = replacementTime - currentts
-                                
-                                # self.logger.debug("replaytd %s" % self._replaytd)
-                                replacementTime = currentts + self._replaytd
-                                
-                                # Randomize time a bit between last event and this one
-                                # Note that we'll always end up shortening the time between
-                                # events because we don't know when the next timestamp is going to be
-                                if s.bundlelines:
-                                    if self._lastts == None:
-                                        self._lastts = replacementTime
-                                    oldtd = replacementTime - self._lastts
-                                    randomsecs = random.randint(0, oldtd.seconds)
-                                    if oldtd.seconds > 0:
-                                        randommicrosecs = random.randint(0, 1000000)
-                                    else:
-                                        randommicrosecs = random.randint(0, oldtd.microseconds)
-                                    randomtd = datetime.timedelta(seconds=randomsecs, microseconds=randommicrosecs)
-                                    replacementTime -= randomtd
-                                else:
-                                    randomtd = datetime.timedelta()
-                                self._lastts = replacementTime
-                                replacement = timeformat.replace('%s', str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
-                                replacementTime = replacementTime.strftime(replacement)
-                                # self.logger.debugv("ReplacementTime: %s" % replacementTime)
-                                # self.logger.debug("Old '%s' Timeformat '%s' currentts '%s' replacementTime '%s' replaytd '%s' randomtd '%s'" \
-                                #             % (old, timeformat, currentts, replacementTime, self._replaytd, randomtd))
-                            else:
-                                self.logger.error("Could not find old value, needed for replaytimestamp")
-                                return old
-                        else:
-                            replacement = self.replacement.replace('%s', str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
-                            replacementTime = replacementTime.strftime(replacement)
+
+                        replacement = self.replacement.replace('%s', str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
+                        replacementTime = replacementTime.strftime(replacement)
                         ## replacementTime == replacement for invalid strptime specifiers
                         if replacementTime != self.replacement.replace('%', ''):
                             return replacementTime
@@ -521,5 +443,5 @@ class Token(object):
             return temp
 
         else:
-            self.logger.error("Unknown replacementType '%s'; will not replace" % (replacementType) )
+            self.logger.error("Unknown replacementType '%s'; will not replace" % (self.replacementType) )
             return old
