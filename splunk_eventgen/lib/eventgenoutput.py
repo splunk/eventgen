@@ -1,7 +1,6 @@
 from __future__ import division
 import logging
 import logging.handlers
-from collections import deque
 from Queue import Full
 import json
 import time
@@ -19,7 +18,7 @@ class Output(object):
         self._sample = sample
         self._outputMode = sample.outputMode
         self.MAXQUEUELENGTH = sample.maxQueueLength
-        self._queue = deque([])
+        self._queue = []
         self._setup_logging()
 
 
@@ -100,9 +99,9 @@ class Output(object):
         #TODO: This is set this way just for the time being while I decide if we want this feature.
         flushing = True
         if flushing:
-            q = list(self._queue)
+            q = self._queue
             self.logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
-            self._queue.clear()
+            self._queue = []
             outputer = self.outputPlugin(self._sample)
             outputer.updateConfig(self.config)
             outputer.set_events(q)
@@ -124,4 +123,3 @@ class Output(object):
                             'sample': self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)}))
                 tmp = None
                 outputer.run()
-        pass
