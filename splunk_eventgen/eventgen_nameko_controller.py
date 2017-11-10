@@ -169,9 +169,10 @@ class EventgenController(object):
     @http('POST', '/conf')
     def http_set_conf(self, request):
         for pair in request.values.lists():
-            if pair[0] == "configfile":
+            print pair, type(pair[0])
+            if "configfile" == pair[0]:
                 return self.set_conf(nodes=self.get_nodes(request), configfile=pair[1][0])
-            elif "custom_config_json" in pair[0]:
+            elif "custom_config_json" == pair[0]:
                 return self.set_conf(nodes=self.get_nodes(request), custom_config_json=pair[1][0])
         return '400', 'Please pass the valid parameters.'
 
