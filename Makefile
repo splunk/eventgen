@@ -23,6 +23,10 @@ image: setup_eventgen egg
 	rm splunk_eventgen/default/eventgen_engine.conf || true
 	cd dockerfiles && docker build . -t eventgen
 
+push_image_production: image
+	docker tag eventgen:latest repo.splunk.com/splunk/products/eventgenx:latest
+	docker push repo.splunk.com/splunk/products/eventgenx:latest
+
 test: egg
 	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} python:2.7.14-alpine3.6 cat
 

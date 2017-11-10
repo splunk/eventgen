@@ -31,7 +31,15 @@ withSplunkWrapNode('orca_ci') {
         }
 
         stage('Publish pypi') {
-            sh 'make push_egg_production'
+            if (env.BRANCH_NAME == 'develop') {
+                sh 'make push_egg_production'
+            }
+        }
+
+        stage('Publish image') {
+            if (env.BRANCH_NAME == 'develop') {
+                sh 'make push_image_production'
+            }
         }
 
     }
