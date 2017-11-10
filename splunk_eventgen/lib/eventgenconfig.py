@@ -118,7 +118,7 @@ class Config(object):
         self.override_end = override_end
         self._setup_logging()
         if override_generators >= 0:
-            self.generatorWorkers = self.override_generators
+            self.generatorWorkers = override_generators
         if override_outputqueue:
             self.useOutputQueue = False
 
@@ -359,6 +359,8 @@ class Config(object):
                         s._lockedSettings.append(key)
                         # self.logger.debug("Appending '%s' to locked settings for sample '%s'" % (key, s.name))
 
+
+
                 # Validate all the tokens are fully setup, can't do this in _validateSettings
                 # because they come over multiple lines
                 # Don't error out at this point, just log it and remove the token and move on
@@ -442,14 +444,15 @@ class Config(object):
 
             # 2/1/15 CS Adding support for command line options, specifically running a single sample
             # from the command line
+                self.run_sample = True
                 if self.run_sample:
                     # Name doesn't match, disable
-                    if s.name != self.run_sample:
-                        self.logger.debug("Disabling sample '%s' because of command line override" % s.name)
-                        s.disabled = True
-                    # Name matches
-                    else:
-                        self.logger.debug("Sample '%s' selected from command line" % s.name)
+                    # if s.name != self.run_sample:
+                    #     self.logger.debug("Disabling sample '%s' because of command line override" % s.name)
+                    #     s.disabled = True
+                    # # Name matches
+                    # else:
+                    #     self.logger.debug("Sample '%s' selected from command line" % s.name)
                     # Also, can't backfill search if we don't know how to talk to Splunk
                     s.backfillSearch = None
                     s.backfillSearchUrl = None
@@ -480,6 +483,8 @@ class Config(object):
                         self.logger.debug("Overriding end to '%s' for sample '%s'" % (self.override_end, s.name))
                         s.end = self.override_end.lstrip()
 
+                    if s.mode == 'replay' and not s.end:
+                        s.end = 1
 
             # Now that we know where samples will be written,
             # Loop through tokens and load state for any that are integerid replacementType
@@ -637,11 +642,9 @@ class Config(object):
         self.samples = tempsamples
         self._confDict = None
 
-
-
         # 9/2/15 Try autotimestamp values, add a timestamp if we find one
         for s in self.samples:
-            if s.generator in ('default', 'replay'):
+            if s.generator == 'default':
                 s.loadSample()
 
                 if s.autotimestamp:

@@ -270,8 +270,8 @@ class EventGenerator(object):
         self.logger = logging.getLogger('eventgen')
         self.loggingQueue = None
         hec_info = self.get_hec_info_from_conf()
-        handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1])
-        logging.getLogger().addHandler(handler)
+        self.hec_logging_handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1])
+        logging.getLogger().addHandler(self.hec_logging_handler)
 
     def get_hec_info_from_conf(self):
         hec_info = [None, None]
@@ -446,7 +446,7 @@ class EventGenerator(object):
         :return:
         '''
         try:
-            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0:
+            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks or not self.workerQueue.empty() or self.workerQueue.unfinished_tasks > 0:
                 time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
@@ -471,6 +471,7 @@ class EventGenerator(object):
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
         self.logger.info("All items fully processed, stopping.")
+        self.hec_logging_handler._stopFlushTimer()
         self.stopping = False
 
 

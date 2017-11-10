@@ -5,7 +5,7 @@ import logging
 class StdOutOutputPlugin(OutputPlugin):
     queueable = True
     name = 'stdout'
-    MAXQUEUELENGTH = 10
+    MAXQUEUELENGTH = 10000
 
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
