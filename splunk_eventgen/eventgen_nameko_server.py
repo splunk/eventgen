@@ -1,3 +1,4 @@
+from nameko.rpc import rpc
 from nameko.web.handlers import http
 from nameko.events import EventDispatcher, event_handler, BROADCAST
 import ConfigParser
@@ -22,6 +23,8 @@ def get_eventgen_name_from_conf():
 
 class EventgenListener:
     name = "eventgen_listener"
+
+    dispatch = EventDispatcher()
 
     eventgen_dependency = eventgen_nameko_dependency.EventgenDependency()
     eventgen_name = get_eventgen_name_from_conf()
@@ -109,7 +112,16 @@ class EventgenListener:
         self.log.info('Status method called.')
         status = self.get_status()
         self.log.info(status)
+        self.send_status_to_controller(server_status=status)
         return json.dumps(status, indent=4)
+
+    @rpc
+    def send_status_to_controller(self, server_status):
+        data = {}
+        data['server_name'] = self.eventgen_name
+        data['server_status'] = server_status
+        self.dispatch("server_status", data)
+        return True
 
     def start(self):
         self.log.info("start method called. Config is {}".format(self.eventgen_dependency.configfile))
