@@ -1,3 +1,4 @@
+from nameko.rpc import rpc
 from nameko.web.handlers import http
 from nameko.events import EventDispatcher, event_handler, BROADCAST
 import ConfigParser
@@ -22,6 +23,8 @@ def get_eventgen_name_from_conf():
 
 class EventgenListener:
     name = "eventgen_listener"
+
+    dispatch = EventDispatcher()
 
     eventgen_dependency = eventgen_nameko_dependency.EventgenDependency()
     eventgen_name = get_eventgen_name_from_conf()
@@ -76,15 +79,15 @@ class EventgenListener:
     def index(self):
         self.log.info("index method called")
         home_page = '''
-        <h1>Eventgen WSGI</h1>
-        <p>Host: {0}</p>
-        <p>Eventgen Status: {1}</p>
-        <p>Eventgen Config file exists: {2}</p>
-        <p>Eventgen Custom Configured?: {3}</p>
-        <p>Eventgen Config file path: {4}</p>
-        <p>Worker Queue Status: {5}</p>
-        <p>Sample Queue Status: {6}</p>
-        <p>Output Queue Status: {7}</p>
+        *** Eventgen WSGI ***
+        Host: {0}
+        Eventgen Status: {1}
+        Eventgen Config file exists: {2}
+        Eventgen Custom Configured?: {3}
+        Eventgen Config file path: {4}
+        Worker Queue Status: {5}
+        Sample Queue Status: {6}
+        Output Queue Status: {7}
         '''
         status = self.get_status()
         eventgen_status = "running" if status["EVENTGEN_STATUS"] else "stopped"
@@ -109,7 +112,16 @@ class EventgenListener:
         self.log.info('Status method called.')
         status = self.get_status()
         self.log.info(status)
+        self.send_status_to_controller(server_status=status)
         return json.dumps(status, indent=4)
+
+    @rpc
+    def send_status_to_controller(self, server_status):
+        data = {}
+        data['server_name'] = self.eventgen_name
+        data['server_status'] = server_status
+        self.dispatch("server_status", data)
+        return True
 
     def start(self):
         self.log.info("start method called. Config is {}".format(self.eventgen_dependency.configfile))
@@ -162,7 +174,7 @@ class EventgenListener:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
-    def set_conf(self, configfile=None, custom_config_json={}):
+    def set_conf(self, conf):
         '''
 
         customconfig data format
@@ -170,19 +182,19 @@ class EventgenListener:
         '''
         self.log.info("set_conf method called")
         try:
-            if configfile and os.path.isfile(os.path.abspath(os.path.join(EVENTGEN_DIR, configfile))):
-                modified_path_configfile = os.path.join('..', configfile)
+            if not self.is_custom_conf(conf) and os.path.isfile(os.path.abspath(os.path.join(EVENTGEN_DIR, conf))):
+                modified_path_configfile = os.path.join('..', conf)
                 self.eventgen_dependency.eventgen.reload_conf(modified_path_configfile)
                 self.eventgen_dependency.configured = True
                 self.eventgen_dependency.customconfigured = False
-                self.eventgen_dependency.configfile = configfile
-                msg = 'Loaded the conf file: {}'.format(configfile)
+                self.eventgen_dependency.configfile = conf
+                msg = 'Loaded the conf file: {}'.format(conf)
                 self.log.info(msg)
                 return msg
-            elif custom_config_json:
+            else:
                 config = ConfigParser.ConfigParser()
                 config.optionxform = str
-                custom_config_json = json.loads(custom_config_json)
+                custom_config_json = json.loads(conf)
                 for sample in custom_config_json.iteritems():
                     sample_name = sample[0]
                     sample_key_value_pairs = sample[1]
@@ -231,10 +243,8 @@ class EventgenListener:
 
     @event_handler("eventgen_controller", "all_set_conf", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_set_conf(self, payload):
-        if payload['type'] == 'configfile':
-            return self.set_conf(configfile=payload['data'])
-        elif payload['type'] == 'custom_config_json':
-            return self.set_conf(custom_config_json=payload['data'])
+        if payload['type'] == 'conf':
+            return self.set_conf(conf=payload['data'])
 
     @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_index(self, payload):
@@ -262,15 +272,16 @@ class EventgenListener:
 
     @event_handler("eventgen_controller", "{}_set_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_set_conf(self, payload):
-        if payload['type'] == 'configfile':
-            return self.set_conf(configfile=payload['data'])
-        elif payload['type'] == 'custom_config_json':
-            return self.set_conf(custom_config_json=payload['data'])
-
+        if payload['type'] == 'conf':
+            return self.set_conf(conf=payload['data'])
 
     ##############################################
     ################ HTTP Methods ################
     ##############################################
+
+    @http('GET', '/')
+    def http_root(self, request):
+        return self.index()
 
     @http('GET', '/index')
     def http_index(self, request):
@@ -299,9 +310,17 @@ class EventgenListener:
     @http('POST', '/conf')
     def http_set_conf(self, request):
         for pair in request.values.lists():
-            if pair[0] == "configfile":
-                return self.set_conf(configfile=pair[1][0])
-            elif "custom_config_json" in pair[0]:
-                return self.set_conf(custom_config_json=pair[1][0])
+            if pair[0] == "conf":
+                return self.set_conf(conf=pair[1][0])
         else:
             return '400', 'Please pass the valid parameters.'
+
+    ##############################################
+    ################ Helper Methods ##############
+    ##############################################
+
+    def is_custom_conf(self, conf):
+        if conf[0] == '{' and conf[-1] == '}':
+            return True
+        else:
+            return False
