@@ -10,13 +10,7 @@
 
 This new Eventgen model can be brought up in several different ways. Please see the options below for how to configure your Eventgen cluster:
 
-1. Use ORCA
-    * ```orca create --egx {NUM_OF_DESIRED_EVENTGEN_SERVERS}```
-    * NUM_OF_DESIRED_EVENTGEN_SERVERS = number of Eventgen server instances (by default, a controller will be created automatically)
-    * ORCA will handle orchestration of servers and controller for you, so once your deployment is finished you can interact with the controller directly
-    * All requests should be made against to the Eventgen Controller in order to properly propagate settings/configs/messages across the cluster
-
-2. Use Docker
+1. Use Docker
     * [Setup controllers and servers](SETUP.md#container-setup) using your local Docker client
     * For multiple servers, it's ideal to create all the containers in the same network. For instance:
     * `docker network create --attachable --driver bridge eg_network`
@@ -25,7 +19,7 @@ This new Eventgen model can be brought up in several different ways. Please see 
     * For multiple servers, make sure you specify a different `--name` parameter to make server management easier
     * By default, Eventgen servers will use the container's hostname to identify itself with the controller. In a container, this will be random (ex: `75f966472253`). It's also recommended to add a `--hostname` parameter to your Docker run CLI so make management easier.
 
-3. Using PyPI package
+2. Using PyPI package
     * Install and run [RabbitMQ](https://www.rabbitmq.com/download.html) locally
     * Install [Eventgen PyPI module](SETUP.md#pypi-setup)
     * To standup a controller, run `splunk_eventgen service --role controller`
@@ -35,7 +29,7 @@ This new Eventgen model can be brought up in several different ways. Please see 
     * Please see `splunk_eventgen service --help` for additional CLI options
     * NOTE: Running the controller and server on the same machine will cause port collisions for the Eventgen web server. To mitigate this, you can tell the server to run on a separate port using `splunk_eventgen service --web-server-address 0.0.0.0:9501`
 
-4. Local machine + development setup
+3. Local machine + development setup
     * Install and run [RabbitMQ](https://www.rabbitmq.com/download.html) locally
     * Edit splunk_eventgen/controller_conf.yml to specify Eventgen web server port and RabbitMQ information
     * To standup the Eventgen controller node, inside of splunk_eventgen directory run: ```nameko run eventgen_nameko_controller --config ./controller_conf.yml```
