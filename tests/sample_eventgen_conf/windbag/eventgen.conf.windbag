@@ -5,4 +5,3 @@ latest = now
 interval = 3
 count = 5
 outputMode = stdout
-end = 3
