@@ -8,7 +8,7 @@ import logging
 
 
 class SplunkStreamOutputPlugin(OutputPlugin):
-    queueable = True
+    useOutputQueue = False
     name = 'splunkstream'
     MAXQUEUELENGTH = 100
 

@@ -3,7 +3,7 @@ from outputplugin import OutputPlugin
 import logging
 
 class TcpOutputPlugin(OutputPlugin):
-    queueable = True
+    useOutputQueue = False
     name = 'tcpout'
     MAXQUEUELENGTH = 10
 

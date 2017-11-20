@@ -25,7 +25,7 @@ class AwsS3OutputPlugin(OutputPlugin):
     you will need to supply AWS setting in config file.
     '''
     name = 'awsS3'
-    queueable = True
+    useOutputQueue = False
     # MAXQUEUELENGTH = 100
     validSettings = ['awsS3BucketName', 'awsS3CompressionType',
                      'awsS3EventType', 'awsS3ObjectPrefix',

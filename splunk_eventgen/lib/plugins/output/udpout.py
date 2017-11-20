@@ -3,7 +3,7 @@ from outputplugin import OutputPlugin
 import logging
 
 class UdpOutputPlugin(OutputPlugin):
-    queueable = True
+    useOutputQueue = False
     name = 'udpout'
     MAXQUEUELENGTH = 10
 

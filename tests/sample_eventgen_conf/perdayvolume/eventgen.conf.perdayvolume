@@ -2,7 +2,7 @@
 sampleDir = tests/sample_eventgen_conf/perdayvolume
 perDayVolume = 1.1
 
-outputMode = stdout
+# outputMode = stdout
 index = main
 sourcetype = windbag
 source = windbag.log
@@ -11,8 +11,8 @@ host = localhost
 #splunkUser = admin
 #splunkPass = changeme
 
-# outputMode = file
-# fileName = /tmp/internal.log
+outputMode = file
+fileName = /Users/tonyl/work/eventgen/f.log
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp

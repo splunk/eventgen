@@ -9,7 +9,7 @@ import logging
 class FileOutputPlugin(OutputPlugin):
     name = 'file'
     MAXQUEUELENGTH = 10
-    queueable = False
+    useOutputQueue = True
 
     validSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
     intSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
@@ -32,7 +32,7 @@ class FileOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         if len(q) > 0:
-            metamsg = q.popleft()
+            metamsg = q.pop(0)
             msg = metamsg['_raw']
 
             self.logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample.name, self._app, self._sample.source))
@@ -62,7 +62,7 @@ class FileOutputPlugin(OutputPlugin):
                         self._fileHandle = open(self._file, 'w')
                         self._fileLength = 0
 
-                    msg = q.popleft()['_raw']
+                    msg = q.pop(0)['_raw']
 
                     self.logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
             except IndexError:
