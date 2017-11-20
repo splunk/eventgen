@@ -10,7 +10,7 @@ import os
 import logging
 
 class SpoolOutputPlugin(OutputPlugin):
-    queueable = False
+    useOutputQueue = True
     name = 'spool'
     MAXQUEUELENGTH = 10
 

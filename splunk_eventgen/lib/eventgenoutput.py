@@ -105,9 +105,10 @@ class Output(object):
             outputer = self.outputPlugin(self._sample)
             outputer.updateConfig(self.config)
             outputer.set_events(q)
-            # When an outputPlugin is queueable, it can be ran by multiple processes or threads. Therefore, no need to put the outputer back into the Queue. Just execute it.
-            # When an outputPlugin is nonqueueable, it needs to run in a single threaded nature which requires to be put back into the outputqueue so a single thread worker can execute it.
-            if not self.outputPlugin.queueable or self.config.useOutputQueue:
+            # When an outputQueue is used, it needs to run in a single threaded nature which requires to be put back into the outputqueue so a single thread worker can execute it.
+            # When an outputQueue is not used, it can be ran by multiple processes or threads. Therefore, no need to put the outputer back into the Queue. Just execute it.
+            # if outputPlugin must be used for useOutputQueue, use outputQueue regardless of user config useOutputQueue:
+            if self.outputPlugin.useOutputQueue or self.config.useOutputQueue:
                 try:
                     self.outputQueue.put(outputer)
                 except Full:
