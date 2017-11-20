@@ -47,5 +47,7 @@ setup(
         'logutils>=0.3.4.1',
         'cherrypy',
         'futures>=3.0.5',
-        'pyyaml']
+        'pyyaml',
+        'httplib2',
+        'jinja2']
     )
