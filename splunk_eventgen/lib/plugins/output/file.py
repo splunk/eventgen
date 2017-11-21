@@ -9,7 +9,7 @@ import logging
 class FileOutputPlugin(OutputPlugin):
     name = 'file'
     MAXQUEUELENGTH = 10
-    queueable = False
+    useOutputQueue = True
 
     validSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
     intSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]

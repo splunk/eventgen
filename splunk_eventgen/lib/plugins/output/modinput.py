@@ -12,7 +12,7 @@ import logging
 class ModInputOutputPlugin(OutputPlugin):
     name = 'modinput'
     MAXQUEUELENGTH = 10
-    queueable = True
+    useOutputQueue = False
 
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
