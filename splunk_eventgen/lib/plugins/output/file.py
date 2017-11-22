@@ -71,6 +71,8 @@ class FileOutputPlugin(OutputPlugin):
             if not self._fileHandle.closed:
                 self._fileHandle.flush()
 
+            self._fileHandle.close()
+
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen_fileout')
 
