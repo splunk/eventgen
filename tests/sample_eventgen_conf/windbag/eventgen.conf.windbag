@@ -4,8 +4,4 @@ earliest = -3s
 latest = now
 interval = 3
 count = 5
-# outputMode = stdout
-
-outputMode = tcpout
-tcpDestinationPort = 37464
-tcpDestinationHost = 10.141.65.250
+outputMode = stdout
