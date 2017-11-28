@@ -143,7 +143,7 @@ class GeneratorPlugin(object):
     def run(self):
         self.gen(count=self.count, earliest=self.start_time, latest=self.end_time, samplename=self._sample.name)
         #TODO: Make this some how handle an output queue and support intervals and a master queue
-        self._out.flush()
+        #self._out.flush()
 
 def load():
     return GeneratorPlugin

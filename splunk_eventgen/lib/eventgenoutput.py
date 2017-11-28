@@ -108,7 +108,7 @@ class Output(object):
             # When an outputQueue is used, it needs to run in a single threaded nature which requires to be put back into the outputqueue so a single thread worker can execute it.
             # When an outputQueue is not used, it can be ran by multiple processes or threads. Therefore, no need to put the outputer back into the Queue. Just execute it.
             # if outputPlugin must be used for useOutputQueue, use outputQueue regardless of user config useOutputQueue:
-            if self.outputPlugin.useOutputQueue or self.config.useOutputQueue:
+            if self.outputPlugin.useOutputQueue and self.config.useOutputQueue:
                 try:
                     self.outputQueue.put(outputer)
                 except Full:

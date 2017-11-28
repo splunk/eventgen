@@ -9,12 +9,13 @@ class ConfigRater(object):
     name = 'ConfigRater'
     stopping = False
 
-    def __init__(self, sample):
+    def __init__(self, sample, generatorWorkers=1):
 
         self._setup_logging()
         self.logger.debug('Starting ConfigRater for %s' % sample.name if sample is not None else "None")
 
         self._sample = sample
+        self._generatorWorkers = generatorWorkers
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
@@ -41,7 +42,7 @@ class ConfigRater(object):
         self.logger = logging.getLogger('eventgen')
 
     def rate(self):
-        count = self._sample.count
+        count = self._sample.count/self._generatorWorkers
         # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
         # hourOfDay, dayOfWeek and randomizeCount configs
         rateFactor = 1.0
