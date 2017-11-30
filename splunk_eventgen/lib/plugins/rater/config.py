@@ -9,13 +9,13 @@ class ConfigRater(object):
     name = 'ConfigRater'
     stopping = False
 
-    def __init__(self, sample, generatorWorkers=1):
+    def __init__(self, sample):
 
         self._setup_logging()
         self.logger.debug('Starting ConfigRater for %s' % sample.name if sample is not None else "None")
 
         self._sample = sample
-        self._generatorWorkers = generatorWorkers
+        self._generatorWorkers = self._sample.config.generatorWorkers
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""

@@ -34,7 +34,6 @@ class Timer(object):
         self.sample = sample
         self.end = getattr(self.sample, "end", None)
         self.endts = getattr(self.sample, "endts", None)
-        self.generatorWorkers = 20
         self.generatorQueue = genqueue
         self.outputQueue = outputqueue
         self.time = time
@@ -45,8 +44,9 @@ class Timer(object):
         self.logger.debug('Initializing timer for %s' % sample.name if sample is not None else "None")
         # load plugins
         if self.sample != None:
-            self.rater = self.config.getPlugin('rater.'+self.sample.rater)(self.sample, self.generatorWorkers)
+            self.rater = self.config.getPlugin('rater.'+self.sample.rater)(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.'+self.sample.generator, self.sample)
+        self.logger.info("Start '%s' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
 
     # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
     def __getstate__(self):
@@ -135,7 +135,8 @@ class Timer(object):
                 lt = self.sample.latestTime()
                 try:
                     # Spawn workers at the beginning of job rather than wait for next interval
-                    for worker_id in range(self.generatorWorkers):
+                    self.logger.info("Start '%d' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
+                    for worker_id in range(self.config.generatorWorkers):
                         # create a generator object, then place it in the generator queue.
                         start_time=(time.mktime(et.timetuple())*(10**6)+et.microsecond)
                         end_time=(time.mktime(lt.timetuple())*(10**6)+lt.microsecond)

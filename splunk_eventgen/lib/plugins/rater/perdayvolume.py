@@ -7,12 +7,12 @@ class PerDayVolume(ConfigRater):
     name = 'PerDayVolumeRater'
     stopping = False
 
-    def __init__(self, sample, generatorWorkers=1):
+    def __init__(self, sample):
         # Logger already setup by config, just get an instance
         self._setup_logging()
         self.logger.debug('Starting PerDayVolumeRater for %s' % sample.name if sample is not None else "None")
         self._sample = sample
-        self._generatorWorkers = generatorWorkers
+        self._generatorWorkers = self._sample.config.generatorWorkers
 
     def rate(self):
         perdayvolume = float(self._sample.perDayVolume)/self._generatorWorkers
