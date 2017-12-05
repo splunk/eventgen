@@ -143,7 +143,10 @@ class GeneratorPlugin(object):
     def run(self):
         self.gen(count=self.count, earliest=self.start_time, latest=self.end_time, samplename=self._sample.name)
         #TODO: Make this some how handle an output queue and support intervals and a master queue
-        #self._out.flush()
+        # Just double check to see if there's something in queue to flush out at the end of run
+        if len(self._out._queue) > 0:
+            self.logger.debug("Queue is not empty, flush out at the end of each run")
+            self._out.flush()
 
 def load():
     return GeneratorPlugin
