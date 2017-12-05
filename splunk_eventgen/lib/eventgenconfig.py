@@ -460,9 +460,11 @@ class Config(object):
                     # always want to see output
                     self.maxIntervalsBeforeFlush = 1
                     s.maxIntervalsBeforeFlush = 1
-                    s.maxQueueLength = 1
+                    s.maxQueueLength = s.maxQueueLength or 1
+                    self.logger.debug("Sample '%s' setting maxQueueLength to '%s' from command line" % (s.name, s.maxQueueLength))
+
                     if self.override_outputter:
-                        self.logger.debug("Sample '%s' setting output to '%s' from command line" % s.name, self.override_outputter)
+                        self.logger.debug("Sample '%s' setting output to '%s' from command line" % (s.name, self.override_outputter))
                         s.outputMode = self.override_outputter
 
                     if self.override_count:

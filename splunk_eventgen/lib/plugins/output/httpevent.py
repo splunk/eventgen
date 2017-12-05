@@ -33,7 +33,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
     '''
     name = 'httpevent'
     MAXQUEUELENGTH = 1000
-    useOutputQueue = True
+    useOutputQueue = False
     validSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     defaultableSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     jsonSettings = ['httpeventServers']
@@ -211,23 +211,23 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     if event.get('_raw') == None or event['_raw'] == "\n":
                         self.logger.error('failure outputting event, does not contain _raw')
                     else:
-                        self.logger.debug("Event contains _raw, attempting to process...")
+                        self.logger.debugv("Event contains _raw, attempting to process...")
                         payloadFragment['event'] = event['_raw']
                         if event.get('source'):
-                            self.logger.debug("Event contains source, adding to httpevent event")
+                            self.logger.debugv("Event contains source, adding to httpevent event")
                             payloadFragment['source'] = event['source']
                         if event.get('sourcetype'):
-                            self.logger.debug("Event contains sourcetype, adding to httpevent event")
+                            self.logger.debugv("Event contains sourcetype, adding to httpevent event")
                             payloadFragment['sourcetype'] = event['sourcetype']
                             self.lastsourcetype = event['sourcetype']
                         if event.get('host'):
-                            self.logger.debug("Event contains host, adding to httpevent event")
+                            self.logger.debugv("Event contains host, adding to httpevent event")
                             payloadFragment['host'] = event['host']
                         if event.get('_time'):
-                            self.logger.debug("Event contains _time, adding to httpevent event")
+                            self.logger.debugv("Event contains _time, adding to httpevent event")
                             payloadFragment['time'] = event['_time']
                         if event.get('index'):
-                            self.logger.debug("Event contains index, adding to httpevent event")
+                            self.logger.debugv("Event contains index, adding to httpevent event")
                             payloadFragment['index'] = event['index']
                     self.logger.debugv("Full payloadFragment: %s" % json.dumps(payloadFragment))
                     payload.append(payloadFragment)

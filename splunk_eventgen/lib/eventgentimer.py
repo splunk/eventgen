@@ -46,6 +46,7 @@ class Timer(object):
         if self.sample != None:
             self.rater = self.config.getPlugin('rater.'+self.sample.rater)(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.'+self.sample.generator, self.sample)
+        self.logger.info("Start '%s' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
 
     # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
     def __getstate__(self):
@@ -133,25 +134,29 @@ class Timer(object):
                 et = self.sample.earliestTime()
                 lt = self.sample.latestTime()
                 try:
-                    # create a generator object, then place it in the generator queue.
-                    start_time=(time.mktime(et.timetuple())*(10**6)+et.microsecond)
-                    end_time=(time.mktime(lt.timetuple())*(10**6)+lt.microsecond)
-                    # self.generatorPlugin is only an instance, now we need a real plugin.
-                    # make a copy of the sample so if it's mutated by another process, it won't mess up geeneration
-                    # for this generator.
-                    copy_sample = copy.copy(self.sample)
-                    genPlugin = self.generatorPlugin(sample=copy_sample)
-                    # need to make sure we set the queue right if we're using multiprocessing or thread modes
-                    genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
-                    genPlugin.updateCounts(count=count,
-                                           start_time=et,
-                                           end_time=lt)
-                    try:
-                        self.generatorQueue.put(genPlugin)
-                    except Full:
-                        self.logger.warning("Generator Queue Full. Skipping current generation.")
-                    self.logger.debug("Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (count, self.sample.name, et, lt))
-                #TODO: put this back to just catching a full queue
+                    # Spawn workers at the beginning of job rather than wait for next interval
+                    self.logger.info("Start '%d' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
+                    for worker_id in range(self.config.generatorWorkers):
+                        # create a generator object, then place it in the generator queue.
+                        start_time=(time.mktime(et.timetuple())*(10**6)+et.microsecond)
+                        end_time=(time.mktime(lt.timetuple())*(10**6)+lt.microsecond)
+                        # self.generatorPlugin is only an instance, now we need a real plugin.
+                        # make a copy of the sample so if it's mutated by another process, it won't mess up geeneration
+                        # for this generator.
+                        copy_sample = copy.copy(self.sample)
+                        genPlugin = self.generatorPlugin(sample=copy_sample)
+                        # need to make sure we set the queue right if we're using multiprocessing or thread modes
+                        genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
+                        genPlugin.updateCounts(count=count,
+                                               start_time=et,
+                                               end_time=lt)
+                        try:
+                            self.generatorQueue.put(genPlugin)
+                        except Full:
+                            self.logger.warning("Generator Queue Full. Skipping current generation.")
+                        self.logger.debug("Worker# %d: Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (worker_id, count, self.sample.name, et, lt))
+                    #TODO: put this back to just catching a full queue
+                    end
                 except Exception as e:
                     self.logger.exception(e)
                     if self.stopping:

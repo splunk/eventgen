@@ -9,7 +9,7 @@ import logging
 class FileOutputPlugin(OutputPlugin):
     name = 'file'
     MAXQUEUELENGTH = 10
-    useOutputQueue = True
+    useOutputQueue = False
 
     validSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
     intSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
@@ -32,44 +32,43 @@ class FileOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         if len(q) > 0:
-            metamsg = q.pop(0)
-            msg = metamsg['_raw']
-
             self.logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample.name, self._app, self._sample.source))
 
+            # Loop through all the messages and build the long string, write once for each flush
+            # This may cause the file exceed the maxFileBytes a little bit but will greatly improve the performance
+            msglist = ""
             try:
-                while msg:
+                for metamsg in q:
+                    msg = metamsg['_raw']
                     if msg[-1] != '\n':
                         msg += '\n'
+                    msglist += msg
 
-                    self._fileHandle.write(msg)
-                    self._fileLength += len(msg)
+                self._fileHandle.write(msglist)
+                self._fileLength += len(msglist)
 
-                    # If we're at the end of the max allowable size, shift all files
-                    # up a number and create a new one
-                    if self._fileLength > self._fileMaxBytes:
-                        self._fileHandle.flush()
-                        self._fileHandle.close()
-                        if os.path.exists(self._file+'.'+str(self._fileBackupFiles)):
-                            self.logger.debug('File Output: Removing file: %s' % self._file+'.'+str(self._fileBackupFiles))
-                            os.unlink(self._file+'.'+str(self._fileBackupFiles))
-                        for x in range(1, self._fileBackupFiles)[::-1]:
-                            self.logger.debug('File Output: Checking for file: %s' % self._file+'.'+str(x))
-                            if os.path.exists(self._file+'.'+str(x)):
-                                self.logger.debug('File Output: Renaming file %s to %s' % (self._file+'.'+str(x), self._file+'.'+str(x+1)))
-                                os.rename(self._file+'.'+str(x), self._file+'.'+str(x+1))
-                        os.rename(self._file, self._file+'.1')
-                        self._fileHandle = open(self._file, 'w')
-                        self._fileLength = 0
-
-                    msg = q.pop(0)['_raw']
-
-                    self.logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
+                # If we're at the end of the max allowable size, shift all files
+                # up a number and create a new one
+                if self._fileLength > self._fileMaxBytes:
+                    self._fileHandle.flush()
+                    self._fileHandle.close()
+                    if os.path.exists(self._file+'.'+str(self._fileBackupFiles)):
+                        self.logger.debug('File Output: Removing file: %s' % self._file+'.'+str(self._fileBackupFiles))
+                        os.unlink(self._file+'.'+str(self._fileBackupFiles))
+                    for x in range(1, self._fileBackupFiles)[::-1]:
+                        self.logger.debug('File Output: Checking for file: %s' % self._file+'.'+str(x))
+                        if os.path.exists(self._file+'.'+str(x)):
+                            self.logger.debug('File Output: Renaming file %s to %s' % (self._file+'.'+str(x), self._file+'.'+str(x+1)))
+                            os.rename(self._file+'.'+str(x), self._file+'.'+str(x+1))
+                    os.rename(self._file, self._file+'.1')
+                    self._fileHandle = open(self._file, 'w')
+                    self._fileLength = 0
             except IndexError:
-                self.logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
+                self.logger.warning("IndexError when writting for app '%s' sample '%s'" % (self._app, self._sample.name))
 
             if not self._fileHandle.closed:
                 self._fileHandle.flush()
+            self.logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
 
             self._fileHandle.close()
 
