@@ -8,7 +8,10 @@ try:
     from concurrent.futures import ThreadPoolExecutor
 except ImportError:
     pass
-import json
+try:
+    import ujson as json
+except:
+    import json
 import random
 import urllib
 import logging

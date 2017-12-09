@@ -46,5 +46,6 @@ setup(
         'requests[security]',
         'logutils>=0.3.4.1',
         'cherrypy',
-        'futures>=3.0.5']
+        'futures>=3.0.5',
+        'ujson>=1.35'] # Way faster implementation of JSON processing
     )
