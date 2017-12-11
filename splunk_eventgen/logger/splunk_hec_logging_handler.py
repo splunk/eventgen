@@ -61,7 +61,7 @@ class SplunkHECHandler(logging.Handler):
 
         super(SplunkHECHandler, self).__init__()
 
-        self._flushAndRepeatTimer()
+        self.timer = self._flushAndRepeatTimer()
 
     @setInterval(1)
     def _flushAndRepeatTimer(self):
@@ -70,7 +70,10 @@ class SplunkHECHandler(logging.Handler):
 
     def _stopFlushTimer(self):
         if self.send:
+            self.send = False
             self.flush()
+            self.timer.set()
+
 
     def _getEndpoint(self):
         targeturi = "{0}/services/collector/event".format(self.targetserver)
@@ -138,7 +141,7 @@ class SplunkHECHandler(logging.Handler):
                               data=data,
                               headers={'Authorization': 'Splunk {0}'.format(self.hec_token), 'content-type': 'application/json'},
                               verify=False)
-            time.sleep(20)
+            time.sleep(10)
         except Exception as e:
             self.log.exception(e)
             raise e
@@ -147,7 +150,8 @@ class SplunkHECHandler(logging.Handler):
         self.log.debug('Flush Running. Num of events: {}.'.format(len(self.events)))
         events = self.events
         self.events = []
-        self._sendHTTPEvents(events)
+        if self.send:
+            self._sendHTTPEvents(events)
 
     def emit(self, record):
         """

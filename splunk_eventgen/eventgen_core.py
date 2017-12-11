@@ -140,9 +140,9 @@ class EventGenerator(object):
         '''
         #TODO: Make this take the config param and figure out what we want to do with this.
         if getattr(self, "manager", None):
-            self.outputQueue = self.manager.Queue(maxsize=10000)
+            self.outputQueue = self.manager.Queue(maxsize=500)
         else:
-            self.outputQueue = Queue(maxsize=10000)
+            self.outputQueue = Queue(maxsize=500)
         num_threads = threadcount
         for i in range(num_threads):
             worker = Thread(target=self._worker_do_work,
@@ -151,7 +151,7 @@ class EventGenerator(object):
             worker.setDaemon(True)
             worker.start()
 
-    def _create_generator_pool(self, workercount=10):
+    def _create_generator_pool(self, workercount=20):
         '''
         The generator pool has two main options, it can run in multiprocessing or in threading.  We check the argument
         from configuration, and then build the appropriate queue type.  Each time a timer runs for a sample, if the
@@ -178,7 +178,7 @@ class EventGenerator(object):
                 worker.setDaemon(True)
                 worker.start()
 
-    def _create_generator_workers(self, workercount=10):
+    def _create_generator_workers(self, workercount=20):
         if self.args.multiprocess:
             import multiprocessing
             self.workerPool = []
@@ -270,8 +270,8 @@ class EventGenerator(object):
         self.logger = logging.getLogger('eventgen')
         self.loggingQueue = None
         hec_info = self.get_hec_info_from_conf()
-        handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1])
-        logging.getLogger().addHandler(handler)
+        self.hec_logging_handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1])
+        logging.getLogger().addHandler(self.hec_logging_handler)
 
     def get_hec_info_from_conf(self):
         hec_info = [None, None]
@@ -449,7 +449,7 @@ class EventGenerator(object):
         :return:
         '''
         try:
-            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0:
+            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks or not self.workerQueue.empty() or self.workerQueue.unfinished_tasks > 0:
                 time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
@@ -471,9 +471,11 @@ class EventGenerator(object):
                 while worker.exitcode == None:
                     self.logger.info("Worker {0} still working, waiting for it to finish.".format(worker._name))
                     time.sleep(1)
+
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
         self.logger.info("All items fully processed, stopping.")
+        self.hec_logging_handler._stopFlushTimer()
         self.stopping = False
 
 

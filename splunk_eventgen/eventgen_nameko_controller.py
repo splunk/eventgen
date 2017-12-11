@@ -4,8 +4,11 @@ from nameko.web.handlers import http
 import ConfigParser
 import logging
 import os
+import socket
 from logger.logger_config import controller_logger_config
 from logger import splunk_hec_logging_handler
+import time
+import json
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
@@ -31,9 +34,15 @@ class EventgenController(object):
     log.addHandler(handler)
     log.info("Logger set as eventgen_controller")
 
+    server_status = {}
+
     ##############################################
     ################ RPC Methods #################
     ##############################################
+
+    @event_handler("eventgen_listener", "server_status", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_server_status(self, payload):
+        return self.receive_status(payload)
 
     @rpc
     def index(self, nodes):
@@ -114,18 +123,15 @@ class EventgenController(object):
             return '500', "Exception: {}".format(e.message)
 
     @rpc
-    def set_conf(self, nodes, configfile=None, custom_config_json=None):
+    def set_conf(self, nodes, conf):
         try:
             payload = {}
-            if configfile:
-                payload['type'] = 'configfile'
-                payload['data'] = configfile
-            elif custom_config_json:
-                payload['type'] = 'custom_config_json'
-                payload['data'] = custom_config_json
+            if conf:
+                payload['type'] = 'conf'
+                payload['data'] = conf
             else:
-                self.log.info("Pass in a valid configfile or custom_config_json")
-                return "Pass in a valid configfile or custom_config_json"
+                self.log.info("Pass in a valid conf")
+                return "Pass in a valid conf."
 
             if nodes == "all":
                 self.dispatch("all_set_conf", payload)
@@ -141,14 +147,29 @@ class EventgenController(object):
     ################ HTTP Methods ################
     ##############################################
 
+    @http('GET', '/')
+    def root_page(self, request):
+        self.log.info("index method called")
+        home_page = '''
+        *** Eventgen Controller ***
+        Host: {0}
+        
+        You are running Eventgen Controller.
+        
+        '''
+        host = socket.gethostname()
+        return home_page.format(host)
+
     @http('GET', '/index')
     def http_index(self, request):
-        self.get_nodes(request)
-        return self.index(nodes=self.get_nodes(request))
+        self.index(nodes=self.get_nodes(request))
+        return self.root_page(request)
 
     @http('GET', '/status')
     def http_status(self, request):
-        return self.status(nodes=self.get_nodes(request))
+        self.status(nodes=self.get_nodes(request))
+        time.sleep(0.5)
+        return self.format_status()
 
     @http('POST', '/start')
     def http_start(self, request):
@@ -169,10 +190,8 @@ class EventgenController(object):
     @http('POST', '/conf')
     def http_set_conf(self, request):
         for pair in request.values.lists():
-            if pair[0] == "configfile":
-                return self.set_conf(nodes=self.get_nodes(request), configfile=pair[1][0])
-            elif "custom_config_json" in pair[0]:
-                return self.set_conf(nodes=self.get_nodes(request), custom_config_json=pair[1][0])
+            if "conf" == pair[0]:
+                return self.set_conf(nodes=self.get_nodes(request), conf=pair[1][0])
         return '400', 'Please pass the valid parameters.'
 
     ##############################################
@@ -184,3 +203,11 @@ class EventgenController(object):
             if pair[0] == "nodes":
                 return pair[1][0]
         return "all"
+
+    def receive_status(self, data):
+        if data['server_name'] and data['server_status']:
+            self.server_status[data['server_name']] = data['server_status']
+
+    def format_status(self):
+        return json.dumps(self.server_status, indent=4)
+

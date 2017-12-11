@@ -232,6 +232,26 @@ class Sample(object):
         else:
             return datetime.datetime.utcnow() + self.timezone
 
+    def get_backfill_time(self, current_time):
+        if not current_time:
+            current_time = self.now()
+        if not self.backfill:
+            return current_time
+        else:
+            if self.backfill[0] == '-':
+                backfill_time = self.backfill[1:-1]
+                if self.backfill[-2:] == 'ms':
+                    backfill_time = self.backfill[1:-2]
+                    return current_time - datetime.timedelta(milliseconds=int(backfill_time))
+                elif self.backfill[-1] == 's':
+                    return current_time - datetime.timedelta(seconds=int(backfill_time))
+                elif self.backfill[-1] == 'm':
+                    return current_time - datetime.timedelta(minutes=int(backfill_time))
+                elif self.backfill[-1] == 'h':
+                    return current_time - datetime.timedelta(hours=int(backfill_time))
+        return current_time
+
+
     def earliestTime(self):
         # First optimization, we need only store earliest and latest
         # as an offset of now if they're relative times
@@ -295,14 +315,14 @@ class Sample(object):
                 self._openSampleFile()
                 if self.breaker == self.config.breaker:
                     self.logger.debugv("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
-                    sampleLines = self._sampleFH.readlines()
+                    self.sampleLines = self._sampleFH.readlines()
                 # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time instead of on every generation
                 else:
                     self.logger.debugv("Non-default breaker '%s' detected for sample '%s' in app '%s'" \
                                     % (self.breaker, self.name, self.app) ) 
 
                     sampleData = self._sampleFH.read()
-                    sampleLines = [ ]
+                    self.sampleLines = [ ]
 
                     self.logger.debug("Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s" \
                                     % (self.name, self.app, len(sampleData), self.breaker))
@@ -323,33 +343,49 @@ class Sample(object):
                         self.logger.debugv("Breaker found at: %d, %d" % (breakerMatch.span()[0], breakerMatch.span()[1]))
                         # Ignore matches at the beginning of the file
                         if breakerMatch.span()[0] != 0:
-                            sampleLines.append(sampleData[extractpos:breakerMatch.span()[0]])
+                            self.sampleLines.append(sampleData[extractpos:breakerMatch.span()[0]])
                             extractpos = breakerMatch.span()[0]
                         searchpos = breakerMatch.span()[1]
                         breakerMatch = breakerRE.search(sampleData, searchpos)
-                    sampleLines.append(sampleData[extractpos:])
+                    self.sampleLines.append(sampleData[extractpos:])
 
                 self._closeSampleFile()
-
-                self.sampleDict = [ { '_raw': line, 'index': self.index, 'host': self.host, 'source': self.source, 'sourcetype': self.sourcetype } for line in sampleLines ]
-                self.logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(sampleLines), len(self.sampleDict)))
+                self.sampleDict = []
+                for line in self.sampleLines:
+                    if line and line[-1] != '\n':
+                        line = line + '\n'
+                    self.sampleDict.append({ '_raw': line, 'index': self.index, 'host': self.host, 'source': self.source, 'sourcetype': self.sourcetype })
+                self.logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(self.sampleLines), len(self.sampleDict)))
         elif self.sampletype == 'csv':
             if self.sampleDict == None:
                 self._openSampleFile()
                 self.logger.debugv("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
                 self.sampleDict = [ ]
+                self.sampleLines = [ ]
                 # Fix to load large csv files, work with python 2.5 onwards
                 csv.field_size_limit(sys.maxint)
                 csvReader = csv.DictReader(self._sampleFH)
                 for line in csvReader:
                     if '_raw' in line:
                         self.sampleDict.append(line)
+                        self.sampleLines.append(line['_raw'])
                     else:
                         self.logger.error("Missing _raw in line '%s'" % pprint.pformat(line))
                 self._closeSampleFile()
                 self.logger.debug("Finished creating sampleDict & sampleLines for sample '%s'.  Len sampleDict: %d" % (self.name, len(self.sampleDict)))
 
-        # Ensure all lines have a newline
-        for i in xrange(0, len(self.sampleDict)):
-            if len(self.sampleDict[i]['_raw']) < 1 or self.sampleDict[i]['_raw'][-1] != '\n':
-                self.sampleDict[i]['_raw'] += '\n'
+                for i in xrange(0, len(self.sampleDict)):
+                    if len(self.sampleDict[i]['_raw']) < 1 or self.sampleDict[i]['_raw'][-1] != '\n':
+                        self.sampleDict[i]['_raw'] += '\n'
+
+    def get_loaded_sample(self):
+        if os.path.getsize(self.filePath) > 10000000 or self.sampletype != 'csv':
+            self._openSampleFile()
+            return self._sampleFH
+        else:
+            self.loadSample()
+            return self.sampleLines
+
+
+
+

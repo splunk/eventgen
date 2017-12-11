@@ -3,7 +3,7 @@ from outputplugin import OutputPlugin
 import logging
 
 class StdOutOutputPlugin(OutputPlugin):
-    queueable = True
+    useOutputQueue = False
     name = 'stdout'
     MAXQUEUELENGTH = 10000
 

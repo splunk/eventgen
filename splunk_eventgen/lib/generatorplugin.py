@@ -51,7 +51,7 @@ class GeneratorPlugin(object):
         # Output = output process, not the plugin.  The plugin is loaded by the output process.
         self._out = Output(self._sample)
         self._out.updateConfig(self.config)
-        if not self.outputPlugin.queueable or self.config.useOutputQueue:
+        if self.outputPlugin.useOutputQueue or self.config.useOutputQueue:
             self._out._update_outputqueue(self.outputQueue)
 
     def updateCounts(self, sample=None, count=None, start_time=None, end_time=None):
@@ -143,7 +143,10 @@ class GeneratorPlugin(object):
     def run(self):
         self.gen(count=self.count, earliest=self.start_time, latest=self.end_time, samplename=self._sample.name)
         #TODO: Make this some how handle an output queue and support intervals and a master queue
-        self._out.flush()
+        # Just double check to see if there's something in queue to flush out at the end of run
+        if len(self._out._queue) > 0:
+            self.logger.debug("Queue is not empty, flush out at the end of each run")
+            self._out.flush()
 
 def load():
     return GeneratorPlugin
