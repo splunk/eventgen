@@ -60,15 +60,12 @@ class JinjaTime(Extension):
         elif slice_type == "upper":
             slice_time = slice_end
         elif slice_type == "random":
-            #deal with micro seconds
             start = int(slice_start*100)
             end = int(slice_end*100)
             if start == end:
-                slice_time = end * .01
+                slice_time = end * 0.01
             else:
-                slice_time = random.randrange(start, end)
-                # add back the microseconds
-                slice_time = slice_time * .01
+                slice_time = random.randrange(start, end) * 0.01
         return slice_start, slice_end, slice_size, slice_time
 
     def _convert_epoch_formatted(self, epoch_time, date_format):
