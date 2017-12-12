@@ -200,7 +200,11 @@ class EventgenListener:
                     sample_key_value_pairs = sample[1]
                     config.add_section(sample_name)
                     for pair in sample_key_value_pairs.iteritems():
-                        config.set(sample_name, pair[0], pair[1])
+                        value = pair[1]
+                        if type(value) == dict:
+                            value = json.dumps(value)
+                        config.set(sample_name, pair[0], value)
+
                 with open(CUSTOM_CONFIG_PATH, 'wb') as customconfigfile:
                     config.write(customconfigfile)
                 self.eventgen_dependency.configured = True
