@@ -61,9 +61,14 @@ class JinjaTime(Extension):
             slice_time = slice_end
         elif slice_type == "random":
             #deal with micro seconds
-            slice_time = random.randrange(int(slice_start)*100, int(slice_end)*100)
-            # add back the microseconds
-            slice_time = slice_time * .01
+            start = int(slice_start*100)
+            end = int(slice_end*100)
+            if start == end:
+                slice_time = end * .01
+            else:
+                slice_time = random.randrange(start, end)
+                # add back the microseconds
+                slice_time = slice_time * .01
         return slice_start, slice_end, slice_size, slice_time
 
     def _convert_epoch_formatted(self, epoch_time, date_format):
@@ -206,7 +211,7 @@ class JinjaGenerator(GeneratorPlugin):
             jinja_loaded_vars["eventgen_latest"] = self.latest
             jinja_loaded_vars["eventgen_latest_epoch"] = (self.latest - datetime.datetime(1970,1,1)).total_seconds()
             self.latest_epoch = (self.latest - datetime.datetime(1970,1,1)).total_seconds()
-            while self.current_count <= self.target_count:
+            while self.current_count < self.target_count:
                 self.end_of_cycle = False
                 jinja_loaded_vars["eventgen_count"] = self.current_count
                 jinja_loaded_vars["eventgen_target_time_earliest"], jinja_loaded_vars["eventgen_target_time_latest"], \
