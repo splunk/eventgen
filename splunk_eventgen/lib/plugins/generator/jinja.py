@@ -61,7 +61,7 @@ class JinjaTime(Extension):
             slice_time = slice_end
         elif slice_type == "random":
             #deal with micro seconds
-            slice_time = random.randrange(int(slice_start)*100, int(slice_end)*100)
+            slice_time = random.randrange(int(slice_start*100), int(slice_end*100))
             # add back the microseconds
             slice_time = slice_time * .01
         return slice_start, slice_end, slice_size, slice_time
