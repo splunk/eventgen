@@ -229,7 +229,8 @@ class JinjaGenerator(GeneratorPlugin):
                             try:
                                 target_line = json.loads(line)
                             except ValueError:
-                                self.logger.error("Unable to parse jinja's return.  Please note, you must meet the requirements for json.loads in python if you have not installed ujson. Native python does not support multi-line events.")
+                                self.logger.error("Unable to parse Jinja's return.  Line: {0}".format(line))
+                                self.logger.error("Please note, you must meet the requirements for json.loads in python if you have not installed ujson. Native python does not support multi-line events.")
                                 continue
                             current_line_keys = target_line.keys()
                             if "_time" not in current_line_keys:
