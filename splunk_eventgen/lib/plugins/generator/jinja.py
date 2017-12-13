@@ -228,8 +228,9 @@ class JinjaGenerator(GeneratorPlugin):
                             #TODO: Time can be supported by self._sample.timestamp, should probably set that up in this logic.
                             try:
                                 target_line = json.loads(line)
-                            except ValueError:
+                            except ValueError as e:
                                 self.logger.error("Unable to parse Jinja's return.  Line: {0}".format(line))
+                                self.logger.error("Parse Failure Reason: {0}".format(e.message))
                                 self.logger.error("Please note, you must meet the requirements for json.loads in python if you have not installed ujson. Native python does not support multi-line events.")
                                 continue
                             current_line_keys = target_line.keys()
