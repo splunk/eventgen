@@ -95,6 +95,11 @@ class JinjaTime(Extension):
     def _time_backfill_target_epoch(self):
         pass
 
+    @staticmethod
+    def _set_var(var_name, var_value, lineno):
+        target_var = nodes.Name(var_name, 'store', lineno=lineno)
+        return nodes.Assign(target_var, var_value, lineno=lineno)
+
     def parse(self, parser):
         target_var_name = {
             "time_now": "time_now",
@@ -102,21 +107,22 @@ class JinjaTime(Extension):
             "time_backfill": "time_backfill_target"
         }
         tag = parser.stream.current.value
-        #TODO: handle setting some vars for the user so they don't have to pass in count,earliest, latest
+        name_base = target_var_name[tag]
+        lineno = parser.stream.next().lineno
+        args, kwargs = self.parse_args(parser)
+        task_list = []
+        if tag == "time_now":
+            epoch_name = name_base+"_epoch"
+            formatted_name = name_base+"_formatted"
+            target_epoch_method = "_{0}_epoch".format(tag)
+            target_formatted_method = "_{0}_formatted".format(tag)
+            epoch_call = self.call_method(target_epoch_method, args=args, kwargs=kwargs, lineno=lineno)
+            formatted_call = self.call_method(target_formatted_method, args=args, kwargs=kwargs, lineno=lineno)
+            task_list.append(self._set_var(epoch_name, epoch_call, lineno))
+            task_list.append(self._set_var(formatted_name, formatted_call, lineno))
         if tag in ["time_slice", "time_backfill"]:
             pass
-        lineno = parser.stream.next().lineno
-        name_base = target_var_name[tag]
-        args, kwargs = self.parse_args(parser)
-        epoch_name = name_base+"_epoch"
-        formatted_name = name_base+"_formatted"
-        target_epoch_method = "_{0}_epoch".format(tag)
-        target_formatted_method = "_{0}_formatted".format(tag)
-        epoch_call = self.call_method(target_epoch_method, args=args, kwargs=kwargs, lineno=lineno)
-        formatted_call = self.call_method(target_formatted_method, args=args, kwargs=kwargs, lineno=lineno)
-        epoch_var = nodes.Name(epoch_name, 'store', lineno=lineno)
-        formatted_var = nodes.Name(formatted_name, 'store', lineno=lineno)
-        return [nodes.Assign(epoch_var, epoch_call, lineno=lineno), nodes.Assign(formatted_var, formatted_call, lineno=lineno)]
+        return task_list
 
     def parse_args(self, parser):
         args = []
@@ -220,7 +226,11 @@ class JinjaGenerator(GeneratorPlugin):
                     for line in self.jinja_stream:
                         if line != "\n":
                             #TODO: Time can be supported by self._sample.timestamp, should probably set that up in this logic.
-                            target_line = json.loads(line)
+                            try:
+                                target_line = json.loads(line)
+                            except ValueError:
+                                self.logger.error("Unable to parse jinja's return.  Please note, you must meet the requirements for json.loads in python if you have not installed ujson. Native python does not support multi-line events.")
+                                continue
                             current_line_keys = target_line.keys()
                             if "_time" not in current_line_keys:
                                 #TODO: Add a custom exception here
