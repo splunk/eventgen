@@ -21,9 +21,10 @@ withSplunkWrapNode('orca_ci') {
             checkout scm
         }
 
+        // for now skipping on large and xlarge since we don't have tests.
         stage('Run tests') {
             echo "test"
-            sh 'make test'
+            sh 'make test LARGE=None XLARGE=None'
         }
 
         stage('Parse results') {
