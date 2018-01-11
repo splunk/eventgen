@@ -1,0 +1,10 @@
+[windbag]
+generator = windbag
+earliest = -3s
+latest = now
+interval = 3
+count = 5
+end = 1
+outputMode = udpout
+tcpDestinationHost = 127.0.0.1
+tcpDestinationPort = 9999
