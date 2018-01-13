@@ -7,6 +7,8 @@ import json
 import os
 import socket
 import time
+import requests
+import tarfile
 import eventgen_nameko_dependency
 import logging
 
@@ -215,10 +217,25 @@ Output Queue Status: {7}\n'''
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
-    def bundle(self):
-        self.log.info("Bundle method called. Config is {}".format(self.eventgen_dependency.configfile))
+    def bundle(self, url):
+        self.log.info("bundle method called with url {}".format(url))
         try:
-            pass
+            # Download the bundle
+            bundle_path = os.path.join(FILE_PATH, "eg-bundle.tgz")
+            r = requests.get(url, stream=True)
+            with open(bundle_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=None):
+                    if chunk:
+                        f.write(chunk)
+            r.close()
+            # Extract bundle
+            tar = tarfile.open(bundle_path)
+            tar.extractall(path=os.path.dirname(bundle_path))
+            tar.close()
+            # Move sample files
+            # TODO:
+            # Read eventgen.conf
+            # TODO:
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -254,7 +271,7 @@ Output Queue Status: {7}\n'''
     @event_handler("eventgen_controller", "all_set_conf", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_set_conf(self, payload):
         if payload['url']:
-            self.log.info("Do something else here")
+            return self.bundle(payload['url'])
     
     @event_handler("eventgen_controller", "all_bundle", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_bundle(self, payload):
@@ -293,7 +310,7 @@ Output Queue Status: {7}\n'''
     @event_handler("eventgen_controller", "{}_bundle".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_bundle(self, payload):
         if payload['url']:
-            self.log.info("Do something here")
+            return self.bundle(payload['url'])
 
     ##############################################
     ################ HTTP Methods ################
