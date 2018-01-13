@@ -55,7 +55,6 @@ class EventgenListener:
         res["EVENTGEN_STATUS"] = status
         res["EVENTGEN_HOST"] = self.host
         res["CONFIGURED"] = self.eventgen_dependency.configured
-        res["CUSTOMCONFIGURED"] = self.eventgen_dependency.customconfigured
         res["CONFIG_FILE"] = self.eventgen_dependency.configfile
         res["QUEUE_STATUS"] = {'SAMPLE_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
                                'OUTPUT_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
@@ -83,18 +82,16 @@ class EventgenListener:
         Host: {0}
         Eventgen Status: {1}
         Eventgen Config file exists: {2}
-        Eventgen Custom Configured?: {3}
-        Eventgen Config file path: {4}
-        Worker Queue Status: {5}
-        Sample Queue Status: {6}
-        Output Queue Status: {7}
+        Eventgen Config file path: {3}
+        Worker Queue Status: {4}
+        Sample Queue Status: {5}
+        Output Queue Status: {6}
         '''
         status = self.get_status()
         eventgen_status = "running" if status["EVENTGEN_STATUS"] else "stopped"
         host = status["EVENTGEN_HOST"]
         configured = status["CONFIGURED"]
         config_file = status["CONFIG_FILE"]
-        custom_configured = status["CUSTOMCONFIGURED"]
         worker_queue_status = status["QUEUE_STATUS"]["WORKER_QUEUE"]
         sample_queue_status = status["QUEUE_STATUS"]["SAMPLE_QUEUE"]
         output_queue_status = status["QUEUE_STATUS"]["OUTPUT_QUEUE"]
@@ -102,7 +99,6 @@ class EventgenListener:
         return home_page.format(host,
                                 eventgen_status,
                                 configured,
-                                custom_configured,
                                 config_file,
                                 worker_queue_status,
                                 sample_queue_status,
@@ -121,7 +117,6 @@ class EventgenListener:
         data['server_name'] = self.eventgen_name
         data['server_status'] = server_status
         self.dispatch("server_status", data)
-        return True
 
     def start(self):
         self.log.info("start method called. Config is {}".format(self.eventgen_dependency.configfile))
@@ -159,7 +154,7 @@ class EventgenListener:
             if self.eventgen_dependency.configured:
                 config = ConfigParser.ConfigParser()
                 config.optionxform = str
-                config_path = self.eventgen_dependency.configfile
+                config_path = CUSTOM_CONFIG_PATH
                 if os.path.isfile(config_path):
                     config.read(config_path)
                     out_json = dict()
@@ -168,11 +163,19 @@ class EventgenListener:
                         for k, v in config.items(section):
                             out_json[section][k] = v
                     self.log.info(out_json)
+                    self.send_conf_to_controller(server_conf=out_json)
                     return json.dumps(out_json, indent=4)
             return "N/A"
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
+
+    @rpc
+    def send_conf_to_controller(self, server_conf):
+        data = {}
+        data['server_name'] = self.eventgen_name
+        data['server_conf'] = server_conf
+        self.dispatch("server_conf", data)
 
     def set_conf(self, conf):
         '''
@@ -180,39 +183,59 @@ class EventgenListener:
         customconfig data format
         {sample: {key: value}, sample2: {key: value}}
         '''
-        self.log.info("set_conf method called")
+        self.log.info("set_conf method called with {}".format(json.loads(conf)))
         try:
-            if not self.is_custom_conf(conf) and os.path.isfile(os.path.abspath(os.path.join(EVENTGEN_DIR, conf))):
-                modified_path_configfile = os.path.join('..', conf)
-                self.eventgen_dependency.eventgen.reload_conf(modified_path_configfile)
-                self.eventgen_dependency.configured = True
-                self.eventgen_dependency.customconfigured = False
-                self.eventgen_dependency.configfile = conf
-                msg = 'Loaded the conf file: {}'.format(conf)
-                self.log.info(msg)
-                return msg
-            else:
-                config = ConfigParser.ConfigParser()
-                config.optionxform = str
-                custom_config_json = json.loads(conf)
-                for sample in custom_config_json.iteritems():
-                    sample_name = sample[0]
-                    sample_key_value_pairs = sample[1]
-                    config.add_section(sample_name)
-                    for pair in sample_key_value_pairs.iteritems():
-                        value = pair[1]
-                        if type(value) == dict:
-                            value = json.dumps(value)
-                        config.set(sample_name, pair[0], value)
+            config = ConfigParser.ConfigParser()
+            config.optionxform = str
+            conf_content = json.loads(conf)['content']
 
-                with open(CUSTOM_CONFIG_PATH, 'wb') as customconfigfile:
-                    config.write(customconfigfile)
-                self.eventgen_dependency.configured = True
-                self.eventgen_dependency.customconfigured = True
-                self.eventgen_dependency.configfile = CUSTOM_CONFIG_PATH
-                self.eventgen_dependency.eventgen.reload_conf(CUSTOM_CONFIG_PATH)
-                self.log.info("custom_config_json is {}".format(custom_config_json))
-                return 'Loaded the custom conf file: {}'.format(CUSTOM_CONFIG_PATH)
+            for sample in conf_content.iteritems():
+                sample_name = sample[0]
+                sample_key_value_pairs = sample[1]
+                config.add_section(sample_name)
+                for pair in sample_key_value_pairs.iteritems():
+                    value = pair[1]
+                    if type(value) == dict:
+                        value = json.dumps(value)
+                    config.set(sample_name, pair[0], value)
+
+            with open(CUSTOM_CONFIG_PATH, 'wb') as conf_content:
+                config.write(conf_content)
+
+            self.eventgen_dependency.configured = True
+            self.eventgen_dependency.configfile = CUSTOM_CONFIG_PATH
+            self.eventgen_dependency.eventgen.reload_conf(CUSTOM_CONFIG_PATH)
+            self.log.info("custom_config_json is {}".format(conf_content))
+            return self.get_conf()
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
+
+    def edit_conf(self, conf):
+        self.log.info("edit_conf method called with {}".format(json.loads(conf)))
+        try:
+            config = ConfigParser.ConfigParser()
+            config.optionxform = str
+            conf_content = json.loads(conf)['content']
+            config.read(CUSTOM_CONFIG_PATH)
+
+            for stanza, kv_pairs in conf_content.iteritems():
+                for k, v in kv_pairs.iteritems():
+                    try:
+                        config.get(stanza, k)
+                        config.set(stanza, k, v)
+                    except Exception as e:
+                        if type(e) == ConfigParser.NoSectionError:
+                            config.add_section(stanza)
+                        config.set(stanza, k, v)
+
+            with open(CUSTOM_CONFIG_PATH, 'wb') as conf_content:
+                config.write(conf_content)
+
+            self.eventgen_dependency.configured = True
+            self.eventgen_dependency.configfile = CUSTOM_CONFIG_PATH
+            self.eventgen_dependency.eventgen.reload_conf(CUSTOM_CONFIG_PATH)
+            return self.get_conf()
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -247,8 +270,11 @@ class EventgenListener:
 
     @event_handler("eventgen_controller", "all_set_conf", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_set_conf(self, payload):
-        if payload['type'] == 'conf':
-            return self.set_conf(conf=payload['data'])
+        return self.set_conf(conf=payload)
+
+    @event_handler("eventgen_controller", "all_edit_conf", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_edit_conf(self, payload):
+        return self.edit_conf(conf=payload)
 
     @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_index(self, payload):
@@ -276,8 +302,11 @@ class EventgenListener:
 
     @event_handler("eventgen_controller", "{}_set_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_set_conf(self, payload):
-        if payload['type'] == 'conf':
-            return self.set_conf(conf=payload['data'])
+        return self.set_conf(conf=payload)
+
+    @event_handler("eventgen_controller", "{}_edit_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_edit_conf(self, payload):
+        return self.edit_conf(conf=payload)
 
     ##############################################
     ################ HTTP Methods ################
@@ -313,18 +342,20 @@ class EventgenListener:
 
     @http('POST', '/conf')
     def http_set_conf(self, request):
-        for pair in request.values.lists():
-            if pair[0] == "conf":
-                return self.set_conf(conf=pair[1][0])
+        data = request.get_data()
+        if data:
+            return self.set_conf(data)
         else:
             return '400', 'Please pass the valid parameters.'
+
+    @http('PUT', '/conf')
+    def http_edit_conf(self, request):
+        data = request.get_data()
+        if data:
+            return self.edit_conf(data)
+        else:
+            return '400', 'Please pass valid config data.'
 
     ##############################################
     ################ Helper Methods ##############
     ##############################################
-
-    def is_custom_conf(self, conf):
-        if conf[0] == '{' and conf[-1] == '}':
-            return True
-        else:
-            return False

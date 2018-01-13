@@ -42,7 +42,6 @@ class EventgenDependency(DependencyProvider):
     log.info("EventgenDependency Init. Memory reference to eventgen object: {}".format(eventgen))
 
     configured = False
-    customconfigured = False
     configfile = 'N/A'
 
     def get_dependency(self, worker_ctx):
