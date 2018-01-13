@@ -12,7 +12,7 @@ import logging
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
-CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default/eventgen_wsgi.conf"))
+CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default", "eventgen_wsgi.conf"))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
 
 def get_eventgen_name_from_conf():
@@ -78,17 +78,15 @@ class EventgenListener:
 
     def index(self):
         self.log.info("index method called")
-        home_page = '''
-        *** Eventgen WSGI ***
-        Host: {0}
-        Eventgen Status: {1}
-        Eventgen Config file exists: {2}
-        Eventgen Custom Configured?: {3}
-        Eventgen Config file path: {4}
-        Worker Queue Status: {5}
-        Sample Queue Status: {6}
-        Output Queue Status: {7}
-        '''
+        home_page = '''*** Eventgen WSGI ***
+Host: {0}
+Eventgen Status: {1}
+Eventgen Config file exists: {2}
+Eventgen Custom Configured?: {3}
+Eventgen Config file path: {4}
+Worker Queue Status: {5}
+Sample Queue Status: {6}
+Output Queue Status: {7}\n'''
         status = self.get_status()
         eventgen_status = "running" if status["EVENTGEN_STATUS"] else "stopped"
         host = status["EVENTGEN_HOST"]
@@ -217,6 +215,14 @@ class EventgenListener:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
+    def bundle(self):
+        self.log.info("Bundle method called. Config is {}".format(self.eventgen_dependency.configfile))
+        try:
+            pass
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
+
     ##############################################
     ############ Event Handler Methods ###########
     ##############################################
@@ -247,6 +253,11 @@ class EventgenListener:
 
     @event_handler("eventgen_controller", "all_set_conf", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_set_conf(self, payload):
+        if payload['url']:
+            self.log.info("Do something else here")
+    
+    @event_handler("eventgen_controller", "all_bundle", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_bundle(self, payload):
         if payload['type'] == 'conf':
             return self.set_conf(conf=payload['data'])
 
@@ -278,6 +289,11 @@ class EventgenListener:
     def event_handler_set_conf(self, payload):
         if payload['type'] == 'conf':
             return self.set_conf(conf=payload['data'])
+    
+    @event_handler("eventgen_controller", "{}_bundle".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_bundle(self, payload):
+        if payload['url']:
+            self.log.info("Do something here")
 
     ##############################################
     ################ HTTP Methods ################
@@ -318,6 +334,10 @@ class EventgenListener:
                 return self.set_conf(conf=pair[1][0])
         else:
             return '400', 'Please pass the valid parameters.'
+    
+    @http('POST', '/bundle')
+    def http_bundle(self, request):
+        return self.bundle()
 
     ##############################################
     ################ Helper Methods ##############

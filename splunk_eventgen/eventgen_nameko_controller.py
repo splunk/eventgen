@@ -143,6 +143,28 @@ class EventgenController(object):
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
+    @rpc
+    def bundle(self, nodes, payload):
+        url = None
+        try:
+            payload = json.loads(payload)
+            url = payload["url"]
+        except ValueError:
+            url = payload
+        if not url:
+            self.log.error("No URL specified in /bundle POST")
+        try:
+            if nodes == "all":
+                self.dispatch("all_bundle", {"url": url})
+            else:
+                self.dispatch("{}_bundle".format(nodes), {"url": url})
+            msg = "Bundle event dispatched to {} with url {}".format(nodes, url)
+            self.log.info(msg)
+            return msg
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
+
     ##############################################
     ################ HTTP Methods ################
     ##############################################
@@ -150,13 +172,9 @@ class EventgenController(object):
     @http('GET', '/')
     def root_page(self, request):
         self.log.info("index method called")
-        home_page = '''
-        *** Eventgen Controller ***
-        Host: {0}
-        
-        You are running Eventgen Controller.
-        
-        '''
+        home_page = '''*** Eventgen Controller ***
+Host: {0}
+You are running Eventgen Controller.\n'''
         host = socket.gethostname()
         return home_page.format(host)
 
@@ -193,6 +211,13 @@ class EventgenController(object):
             if "conf" == pair[0]:
                 return self.set_conf(nodes=self.get_nodes(request), conf=pair[1][0])
         return '400', 'Please pass the valid parameters.'
+    
+    @http('POST', '/bundle')
+    def http_bundle(self, request):
+        payload = request.get_data(as_text=True)
+        self.log.info(payload)
+        self.log.info(json.loads(payload))
+        return self.bundle(nodes=self.get_nodes(request), payload=request.get_data(as_text=True))
 
     ##############################################
     ############### Helper Methods ###############
@@ -210,4 +235,3 @@ class EventgenController(object):
 
     def format_status(self):
         return json.dumps(self.server_status, indent=4)
-
