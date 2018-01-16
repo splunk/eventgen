@@ -263,10 +263,9 @@ Output Queue Status: {6}\n'''
             if os.path.isfile(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf")):
                 self.log.info("Reading eventgen.conf...")
                 config_dict = self.parse_eventgen_conf(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf"))
-                self.log.info("Config is {}".format(config_dict))
-                self.set_conf(json.dumps({"content": config_dict}))
                 # If an eventgen.conf exists, enable the configured flag
                 self.eventgen_dependency.configured = True
+                return self.set_conf(json.dumps({"content": config_dict}))
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
