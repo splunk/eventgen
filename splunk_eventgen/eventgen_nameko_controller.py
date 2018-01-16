@@ -35,6 +35,7 @@ class EventgenController(object):
     log.info("Logger set as eventgen_controller")
 
     server_status = {}
+    server_confs = {}
 
     ##############################################
     ################ RPC Methods #################
@@ -44,101 +45,113 @@ class EventgenController(object):
     def event_handler_server_status(self, payload):
         return self.receive_status(payload)
 
+    @event_handler("eventgen_listener", "server_conf", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_server_conf(self, payload):
+        return self.receive_conf(payload)
+
     @rpc
-    def index(self, nodes):
+    def index(self, target):
         try:
-            if nodes == "all":
+            if target == "all":
                 self.dispatch("all_index", self.PAYLOAD)
             else:
-                self.dispatch("{}_index".format(nodes), self.PAYLOAD)
-            self.log.info("Index event dispatched to {}".format(nodes))
-            return "Index event dispatched to {}".format(nodes)
+                self.dispatch("{}_index".format(target), self.PAYLOAD)
+            self.log.info("Index event dispatched to {}".format(target))
+            return "Index event dispatched to {}".format(target)
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
-    def status(self, nodes):
+    def status(self, target):
         try:
-            if nodes == "all":
+            if target == "all":
                 self.dispatch("all_status", self.PAYLOAD)
             else:
-                self.dispatch("{}_status".format(nodes), self.PAYLOAD)
-            self.log.info("Status event dispatched to {}".format(nodes))
-            return "Status event dispatched to {}".format(nodes)
+                self.dispatch("{}_status".format(target), self.PAYLOAD)
+            self.log.info("Status event dispatched to {}".format(target))
+            return "Status event dispatched to {}".format(target)
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
-    def start(self, nodes):
+    def start(self, target):
         try:
-            if nodes == "all":
+            if target == "all":
                 self.dispatch("all_start", self.PAYLOAD)
             else:
-                self.dispatch("{}_start".format(nodes), self.PAYLOAD)
-            self.log.info("Start event dispatched to {}".format(nodes))
-            return "Start event dispatched to {}".format(nodes)
+                self.dispatch("{}_start".format(target), self.PAYLOAD)
+            self.log.info("Start event dispatched to {}".format(target))
+            return "Start event dispatched to {}".format(target)
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
-    def stop(self, nodes):
+    def stop(self, target):
         try:
-            if nodes == "all":
+            if target == "all":
                 self.dispatch("all_stop", self.PAYLOAD)
             else:
-                self.dispatch("{}_stop".format(nodes), self.PAYLOAD)
-            self.log.info("Stop event dispatched to {}".format(nodes))
-            return "Stop event dispatched to {}".format(nodes)
+                self.dispatch("{}_stop".format(target), self.PAYLOAD)
+            self.log.info("Stop event dispatched to {}".format(target))
+            return "Stop event dispatched to {}".format(target)
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
-    def restart(self, nodes):
+    def restart(self, target):
         try:
-            if nodes == "all":
+            if target == "all":
                 self.dispatch("all_restart", self.PAYLOAD)
             else:
-                self.dispatch("{}_restart".format(nodes), self.PAYLOAD)
-            self.log.info("Restart event dispatched to {}".format(nodes))
-            return "Restart event dispatched to {}".format(nodes)
+                self.dispatch("{}_restart".format(target), self.PAYLOAD)
+            self.log.info("Restart event dispatched to {}".format(target))
+            return "Restart event dispatched to {}".format(target)
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
-    def get_conf(self, nodes):
+    def get_conf(self, target):
         try:
-            if nodes == "all":
+            if target == "all":
                 self.dispatch("all_get_conf", self.PAYLOAD)
             else:
-                self.dispatch("{}_get_conf".format(nodes), self.PAYLOAD)
-            self.log.info("Get_conf event dispatched to {}".format(nodes))
-            return "Get_conf event dispatched to {}".format(nodes)
+                self.dispatch("{}_get_conf".format(target), self.PAYLOAD)
+            self.log.info("Get_conf event dispatched to {}".format(target))
+            return "Get_conf event dispatched to {}".format(target)
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
-    def set_conf(self, nodes, conf):
+    def set_conf(self, target, data):
         try:
-            payload = {}
-            if conf:
-                payload['type'] = 'conf'
-                payload['data'] = conf
-            else:
-                self.log.info("Pass in a valid conf")
-                return "Pass in a valid conf."
-
-            if nodes == "all":
+            payload = data
+            if target == "all":
                 self.dispatch("all_set_conf", payload)
             else:
-                self.dispatch("{}_set_conf".format(nodes), payload)
-            self.log.info("Set_conf event dispatched to {}".format(nodes))
-            return "Set_conf event dispatched to {}".format(nodes)
+                self.dispatch("{}_set_conf".format(target), payload)
+            self.log.info("Set_conf event dispatched to {}".format(target))
+            return "Set_conf event dispatched to {}".format(target)
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
+
+    @rpc
+    def edit_conf(self, target, data):
+        try:
+            print data
+            payload = data
+            if target == "all":
+                self.dispatch("all_edit_conf", payload)
+            else:
+                self.dispatch("{}_edit_conf".format(target), payload)
+            self.log.info("Edit_conf event dispatched to {}".format(target))
+            return "Edit_conf event dispatched to {}".format(target)
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -180,39 +193,52 @@ You are running Eventgen Controller.\n'''
 
     @http('GET', '/index')
     def http_index(self, request):
-        self.index(nodes=self.get_nodes(request))
+        self.index(target=self.get_target(request))
         return self.root_page(request)
 
     @http('GET', '/status')
     def http_status(self, request):
-        self.status(nodes=self.get_nodes(request))
+        self.status(target=self.get_target(request))
         time.sleep(0.5)
         return self.format_status()
 
     @http('POST', '/start')
     def http_start(self, request):
-        return self.start(nodes=self.get_nodes(request))
+        return self.start(target=self.get_target(request))
 
     @http('POST', '/stop')
     def http_stop(self, request):
-        return self.stop(nodes=self.get_nodes(request))
+        return self.stop(target=self.get_target(request))
 
     @http('POST', '/restart')
     def http_restart(self, request):
-        return self.restart(nodes=self.get_nodes(request))
+        return self.restart(target=self.get_target(request))
 
     @http('GET', '/conf')
     def http_get_conf(self, request):
-        return self.get_conf(nodes=self.get_nodes(request))
+        self.get_conf(target=self.get_target(request))
+        time.sleep(0.5)
+        return self.format_confs()
 
     @http('POST', '/conf')
     def http_set_conf(self, request):
-        for pair in request.values.lists():
-            if "conf" == pair[0]:
-                return self.set_conf(nodes=self.get_nodes(request), conf=pair[1][0])
-        return '400', 'Please pass the valid parameters.'
-    
-    @http('POST', '/bundle')
+        data = request.get_data()
+        if data:
+            self.set_conf(target=self.get_target(request), data=data)
+            return self.http_get_conf(request)
+        else:
+            return '400', 'Please pass valid config data.'
+
+    @http('PUT', '/conf')
+    def http_edit_conf(self, request):
+        data = request.get_data()
+        if data:
+            self.edit_conf(target=self.get_target(request), data=data)
+            return self.http_get_conf(request)
+        else:
+            return '400', 'Please pass valid config data.'
+
+    #http('POST', '/bundle')
     def http_bundle(self, request):
         payload = request.get_data(as_text=True)
         self.log.info(payload)
@@ -223,15 +249,30 @@ You are running Eventgen Controller.\n'''
     ############### Helper Methods ###############
     ##############################################
 
-    def get_nodes(self, request):
-        for pair in request.values.lists():
-            if pair[0] == "nodes":
-                return pair[1][0]
-        return "all"
+    def get_target(self, request):
+        data = request.get_data()
+        if data:
+            data = json.loads(data)
+        if 'target' in data:
+            return data['target']
+        else:
+            return "all"
 
     def receive_status(self, data):
         if data['server_name'] and data['server_status']:
             self.server_status[data['server_name']] = data['server_status']
 
+    def receive_conf(self, data):
+        if data['server_name'] and data['server_conf']:
+            print data, '**'
+            self.server_confs[data['server_name']] = data['server_conf']
+
     def format_status(self):
         return json.dumps(self.server_status, indent=4)
+<<<<<<< HEAD
+=======
+
+    def format_confs(self):
+        return json.dumps(self.server_confs, indent=4)
+
+>>>>>>> schema_change

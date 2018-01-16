@@ -42,25 +42,31 @@ This new Eventgen model can be brought up in several different ways. Please see 
 * ```GET /status```
 * ```POST /start```
     * body
-        * nodes={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * Otherwise, sends start request to all servers.
+        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
+            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
 * ```POST /stop```
     * body
-        * nodes={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * Otherwise, sends stop request to all servers.
+        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
+            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
 * ```POST /restart```
     * body
-        * nodes={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * Otherwise, sends stop request to all servers.
+        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
+            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
 * ```GET /conf```
     * body
-        * nodes={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * Otherwise, sends stop request to all servers.
+        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
+            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
 * ```POST /conf```
     * body
-        * nodes={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * Otherwise, sends stop request to all servers by default.
-        * conf="PATH_TO_CONF_FILE"
-            * For example, conf="tests/sample_eventgen_conf/windbag/eventgen.conf.windbag".
-        * conf={"{SAMPLE}": conf={"{CONF_KEY}": "{CONF_VALUE}"}}.
-            * For example, {"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}.
+        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
+            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
+        * content={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will overwrite the existing config file with the content.
+            * Format: {"{SAMPLE}": conf={"{CONF_KEY}": "{CONF_VALUE}"}}.
+                * For example, {"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}.
+* ```PUT /conf```
+    * body
+        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
+            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
+        * content={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will only replace matching values in existing configfile.
+            * Format: {"{SAMPLE}": conf={"{CONF_KEY}": "{CONF_VALUE}"}}.
+                * For example, {"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}.
