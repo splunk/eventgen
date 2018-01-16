@@ -245,7 +245,6 @@ Output Queue Status: {6}\n'''
     def bundle(self, url):
         # Set these parameters to notify that eventgen is in the process of configuration
         self.eventgen_dependency.configured = False
-        self.eventgen_dependency.customconfigured = False
         try:
             # Download the bundle
             self.log.info("Downloading bundle at {}...".format(url))
@@ -275,11 +274,11 @@ Output Queue Status: {6}\n'''
             self.log.info("Detecting eventgen.conf...")
             if os.path.isfile(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf")):
                 self.log.info("Reading eventgen.conf...")
-                config_dict = self.read_eventgen_conf(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf"))
+                config_dict = self.parse_eventgen_conf(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf"))
                 self.log.info("Config is {}".format(config_dict))
+                self.set_conf(config_dict)
             # Set these parameters to notify that eventgen is finished with the configuration
             self.eventgen_dependency.configured = True
-            self.eventgen_dependency.customconfigured = True
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -401,10 +400,6 @@ Output Queue Status: {6}\n'''
             return self.set_conf(data)
         else:
             return '400', 'Please pass the valid parameters.'
-    
-    @http('POST', '/bundle')
-    def http_bundle(self, request):
-        return self.bundle()
 
     @http('PUT', '/conf')
     def http_edit_conf(self, request):
@@ -413,21 +408,24 @@ Output Queue Status: {6}\n'''
             return self.edit_conf(data)
         else:
             return '400', 'Please pass valid config data.'
+    
+    @http('POST', '/bundle')
+    def http_bundle(self, request):
+        data = request.get_data(as_text=True)
+        try:
+            data = json.loads(data)
+            url = data["url"]
+            return self.bundle(url)
+        except Exception as e:
+            self.log.exception(e)
+            return '400', "Exception: {}".format(e.message)
 
     ##############################################
     ################ Helper Methods ##############
     ##############################################
 
-    def is_custom_conf(self, conf):
-        if conf[0] == '{' and conf[-1] == '}':
-            return True
-        else:
-            return False
-
-    def read_eventgen_conf(self, path):
+    def parse_eventgen_conf(self, path):
         config = ConfigParser.ConfigParser()
         config.read(path)
-        self.log.info(path)
         config_dict = {s:dict(config.items(s)) for s in config.sections()}
-        self.log.info(config.sections())
         return config_dict

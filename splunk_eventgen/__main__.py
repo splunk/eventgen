@@ -197,11 +197,7 @@ def run_nameko(args):
     # Wait up to 30s for RMQ service to be up
     wait_for_response(config["AMQP_URI"], config["AMQP_WEBPORT"])
     # Start Nameko service
-    print 'hi'
     runner = ServiceRunner(config=config)
-    print 'bye'
-    print runner
-    print runner.wait
     if args.role == "controller":
         from eventgen_nameko_controller import EventgenController
         runner.add_service(EventgenController)

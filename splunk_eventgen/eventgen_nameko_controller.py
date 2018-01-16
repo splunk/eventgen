@@ -144,7 +144,6 @@ class EventgenController(object):
     @rpc
     def edit_conf(self, target, data):
         try:
-            print data
             payload = data
             if target == "all":
                 self.dispatch("all_edit_conf", payload)
@@ -157,26 +156,17 @@ class EventgenController(object):
             return '500', "Exception: {}".format(e.message)
 
     @rpc
-    def bundle(self, nodes, payload):
-        url = None
+    def bundle(self, target, data):
         try:
-            payload = json.loads(payload)
-            url = payload["url"]
-        except ValueError:
-            url = payload
-        if not url:
-            self.log.error("No URL specified in /bundle POST")
-        try:
-            if nodes == "all":
-                self.dispatch("all_bundle", {"url": url})
-            else:
-                self.dispatch("{}_bundle".format(nodes), {"url": url})
-            msg = "Bundle event dispatched to {} with url {}".format(nodes, url)
+            data = json.loads(data)
+            url = data["url"]
+            self.dispatch("{}_bundle".format(target), {"url": url})
+            msg = "Bundle event dispatched to {} with url {}".format(target, url)
             self.log.info(msg)
             return msg
         except Exception as e:
             self.log.exception(e)
-            return '500', "Exception: {}".format(e.message)
+            return "500", "Exception: {}".format(e.message)
 
     ##############################################
     ################ HTTP Methods ################
@@ -238,12 +228,13 @@ You are running Eventgen Controller.\n'''
         else:
             return '400', 'Please pass valid config data.'
 
-    #http('POST', '/bundle')
+    @http('POST', '/bundle')
     def http_bundle(self, request):
-        payload = request.get_data(as_text=True)
-        self.log.info(payload)
-        self.log.info(json.loads(payload))
-        return self.bundle(nodes=self.get_nodes(request), payload=request.get_data(as_text=True))
+        data = request.get_data(as_text=True)
+        if data:
+            return self.bundle(target=self.get_target(request), data=data)
+        else:
+            return "400", "Please pass in a valid object with bundle URL."
 
     ##############################################
     ############### Helper Methods ###############
@@ -264,15 +255,11 @@ You are running Eventgen Controller.\n'''
 
     def receive_conf(self, data):
         if data['server_name'] and data['server_conf']:
-            print data, '**'
             self.server_confs[data['server_name']] = data['server_conf']
 
     def format_status(self):
         return json.dumps(self.server_status, indent=4)
-<<<<<<< HEAD
-=======
 
     def format_confs(self):
         return json.dumps(self.server_confs, indent=4)
 
->>>>>>> schema_change
