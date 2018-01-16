@@ -67,11 +67,11 @@ class EventgenDocs(object):
 	def update_documentation(self):
 		found_services = self.client.services(filters={"name": self.name})
 		#print found_services
-		if len(found_services) > 1:
+		if found_services and len(found_services) > 1:
 			print "Too many services found - please double-check --name and try again."
 		else:
 			config = self.setup_config()
-			if len(found_services) == 0:
+			if not found_services or len(found_services) == 0:
 				print 'Service "{}" NOT found - starting new service...'.format(self.name)
 				self.client.create_service(task_template=config["TaskTemplate"],
 									   	   name=self.name,
@@ -103,7 +103,7 @@ if __name__ == "__main__":
 	parser.add_argument('--base-url', type=str, default="tcp://ucp.splunk.com:443", help='Specify UCP URL')
 	parser.add_argument('--certs', type=str, required=True, help='Specify path to UCP certs')
 	parser.add_argument('--name', type=str, default="eventgendocs", help='Specify service name')
-	parser.add_argument('--image', type=str, default="stg-repo.splunk.com/nwang/eventgendocs:latest", help='Specify image used')
+	parser.add_argument('--image', type=str, default="stg-repo.splunk.com/tonyl/eventgen-docs:latest", help='Specify image used')
 	parser.add_argument('--replicas', type=int, default=3, help='Specify replica count')
 	args = parser.parse_args()
 

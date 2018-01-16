@@ -43,6 +43,18 @@ withSplunkWrapNode('orca_ci') {
             }
         }
 
+        stage('Publish documentation') {
+            CHANGED_FILES = sh returnStdout: true,
+                               script: 'git --no-pager diff HEAD^ HEAD --name-only'
+            echo "${CHANGED_FILES}"
+            if (env.BRANCH_NAME == 'develop' && CHANGED_FILES.contains('documentation/')) {
+                sh 'make docs'
+            }
+            else {
+                echo 'Skip publishing docs...'
+            }
+        }
+
     }
     catch (Exception e) {
         echo "Exception Caught: ${e.getMessage()}"
