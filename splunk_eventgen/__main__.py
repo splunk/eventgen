@@ -132,10 +132,8 @@ def wait_for_response(address, webport, timeout=300):
         try:
             r = requests.get("http://{}:{}".format(host, webport))
             r.raise_for_status()
-            print r.status_code
             return
         except requests.exceptions.ConnectionError as e:
-            print e
             time.sleep(1)
         finally:
             end = time.time()

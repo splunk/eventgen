@@ -70,3 +70,11 @@ This new Eventgen model can be brought up in several different ways. Please see 
         * content={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will only replace matching values in existing configfile.
             * Format: {"{SAMPLE}": conf={"{CONF_KEY}": "{CONF_VALUE}"}}.
                 * For example, {"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}.
+* ```POST /bundle```
+    * body
+        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
+            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
+        * url={BUNDLE_URL}
+            * Pass in a URL to an app/bundle of Eventgen files to seed configurations and sample files.
+            * Format: {"url": "{BUNDLE_URL"}
+    * Example: curl http://localhost:9500/bundle -X POST -d '{"url": "http://artifact.server.comf/eventgen-bundle.tgz"}'

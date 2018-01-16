@@ -10,6 +10,7 @@ import time
 import requests
 import glob
 import tarfile
+import zipfile
 import shutil
 import eventgen_nameko_dependency
 import logging
@@ -247,22 +248,9 @@ Output Queue Status: {6}\n'''
         self.eventgen_dependency.configured = False
         try:
             # Download the bundle
-            self.log.info("Downloading bundle at {}...".format(url))
-            bundle_path = os.path.join(FILE_PATH, "eg-bundle.tgz")
-            r = requests.get(url, stream=True)
-            with open(bundle_path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=None):
-                    if chunk:
-                        f.write(chunk)
-            r.close()
-            self.log.info("Downloading complete!")
+            bundle_path = self.download_bundle(url)
             # Extract bundle
-            self.log.info("Extracting bundle...")
-            tar = tarfile.open(bundle_path)
-            bundle_dir = os.path.commonprefix(tar.getnames())
-            tar.extractall(path=os.path.dirname(bundle_path))
-            tar.close()
-            self.log.info("Extraction complete!")
+            bundle_dir = self.unarchive_bundle(bundle_path)
             # Move sample files
             self.log.info("Detecting sample files...")
             if os.path.isdir(os.path.join(FILE_PATH, bundle_dir, "samples")):
@@ -277,8 +265,8 @@ Output Queue Status: {6}\n'''
                 config_dict = self.parse_eventgen_conf(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf"))
                 self.log.info("Config is {}".format(config_dict))
                 self.set_conf(json.dumps({"content": config_dict}))
-            # Set these parameters to notify that eventgen is finished with the configuration
-            self.eventgen_dependency.configured = True
+                # If an eventgen.conf exists, enable the configured flag
+                self.eventgen_dependency.configured = True
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -429,3 +417,36 @@ Output Queue Status: {6}\n'''
         config.read(path)
         config_dict = {s:dict(config.items(s)) for s in config.sections()}
         return config_dict
+
+    def download_bundle(self, url):
+        self.log.info("Downloading bundle at {}...".format(url))
+        bundle_path = os.path.join(FILE_PATH, "eg-bundle.tgz")
+        r = requests.get(url, stream=True)
+        with open(bundle_path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=None):
+                if chunk:
+                    f.write(chunk)
+        r.close()
+        self.log.info("Download complete!")
+        return bundle_path
+
+    def unarchive_bundle(self, path):
+        self.log.info("Extracting bundle {}...".format(path))
+        output = None
+        # Use tarfile or zipfile, depending on the bundle
+        if tarfile.is_tarfile(path):
+            tar = tarfile.open(path)
+            output = os.path.commonprefix(tar.getnames())
+            tar.extractall(path=os.path.dirname(path))
+            tar.close()
+        elif zipfile.is_zipfile(path):
+            zipf = zipfile.ZipFile(path)
+            output = "eg-bundle"
+            zipf.extractall(path=os.path.join(os.path.dirname(path), output))
+            zipf.close()
+        else:
+            msg = "Unknown archive format!"
+            self.log.exception(msg)
+            raise Exception(msg)
+        self.log.info("Extraction complete!")
+        return output
