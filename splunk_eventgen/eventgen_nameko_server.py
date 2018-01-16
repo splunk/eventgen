@@ -8,7 +8,9 @@ import os
 import socket
 import time
 import requests
+import glob
 import tarfile
+import shutil
 import eventgen_nameko_dependency
 import logging
 
@@ -218,9 +220,12 @@ Output Queue Status: {7}\n'''
             return '500', "Exception: {}".format(e.message)
 
     def bundle(self, url):
-        self.log.info("bundle method called with url {}".format(url))
+        # Set these parameters to notify that eventgen is in the process of configuration
+        self.eventgen_dependency.configured = False
+        self.eventgen_dependency.customconfigured = False
         try:
             # Download the bundle
+            self.log.info("Downloading bundle at {}...".format(url))
             bundle_path = os.path.join(FILE_PATH, "eg-bundle.tgz")
             r = requests.get(url, stream=True)
             with open(bundle_path, 'wb') as f:
@@ -228,14 +233,30 @@ Output Queue Status: {7}\n'''
                     if chunk:
                         f.write(chunk)
             r.close()
+            self.log.info("Downloading complete!")
             # Extract bundle
+            self.log.info("Extracting bundle...")
             tar = tarfile.open(bundle_path)
+            bundle_dir = os.path.commonprefix(tar.getnames())
             tar.extractall(path=os.path.dirname(bundle_path))
             tar.close()
+            self.log.info("Extraction complete!")
             # Move sample files
-            # TODO:
+            self.log.info("Detecting sample files...")
+            if os.path.isdir(os.path.join(FILE_PATH, bundle_dir, "samples")):
+                self.log.info("Moving sample files...")
+                for file in glob.glob(os.path.join(FILE_PATH, bundle_dir, "samples", "*")):
+                    shutil.copy(file, os.path.join(FILE_PATH, "samples"))
+                self.log.info("Sample files moved!")
             # Read eventgen.conf
-            # TODO:
+            self.log.info("Detecting eventgen.conf...")
+            if os.path.isfile(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf")):
+                self.log.info("Reading eventgen.conf...")
+                config_dict = self.read_eventgen_conf(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf"))
+                self.log.info("Config is {}".format(config_dict))
+            # Set these parameters to notify that eventgen is finished with the configuration
+            self.eventgen_dependency.configured = True
+            self.eventgen_dependency.customconfigured = True
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -270,13 +291,13 @@ Output Queue Status: {7}\n'''
 
     @event_handler("eventgen_controller", "all_set_conf", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_set_conf(self, payload):
-        if payload['url']:
-            return self.bundle(payload['url'])
+        if payload['type'] == 'conf':
+            return self.set_conf(conf=payload['data'])
     
     @event_handler("eventgen_controller", "all_bundle", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_bundle(self, payload):
-        if payload['type'] == 'conf':
-            return self.set_conf(conf=payload['data'])
+        if payload['url']:
+            return self.bundle(payload['url'])
 
     @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_index(self, payload):
@@ -365,3 +386,11 @@ Output Queue Status: {7}\n'''
             return True
         else:
             return False
+
+    def read_eventgen_conf(self, path):
+        config = ConfigParser.ConfigParser()
+        config.read(path)
+        self.log.info(path)
+        config_dict = {s:dict(config.items(s)) for s in config.sections()}
+        self.log.info(config.sections())
+        return config_dict

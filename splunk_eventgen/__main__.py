@@ -132,8 +132,10 @@ def wait_for_response(address, webport, timeout=300):
         try:
             r = requests.get("http://{}:{}".format(host, webport))
             r.raise_for_status()
+            print r.status_code
             return
         except requests.exceptions.ConnectionError as e:
+            print e
             time.sleep(1)
         finally:
             end = time.time()
@@ -191,12 +193,15 @@ def run_nameko(args):
     config = parse_env_vars()
     config = parse_cli_vars(config, args)
     config = rectify_config(config)
-    logger.info("Config used: {}".format(config))
     print "Config used: {}".format(config)
     # Wait up to 30s for RMQ service to be up
     wait_for_response(config["AMQP_URI"], config["AMQP_WEBPORT"])
     # Start Nameko service
+    print 'hi'
     runner = ServiceRunner(config=config)
+    print 'bye'
+    print runner
+    print runner.wait
     if args.role == "controller":
         from eventgen_nameko_controller import EventgenController
         runner.add_service(EventgenController)
