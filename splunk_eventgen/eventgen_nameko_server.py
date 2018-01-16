@@ -276,7 +276,7 @@ Output Queue Status: {6}\n'''
                 self.log.info("Reading eventgen.conf...")
                 config_dict = self.parse_eventgen_conf(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf"))
                 self.log.info("Config is {}".format(config_dict))
-                self.set_conf(config_dict)
+                self.set_conf(json.dumps({"content": config_dict}))
             # Set these parameters to notify that eventgen is finished with the configuration
             self.eventgen_dependency.configured = True
         except Exception as e:
