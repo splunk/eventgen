@@ -1,6 +1,7 @@
 FROM alpine:3.6
 
 ENV RABBITMQ_VERSION=3.6.13
+ENV SPLUNK_HOME=/opt/splunk
 
 RUN apk --no-cache upgrade && \
 	apk add --no-cache --update \
@@ -49,5 +50,5 @@ HEALTHCHECK --interval=1m --timeout=15s --start-period=5m --retries=3 \
 	CMD curl -f http://localhost:9500/status || exit 1
 
 EXPOSE 2222 5672 15672 9500
-WORKDIR /root
+WORKDIR /opt/splunk/etc/apps
 ENTRYPOINT ["/sbin/entrypoint.sh"]

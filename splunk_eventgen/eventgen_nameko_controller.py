@@ -144,7 +144,6 @@ class EventgenController(object):
     @rpc
     def edit_conf(self, target, data):
         try:
-            print data
             payload = data
             if target == "all":
                 self.dispatch("all_edit_conf", payload)
@@ -156,6 +155,19 @@ class EventgenController(object):
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
+    @rpc
+    def bundle(self, target, data):
+        try:
+            data = json.loads(data)
+            url = data["url"]
+            self.dispatch("{}_bundle".format(target), {"url": url})
+            msg = "Bundle event dispatched to {} with url {}".format(target, url)
+            self.log.info(msg)
+            return msg
+        except Exception as e:
+            self.log.exception(e)
+            return "500", "Exception: {}".format(e.message)
+
     ##############################################
     ################ HTTP Methods ################
     ##############################################
@@ -163,13 +175,9 @@ class EventgenController(object):
     @http('GET', '/')
     def root_page(self, request):
         self.log.info("index method called")
-        home_page = '''
-        *** Eventgen Controller ***
-        Host: {0}
-        
-        You are running Eventgen Controller.
-        
-        '''
+        home_page = '''*** Eventgen Controller ***
+Host: {0}
+You are running Eventgen Controller.\n'''
         host = socket.gethostname()
         return home_page.format(host)
 
@@ -220,6 +228,14 @@ class EventgenController(object):
         else:
             return '400', 'Please pass valid config data.'
 
+    @http('POST', '/bundle')
+    def http_bundle(self, request):
+        data = request.get_data(as_text=True)
+        if data:
+            return self.bundle(target=self.get_target(request), data=data)
+        else:
+            return "400", "Please pass in a valid object with bundle URL."
+
     ##############################################
     ############### Helper Methods ###############
     ##############################################
@@ -239,7 +255,6 @@ class EventgenController(object):
 
     def receive_conf(self, data):
         if data['server_name'] and data['server_conf']:
-            print data, '**'
             self.server_confs[data['server_name']] = data['server_conf']
 
     def format_status(self):

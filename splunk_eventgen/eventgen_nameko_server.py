@@ -7,12 +7,17 @@ import json
 import os
 import socket
 import time
+import requests
+import glob
+import tarfile
+import zipfile
+import shutil
 import eventgen_nameko_dependency
 import logging
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
-CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default/eventgen_wsgi.conf"))
+CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default", "eventgen_wsgi.conf"))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
 
 def get_eventgen_name_from_conf():
@@ -77,16 +82,14 @@ class EventgenListener:
 
     def index(self):
         self.log.info("index method called")
-        home_page = '''
-        *** Eventgen WSGI ***
-        Host: {0}
-        Eventgen Status: {1}
-        Eventgen Config file exists: {2}
-        Eventgen Config file path: {3}
-        Worker Queue Status: {4}
-        Sample Queue Status: {5}
-        Output Queue Status: {6}
-        '''
+        home_page = '''*** Eventgen WSGI ***
+Host: {0}
+Eventgen Status: {1}
+Eventgen Config file exists: {2}
+Eventgen Config file path: {3}
+Worker Queue Status: {4}
+Sample Queue Status: {5}
+Output Queue Status: {6}\n'''
         status = self.get_status()
         eventgen_status = "running" if status["EVENTGEN_STATUS"] else "stopped"
         host = status["EVENTGEN_HOST"]
@@ -240,6 +243,36 @@ class EventgenListener:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
+    def bundle(self, url):
+        # Set these parameters to notify that eventgen is in the process of configuration
+        self.eventgen_dependency.configured = False
+        try:
+            # Download the bundle
+            bundle_path = self.download_bundle(url)
+            # Extract bundle
+            bundle_dir = self.unarchive_bundle(bundle_path)
+            self.log.info(bundle_dir)
+            # Move sample files
+            self.log.info("Detecting sample files...")
+            if os.path.isdir(os.path.join(bundle_dir, "samples")):
+                self.log.info("Moving sample files...")
+                for file in glob.glob(os.path.join(bundle_dir, "samples", "*")):
+                    shutil.copy(file, os.path.join(FILE_PATH, "samples"))
+                self.log.info("Sample files moved!")
+            # Read eventgen.conf
+            self.log.info("Detecting eventgen.conf...")
+            if os.path.isfile(os.path.join(bundle_dir, "default", "eventgen.conf")):
+                self.log.info("Reading eventgen.conf...")
+                config_dict = self.parse_eventgen_conf(os.path.join(bundle_dir, "default", "eventgen.conf"))
+                # If an eventgen.conf exists, enable the configured flag
+                self.eventgen_dependency.configured = True
+                return self.set_conf(json.dumps({"content": config_dict}))
+            else:
+                return self.get_conf()
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
+
     ##############################################
     ############ Event Handler Methods ###########
     ##############################################
@@ -275,6 +308,11 @@ class EventgenListener:
     @event_handler("eventgen_controller", "all_edit_conf", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_edit_conf(self, payload):
         return self.edit_conf(conf=payload)
+    
+    @event_handler("eventgen_controller", "all_bundle", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_bundle(self, payload):
+        if payload['url']:
+            return self.bundle(payload['url'])
 
     @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_index(self, payload):
@@ -307,6 +345,11 @@ class EventgenListener:
     @event_handler("eventgen_controller", "{}_edit_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_edit_conf(self, payload):
         return self.edit_conf(conf=payload)
+
+    @event_handler("eventgen_controller", "{}_bundle".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_bundle(self, payload):
+        if payload['url']:
+            return self.bundle(payload['url'])
 
     ##############################################
     ################ HTTP Methods ################
@@ -355,7 +398,58 @@ class EventgenListener:
             return self.edit_conf(data)
         else:
             return '400', 'Please pass valid config data.'
+    
+    @http('POST', '/bundle')
+    def http_bundle(self, request):
+        data = request.get_data(as_text=True)
+        try:
+            data = json.loads(data)
+            url = data["url"]
+            return self.bundle(url)
+        except Exception as e:
+            self.log.exception(e)
+            return '400', "Exception: {}".format(e.message)
 
     ##############################################
     ################ Helper Methods ##############
     ##############################################
+
+    def parse_eventgen_conf(self, path):
+        config = ConfigParser.ConfigParser()
+        config.optionxform = str
+        config.read(path)
+        config_dict = {s:dict(config.items(s)) for s in config.sections()}
+        return config_dict
+
+    def download_bundle(self, url):
+        self.log.info("Downloading bundle at {}...".format(url))
+        bundle_path = os.path.join(os.getcwd(), "eg-bundle.tgz")
+        r = requests.get(url, stream=True)
+        with open(bundle_path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=None):
+                if chunk:
+                    f.write(chunk)
+        r.close()
+        self.log.info("Download complete!")
+        return bundle_path
+
+    def unarchive_bundle(self, path):
+        self.log.info("Extracting bundle {}...".format(path))
+        output = None
+        # Use tarfile or zipfile, depending on the bundle
+        if tarfile.is_tarfile(path):
+            tar = tarfile.open(path)
+            output = os.path.join(os.path.dirname(path), os.path.commonprefix(tar.getnames()))
+            tar.extractall(path=os.path.dirname(path))
+            tar.close()
+        elif zipfile.is_zipfile(path):
+            zipf = zipfile.ZipFile(path)
+            output = os.path.join(os.path.dirname(path), "eg-bundle")
+            zipf.extractall(path=output)
+            zipf.close()
+        else:
+            msg = "Unknown archive format!"
+            self.log.exception(msg)
+            raise Exception(msg)
+        self.log.info("Extraction complete!")
+        return output
