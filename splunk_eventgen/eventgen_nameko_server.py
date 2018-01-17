@@ -251,21 +251,24 @@ Output Queue Status: {6}\n'''
             bundle_path = self.download_bundle(url)
             # Extract bundle
             bundle_dir = self.unarchive_bundle(bundle_path)
+            self.log.info(bundle_dir)
             # Move sample files
             self.log.info("Detecting sample files...")
-            if os.path.isdir(os.path.join(FILE_PATH, bundle_dir, "samples")):
+            if os.path.isdir(os.path.join(bundle_dir, "samples")):
                 self.log.info("Moving sample files...")
-                for file in glob.glob(os.path.join(FILE_PATH, bundle_dir, "samples", "*")):
+                for file in glob.glob(os.path.join(bundle_dir, "samples", "*")):
                     shutil.copy(file, os.path.join(FILE_PATH, "samples"))
                 self.log.info("Sample files moved!")
             # Read eventgen.conf
             self.log.info("Detecting eventgen.conf...")
-            if os.path.isfile(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf")):
+            if os.path.isfile(os.path.join(bundle_dir, "default", "eventgen.conf")):
                 self.log.info("Reading eventgen.conf...")
-                config_dict = self.parse_eventgen_conf(os.path.join(FILE_PATH, bundle_dir, "default", "eventgen.conf"))
+                config_dict = self.parse_eventgen_conf(os.path.join(bundle_dir, "default", "eventgen.conf"))
                 # If an eventgen.conf exists, enable the configured flag
                 self.eventgen_dependency.configured = True
                 return self.set_conf(json.dumps({"content": config_dict}))
+            else:
+                return self.get_conf()
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -413,13 +416,14 @@ Output Queue Status: {6}\n'''
 
     def parse_eventgen_conf(self, path):
         config = ConfigParser.ConfigParser()
+        config.optionxform = str
         config.read(path)
         config_dict = {s:dict(config.items(s)) for s in config.sections()}
         return config_dict
 
     def download_bundle(self, url):
         self.log.info("Downloading bundle at {}...".format(url))
-        bundle_path = os.path.join(FILE_PATH, "eg-bundle.tgz")
+        bundle_path = os.path.join(os.getcwd(), "eg-bundle.tgz")
         r = requests.get(url, stream=True)
         with open(bundle_path, 'wb') as f:
             for chunk in r.iter_content(chunk_size=None):
@@ -435,13 +439,13 @@ Output Queue Status: {6}\n'''
         # Use tarfile or zipfile, depending on the bundle
         if tarfile.is_tarfile(path):
             tar = tarfile.open(path)
-            output = os.path.commonprefix(tar.getnames())
+            output = os.path.join(os.path.dirname(path), os.path.commonprefix(tar.getnames()))
             tar.extractall(path=os.path.dirname(path))
             tar.close()
         elif zipfile.is_zipfile(path):
             zipf = zipfile.ZipFile(path)
-            output = "eg-bundle"
-            zipf.extractall(path=os.path.join(os.path.dirname(path), output))
+            output = os.path.join(os.path.dirname(path), "eg-bundle")
+            zipf.extractall(path=output)
             zipf.close()
         else:
             msg = "Unknown archive format!"
