@@ -39,10 +39,10 @@ RUN apk --no-cache upgrade && \
 	chmod 0700 /root/.ssh && \
 	pip install requests_futures nameko pyOpenSSL --upgrade
 
-COPY sshd_config /etc/ssh/sshd_config
-COPY entrypoint.sh /sbin/entrypoint.sh
-COPY splunk_eventgen.tgz /root/splunk_eventgen.tgz
-COPY rabbitmq.config /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/rabbitmq.config
+COPY dockerfiles/sshd_config /etc/ssh/sshd_config
+COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
+COPY dist/* /root/splunk_eventgen.tgz
+COPY dockerfiles/rabbitmq.config /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/rabbitmq.config
 
 RUN pip install /root/splunk_eventgen.tgz && rm /root/splunk_eventgen.tgz
 

@@ -30,7 +30,7 @@ class TestEventgenServer(object):
 	def setup_class(cls):
 		cls.client = APIClient(base_url="unix://var/run/docker.sock")
 		cls.image_tag = "eg:{}".format(generate_random_string())
-		response = cls.client.build(path=os.path.join(REPO_DIR, "dockerfiles"), tag=cls.image_tag, rm=True, nocache=True, pull=True, stream=False)
+		response = cls.client.build(path=REPO_DIR, dockerfile=os.path.join("dockerfiles", "Dockerfile"), tag=cls.image_tag, rm=True, nocache=True, pull=True, stream=False)
 		for line in response:
 			print line,
 		host_config = cls.client.create_host_config(auto_remove=True, publish_all_ports=True)

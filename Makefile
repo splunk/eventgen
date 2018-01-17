@@ -22,9 +22,8 @@ push_egg_production:
 	python setup.py sdist upload -r production
 
 image: setup_eventgen egg
-	cp dist/splunk_eventgen-*.tar.gz dockerfiles/splunk_eventgen.tgz
 	rm splunk_eventgen/default/eventgen_engine.conf || true
-	cd dockerfiles && docker build . -t eventgen
+	docker build -f dockerfiles/Dockerfile . -t eventgen
 
 push_image_production: image
 	docker tag eventgen:latest repo.splunk.com/splunk/products/eventgenx:latest
