@@ -18,8 +18,11 @@ all: egg
 egg: clean
 	python setup.py sdist
 
-push_egg_production:
-	python setup.py sdist upload -r production
+push_dev_egg:
+	python scripts/eventgen_CD.py --push pypi
+
+push_release_egg:
+	python scripts/eventgen_CD.py --push --release pypi
 
 image: setup_eventgen egg
 	cp dist/splunk_eventgen-*.tar.gz dockerfiles/splunk_eventgen.tgz
