@@ -1,6 +1,8 @@
 from nameko.rpc import rpc
 from nameko.events import EventDispatcher, event_handler, BROADCAST
 from nameko.web.handlers import http
+from pyrabbit.api import Client
+import atexit
 import ConfigParser
 import logging
 import os
@@ -22,6 +24,10 @@ def get_hec_info_from_conf():
         hec_info[1] = config.get('heclogger', 'hec_key', 1)
     return hec_info
 
+def exit_handler(client, hostname, logger):
+    client.delete_vhost(hostname)
+    logger.info("Deleted vhost {}. Shutting down.".format(hostname))
+
 class EventgenController(object):
     name = "eventgen_controller"
 
@@ -33,9 +39,25 @@ class EventgenController(object):
     handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1], eventgen_name=name)
     log.addHandler(handler)
     log.info("Logger set as eventgen_controller")
+    host = socket.gethostname() + '_controller'
 
     server_status = {}
     server_confs = {}
+
+    osvars, config = dict(os.environ), {}
+    config["AMQP_HOST"] = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
+    config["AMQP_WEBPORT"] = osvars.get("EVENTGEN_AMQP_WEBPORT", 15672)
+    config["AMQP_USER"] = osvars.get("EVENTGEN_AMQP_URI", "guest")
+    config["AMQP_PASS"] = osvars.get("EVENTGEN_AMQP_PASS", "guest")
+
+    pyrabbit_cl = Client('{0}:{1}'.format(config['AMQP_HOST'], config['AMQP_WEBPORT']),
+                         '{0}'.format(config['AMQP_USER']),
+                         '{0}'.format(config['AMQP_PASS']))
+    pyrabbit_cl.create_vhost(host)
+    log.info("Vhost set to {}".format(host))
+    log.info("Current Vhosts are {}".format(pyrabbit_cl.get_vhost_names()))
+
+    atexit.register(exit_handler, client=pyrabbit_cl, hostname=host, logger=log)
 
     ##############################################
     ################ RPC Methods #################
@@ -189,8 +211,7 @@ You are running Eventgen Controller.\n'''
     @http('GET', '/status')
     def http_status(self, request):
         self.status(target=self.get_target(request))
-        time.sleep(0.5)
-        return self.format_status()
+        return self.process_server_status()
 
     @http('POST', '/start')
     def http_start(self, request):
@@ -207,8 +228,7 @@ You are running Eventgen Controller.\n'''
     @http('GET', '/conf')
     def http_get_conf(self, request):
         self.get_conf(target=self.get_target(request))
-        time.sleep(0.5)
-        return self.format_confs()
+        return self.process_server_confs()
 
     @http('POST', '/conf')
     def http_set_conf(self, request):
@@ -257,9 +277,34 @@ You are running Eventgen Controller.\n'''
         if data['server_name'] and data['server_conf']:
             self.server_confs[data['server_name']] = data['server_conf']
 
-    def format_status(self):
-        return json.dumps(self.server_status, indent=4)
+    def process_server_status(self):
+        current_server_vhosts = self.get_current_server_vhosts()
+        if current_server_vhosts:
+            # Try for 15 iterations to get results from current server vhosts
+            for i in range(15):
+                if len(self.server_status) != len(current_server_vhosts):
+                    time.sleep(0.3)
+                    current_server_vhosts = self.get_current_server_vhosts()
+            dump_value = self.server_status
+        else:
+            dump_value = {}
+        self.server_status = {}
+        return json.dumps(dump_value, indent=4)
 
-    def format_confs(self):
-        return json.dumps(self.server_confs, indent=4)
+    def process_server_confs(self):
+        current_server_vhosts = self.get_current_server_vhosts()
+        if current_server_vhosts:
+            # Try for 15 iterations to get results from current server vhosts
+            for i in range(15):
+                if len(self.server_confs) != len(current_server_vhosts):
+                    time.sleep(0.3)
+                    current_server_vhosts = self.get_current_server_vhosts()
+            dump_value = self.server_confs
+        else:
+            dump_value = {}
+        self.server_confs = {}
+        return json.dumps(dump_value, indent=4)
 
+    def get_current_server_vhosts(self):
+        current_vhosts = self.pyrabbit_cl.get_vhost_names()
+        return [name for name in current_vhosts if name != '/' and name != self.host]

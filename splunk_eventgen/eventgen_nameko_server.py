@@ -1,6 +1,8 @@
 from nameko.rpc import rpc
 from nameko.web.handlers import http
 from nameko.events import EventDispatcher, event_handler, BROADCAST
+from pyrabbit.api import Client
+import atexit
 import ConfigParser
 import yaml
 import json
@@ -26,6 +28,10 @@ def get_eventgen_name_from_conf():
         return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else socket.gethostname()
     return None
 
+def exit_handler(client, hostname, logger):
+    client.delete_vhost(hostname)
+    logger.info("Deleted vhost {}. Shutting down.".format(hostname))
+
 class EventgenListener:
     name = "eventgen_listener"
 
@@ -36,6 +42,20 @@ class EventgenListener:
     host = socket.gethostname()
     log = logging.getLogger(name)
     log.info("Eventgen name is set to [{}] at host [{}]".format(eventgen_name, host))
+
+    osvars, config = dict(os.environ), {}
+    config["AMQP_HOST"] = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
+    config["AMQP_WEBPORT"] = osvars.get("EVENTGEN_AMQP_WEBPORT", 15672)
+    config["AMQP_USER"] = osvars.get("EVENTGEN_AMQP_URI", "guest")
+    config["AMQP_PASS"] = osvars.get("EVENTGEN_AMQP_PASS", "guest")
+
+    pyrabbit_cl = Client('{0}:{1}'.format(config['AMQP_HOST'], config['AMQP_WEBPORT']),
+                         '{0}'.format(config['AMQP_USER']),
+                         '{0}'.format(config['AMQP_PASS']))
+    pyrabbit_cl.create_vhost(host)
+    log.info("Vhost set to {}".format(host))
+
+    atexit.register(exit_handler, client=pyrabbit_cl, hostname=host, logger=log)
 
     def get_status(self):
         '''

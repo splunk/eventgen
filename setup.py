@@ -49,5 +49,6 @@ setup(
         'futures>=3.0.5',
         'pyyaml',
         'httplib2',
-        'jinja2']
+        'jinja2',
+        'pyrabbit']
     )

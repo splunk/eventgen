@@ -3,6 +3,9 @@ import eventgen_core
 import logging
 import argparse
 import sys
+import os
+FILE_PATH = os.path.dirname(os.path.realpath(__file__))
+CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default", "eventgen_wsgi.conf"))
 
 # For some reason, the args from __main__ get passed to eventgen_nameko_dependency and causes this error:
 # usage: eventgen_nameko_dependency [-h]
@@ -43,6 +46,11 @@ class EventgenDependency(DependencyProvider):
 
     configured = False
     configfile = 'N/A'
+
+    if os.path.isfile(CUSTOM_CONFIG_PATH):
+        configured = True
+        configfile = CUSTOM_CONFIG_PATH
+        eventgen.reload_conf(CUSTOM_CONFIG_PATH)
 
     def get_dependency(self, worker_ctx):
         return self
