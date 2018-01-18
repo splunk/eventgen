@@ -1,0 +1,10 @@
+[run]
+omit =
+	splunk_eventgen/lib/logutils_src/*
+	splunk_eventgen/concurrent/*
+	
+[report]
+omit = 
+	splunk_eventgen/lib/logutils_src/*
+	splunk_eventgen/concurrent/*
+	

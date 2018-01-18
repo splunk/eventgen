@@ -83,7 +83,7 @@ class EventGenerator(object):
                 new_args["override_outputqueue"] = args.disableOutputQueue
             if getattr(args, "profiler"):
                 new_args["profiler"] = args.profiler
-        self.config = Config(configfile, new_args.iteritems())
+        self.config = Config(configfile, **new_args)
         self.config.parse()
         self._reload_plugins()
         #TODO: Probably should destroy pools better so processes are cleaned.

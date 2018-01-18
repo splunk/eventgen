@@ -28,16 +28,13 @@ class SpoolOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         if len(q) > 0:
-
             self.logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample.name, self._app, self._sample.source))
             # Keep trying to open destination file as it might be touched by other processes
+            data = ''.join(event['_raw'] for event in q if event.get('_raw'))
             while True:
                 try:
                     with open(self.spoolPath, 'a') as dst:
-                        for metamsg in q:
-                            msg = metamsg['_raw']
-                            if msg:
-                                dst.write(msg)
+                        dst.write(data)
                     break
                 except:
                     time.sleep(0.1)
