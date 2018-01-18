@@ -19,7 +19,7 @@ $ docker pull repo.splunk.com/splunk/products/eventgen:latest
 $ docker network create --attachable --driver bridge eg_network
 
 # Bring up a controller node
-$ docker run -d -p 5672 -p 15672 -p 9500 --network eg_network --name eg_controller repo.splunk.com/splunk/products/eventgenx:latest controller
+$ docker run -d -p 5672 -p 15672:15672 -p 9500:9500 --network eg_network --name eg_controller repo.splunk.com/splunk/products/eventgenx:latest controller
 
 # Bring up a server node, connecting it to the controller node
 $ docker run -d --p 5672 -p 15672 -p 9500 --network eg_network -e EVENTGEN_AMQP_HOST="eg_controller" --name eg_server repo.splunk.com/splunk/products/eventgenx:latest server
@@ -80,7 +80,104 @@ Using the terminology above, follow the instructions below on setting up Eventge
 
 ##### Container Setup #####
 
+Following the example from above, the container architecture of Eventgen includes two roles:
 
+* Controller/`eg_controller`: this serves as the broadcaster
+* Server/`eg_server`: this serves as a single listener or worker
+
+If you want to scale the local Eventgen cluster using this design, simply add another `eg_server` container call (using a different `--name`), and it should automatically register with the `eg_controller`. 
+
+Using this design, you can make REST API calls against the `eg_controller`. When an appropriate request is made against the `eg_controller` server port (9500), that action will be distributed to all the server nodes connected to it. This simplifies any and all interactions you need to make to properly setup a cluster. For example, see some example cURL commands below on using the `eg_controller`:
+
+```
+$ curl http://localhost:9500
+*** Eventgen Controller ***
+Host: c8df86e59376
+You are running Eventgen Controller.
+```
+
+```
+# This should show the status of your eg_server
+$ curl http://localhost:9500/status
+{
+    "6f654722f3d8": {
+        "EVENTGEN_STATUS": 0, 
+        "CONFIGURED": false, 
+        "CONFIG_FILE": "N/A", 
+        "QUEUE_STATUS": {
+            "WORKER_QUEUE": {
+                "QUEUE_LENGTH": "N/A", 
+                "UNFINISHED_TASK": "N/A"
+            }, 
+            "SAMPLE_QUEUE": {
+                "QUEUE_LENGTH": "N/A", 
+                "UNFINISHED_TASK": "N/A"
+            }, 
+            "OUTPUT_QUEUE": {
+                "QUEUE_LENGTH": "N/A", 
+                "UNFINISHED_TASK": "N/A"
+            }
+        }, 
+        "EVENTGEN_HOST": "6f654722f3d8"
+    }
+}
+```
+
+```
+# Additionally, it's possible to target a specific node in your distributed Eventgen cluster by using the target keyword
+$ curl http://localhost:9500/status?target=6f654722f3d8
+{
+    "6f654722f3d8": {
+        "EVENTGEN_STATUS": 0, 
+        "CONFIGURED": false, 
+        "CONFIG_FILE": "N/A", 
+        "QUEUE_STATUS": {
+            "WORKER_QUEUE": {
+                "QUEUE_LENGTH": "N/A", 
+                "UNFINISHED_TASK": "N/A"
+            }, 
+            "SAMPLE_QUEUE": {
+                "QUEUE_LENGTH": "N/A", 
+                "UNFINISHED_TASK": "N/A"
+            }, 
+            "OUTPUT_QUEUE": {
+                "QUEUE_LENGTH": "N/A", 
+                "UNFINISHED_TASK": "N/A"
+            }
+        }, 
+        "EVENTGEN_HOST": "6f654722f3d8"
+    }
+}
+```
+
+Using the concept of the bundle from above, if the bundle is packaged and hosted somewhere accessible for download, simply hit the /bundle API with a POST and a JSON including the URL of your bundle.
+```
+$ curl http://localhost:9500/bundle -X POST -d '{"url": "http://artifact.server.com/bundle.tgz"}'
+Bundle event dispatched to all with url http://artifact.server.com/bundle.tgz
+```
+
+To verify that your bundle installation and configuration was successful, you can check the logs of the `eg_server` role, or run a GET against the /conf endpoint:
+```
+$ docker logs eg_server
+2018-01-18 23:07:57,442 eventgen_listener INFO     MainProcess Download complete!
+2018-01-18 23:07:57,444 eventgen_listener INFO     MainProcess Extracting bundle /opt/splunk/etc/apps/eg-bundle.tgz...
+2018-01-18 23:07:57,468 eventgen_listener INFO     MainProcess Extraction complete!
+2018-01-18 23:07:57,468 eventgen_listener INFO     MainProcess Detecting sample files...
+2018-01-18 23:07:57,469 eventgen_listener INFO     MainProcess Moving sample files...
+2018-01-18 23:07:57,484 eventgen_listener INFO     MainProcess Sample files moved!
+2018-01-18 23:07:57,484 eventgen_listener INFO     MainProcess Detecting eventgen.conf...
+2018-01-18 23:07:57,485 eventgen_listener INFO     MainProcess Reading eventgen.conf...
+2018-01-18 23:07:57,487 eventgen_listener INFO     MainProcess set_conf method called with
+```
+
+```
+$ curl http://localhost:9500/conf?target=6f654722f3d8
+{
+    "6f654722f3d8": {
+        "auth_passwordless_ssh.nix": ...
+    }
+}
+```
 
 ---
 
