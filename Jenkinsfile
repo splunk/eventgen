@@ -33,7 +33,10 @@ withSplunkWrapNode('orca_ci') {
 
         stage('Publish pypi') {
             if (env.BRANCH_NAME == 'develop') {
-                sh 'make push_egg_production'
+                sh 'make push_release_egg'
+            }
+            else {
+                sh 'make push_dev_egg'
             }
         }
 

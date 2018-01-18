@@ -21,7 +21,7 @@ def readme():
 setup(
     name='splunk_eventgen',
     version=VERSION,
-    description='Containerized Splunk deployment as a Service command line tool and api',
+    description='Splunk Event Generator to produce real-time, representative data',
     long_description=long_description,
     url='https://repo.splunk.com/artifactory/api/pypi/pypi-local',
     author='Splunk, Inc.',
