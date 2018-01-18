@@ -7,6 +7,7 @@ file_location = os.path.normpath(os.path.realpath(__file__))
 VERSION_FILE = "version.json"
 VERSION_LOCATION = os.path.normpath(os.path.join(file_location, '..', VERSION_FILE))
 
+
 def _get_version(versionfile):
     """
     @param versionfile: File to get the version info from 
@@ -17,19 +18,6 @@ def _get_version(versionfile):
         version = json_data['version']
     fp.close()
     return version
-
-
-def _get_splunk_ansible_version(versionfile):
-    """
-    @param versionfile: File to get the version info from
-    @return: Splunk Ansible Version Number
-    """
-    with open(VERSION_LOCATION, 'r') as fp:
-        json_data = json.load(fp)
-        version = json_data['splunk_ansible_version']
-    fp.close()
-    return version
-
 
 def _set_dev_version():
     """
@@ -44,7 +32,6 @@ def _set_dev_version():
         fp.seek(0)
         fp.write(json.dumps(json_data))
     fp.close()
-
 
 def _set_release_version():
     """

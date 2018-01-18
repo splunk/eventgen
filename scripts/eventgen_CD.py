@@ -9,8 +9,6 @@ import subprocess
 
 file_location = os.path.dirname(os.path.realpath(__file__))
 splunk_eventgen_location = os.path.normpath(os.path.join(file_location, '..'))
-push_location = os.path.normpath(os.path.join(file_location, 'push'))
-build_location = os.path.normpath(os.path.join(file_location, 'build'))
 
 sys.path.insert(0, splunk_eventgen_location)
 from splunk_eventgen.__init__ import _set_dev_version, _set_release_version
