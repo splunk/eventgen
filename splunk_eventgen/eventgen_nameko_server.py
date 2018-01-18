@@ -251,7 +251,6 @@ Output Queue Status: {6}\n'''
             bundle_path = self.download_bundle(url)
             # Extract bundle
             bundle_dir = self.unarchive_bundle(bundle_path)
-            self.log.info(bundle_dir)
             # Move sample files
             self.log.info("Detecting sample files...")
             if os.path.isdir(os.path.join(bundle_dir, "samples")):
@@ -423,7 +422,11 @@ Output Queue Status: {6}\n'''
 
     def download_bundle(self, url):
         self.log.info("Downloading bundle at {}...".format(url))
-        bundle_path = os.path.join(os.getcwd(), "eg-bundle.tgz")
+        # Use SPLUNK_HOME if defined
+        if "SPLUNK_HOME" in os.environ:
+            bundle_path = os.path.join(os.environ["SPLUNK_HOME"], "etc", "apps", "eg-bundle.tgz")
+        else:
+            bundle_path = os.path.join(os.getcwd(), "eg-bundle.tgz")
         r = requests.get(url, stream=True)
         with open(bundle_path, 'wb') as f:
             for chunk in r.iter_content(chunk_size=None):
