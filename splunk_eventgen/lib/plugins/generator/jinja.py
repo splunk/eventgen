@@ -121,6 +121,8 @@ class JinjaTime(Extension):
             task_list.append(self._set_var(epoch_name, epoch_call, lineno))
             task_list.append(self._set_var(formatted_name, formatted_call, lineno))
         if tag in ["time_slice", "time_backfill"]:
+            #TODO: Make this slice work.
+            self._get_time_slice(self.earliest_epoch, self.latest_epoch, self.target_count, self.current_count, slice_type="random")
             pass
         return task_list
 
