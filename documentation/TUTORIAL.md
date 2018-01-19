@@ -118,6 +118,8 @@ main,proxy.splunk.com,/var/log/proxy.log,proxy,"Sep 14 17:30:11:000 Connection i
 
 
 
+TODO: move this to a different section
+
 * Allows single controller to orchestrate all eventgen wsgi servers. This architecture allows eventgen servers to scale very easily.
 * All Eventgen clusters require a single controller instance with RabbitMQ running
 * Eventgen clusters can contain as many server instances as desired - they just all need to communicate with the same controller/message broker
