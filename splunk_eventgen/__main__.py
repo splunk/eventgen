@@ -200,8 +200,8 @@ def run_nameko(args):
         from eventgen_nameko_controller import EventgenController
         runner.add_service(EventgenController)
     else:
-        from eventgen_nameko_server import EventgenListener
-        runner.add_service(EventgenListener)
+        from eventgen_nameko_server import EventgenServer
+        runner.add_service(EventgenServer)
     runner.start()
     runnlet = eventlet.spawn(runner.wait)
     while True:

@@ -114,12 +114,37 @@ class TestEventgenServer(object):
 		assert r.status_code == 200
 		assert "Stop event dispatched to abcd" in r.content
 	
-	def test_bundle(self):
+	def test_bundle_invalid_request(self):
 		r = requests.post("http://127.0.0.1:{}/bundle".format(self.eventgen_webport))
 		assert r.status_code == 400
 		assert "Please pass in a valid object with bundle URL" in r.content
 	
 	def test_bundle_with_url(self):
+		r = requests.post("http://127.0.0.1:{}/bundle".format(self.eventgen_webport), json={"url": "http://server.com/bundle.tgz"})
+		assert r.status_code == 200
+		assert "Bundle event dispatched to all with url http://server.com/bundle.tgz" in r.content
+
+	def test_bundle_with_url_and_target(self):
 		r = requests.post("http://127.0.0.1:{}/bundle".format(self.eventgen_webport), json={"target": "abcd", "url": "http://server.com/bundle.tgz"})
 		assert r.status_code == 200
 		assert "Bundle event dispatched to abcd with url http://server.com/bundle.tgz" in r.content
+
+	def test_get_volume(self):
+		r = requests.get("http://127.0.0.1:{}/volume".format(self.eventgen_webport))
+		assert r.status_code == 200
+		assert "get_volume event dispatched to all" in r.content
+
+	def test_set_volume_invalid_request(self):
+		r = requests.post("http://127.0.0.1:{}/volume".format(self.eventgen_webport))
+		assert r.status_code == 400
+		assert "Please pass in a valid object with volume" in r.content
+
+	def test_set_volume_with_volume(self):
+		r = requests.post("http://127.0.0.1:{}/volume".format(self.eventgen_webport), json={"perDayVolume": 10})
+		assert r.status_code == 200
+		assert "set_volume event dispatched to all" in r.content
+
+	def test_set_volume_with_volume_and_target(self):
+		r = requests.post("http://127.0.0.1:{}/volume".format(self.eventgen_webport), json={"target": "abcd", "perDayVolume": 10})
+		assert r.status_code == 200
+		assert "set_volume event dispatched to abcd" in r.content

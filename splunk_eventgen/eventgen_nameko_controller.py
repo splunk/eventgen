@@ -197,12 +197,36 @@ class EventgenController(object):
         except Exception as e:
             self.log.exception(e)
             return "500", "Exception: {}".format(e.message)
-
+    
     @rpc
     def setup(self, target, data):
         try:
             self.dispatch("{}_setup".format(target), data)
             msg = "Setup event dispatched to {}.".format(target)
+            self.log.info(msg)
+            return msg
+        except Exception as e:
+            self.log.exception(e)
+            return "500", "Exception: {}".format(e.message)
+
+    @rpc
+    def get_volume(self, target):
+        try:
+            self.dispatch("{}_get_volume".format(target), self.PAYLOAD)
+            msg = "get_volume event dispatched to {}.".format(target)
+            self.log.info(msg)
+            return msg
+        except Exception as e:
+            self.log.exception(e)
+            return "500", "Exception: {}".format(e.message)
+    
+    @rpc
+    def set_volume(self, target, data):
+        try:
+            data = json.loads(data)
+            volume = data["perDayVolume"]
+            self.dispatch("{}_set_volume".format(target), {"perDayVolume": volume})
+            msg = "set_volume event dispatched to {}.".format(target)
             self.log.info(msg)
             return msg
         except Exception as e:
@@ -282,7 +306,19 @@ You are running Eventgen Controller.\n'''
         if data:
             return self.setup(target=self.get_target(request), data=data)
         else:
-            return "400", "Please pass in a valid object with bundle URL."
+            return "400", "Please pass in a valid object with setup information."
+    
+    @http('GET', '/volume')
+    def http_get_volume(self, request):
+        return self.get_volume(target=self.get_target(request))
+
+    @http('POST', '/volume')
+    def http_set_volume(self, request):
+        data = request.get_data(as_text=True)
+        if data:
+            return self.set_volume(target=self.get_target(request), data=data)
+        else:
+            return "400", "Please pass in a valid object with volume."
 
     ##############################################
     ############### Helper Methods ###############
