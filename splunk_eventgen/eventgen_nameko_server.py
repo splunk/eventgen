@@ -296,6 +296,7 @@ Output Queue Status: {6}\n'''
         if type(data) != dict:
             data = json.loads(data)
         try:
+            data = data['content']
             # set default values that follow default ORCA setting
             mode = data.get("mode", "roundrobin")
             hostname_template = data.get("hostname_template", "idx{0}")
@@ -356,7 +357,6 @@ Output Queue Status: {6}\n'''
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
-
 
 
     ##############################################
@@ -481,7 +481,7 @@ Output Queue Status: {6}\n'''
     def http_set_conf(self, request):
         data = request.get_data()
         if data:
-            return self.set_conf(data)
+            return json.dumps(self.set_conf(data))
         else:
             return '400', 'Please pass the valid parameters.'
 
@@ -489,7 +489,7 @@ Output Queue Status: {6}\n'''
     def http_edit_conf(self, request):
         data = request.get_data()
         if data:
-            return self.edit_conf(data)
+            return json.dumps(self.edit_conf(data))
         else:
             return '400', 'Please pass valid config data.'
     
@@ -508,7 +508,7 @@ Output Queue Status: {6}\n'''
     def http_setup(self, request):
         data = request.get_data(as_text=True)
         try:
-            return self.setup(json.loads(data))
+            return json.dumps(self.setup(json.loads(data)))
         except Exception as e:
             self.log.exception(e)
             return '400', "Exception: {}".format(e.message)

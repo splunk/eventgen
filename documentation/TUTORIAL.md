@@ -38,6 +38,8 @@ This new Eventgen model can be brought up in several different ways. Please see 
 
 **Controller APIs**
 
+* Note, body will be always in json format. For example, {"target": "", "content": ""}
+
 * ```GET /index```
 * ```GET /status```
 * ```POST /start```
@@ -78,3 +80,19 @@ This new Eventgen model can be brought up in several different ways. Please see 
             * Pass in a URL to an app/bundle of Eventgen files to seed configurations and sample files.
             * Format: {"url": "{BUNDLE_URL}"}
     * Example: curl http://localhost:9500/bundle -X POST -d '{"url": "http://artifact.server.com/eventgen-bundle.tgz "}'
+* ```POST /setup```
+    * body
+        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
+            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
+        * content={ARGUMENTS}, it will only replace matching values in existing configfile.
+            * Format: {"mode": "", "hostname_template": "", "protocol": "", "key": "", "key_name": "", "password": "", "hec_port": "", "mgmt_port": "", "new_key": ""}.
+                * Default values
+                    * mode: "roundrobin"
+                    * hostname_template: "idx{0}"
+                    * protocol: "https"
+                    * key: "00000000-0000-0000-0000-000000000000"
+                    * key_name: "eventgen"
+                    * password: "Chang3d!"
+                    * hec_port: 8088
+                    * mgmt_port: 8089
+                    * new_key: True
