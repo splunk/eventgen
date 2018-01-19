@@ -78,8 +78,9 @@ class EventgenController(object):
                 self.dispatch("all_index", self.PAYLOAD)
             else:
                 self.dispatch("{}_index".format(target), self.PAYLOAD)
-            self.log.info("Index event dispatched to {}".format(target))
-            return "Index event dispatched to {}".format(target)
+            msg = "Index event dispatched to {}".format(target)
+            self.log.info(msg)
+            return msg
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -91,8 +92,9 @@ class EventgenController(object):
                 self.dispatch("all_status", self.PAYLOAD)
             else:
                 self.dispatch("{}_status".format(target), self.PAYLOAD)
-            self.log.info("Status event dispatched to {}".format(target))
-            return "Status event dispatched to {}".format(target)
+            msg = "Status event dispatched to {}".format(target)
+            self.log.info(msg)
+            return msg
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -104,8 +106,9 @@ class EventgenController(object):
                 self.dispatch("all_start", self.PAYLOAD)
             else:
                 self.dispatch("{}_start".format(target), self.PAYLOAD)
-            self.log.info("Start event dispatched to {}".format(target))
-            return "Start event dispatched to {}".format(target)
+            msg = "Start event dispatched to {}".format(target)
+            self.log.info(msg)
+            return msg
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -117,8 +120,9 @@ class EventgenController(object):
                 self.dispatch("all_stop", self.PAYLOAD)
             else:
                 self.dispatch("{}_stop".format(target), self.PAYLOAD)
-            self.log.info("Stop event dispatched to {}".format(target))
-            return "Stop event dispatched to {}".format(target)
+            msg = "Stop event dispatched to {}".format(target)
+            self.log.info(msg)
+            return msg
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -130,8 +134,9 @@ class EventgenController(object):
                 self.dispatch("all_restart", self.PAYLOAD)
             else:
                 self.dispatch("{}_restart".format(target), self.PAYLOAD)
-            self.log.info("Restart event dispatched to {}".format(target))
-            return "Restart event dispatched to {}".format(target)
+            msg = "Restart event dispatched to {}".format(target)
+            self.log.info(msg)
+            return msg
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -143,8 +148,9 @@ class EventgenController(object):
                 self.dispatch("all_get_conf", self.PAYLOAD)
             else:
                 self.dispatch("{}_get_conf".format(target), self.PAYLOAD)
-            self.log.info("Get_conf event dispatched to {}".format(target))
-            return "Get_conf event dispatched to {}".format(target)
+            msg = "Get_conf event dispatched to {}".format(target)
+            self.log.info(msg)
+            return msg
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -157,8 +163,9 @@ class EventgenController(object):
                 self.dispatch("all_set_conf", payload)
             else:
                 self.dispatch("{}_set_conf".format(target), payload)
-            self.log.info("Set_conf event dispatched to {}".format(target))
-            return "Set_conf event dispatched to {}".format(target)
+            msg = "Set_conf event dispatched to {}".format(target)
+            self.log.info(msg)
+            return msg
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -171,8 +178,9 @@ class EventgenController(object):
                 self.dispatch("all_edit_conf", payload)
             else:
                 self.dispatch("{}_edit_conf".format(target), payload)
-            self.log.info("Edit_conf event dispatched to {}".format(target))
-            return "Edit_conf event dispatched to {}".format(target)
+            msg = "Edit_conf event dispatched to {}".format(target)
+            self.log.info(msg)
+            return msg
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -190,6 +198,17 @@ class EventgenController(object):
             self.log.exception(e)
             return "500", "Exception: {}".format(e.message)
 
+    @rpc
+    def setup(self, target, data):
+        try:
+            self.dispatch("{}_setup".format(target), data)
+            msg = "Setup event dispatched to {}.".format(target)
+            self.log.info(msg)
+            return msg
+        except Exception as e:
+            self.log.exception(e)
+            return "500", "Exception: {}".format(e.message)
+
     ##############################################
     ################ HTTP Methods ################
     ##############################################
@@ -199,9 +218,10 @@ class EventgenController(object):
         self.log.info("index method called")
         home_page = '''*** Eventgen Controller ***
 Host: {0}
+Connected Servers: {1}
 You are running Eventgen Controller.\n'''
         host = socket.gethostname()
-        return home_page.format(host)
+        return home_page.format(host, self.get_current_server_vhosts())
 
     @http('GET', '/index')
     def http_index(self, request):
@@ -253,6 +273,14 @@ You are running Eventgen Controller.\n'''
         data = request.get_data(as_text=True)
         if data:
             return self.bundle(target=self.get_target(request), data=data)
+        else:
+            return "400", "Please pass in a valid object with bundle URL."
+
+    @http('POST', '/setup')
+    def http_setup(self, request):
+        data = request.get_data(as_text=True)
+        if data:
+            return self.setup(target=self.get_target(request), data=data)
         else:
             return "400", "Please pass in a valid object with bundle URL."
 

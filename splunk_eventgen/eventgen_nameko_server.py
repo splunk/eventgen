@@ -292,6 +292,73 @@ Output Queue Status: {6}\n'''
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
+    def setup(self, data):
+        if type(data) != dict:
+            data = json.loads(data)
+        try:
+            # set default values that follow default ORCA setting
+            mode = data.get("mode", "roundrobin")
+            hostname_template = data.get("hostname_template", "idx{0}")
+            protocol = data.get("protocol", "https")
+            key = data.get("key", "00000000-0000-0000-0000-000000000000")
+            key_name = data.get("key_name", "eventgen")
+            password = data.get("password", "Chang3d!")
+            hec_port = int(data.get("hec_port", 8088))
+            mgmt_port = int(data.get("mgmt_port", 8089))
+            new_key = bool(data.get("new_key", True))
+
+            self.discovered_servers = []
+            counter = 1
+            while True:
+                try:
+                    formatted_hostname = socket.gethostbyname(hostname_template.format(counter))
+                    if new_key:
+                        requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(
+                            formatted_hostname, mgmt_port),
+                            verify=False,
+                            auth=("admin", password)
+                            , data={"name": key_name}
+                        )
+                        r = requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(
+                            formatted_hostname, mgmt_port, key_name),
+                            verify=False,
+                            auth=("admin", password)
+                        )
+                        key = str(json.loads(r.text)["entry"][0]["content"]["token"])
+                    self.discovered_servers.append({"protocol": str(protocol),
+                                                    "address": str(formatted_hostname),
+                                                    "port": str(hec_port),
+                                                    "key": str(key)})
+                    counter += 1
+                except socket.gaierror:
+                    break
+
+            config = ConfigParser.ConfigParser()
+            config.optionxform = str
+            config.read(CUSTOM_CONFIG_PATH)
+            try:
+                config.get("global", "httpeventServers")
+                config.set("global", "httpeventServers", json.dumps({"servers": self.discovered_servers}))
+                config.set("global", "httpeventOutputMode", mode)
+            except Exception as e:
+                if type(e) == ConfigParser.NoSectionError:
+                    config.add_section("global")
+                config.set("global", "httpeventServers", json.dumps({"servers": self.discovered_servers}))
+                config.set("global", "httpeventOutputMode", mode)
+
+            with open(CUSTOM_CONFIG_PATH, 'wb') as conf_content:
+                config.write(conf_content)
+
+            self.eventgen_dependency.configured = True
+            self.eventgen_dependency.configfile = CUSTOM_CONFIG_PATH
+            self.eventgen_dependency.eventgen.reload_conf(CUSTOM_CONFIG_PATH)
+            return self.get_conf()
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
+
+
+
     ##############################################
     ############ Event Handler Methods ###########
     ##############################################
@@ -333,6 +400,10 @@ Output Queue Status: {6}\n'''
         if payload['url']:
             return self.bundle(payload['url'])
 
+    @event_handler("eventgen_controller", "all_setup", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_setup(self, payload):
+        return self.setup(data=payload)
+
     @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_index(self, payload):
         return self.index()
@@ -370,6 +441,10 @@ Output Queue Status: {6}\n'''
         if payload['url']:
             return self.bundle(payload['url'])
 
+    @event_handler("eventgen_controller", "{}_setup".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_setup(self, payload):
+        return self.setup(data=payload)
+
     ##############################################
     ################ HTTP Methods ################
     ##############################################
@@ -384,7 +459,7 @@ Output Queue Status: {6}\n'''
 
     @http('GET', '/status')
     def http_status(self, request):
-        return self.status()
+        return json.dumps(self.status())
 
     @http('POST', '/start')
     def http_start(self, request):
@@ -400,7 +475,7 @@ Output Queue Status: {6}\n'''
 
     @http('GET', '/conf')
     def http_get_conf(self, request):
-        return self.get_conf()
+        return json.dumps(self.get_conf())
 
     @http('POST', '/conf')
     def http_set_conf(self, request):
@@ -425,6 +500,15 @@ Output Queue Status: {6}\n'''
             data = json.loads(data)
             url = data["url"]
             return self.bundle(url)
+        except Exception as e:
+            self.log.exception(e)
+            return '400', "Exception: {}".format(e.message)
+
+    @http('POST', '/setup')
+    def http_setup(self, request):
+        data = request.get_data(as_text=True)
+        try:
+            return self.setup(json.loads(data))
         except Exception as e:
             self.log.exception(e)
             return '400', "Exception: {}".format(e.message)
