@@ -473,6 +473,8 @@ host.replacement = <replacement file name> | <replacement file name>:<column num
 
 ## REST API Reference ##
 
+API Reference for using Eventgen it's container orchestration form.
+
 * Note, body will be always in json format. For example, {"target": "", "content": ""}
 
 * ```GET /index```

@@ -58,8 +58,8 @@ $ splunk_eventgen --version
 
 Now that Eventgen is installed in any of the forms above, there's still the matter of configuring it. How much data should Eventgen send? Where should Eventgen send data to? How does Eventgen send data? What type of data do you want it to send? There are two key concepts behind the configuration process of Eventgen:
 
-* `eventgen.conf`: This is a ini-style configuration file that Eventgen parses to set global, default, and even sample-specific settings. These settings include which plugin to use, how much data to send, and where to send it to. For more information, see [this section](TUTORIAL#the-configuration-file).
-* `sample files`: This is a collection of text files that Eventgen will read on initiation. Samples act as templates for the raw data that Eventgen pumps out. As such, these templates can include tokens or specific replacement strings that will get modified during processing-time (ex. timestamps updated in real-time). For more information, see [this section](TUTORIAL#sample-files).
+* `eventgen.conf`: This is a ini-style configuration file that Eventgen parses to set global, default, and even sample-specific settings. These settings include which plugin to use, how much data to send, and where to send it to. For more information, see [this section](TUTORIAL.md#the-configuration-file).
+* `sample files`: This is a collection of text files that Eventgen will read on initiation. Samples act as templates for the raw data that Eventgen pumps out. As such, these templates can include tokens or specific replacement strings that will get modified during processing-time (ex. timestamps updated in real-time). For more information, see [this section](TUTORIAL.md#the-sample-file).
 
 Because Eventgen configs can be tightly coupled with custom sample files, they can be bundled up into a package itself, in the format:
 ```
@@ -84,12 +84,12 @@ Using the terminology above, follow the instructions below on setting up Eventge
 
 Following the example from above, the container architecture of Eventgen includes two roles:
 
-* Controller/`eg_controller`: this serves as the broadcaster
-* Server/`eg_server`: this serves as a single listener or worker
+* Controller (`eg_controller`): this serves as the broadcaster
+* Server (`eg_server`): this serves as a single listener or worker
 
 If you want to scale the local Eventgen cluster using this design, simply add another `eg_server` container call (using a different `--name`), and it should automatically register with the `eg_controller`. 
 
-Using this design, you can make REST API calls against the `eg_controller`. When an appropriate request is made against the `eg_controller` server port (9500), that action will be distributed to all the server nodes connected to it allowing simplistic orchestration. This simplifies any and all interactions you need to make to properly setup a cluster. For example, see some example cURL commands below on using the `eg_controller`:
+To interact with this architecture, you can make REST API calls against the `eg_controller`. When an appropriate request is made against the `eg_controller` server port (9500), that action will be distributed to all the server nodes connected to it for easy orchestration. This simplifies any and all interactions you need to make to properly setup a cluster. For example, see some example cURL commands below on using the `eg_controller`:
 
 ```
 $ curl http://localhost:9500
@@ -169,7 +169,7 @@ $ docker logs eg_server
 2018-01-18 23:07:57,484 eventgen_listener INFO     MainProcess Sample files moved!
 2018-01-18 23:07:57,484 eventgen_listener INFO     MainProcess Detecting eventgen.conf...
 2018-01-18 23:07:57,485 eventgen_listener INFO     MainProcess Reading eventgen.conf...
-2018-01-18 23:07:57,487 eventgen_listener INFO     MainProcess set_conf method called with
+2018-01-18 23:07:57,487 eventgen_listener INFO     MainProcess set_conf method called with ...
 ```
 
 ```
@@ -202,7 +202,15 @@ The PyPI can be used in one of two ways: to run Eventgen from the command-line p
 
 ### Command Line ###
 
-TODO
+Assuming you've followed the above steps on installing the PyPI, run the following command and point it to an eventgen.conf file:
+
+```
+# Invoke python module
+$ python -m splunk_eventgen -v generate tests/sample_eventgen_conf/replay/eventgen.conf.replay
+
+# Alternatively, you can use the `splunk_eventgen` alias
+$ splunk_eventgen -v generate path/to/eventgen.conf
+```
 
 ### Controller/Server Cluster ###
 

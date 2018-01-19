@@ -2,8 +2,6 @@
 
 Thanks for checking out the tutorial.  This should hopefully get you through setting up a working event generator.  It's only a tutorial though, so if you want a complete reference of all of the available configuration options, please check out the [eventgen.conf.spec](https://github.com/splunk/eventgen/blob/master/README/eventgen.conf.spec) in the README directory.  With that, feel free to dig right in, and feel free to post to the Issues page if you have any questions.
 
-# Tutorial
-
 ## Intro Video
 We've recorded a screencast to get you started.  This is definitely the fastest way to learn how to use the Eventgen.  The tutorial docs below will cover all the examples in detail, but if you want to get started quickly, check out the video:
 
@@ -18,73 +16,6 @@ The first example we'll show you should likely cover you for 90% of the use case
 To build a seed for your new eventgen, I recommend taking an export from an existing Splunk instance.  You could also take a regular log file and use it for replay (in which case, you can omit sampletype=csv).  There are a few considerations.  First, the eventgen assumes its sample files are in chronological order.  Second, it only uses index, host, source, sourcetype and \_raw fields.  To accommodate that, whatever search you write, I recommend appending '| reverse | fields index, host, source, sourcetype, _raw' to your Splunk search and then doing an export to CSV format.  Third, you'll want to make sure you find all the different time formats inside the log file and setup tokens to replace for them, so limiting your initial search to a few sourcetypes is probably advisable.
 
 This example was pulled from a simple search of \_internal on my Splunk instance.
-
-### The config file
-
-The eventgen is configured by setting up an eventgen.conf.  If deployed as a Splunk app, Eventgen will look for eventgen.conf files for every app installed in Splunk, and will generate events for every eventgen.conf file it finds.  This is very convenient if you want to design event generation into a Technology Addon (TA) or other type of Splunk app.  You can ship the eventgen configurations with you app and distribute the Eventgen app separately.  You could also bundle the Eventgen as a scripted input to your app.  Those are covered in the [Deployment](#deployment) section later.  
-
-Eventgen.conf can have one or more stanzas, of which the stanza name is a sample file it will be reading from.  There a number of options available in each stanza.  Let's look at the first tutorial file and break it down option by option.
-
-    [sample.tutorial1]
-    mode = replay
-    sampletype = csv
-    timeMultiple = 2
-    backfill = -15m
-    backfillSearch = index=main sourcetype=splunkd
-    
-    outputMode = splunkstream
-    splunkHost = localhost
-    splunkUser = admin
-    splunkPass = changeme
-    
-    token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
-    token.0.replacementType = timestamp
-    token.0.replacement = %Y-%m-%d %H:%M:%S,%f
-    
-    token.1.token = \d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}.\d{3}
-    token.1.replacementType = timestamp
-    token.1.replacement = %m-%d-%Y %H:%M:%S.%f
-    
-    token.2.token = \d{2}/\w{3}/\d{4}:\d{2}:\d{2}\:\d{2}.\d{3}
-    token.2.replacementType = timestamp
-    token.2.replacement = %d/%b/%Y:%H:%M:%S.%f
-    
-    token.3.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
-    token.3.replacementType = timestamp
-    token.3.replacement = %Y-%m-%d %H:%M:%S
-
-    [sample.tutorial1]
-This is the stanza name and the name of the file in the samples directory of the eventgen or your app that you want to read from.
-
-    mode = replay
-Specify replay mode.  This will leak out events at the same timing as they appear in the file (with gaps between events like they occurred in the source file).  Default mode is sample, so this is required for replay mode.
-
-    sampletype = csv
-Specify that the input file is in CSV format, rather than a plain text file.  With CSV input, we'll look for index, host, source, and sourcetype on a per event basis rather than setting them for the file as a whole.
-
-    timeMultiple = 2
-This will slow down the replay by a factor of 2 by multiplying all time between events by 2.
-
-    backfill = -15m
-The eventgen will startup and immediately fill in 15 minutes worth of events from this file.  This is in Splunk relative time format, and can be any valid relative time specifier (note, the longer you make this, the longer it will take to get started).
-
-    backfillSearch = index=main sourcetype=splunkd
-A search to run to find the last events generated for this stanza.  If this returns any results inside the backfill time window, eventgen will shorten the time window to start at the time of the last event it saw.  This only works with outputMode = splunkstream.
-
-    outputMode = splunkstream
-There are various outputModes available (see the [spec](https://github.com/splunk/eventgen/blob/master/README/eventgen.conf.spec)).  This will output via the Splunk [receivers/stream](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTinput#receivers.2Fstream) endpoint straight into Splunk.  This allows us to specify things like index, host, source and sourcetype to Splunk at indextime.  In this case, we're getting those values from sampletype = csv rather than specifying them here in the eventgen.conf for the sample.
-
-    splunkHost = localhost
-    splunkUser = admin
-    splunkPass = changeme
-Parameters for setting up outputMode = splunkstream.  This is only required if we want to run the eventgen outside of Splunk.  As a Splunk App and running as a scripted input, eventgen will gather this information from Splunk itself.  Since we'll be running this from the command line for the tutorial, please customize your username and password in the tutorial.
-
-    token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
-    token.0.replacementType = timestamp
-    token.0.replacement = %Y-%m-%d %H:%M:%S,%f
-The following 3 tokens are virtually the same, only with different regular expressions and strptime formats.  This is a timestamp replacement, which will find the timestamp specified by the regular expression and replace it with a current (or relative to a backfill) time based on the stprtime format.  Generally you'll define a regular expression and a strptime format to match.  For more info on regular expressions and strptime, see [here](http://lmgtfy.com/?q=regex) and [here](http://lmgtfy.com/?q=strptime).
-
-That's it, pretty simple.
 
 ### Running the example
 You can easily run these examples by hand.  In fact, for testing purposes, I almost always change outputMode = file (you can see it commented out in most of the tutorials) and run the eventgen by hand to make sure my substitutions are setup correctly.  In this case, assuming you've customized the tutorial file for your splunk host, username and password, lets run the tutorial and see it replay these events.  From the base directory of the eventgen:
