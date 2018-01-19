@@ -25,9 +25,8 @@ push_release_egg:
 	python scripts/eventgen_CD.py --push --release pypi
 
 image: setup_eventgen egg
-	cp dist/splunk_eventgen-*.tar.gz dockerfiles/splunk_eventgen.tgz
 	rm splunk_eventgen/default/eventgen_engine.conf || true
-	cd dockerfiles && docker build . -t eventgen
+	docker build -f dockerfiles/Dockerfile . -t eventgen
 
 push_image_production: image
 	docker tag eventgen:latest repo.splunk.com/splunk/products/eventgenx:latest
@@ -92,7 +91,7 @@ run_server: eg_network
 run_controller: eg_network
 	docker kill eg_controller || true
 	docker rm eg_controller || true
-	docker run --name eg_controller --network eg_network -d -p 5672 -p 15672 -p 9500 eventgen:latest controller
+	docker run --name eg_controller --network eg_network -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
 
 docs:
 	docker build -t stg-repo.splunk.com/tonyl/eventgen-docs:latest documentation/

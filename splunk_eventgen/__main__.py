@@ -191,7 +191,6 @@ def run_nameko(args):
     config = parse_env_vars()
     config = parse_cli_vars(config, args)
     config = rectify_config(config)
-    logger.info("Config used: {}".format(config))
     print "Config used: {}".format(config)
     # Wait up to 30s for RMQ service to be up
     wait_for_response(config["AMQP_URI"], config["AMQP_WEBPORT"])

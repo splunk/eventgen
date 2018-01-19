@@ -42,12 +42,13 @@ setup(
     install_requires=[
         'pytest>=3.0.0', # Required to test functional tests in eventgen.
         'boto3',
-        'requests>=2.10.0',
+        'requests>=2.18.4',
         'requests[security]',
         'logutils>=0.3.4.1',
         'cherrypy',
         'futures>=3.0.5',
         'pyyaml',
         'httplib2',
-        'jinja2']
+        'jinja2',
+        'pyrabbit']
     )
