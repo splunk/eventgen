@@ -63,29 +63,29 @@ This new Eventgen model can be brought up in several different ways. Please see 
         * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
             * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
         * content={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will overwrite the existing config file with the content.
-            * Format: {"{SAMPLE}": {"{CONF_KEY}": "{CONF_VALUE}"}}.
-                * For example, {"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}.
+            * Format: ```{"{SAMPLE}": {"{CONF_KEY}": "{CONF_VALUE}"}}```
+                * For example, ```{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}```
 * ```PUT /conf```
     * body
         * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
             * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
         * content={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will only replace matching values in existing configfile.
-            * Format: {"{SAMPLE}": {"{CONF_KEY}": "{CONF_VALUE}"}}.
-                * For example, {"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}.
+            * Format: ```{"{SAMPLE}": {"{CONF_KEY}": "{CONF_VALUE}"}}```
+                * For example, ```{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}```
 * ```POST /bundle```
     * body
         * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
             * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
         * url={BUNDLE_URL}
             * Pass in a URL to an app/bundle of Eventgen files to seed configurations and sample files.
-            * Format: {"url": "{BUNDLE_URL}"}
-    * Example: curl http://localhost:9500/bundle -X POST -d '{"url": "http://artifact.server.com/eventgen-bundle.tgz "}'
+            * Format: ```{"url": "{BUNDLE_URL}"}```
+    * Example: ```curl http://localhost:9500/bundle -X POST -d '{"url": "http://artifact.server.com/eventgen-bundle.tgz "}'```
 * ```POST /setup```
     * body
         * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
             * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
         * content={ARGUMENTS}, it will only replace matching values in existing configfile.
-            * Format: {"mode": "", "hostname_template": "", "protocol": "", "key": "", "key_name": "", "password": "", "hec_port": "", "mgmt_port": "", "new_key": ""}.
+            * Format: ```{"mode": "", "hostname_template": "", "protocol": "", "key": "", "key_name": "", "password": "", "hec_port": "", "mgmt_port": "", "new_key": ""}```
                 * Default values
                     * mode: "roundrobin"
                     * hostname_template: "idx{0}"
