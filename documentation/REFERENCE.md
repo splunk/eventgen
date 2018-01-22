@@ -492,9 +492,6 @@ API Reference for using Eventgen it's container orchestration form.
         * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
             * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
 * ```GET /conf```
-    * body
-        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
 * ```POST /conf```
     * body
         * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
