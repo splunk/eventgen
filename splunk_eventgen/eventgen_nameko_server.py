@@ -68,6 +68,7 @@ class EventgenServer(object):
             "EVENTGEN_HOST" :
             "CONFIGURED" :
             "CONFIG_FILE" :
+            "TOTAL_VOLUME" :
             "QUEUE_STATUS" : { "SAMPLE_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': },
                                "OUTPUT_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': },
                                "WORKER_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': }}
@@ -82,6 +83,7 @@ class EventgenServer(object):
         res["EVENTGEN_HOST"] = self.host
         res["CONFIGURED"] = self.eventgen_dependency.configured
         res["CONFIG_FILE"] = self.eventgen_dependency.configfile
+        res["TOTAL_VOLUME"] = self.total_volume
         res["QUEUE_STATUS"] = {'SAMPLE_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
                                'OUTPUT_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
                                'WORKER_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}}
@@ -108,14 +110,16 @@ Host: {0}
 Eventgen Status: {1}
 Eventgen Config file exists: {2}
 Eventgen Config file path: {3}
-Worker Queue Status: {4}
-Sample Queue Status: {5}
-Output Queue Status: {6}\n'''
+Total volume: {4}
+Worker Queue Status: {5}
+Sample Queue Status: {6}
+Output Queue Status: {7}\n'''
         status = self.get_status()
         eventgen_status = "running" if status["EVENTGEN_STATUS"] else "stopped"
         host = status["EVENTGEN_HOST"]
         configured = status["CONFIGURED"]
         config_file = status["CONFIG_FILE"]
+        total_volume = status["TOTAL_VOLUME"]
         worker_queue_status = status["QUEUE_STATUS"]["WORKER_QUEUE"]
         sample_queue_status = status["QUEUE_STATUS"]["SAMPLE_QUEUE"]
         output_queue_status = status["QUEUE_STATUS"]["OUTPUT_QUEUE"]
@@ -124,6 +128,7 @@ Output Queue Status: {6}\n'''
                                 eventgen_status,
                                 configured,
                                 config_file,
+                                total_volume,
                                 worker_queue_status,
                                 sample_queue_status,
                                 output_queue_status)
@@ -365,10 +370,18 @@ Output Queue Status: {6}\n'''
             config = json.loads(self.get_conf())
             self.log.info(config)
             self.total_volume = float(self.get_data_volumes(config))
+            self.send_volume_to_controller(total_volume=self.total_volume)
             return str(self.total_volume)
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
+
+    @rpc
+    def send_volume_to_controller(self, total_volume):
+        data = {}
+        data['server_name'] = self.eventgen_name
+        data['total_volume'] = total_volume
+        self.dispatch("server_volume", data)
 
     def set_volume(self, volume):
         self.log.info("set_volume method called")
@@ -504,7 +517,7 @@ Output Queue Status: {6}\n'''
 
     @http('GET', '/status')
     def http_status(self, request):
-        return json.dumps(self.status())
+        return self.status()
 
     @http('POST', '/start')
     def http_start(self, request):
@@ -545,6 +558,9 @@ Output Queue Status: {6}\n'''
             data = json.loads(data)
             url = data["url"]
             return self.bundle(url)
+        except ValueError as e:
+            self.log.exception(e)
+            return '400', "Please pass in a valid object with bundle URL"
         except Exception as e:
             self.log.exception(e)
             return '400', "Exception: {}".format(e.message)

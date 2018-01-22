@@ -35,7 +35,7 @@ push_image_production: image
 test: egg test_helper test_collection_cleanup
 
 test_helper:
-	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} python:2.7.14-alpine3.6 cat
+	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} repo.splunk.com/splunk/products/eventgenx:latest cat
 
 	@echo 'Creating dirs needed for tests'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "mkdir -p $(shell pwd) "
@@ -86,7 +86,7 @@ eg_network:
 run_server: eg_network
 	docker kill eg_server || true
 	docker rm eg_server || true
-	docker run --network eg_network --name eg_server -e EVENTGEN_AMQP_HOST="eg_controller" -d -p 9500 eventgen:latest server
+	docker run --network eg_network --name eg_server -e EVENTGEN_AMQP_HOST="eg_controller" -d -p 9501:9500 eventgen:latest server
 
 run_controller: eg_network
 	docker kill eg_controller || true

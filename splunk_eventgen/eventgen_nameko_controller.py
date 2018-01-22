@@ -63,13 +63,17 @@ class EventgenController(object):
     ################ RPC Methods #################
     ##############################################
 
-    @event_handler("eventgen_listener", "server_status", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_server", "server_status", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_server_status(self, payload):
         return self.receive_status(payload)
 
-    @event_handler("eventgen_listener", "server_conf", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_server", "server_conf", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_server_conf(self, payload):
         return self.receive_conf(payload)
+
+    @event_handler("eventgen_server", "server_volume", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_get_volume(self, payload):
+        return self.receive_volume(payload)
 
     @rpc
     def index(self, target):
@@ -310,7 +314,8 @@ You are running Eventgen Controller.\n'''
     
     @http('GET', '/volume')
     def http_get_volume(self, request):
-        return self.get_volume(target=self.get_target(request))
+        self.get_volume(target=self.get_target(request))
+        return self.process_server_status()
 
     @http('POST', '/volume')
     def http_set_volume(self, request):
@@ -340,6 +345,10 @@ You are running Eventgen Controller.\n'''
     def receive_conf(self, data):
         if data['server_name'] and data['server_conf']:
             self.server_confs[data['server_name']] = data['server_conf']
+
+    def receive_volume(self, data):
+        if data['server_name'] and data["total_volume"]:
+            self.server_confs[data['server_name']] = data['total_volume']
 
     def process_server_status(self):
         current_server_vhosts = self.get_current_server_vhosts()
