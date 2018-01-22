@@ -225,12 +225,12 @@ You are running Eventgen Controller.\n'''
 
     @http('GET', '/index')
     def http_index(self, request):
-        self.index(target=self.get_target(request))
+        self.index(target="all")
         return self.root_page(request)
 
     @http('GET', '/status')
     def http_status(self, request):
-        self.status(target=self.get_target(request))
+        self.status("all")
         return self.process_server_status()
 
     @http('POST', '/start')
@@ -247,7 +247,7 @@ You are running Eventgen Controller.\n'''
 
     @http('GET', '/conf')
     def http_get_conf(self, request):
-        self.get_conf(target=self.get_target(request))
+        self.get_conf("all")
         return self.process_server_confs()
 
     @http('POST', '/conf')
