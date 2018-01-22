@@ -298,17 +298,19 @@ You are running Eventgen Controller.\n'''
             self.set_conf(target="all", data=data)
             return self.http_get_conf(request)
         else:
-            return '400', 'Please pass valid config data.'
+            return 400, 'Please pass valid config data.'
 
     @http('POST', '/conf/<string:target>')
     def http_set_conf_target(self, request, target):
         data = request.get_data()
         if data:
             if self.check_vhost(target):
-               self.set_conf(target=target, data=data)
-            return self.http_get_conf_target(request, target)
+                self.set_conf(target=target, data=data)
+                return self.http_get_conf_target(request, target)
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
         else:
-            return '400', 'Please pass valid config data.'
+            return 400, 'Please pass valid config data.'
 
     @http('PUT', '/conf')
     def http_edit_conf(self, request):
@@ -317,7 +319,7 @@ You are running Eventgen Controller.\n'''
             self.edit_conf(target="all", data=data)
             return self.http_get_conf(request)
         else:
-            return '400', 'Please pass valid config data.'
+            return 400, 'Please pass valid config data.'
 
     @http('PUT', '/conf/<string:target>')
     def http_edit_conf_target(self, request, target):
@@ -325,9 +327,11 @@ You are running Eventgen Controller.\n'''
         if data:
             if self.check_vhost(target):
                 self.edit_conf(target=target, data=data)
-            return self.http_get_conf_target(request, target)
+                return self.http_get_conf_target(request, target)
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
         else:
-            return '400', 'Please pass valid config data.'
+            return 400, 'Please pass valid config data.'
 
     @http('POST', '/bundle')
     def http_bundle(self, request):
@@ -335,7 +339,7 @@ You are running Eventgen Controller.\n'''
         if data:
             return self.bundle(target="all", data=data)
         else:
-            return "400", "Please pass in a valid object with bundle URL."
+            return 400, "Please pass in a valid object with bundle URL."
 
     @http('POST', '/bundle/<string:target>')
     def http_bundle_target(self, request, target):
@@ -346,7 +350,7 @@ You are running Eventgen Controller.\n'''
             else:
                 return 404, json.dumps("Target not available.", indent=4)
         else:
-            return "400", "Please pass in a valid object with bundle URL."
+            return 400, "Please pass in a valid object with bundle URL."
 
     @http('POST', '/setup')
     def http_setup(self, request):
