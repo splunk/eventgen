@@ -445,11 +445,11 @@ Output Queue Status: {7}\n'''
         return self.setup(data=payload)
 
     @event_handler("eventgen_controller", "all_get_volume", handler_type=BROADCAST, reliable_delivery=False)
-    def event_handler_all_setup(self, payload):
+    def event_handler_all_get_volume(self, payload):
         return self.get_volume()
 
     @event_handler("eventgen_controller", "all_set_volume", handler_type=BROADCAST, reliable_delivery=False)
-    def event_handler_all_setup(self, payload):
+    def event_handler_all_set_volume(self, payload):
         if payload['perDayVolume']:
             return self.set_volume(payload['perDayVolume'])
 
@@ -495,11 +495,11 @@ Output Queue Status: {7}\n'''
         return self.setup(data=payload)
 
     @event_handler("eventgen_controller", "{}_get_volume".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
-    def event_handler_setup(self):
+    def event_handler_get_volume(self):
         return self.get_volume()
 
     @event_handler("eventgen_controller", "{}_set_volume".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
-    def event_handler_setup(self, payload):
+    def event_handler_set_volume(self, payload):
         if payload['perDayVolume']:
             return self.set_volume(payload['perDayVolume'])
 

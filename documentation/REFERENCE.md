@@ -549,13 +549,3 @@ API Reference for using Eventgen it's container orchestration form.
         ```
         $ curl http://localhost:9500/volume -X POST -d '{"perDayVolume": 200}'
         ```
-
-
-
-
-
-
-
-
-
-    
