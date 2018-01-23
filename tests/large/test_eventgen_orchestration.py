@@ -63,6 +63,7 @@ class TestEventgenOrchestration(object):
 												host_config=host_config,
 												networking_config=networking_config)
 		cls.client.start(container["Id"])
+		TestEventgenOrchestration.controller_id = container["Id"]
 		print container["Id"]
 		cls.controller_container = cls.client.inspect_container(container["Id"])
 		cls.controller_eventgen_webport = cls.controller_container["NetworkSettings"]["Ports"]["9500/tcp"][0]["HostPort"]
@@ -75,6 +76,7 @@ class TestEventgenOrchestration(object):
 												host_config=host_config,
 												networking_config=networking_config)
 		cls.client.start(container["Id"])
+		TestEventgenOrchestration.server_id = container["Id"]
 		print container["Id"]
 		cls.server_container = cls.client.inspect_container(container["Id"])
 		cls.server_eventgen_webport = cls.server_container["NetworkSettings"]["Ports"]["9500/tcp"][0]["HostPort"]
@@ -124,9 +126,9 @@ class TestEventgenOrchestration(object):
 		assert "Start event dispatched to all" in r.content
 	
 	def test_controller_start_with_target(self):
-		r = requests.post("http://127.0.0.1:{}/start".format(self.controller_eventgen_webport), json={"target": "abcd"})
+		r = requests.post("http://127.0.0.1:{}/start/{}".format(self.controller_eventgen_webport, TestEventgenOrchestration.server_id[:12]))
 		assert r.status_code == 200
-		assert "Start event dispatched to abcd" in r.content
+		assert "Start event dispatched to {}".format(TestEventgenOrchestration.server_id[:12]) in r.content
 	
 	def test_controller_stop(self):
 		r = requests.post("http://127.0.0.1:{}/stop".format(self.controller_eventgen_webport))
@@ -134,9 +136,9 @@ class TestEventgenOrchestration(object):
 		assert "Stop event dispatched to all" in r.content
 	
 	def test_controller_stop_with_target(self):
-		r = requests.post("http://127.0.0.1:{}/stop".format(self.controller_eventgen_webport), json={"target": "abcd"})
+		r = requests.post("http://127.0.0.1:{}/stop/{}".format(self.controller_eventgen_webport, TestEventgenOrchestration.server_id[:12]))
 		assert r.status_code == 200
-		assert "Stop event dispatched to abcd" in r.content
+		assert "Stop event dispatched to {}".format(TestEventgenOrchestration.server_id[:12]) in r.content
 	
 	def test_controller_restart(self):
 		r = requests.post("http://127.0.0.1:{}/stop".format(self.controller_eventgen_webport))
@@ -144,9 +146,9 @@ class TestEventgenOrchestration(object):
 		assert "Stop event dispatched to all" in r.content
 		
 	def test_controller_restart_with_target(self):
-		r = requests.post("http://127.0.0.1:{}/stop".format(self.controller_eventgen_webport), json={"target": "abcd"})
+		r = requests.post("http://127.0.0.1:{}/stop/{}".format(self.controller_eventgen_webport, TestEventgenOrchestration.server_id[:12]))
 		assert r.status_code == 200
-		assert "Stop event dispatched to abcd" in r.content
+		assert "Stop event dispatched to {}".format(TestEventgenOrchestration.server_id[:12]) in r.content
 	
 	def test_controller_bundle_invalid_request(self):
 		r = requests.post("http://127.0.0.1:{}/bundle".format(self.controller_eventgen_webport))
@@ -159,9 +161,9 @@ class TestEventgenOrchestration(object):
 		assert "Bundle event dispatched to all with url http://server.com/bundle.tgz" in r.content
 
 	def test_controller_bundle_with_url_and_target(self):
-		r = requests.post("http://127.0.0.1:{}/bundle".format(self.controller_eventgen_webport), json={"target": "abcd", "url": "http://server.com/bundle.tgz"})
+		r = requests.post("http://127.0.0.1:{}/bundle/{}".format(self.controller_eventgen_webport, TestEventgenOrchestration.server_id[:12]), json={"url": "http://server.com/bundle.tgz"})
 		assert r.status_code == 200
-		assert "Bundle event dispatched to abcd with url http://server.com/bundle.tgz" in r.content
+		assert "Bundle event dispatched to {} with url http://server.com/bundle.tgz".format(TestEventgenOrchestration.server_id[:12]) in r.content
 
 	def test_controller_get_volume(self):
 		r = requests.get("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
@@ -180,9 +182,9 @@ class TestEventgenOrchestration(object):
 		assert "set_volume event dispatched to all" in r.content
 
 	def test_controller_set_volume_with_volume_and_target(self):
-		r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport), json={"target": "abcd", "perDayVolume": 10})
+		r = requests.post("http://127.0.0.1:{}/volume/{}".format(self.controller_eventgen_webport, TestEventgenOrchestration.server_id[:12]), json={"perDayVolume": 10})
 		assert r.status_code == 200
-		assert "set_volume event dispatched to abcd" in r.content
+		assert "set_volume event dispatched to {}".format(TestEventgenOrchestration.server_id[:12]) in r.content
 
 	### Server tests ###
 
