@@ -555,4 +555,31 @@ API Reference for using Eventgen CONTROLLER it's container orchestration form.
                 * hec_port: 8088
                 * mgmt_port: 8089
                 * new_key: True
-    
+* ```GET /volume```
+    Returns the cumulative perDayVolume for the current configuration of Eventgen. If you have multiple samples with varying perDayVolume specifications, this will return the sum of all your samples.
+    * Example:
+        ```
+        $ curl http://localhost:9500/volume
+        ```
+* ```GET /volume/<TARGET_NAME>```
+    Returns the cumulative perDayVolume for the current configuration of Eventgen for that particular node. If you have multiple samples with varying perDayVolume specifications, this will return the sum of all your samples.
+    * Example:
+        ```
+        $ curl http://localhost:9500/volume/egx1
+        ```
+* ```POST /volume```
+    * body
+        * perDayVolume={NUMBER}
+            * Pass in the desired cumulative perDayVolume you want to scale each Eventgen server's configuraton to. If you have multiple samples with varying perDayVolume specifications, the perDayVolume will scale each sample identically to meet this desired number.
+    * Example:
+        ```
+        $ curl http://localhost:9500/volume -X POST -d '{"perDayVolume": 200}'
+        ```
+* ```POST /volume/<TARGET_NAME>```
+    * body
+        * perDayVolume={NUMBER}
+            * Pass in the desired cumulative perDayVolume you want to scale each Eventgen server's configuraton to. If you have multiple samples with varying perDayVolume specifications, the perDayVolume will scale each sample identically to meet this desired number.
+    * Example:
+        ```
+        $ curl http://localhost:9500/volume/egx1 -X POST -d '{"perDayVolume": 200}'
+        ```

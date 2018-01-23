@@ -32,8 +32,8 @@ def exit_handler(client, hostname, logger):
     client.delete_vhost(hostname)
     logger.info("Deleted vhost {}. Shutting down.".format(hostname))
 
-class EventgenListener:
-    name = "eventgen_listener"
+class EventgenServer(object):
+    name = "eventgen_server"
 
     dispatch = EventDispatcher()
 
@@ -56,6 +56,7 @@ class EventgenListener:
     log.info("Vhost set to {}".format(host))
 
     atexit.register(exit_handler, client=pyrabbit_cl, hostname=host, logger=log)
+    total_volume = 0.0
 
     def get_status(self):
         '''
@@ -67,6 +68,7 @@ class EventgenListener:
             "EVENTGEN_HOST" :
             "CONFIGURED" :
             "CONFIG_FILE" :
+            "TOTAL_VOLUME" :
             "QUEUE_STATUS" : { "SAMPLE_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': },
                                "OUTPUT_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': },
                                "WORKER_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': }}
@@ -81,6 +83,7 @@ class EventgenListener:
         res["EVENTGEN_HOST"] = self.host
         res["CONFIGURED"] = self.eventgen_dependency.configured
         res["CONFIG_FILE"] = self.eventgen_dependency.configfile
+        res["TOTAL_VOLUME"] = self.total_volume
         res["QUEUE_STATUS"] = {'SAMPLE_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
                                'OUTPUT_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
                                'WORKER_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}}
@@ -107,14 +110,16 @@ Host: {0}
 Eventgen Status: {1}
 Eventgen Config file exists: {2}
 Eventgen Config file path: {3}
-Worker Queue Status: {4}
-Sample Queue Status: {5}
-Output Queue Status: {6}\n'''
+Total volume: {4}
+Worker Queue Status: {5}
+Sample Queue Status: {6}
+Output Queue Status: {7}\n'''
         status = self.get_status()
         eventgen_status = "running" if status["EVENTGEN_STATUS"] else "stopped"
         host = status["EVENTGEN_HOST"]
         configured = status["CONFIGURED"]
         config_file = status["CONFIG_FILE"]
+        total_volume = status["TOTAL_VOLUME"]
         worker_queue_status = status["QUEUE_STATUS"]["WORKER_QUEUE"]
         sample_queue_status = status["QUEUE_STATUS"]["SAMPLE_QUEUE"]
         output_queue_status = status["QUEUE_STATUS"]["OUTPUT_QUEUE"]
@@ -123,6 +128,7 @@ Output Queue Status: {6}\n'''
                                 eventgen_status,
                                 configured,
                                 config_file,
+                                total_volume,
                                 worker_queue_status,
                                 sample_queue_status,
                                 output_queue_status)
@@ -360,6 +366,40 @@ Output Queue Status: {6}\n'''
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
+    def get_volume(self):
+        self.log.info("get_volume method called")
+        try:
+            config = json.loads(self.get_conf())
+            self.log.info(config)
+            self.total_volume = float(self.get_data_volumes(config))
+            self.send_volume_to_controller(total_volume=self.total_volume)
+            return str(self.total_volume)
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
+
+    @rpc
+    def send_volume_to_controller(self, total_volume):
+        data = {}
+        data['server_name'] = self.eventgen_name
+        data['total_volume'] = total_volume
+        self.dispatch("server_volume", data)
+
+    def set_volume(self, volume):
+        self.log.info("set_volume method called")
+        try:
+            config = json.loads(self.get_conf())
+            if not self.total_volume:
+                self.get_volume()
+            ratio = volume/float(self.total_volume)
+            update_json = {}
+            for stanza in config.keys():
+                if "perDayVolume" in config[stanza].keys():
+                    update_json[stanza] = {"perDayVolume": float(config[stanza]["perDayVolume"])*ratio}
+            return self.edit_conf(json.dumps(update_json))
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
 
     ##############################################
     ############ Event Handler Methods ###########
@@ -406,6 +446,15 @@ Output Queue Status: {6}\n'''
     def event_handler_all_setup(self, payload):
         return self.setup(data=payload)
 
+    @event_handler("eventgen_controller", "all_get_volume", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_get_volume(self, payload):
+        return self.get_volume()
+
+    @event_handler("eventgen_controller", "all_set_volume", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_set_volume(self, payload):
+        if payload['perDayVolume']:
+            return self.set_volume(payload['perDayVolume'])
+
     @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_index(self, payload):
         return self.index()
@@ -446,6 +495,15 @@ Output Queue Status: {6}\n'''
     @event_handler("eventgen_controller", "{}_setup".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_setup(self, payload):
         return self.setup(data=payload)
+
+    @event_handler("eventgen_controller", "{}_get_volume".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_get_volume(self):
+        return self.get_volume()
+
+    @event_handler("eventgen_controller", "{}_set_volume".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_set_volume(self, payload):
+        if payload['perDayVolume']:
+            return self.set_volume(payload['perDayVolume'])
 
     ##############################################
     ################ HTTP Methods ################
@@ -502,6 +560,9 @@ Output Queue Status: {6}\n'''
             data = json.loads(data)
             url = data["url"]
             return self.bundle(url)
+        except ValueError as e:
+            self.log.exception(e)
+            return '400', "Please pass in a valid object with bundle URL"
         except Exception as e:
             self.log.exception(e)
             return '400', "Exception: {}".format(e.message)
@@ -511,6 +572,21 @@ Output Queue Status: {6}\n'''
         data = request.get_data(as_text=True)
         try:
             return json.dumps(self.setup(json.loads(data)))
+        except Exception as e:
+            self.log.exception(e)
+            return '400', "Exception: {}".format(e.message)
+    
+    @http('GET', '/volume')
+    def http_get_volume(self, request):
+        return self.get_volume()
+
+    @http('POST', '/volume')
+    def http_set_volume(self, request):
+        data = request.get_data(as_text=True)
+        try:
+            data = json.loads(data)
+            volume = data["perDayVolume"]
+            return self.set_volume(volume)
         except Exception as e:
             self.log.exception(e)
             return '400', "Exception: {}".format(e.message)
@@ -562,3 +638,16 @@ Output Queue Status: {6}\n'''
             raise Exception(msg)
         self.log.info("Extraction complete!")
         return output
+
+    def get_data_volumes(self, config):
+        '''
+        This method updates the total volume from the eventgen.conf
+
+        :param config: (dict) object representing the current state of the server's eventgen.conf
+        '''
+        total_volume = 0
+        for stanza in config.keys():
+            if "perDayVolume" in config[stanza].keys():
+                total_volume += float(config[stanza]["perDayVolume"])
+        self.log.info("Total volume is currently {}".format(total_volume))
+        return total_volume

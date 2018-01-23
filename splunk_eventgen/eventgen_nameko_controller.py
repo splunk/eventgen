@@ -63,13 +63,17 @@ class EventgenController(object):
     ################ RPC Methods #################
     ##############################################
 
-    @event_handler("eventgen_listener", "server_status", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_server", "server_status", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_server_status(self, payload):
         return self.receive_status(payload)
 
-    @event_handler("eventgen_listener", "server_conf", handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_server", "server_conf", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_server_conf(self, payload):
         return self.receive_conf(payload)
+
+    @event_handler("eventgen_server", "server_volume", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_get_volume(self, payload):
+        return self.receive_volume(payload)
 
     @rpc
     def index(self, target):
@@ -197,12 +201,36 @@ class EventgenController(object):
         except Exception as e:
             self.log.exception(e)
             return "500", "Exception: {}".format(e.message)
-
+    
     @rpc
     def setup(self, target, data):
         try:
             self.dispatch("{}_setup".format(target), data)
             msg = "Setup event dispatched to {}.".format(target)
+            self.log.info(msg)
+            return msg
+        except Exception as e:
+            self.log.exception(e)
+            return "500", "Exception: {}".format(e.message)
+
+    @rpc
+    def get_volume(self, target):
+        try:
+            self.dispatch("{}_get_volume".format(target), self.PAYLOAD)
+            msg = "get_volume event dispatched to {}.".format(target)
+            self.log.info(msg)
+            return msg
+        except Exception as e:
+            self.log.exception(e)
+            return "500", "Exception: {}".format(e.message)
+    
+    @rpc
+    def set_volume(self, target, data):
+        try:
+            data = json.loads(data)
+            volume = data["perDayVolume"]
+            self.dispatch("{}_set_volume".format(target), {"perDayVolume": volume})
+            msg = "set_volume event dispatched to {}.".format(target)
             self.log.info(msg)
             return msg
         except Exception as e:
@@ -367,6 +395,42 @@ You are running Eventgen Controller.\n'''
         else:
             return 404, json.dumps("Target not available.", indent=4)
 
+    @http('GET', '/volume')
+    def http_get_volume(self, request):
+        self.get_volume(target="all")
+        return json.dumps(self.process_server_confs(), indent=4)
+
+    @http('GET', '/volume/<string:target>')
+    def http_get_volume_target(self, request, target="all"):
+        if self.check_vhost(target):
+            self.get_volume(target=target)
+            processed_server_confs = self.process_server_confs()
+            try:
+                return json.dumps(processed_server_confs[target], indent=4)
+            except:
+                return json.dumps({}, indent=4)
+        else:
+            return 404, json.dumps("Target not available.", indent=4)
+
+    @http('POST', '/volume')
+    def http_set_volume(self, request):
+        data = request.get_data(as_text=True)
+        if data:
+            return self.set_volume(target="all", data=data)
+        else:
+            return 400, "Please pass in a valid object with volume."
+
+    @http('POST', '/volume/<string:target>')
+    def http_set_volume_target(self, request, target="all"):
+        data = request.get_data(as_text=True)
+        if data:
+            if self.check_vhost(target):
+                return self.set_volume(target=target, data=data)
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+        else:
+            return 400, "Please pass in a valid object with volume."
+
     ##############################################
     ############### Helper Methods ###############
     ##############################################
@@ -378,6 +442,10 @@ You are running Eventgen Controller.\n'''
     def receive_conf(self, data):
         if data['server_name']:
             self.server_confs[data['server_name']] = data['server_conf']
+
+    def receive_volume(self, data):
+        if data['server_name'] and data["total_volume"]:
+            self.server_confs[data['server_name']] = data['total_volume']
 
     def process_server_status(self):
         current_server_vhosts = self.get_current_server_vhosts()
