@@ -392,10 +392,10 @@ Output Queue Status: {7}\n'''
             if not self.total_volume:
                 self.get_volume()
             ratio = volume/float(self.total_volume)
-            update_json = {"content": {}}
+            update_json = {}
             for stanza in config.keys():
                 if "perDayVolume" in config[stanza].keys():
-                    update_json["content"][stanza] = {"perDayVolume": float(config[stanza]["perDayVolume"])*ratio}
+                    update_json[stanza] = {"perDayVolume": float(config[stanza]["perDayVolume"])*ratio}
             return self.edit_conf(json.dumps(update_json))
         except Exception as e:
             self.log.exception(e)
