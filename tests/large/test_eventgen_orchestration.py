@@ -169,7 +169,7 @@ class TestEventgenOrchestration(object):
 		r = requests.get("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
 		assert r.status_code == 200
 		output = json.loads(r.content)
-		assert output
+		assert output == {}
 
 	def test_controller_set_volume_invalid_request(self):
 		r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
@@ -215,6 +215,12 @@ class TestEventgenOrchestration(object):
 		assert r.status_code == 200
 		output = json.loads(r.content)
 		assert output
+		assert output['EVENTGEN_STATUS'] == 1
+
+	def test_server_get_and_set_conf(self):
+		r = requests.get("http://127.0.0.1:{}/conf".format(self.server_eventgen_webport))
+		assert r.status_code == 200
+		assert json.loads(r.content) == {}
 
 	def test_server_bundle(self):
 		r = requests.post("http://127.0.0.1:{}/bundle".format(self.server_eventgen_webport))
@@ -226,3 +232,19 @@ class TestEventgenOrchestration(object):
 		assert r.status_code == 200
 		output = json.loads(r.content)
 		assert output
+
+	def test_server_get_and_set_volume(self):
+		r = requests.post("http://127.0.0.1:{}/volume".format(self.server_eventgen_webport), json={"perDayVolume": 10})
+		assert r.status_code == 200
+		assert json.loads(r.content)
+		r = requests.get("http://127.0.0.1:{}/volume".format(self.server_eventgen_webport))
+		assert r.status_code == 200
+		output = json.loads(r.content)
+		assert output == 10.0
+		r = requests.post("http://127.0.0.1:{}/volume".format(self.server_eventgen_webport), json={"perDayVolume": 150})
+		assert r.status_code == 200
+		assert json.loads(r.content)
+		r = requests.get("http://127.0.0.1:{}/volume".format(self.server_eventgen_webport))
+		assert r.status_code == 200
+		output = json.loads(r.content)
+		assert output == 150.0
