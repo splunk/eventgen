@@ -169,7 +169,7 @@ class TestEventgenOrchestration(object):
 		r = requests.get("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
 		assert r.status_code == 200
 		output = json.loads(r.content)
-		assert output == {}
+		assert output[TestEventgenOrchestration.server_id[:12]] == {}
 
 	def test_controller_set_volume_invalid_request(self):
 		r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
@@ -215,7 +215,7 @@ class TestEventgenOrchestration(object):
 		assert r.status_code == 200
 		output = json.loads(r.content)
 		assert output
-		assert output['EVENTGEN_STATUS'] == 1
+		assert output['EVENTGEN_STATUS'] == 0
 
 	def test_server_get_and_set_conf(self):
 		r = requests.get("http://127.0.0.1:{}/conf".format(self.server_eventgen_webport))
