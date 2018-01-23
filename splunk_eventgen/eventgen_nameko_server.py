@@ -191,7 +191,7 @@ Output Queue Status: {7}\n'''
                         out_json[section] = dict()
                         for k, v in config.items(section):
                             out_json[section][k] = v
-                    self.log.info(out_json)
+                    #self.log.info(out_json)
                     self.send_conf_to_controller(server_conf=out_json)
                     return json.dumps(out_json, indent=4)
             self.send_conf_to_controller(server_conf={})
@@ -322,17 +322,17 @@ Output Queue Status: {7}\n'''
                 try:
                     formatted_hostname = socket.gethostbyname(hostname_template.format(counter))
                     if new_key:
-                        requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(
-                            formatted_hostname, mgmt_port),
-                            verify=False,
-                            auth=("admin", password)
-                            , data={"name": key_name}
-                        )
-                        r = requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(
-                            formatted_hostname, mgmt_port, key_name),
-                            verify=False,
-                            auth=("admin", password)
-                        )
+                        requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/http".format(formatted_hostname, mgmt_port), 
+                                      auth=("admin", password), 
+                                      data={"disabled": "0"}, 
+                                      verify=False)
+                        requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(formatted_hostname, mgmt_port),
+                                      verify=False,
+                                      auth=("admin", password), 
+                                      data={"name": key_name})
+                        r = requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(formatted_hostname, mgmt_port, key_name),
+                                          verify=False,
+                                          auth=("admin", password))
                         key = str(json.loads(r.text)["entry"][0]["content"]["token"])
                     self.discovered_servers.append({"protocol": str(protocol),
                                                     "address": str(formatted_hostname),
@@ -347,13 +347,18 @@ Output Queue Status: {7}\n'''
             config.read(CUSTOM_CONFIG_PATH)
             try:
                 config.get("global", "httpeventServers")
-                config.set("global", "httpeventServers", json.dumps({"servers": self.discovered_servers}))
-                config.set("global", "httpeventOutputMode", mode)
             except Exception as e:
                 if type(e) == ConfigParser.NoSectionError:
                     config.add_section("global")
-                config.set("global", "httpeventServers", json.dumps({"servers": self.discovered_servers}))
-                config.set("global", "httpeventOutputMode", mode)
+            config.set("global", "httpeventServers", json.dumps({"servers": self.discovered_servers}))
+            config.set("global", "httpeventOutputMode", mode)
+            config.set("global","threading","process")
+            config.set("global","outputMode","httpevent")
+            config.set("global","useOutputQueue","false")
+            config.set("global","maxQueueLength","438860800") #Splunk max is max_content_length = 838860800
+            config.set("global","generatorWorkers","24")
+            config.set("global","maxIntervalsBeforeFlush","1")
+
 
             with open(CUSTOM_CONFIG_PATH, 'wb') as conf_content:
                 config.write(conf_content)
@@ -391,7 +396,7 @@ Output Queue Status: {7}\n'''
             config = json.loads(self.get_conf())
             if not self.total_volume:
                 self.get_volume()
-            ratio = volume/float(self.total_volume)
+            ratio = float(volume)/float(self.total_volume)
             update_json = {}
             for stanza in config.keys():
                 if "perDayVolume" in config[stanza].keys():
