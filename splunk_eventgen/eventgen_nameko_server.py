@@ -544,7 +544,7 @@ Output Queue Status: {7}\n'''
         if type(output) == str:
             return output
         else:
-            return json.dumps(self.get_conf())
+            return json.dumps(output)
 
     @http('POST', '/conf')
     def http_set_conf(self, request):
