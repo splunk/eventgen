@@ -473,61 +473,86 @@ host.replacement = <replacement file name> | <replacement file name>:<column num
 
 ## REST API Reference ##
 
-API Reference for using Eventgen it's container orchestration form.
+API Reference for using Eventgen CONTROLLER it's container orchestration form.
 
-* Note, body will be always in json format. For example, {"target": "", "content": ""}
+* Note, <TARGET_NAME> is equivalent to the hostname of the evengent instance
 
 * ```GET /index```
+    * Returns an index page for a Eventgen controller
 * ```GET /status```
+    * Returns status of all Eventgen instances in JSON
+* ```GET /status/<TARGET_NAME>```
+    * Returns status of target Eventgen instance in JSON
 * ```POST /start```
-    * body
-        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
+    * Starts all Eventgen instances' data generation
+* ```POST /start/<TARGET_NAME>```
+    * Starts target Eventgen instance's data generation
 * ```POST /stop```
-    * body
-        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
+    * Stops all Eventgen instances' data generation
+* ```POST /stop/<TARGET_NAME>```
+    * Stops target Eventgen instance's data generation
 * ```POST /restart```
-    * body
-        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
+    * Restarts all Eventgen instances' data generation
+* ```POST /restart/<TARGET_NAME>```
+    * Restarts target Eventgen instance's data generation
 * ```GET /conf```
+    * Returns a config object of all Eventgen instances in JSON
+* ```GET /conf/<TARGET_NAME>```
+    * Returns a config object of target Eventgen instance in JSON
 * ```POST /conf```
-    * body
-        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
-        * content={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will overwrite the existing config file with the content.
-            * Format: ```{"{SAMPLE}": {"{CONF_KEY}": "{CONF_VALUE}"}}```
-                * For example, ```{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}```
+    * Overwrites a config object of all Eventgen instances with a given parameter
+    * body={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will overwrite the existing config file with the content.
+        * Format: ```{"{SAMPLE}": {"{CONF_KEY}": "{CONF_VALUE}"}}```
+            * For example, ```{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}```
+* ```POST /conf/<TARGET_NAME>```
+    * Overwrites a config object of target Eventgen instance with a given parameter
+    * body={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will overwrite the existing config file with the content.
+        * Format: ```{"{SAMPLE}": {"{CONF_KEY}": "{CONF_VALUE}"}}```
+            * For example, ```{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}```
 * ```PUT /conf```
-    * body
-        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
-        * content={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will only replace matching values in existing configfile.
-            * Format: ```{"{SAMPLE}": {"{CONF_KEY}": "{CONF_VALUE}"}}```
-                * For example, ```{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}```
+    * With a given parameter, only overwrites a matching config item of all Eventgen instances.
+    * body={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will only replace matching values in existing configfile.
+        * Format: ```{"{SAMPLE}": {"{CONF_KEY}": "{CONF_VALUE}"}}```
+            * For example, ```{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}```
+* ```PUT /conf/<TARGET_NAME>```
+    * With a given parameter, only overwrites a matching config item of target Eventgen instance.
+    * body={JSON_REPRESENTATION_OF_CONFIG_FILE}, it will only replace matching values in existing configfile.
+        * Format: ```{"{SAMPLE}": {"{CONF_KEY}": "{CONF_VALUE}"}}```
+            * For example, ```{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}```
 * ```POST /bundle```
-    * body
-        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
-        * url={BUNDLE_URL}
-            * Pass in a URL to an app/bundle of Eventgen files to seed configurations and sample files.
-            * Format: ```{"url": "{BUNDLE_URL}"}```
+    * body={"url": "{BUNDLE_URL}"}
+        * Pass in a URL to an app/bundle of Eventgen files to seed configurations and sample files.
+        * Format: ```{"url": "{BUNDLE_URL}"}```
+    * Example: ```curl http://localhost:9500/bundle -X POST -d '{"url": "http://artifact.server.com/eventgen-bundle.tgz "}'```
+* ```POST /bundle/<TARGET_NAME>```
+    * body={"url": "{BUNDLE_URL}"}
+        * Pass in a URL to an app/bundle of Eventgen files to seed configurations and sample files.
+        * Format: ```{"url": "{BUNDLE_URL}"}```
     * Example: ```curl http://localhost:9500/bundle -X POST -d '{"url": "http://artifact.server.com/eventgen-bundle.tgz "}'```
 * ```POST /setup```
-    * body
-        * target={EVENTGEN_SERVER_NAME} if you want to target an individual server
-            * If target is not passed in, DEFAULT value will be "all" which means all servers receive the request.
-        * content={ARGUMENTS}, it will only replace matching values in existing configfile.
-            * Format: ```{"mode": "", "hostname_template": "", "protocol": "", "key": "", "key_name": "", "password": "", "hec_port": "", "mgmt_port": "", "new_key": ""}```
-                * Default values
-                    * mode: "roundrobin"
-                    * hostname_template: "idx{0}"
-                    * protocol: "https"
-                    * key: "00000000-0000-0000-0000-000000000000"
-                    * key_name: "eventgen"
-                    * password: "Chang3d!"
-                    * hec_port: 8088
-                    * mgmt_port: 8089
-                    * new_key: True
+    * body={ARGUMENTS}
+        * Format: ```{"mode": "", "hostname_template": "", "protocol": "", "key": "", "key_name": "", "password": "", "hec_port": "", "mgmt_port": "", "new_key": ""}```
+            * Default values
+                * mode: "roundrobin"
+                * hostname_template: "idx{0}"
+                * protocol: "https"
+                * key: "00000000-0000-0000-0000-000000000000"
+                * key_name: "eventgen"
+                * password: "Chang3d!"
+                * hec_port: 8088
+                * mgmt_port: 8089
+                * new_key: True
+* ```POST /setup/<TARGET_NAME>```
+    * body={ARGUMENTS}
+        * Format: ```{"mode": "", "hostname_template": "", "protocol": "", "key": "", "key_name": "", "password": "", "hec_port": "", "mgmt_port": "", "new_key": ""}```
+            * Default values
+                * mode: "roundrobin"
+                * hostname_template: "idx{0}"
+                * protocol: "https"
+                * key: "00000000-0000-0000-0000-000000000000"
+                * key_name: "eventgen"
+                * password: "Chang3d!"
+                * hec_port: 8088
+                * mgmt_port: 8089
+                * new_key: True
     
