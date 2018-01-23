@@ -194,6 +194,7 @@ Output Queue Status: {7}\n'''
                     self.log.info(out_json)
                     self.send_conf_to_controller(server_conf=out_json)
                     return json.dumps(out_json, indent=4)
+            self.send_conf_to_controller(server_conf={})
             return "N/A"
         except Exception as e:
             self.log.exception(e)
@@ -216,7 +217,7 @@ Output Queue Status: {7}\n'''
         try:
             config = ConfigParser.ConfigParser()
             config.optionxform = str
-            conf_content = json.loads(conf)['content']
+            conf_content = json.loads(conf)
 
             for sample in conf_content.iteritems():
                 sample_name = sample[0]
@@ -245,7 +246,7 @@ Output Queue Status: {7}\n'''
         try:
             config = ConfigParser.ConfigParser()
             config.optionxform = str
-            conf_content = json.loads(conf)['content']
+            conf_content = json.loads(conf)
             config.read(CUSTOM_CONFIG_PATH)
 
             for stanza, kv_pairs in conf_content.iteritems():
@@ -291,7 +292,7 @@ Output Queue Status: {7}\n'''
                 config_dict = self.parse_eventgen_conf(os.path.join(bundle_dir, "default", "eventgen.conf"))
                 # If an eventgen.conf exists, enable the configured flag
                 self.eventgen_dependency.configured = True
-                return self.set_conf(json.dumps({"content": config_dict}))
+                return self.set_conf(json.dumps(config_dict))
             else:
                 return self.get_conf()
         except Exception as e:
@@ -299,10 +300,11 @@ Output Queue Status: {7}\n'''
             return '500', "Exception: {}".format(e.message)
 
     def setup(self, data):
+        if not data:
+            data = {}
         if type(data) != dict:
             data = json.loads(data)
         try:
-            data = data['content']
             # set default values that follow default ORCA setting
             mode = data.get("mode", "roundrobin")
             hostname_template = data.get("hostname_template", "idx{0}")

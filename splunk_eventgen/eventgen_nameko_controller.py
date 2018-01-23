@@ -253,97 +253,194 @@ You are running Eventgen Controller.\n'''
 
     @http('GET', '/index')
     def http_index(self, request):
-        self.index(target=self.get_target(request))
+        self.index(target="all")
         return self.root_page(request)
 
     @http('GET', '/status')
     def http_status(self, request):
-        self.status(target=self.get_target(request))
-        return self.process_server_status()
+        self.status("all")
+        return json.dumps(self.process_server_status(), indent=4)
+
+    @http('GET', '/status/<string:target>')
+    def http_status_target(self, request, target="all"):
+        if self.check_vhost(target):
+            self.status(target=target)
+            return json.dumps(self.process_server_status()[target], indent=4)
+        else:
+            return 404, json.dumps("Target not available.", indent=4)
 
     @http('POST', '/start')
     def http_start(self, request):
-        return self.start(target=self.get_target(request))
+        return self.start(target="all")
+
+    @http('POST', '/start/<string:target>')
+    def http_start_target(self, request, target="all"):
+        if self.check_vhost(target):
+            return self.start(target=target)
+        else:
+            return 404, json.dumps("Target not available.", indent=4)
 
     @http('POST', '/stop')
     def http_stop(self, request):
-        return self.stop(target=self.get_target(request))
+        return self.stop(target="all")
+
+    @http('POST', '/stop/<string:target>')
+    def http_stop_target(self, request, target="all"):
+        if self.check_vhost(target):
+            return self.stop(target=target)
+        else:
+            return 404, json.dumps("Target not available.", indent=4)
 
     @http('POST', '/restart')
     def http_restart(self, request):
-        return self.restart(target=self.get_target(request))
+        return self.restart(target="all")
+
+    @http('POST', '/restart/<string:target>')
+    def http_restart_target(self, request, target="all"):
+        if self.check_vhost(target):
+            return self.restart(target=target)
+        else:
+            return 404, json.dumps("Target not available.", indent=4)
 
     @http('GET', '/conf')
     def http_get_conf(self, request):
-        self.get_conf(target=self.get_target(request))
-        return self.process_server_confs()
+        self.get_conf("all")
+        return json.dumps(self.process_server_confs(), indent=4)
+
+    @http('GET', '/conf/<string:target>')
+    def http_get_conf_target(self, request, target="all"):
+        if self.check_vhost(target):
+            self.get_conf(target=target)
+            processed_server_confs = self.process_server_confs()
+            try:
+                return json.dumps(processed_server_confs[target], indent=4)
+            except:
+                return json.dumps({}, indent=4)
+        else:
+            return 404, json.dumps("Target not available.", indent=4)
 
     @http('POST', '/conf')
     def http_set_conf(self, request):
         data = request.get_data()
         if data:
-            self.set_conf(target=self.get_target(request), data=data)
+            self.set_conf(target="all", data=data)
             return self.http_get_conf(request)
         else:
-            return '400', 'Please pass valid config data.'
+            return 400, 'Please pass valid config data.'
+
+    @http('POST', '/conf/<string:target>')
+    def http_set_conf_target(self, request, target):
+        data = request.get_data()
+        if data:
+            if self.check_vhost(target):
+                self.set_conf(target=target, data=data)
+                return self.http_get_conf_target(request, target)
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+        else:
+            return 400, 'Please pass valid config data.'
 
     @http('PUT', '/conf')
     def http_edit_conf(self, request):
         data = request.get_data()
         if data:
-            self.edit_conf(target=self.get_target(request), data=data)
+            self.edit_conf(target="all", data=data)
             return self.http_get_conf(request)
         else:
-            return '400', 'Please pass valid config data.'
+            return 400, 'Please pass valid config data.'
+
+    @http('PUT', '/conf/<string:target>')
+    def http_edit_conf_target(self, request, target):
+        data = request.get_data()
+        if data:
+            if self.check_vhost(target):
+                self.edit_conf(target=target, data=data)
+                return self.http_get_conf_target(request, target)
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+        else:
+            return 400, 'Please pass valid config data.'
 
     @http('POST', '/bundle')
     def http_bundle(self, request):
         data = request.get_data(as_text=True)
         if data:
-            return self.bundle(target=self.get_target(request), data=data)
+            return self.bundle(target="all", data=data)
         else:
-            return "400", "Please pass in a valid object with bundle URL."
+            return 400, "Please pass in a valid object with bundle URL."
+
+    @http('POST', '/bundle/<string:target>')
+    def http_bundle_target(self, request, target):
+        data = request.get_data(as_text=True)
+        if data:
+            if self.check_vhost(target):
+                return self.bundle(target=target, data=data)
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+        else:
+            return 400, "Please pass in a valid object with bundle URL."
 
     @http('POST', '/setup')
     def http_setup(self, request):
         data = request.get_data(as_text=True)
-        if data:
-            return self.setup(target=self.get_target(request), data=data)
+        self.setup(target="all", data=data)
+        return self.http_get_conf(request)
+
+    @http('POST', '/setup/<string:target>')
+    def http_setup_target(self, request, target):
+        data = request.get_data(as_text=True)
+        if self.check_vhost(target):
+            self.setup(target=target, data=data)
+            return self.http_get_conf_target(request, target)
         else:
-            return "400", "Please pass in a valid object with setup information."
-    
+            return 404, json.dumps("Target not available.", indent=4)
+
     @http('GET', '/volume')
     def http_get_volume(self, request):
-        self.get_volume(target=self.get_target(request))
-        return self.process_server_status()
+        self.get_volume(target="all")
+        return json.dumps(self.process_server_confs(), indent=4)
+
+    @http('GET', '/volume/<string:target>')
+    def http_get_volume_target(self, request, target="all"):
+        if self.check_vhost(target):
+            self.get_volume(target=target)
+            processed_server_confs = self.process_server_confs()
+            try:
+                return json.dumps(processed_server_confs[target], indent=4)
+            except:
+                return json.dumps({}, indent=4)
+        else:
+            return 404, json.dumps("Target not available.", indent=4)
 
     @http('POST', '/volume')
     def http_set_volume(self, request):
         data = request.get_data(as_text=True)
         if data:
-            return self.set_volume(target=self.get_target(request), data=data)
+            return self.set_volume(target="all", data=data)
         else:
-            return "400", "Please pass in a valid object with volume."
+            return 400, "Please pass in a valid object with volume."
+
+    @http('POST', '/volume/<string:target>')
+    def http_set_volume_target(self, request, target="all"):
+        data = request.get_data(as_text=True)
+        if data:
+            if self.check_vhost(target):
+                return self.set_volume(target=target, data=data)
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+        else:
+            return 400, "Please pass in a valid object with volume."
 
     ##############################################
     ############### Helper Methods ###############
     ##############################################
-
-    def get_target(self, request):
-        data = request.get_data()
-        if data:
-            data = json.loads(data)
-        if 'target' in data:
-            return data['target']
-        else:
-            return "all"
 
     def receive_status(self, data):
         if data['server_name'] and data['server_status']:
             self.server_status[data['server_name']] = data['server_status']
 
     def receive_conf(self, data):
-        if data['server_name'] and data['server_conf']:
+        if data['server_name']:
             self.server_confs[data['server_name']] = data['server_conf']
 
     def receive_volume(self, data):
@@ -362,7 +459,7 @@ You are running Eventgen Controller.\n'''
         else:
             dump_value = {}
         self.server_status = {}
-        return json.dumps(dump_value, indent=4)
+        return dump_value
 
     def process_server_confs(self):
         current_server_vhosts = self.get_current_server_vhosts()
@@ -376,8 +473,15 @@ You are running Eventgen Controller.\n'''
         else:
             dump_value = {}
         self.server_confs = {}
-        return json.dumps(dump_value, indent=4)
+        return dump_value
 
     def get_current_server_vhosts(self):
         current_vhosts = self.pyrabbit_cl.get_vhost_names()
         return [name for name in current_vhosts if name != '/' and name != self.host]
+
+    def check_vhost(self, vhost_name):
+        current_server_vhosts = self.get_current_server_vhosts()
+        if vhost_name in current_server_vhosts:
+            return True
+        else:
+            return False
