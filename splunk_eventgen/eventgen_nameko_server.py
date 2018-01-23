@@ -194,8 +194,9 @@ Output Queue Status: {7}\n'''
                     #self.log.info(out_json)
                     self.send_conf_to_controller(server_conf=out_json)
                     return json.dumps(out_json, indent=4)
-            self.send_conf_to_controller(server_conf={})
-            return "N/A"
+            else:
+                self.send_conf_to_controller(server_conf={})
+                return json.dumps({}, indent=4)
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -358,7 +359,6 @@ Output Queue Status: {7}\n'''
             config.set("global","maxQueueLength","438860800") #Splunk max is max_content_length = 838860800
             config.set("global","generatorWorkers","24")
             config.set("global","maxIntervalsBeforeFlush","1")
-
 
             with open(CUSTOM_CONFIG_PATH, 'wb') as conf_content:
                 config.write(conf_content)
@@ -540,13 +540,17 @@ Output Queue Status: {7}\n'''
 
     @http('GET', '/conf')
     def http_get_conf(self, request):
-        return json.dumps(self.get_conf())
+        output = self.get_conf()
+        if type(output) == str:
+            return output
+        else:
+            return json.dumps(output)
 
     @http('POST', '/conf')
     def http_set_conf(self, request):
         data = request.get_data()
         if data:
-            return json.dumps(self.set_conf(data))
+            return self.set_conf(data)
         else:
             return '400', 'Please pass the valid parameters.'
 
@@ -554,7 +558,7 @@ Output Queue Status: {7}\n'''
     def http_edit_conf(self, request):
         data = request.get_data()
         if data:
-            return json.dumps(self.edit_conf(data))
+            return self.edit_conf(data)
         else:
             return '400', 'Please pass valid config data.'
     
