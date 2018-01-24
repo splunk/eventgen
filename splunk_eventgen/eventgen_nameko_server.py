@@ -178,10 +178,15 @@ Output Queue Status: {7}\n'''
             return '500', "Exception: {}".format(e.message)
 
     def restart(self):
-        self.log.info("restart method called.")
-        self.stop()
-        time.sleep(2)
-        self.start()
+        try:
+            self.log.info("restart method called.")
+            self.stop()
+            time.sleep(2)
+            self.start()
+            return "Eventgen restarted."
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
 
     def get_conf(self):
         self.log.info("get_conf method called.")
@@ -190,6 +195,7 @@ Output Queue Status: {7}\n'''
                 config = ConfigParser.ConfigParser()
                 config.optionxform = str
                 config_path = CUSTOM_CONFIG_PATH
+
                 if os.path.isfile(config_path):
                     config.read(config_path)
                     out_json = dict()
@@ -441,9 +447,9 @@ Output Queue Status: {7}\n'''
                 if "perDayVolume" in config[stanza].keys():
                     divided_value = float(config[stanza]["perDayVolume"]) * ratio
                     update_json[stanza] = {"perDayVolume": divided_value}
-            # Update once more
+            output = self.edit_conf(json.dumps(update_json))
             self.get_volume()
-            return self.edit_conf(json.dumps(update_json))
+            return output
         except Exception as e:
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
@@ -582,15 +588,15 @@ Output Queue Status: {7}\n'''
 
     @http('POST', '/start')
     def http_start(self, request):
-        return self.start()
+        return json.dumps(self.start())
 
     @http('POST', '/stop')
     def http_stop(self, request):
-        return self.stop()
+        return json.dumps(self.stop())
 
     @http('POST', '/restart')
     def http_restart(self, request):
-        return self.restart()
+        return json.dumps(self.restart())
 
     @http('GET', '/conf')
     def http_get_conf(self, request):

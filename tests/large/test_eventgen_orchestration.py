@@ -221,6 +221,28 @@ class TestEventgenOrchestration(object):
 		r = requests.get("http://127.0.0.1:{}/conf".format(self.server_eventgen_webport))
 		assert r.status_code == 200
 		assert json.loads(r.content) == {}
+		config_json = {"windbag": {"outputMode": "stdout"}}
+		r = requests.post("http://127.0.0.1:{}/conf".format(self.server_eventgen_webport), json=config_json)
+		assert r.status_code == 200
+		assert json.loads(r.content) == config_json
+
+	def test_server_start(self):
+		r = requests.post("http://127.0.0.1:{}/start".format(self.server_eventgen_webport))
+		assert r.status_code == 200
+		assert json.loads(r.content) == "Eventgen has successfully started."
+		r = requests.post("http://127.0.0.1:{}/start".format(self.server_eventgen_webport))
+		assert r.status_code == 200
+		assert json.loads(r.content) == "Eventgen already started."
+
+	def test_server_restart(self):
+		r = requests.post("http://127.0.0.1:{}/restart".format(self.server_eventgen_webport))
+		assert r.status_code == 200
+		assert json.loads(r.content) == "Eventgen restarted."
+
+	def test_server_stop(self):
+		r = requests.post("http://127.0.0.1:{}/stop".format(self.server_eventgen_webport))
+		assert r.status_code == 200
+		assert json.loads(r.content) == "Eventgen is stopped."
 
 	def test_server_bundle(self):
 		r = requests.post("http://127.0.0.1:{}/bundle".format(self.server_eventgen_webport))
