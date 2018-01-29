@@ -1,5 +1,5 @@
 """
-Copyright (C) 2005 - 2016 Splunk Inc. All Rights Reserved.
+Copyright (C) 2005 - 2018 Splunk Inc. All Rights Reserved.
 """
 import argparse
 import getpass
