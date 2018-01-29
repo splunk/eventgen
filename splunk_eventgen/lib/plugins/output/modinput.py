@@ -20,7 +20,7 @@ class ModInputOutputPlugin(OutputPlugin):
     def flush(self, q):
         out = ""
         if len(q) > 0:
-            m = q.popleft()
+            m = q.pop(0)
             while m:
                 try:
                     out += '  <event>\n'
@@ -35,11 +35,10 @@ class ModInputOutputPlugin(OutputPlugin):
                     pass
 
                 try:
-                    m = q.popleft()
+                    m = q.pop(0)
                 except IndexError:
                     m = False
-        
-        # out += '</stream>'
+
         print out
         sys.stdout.flush()
 

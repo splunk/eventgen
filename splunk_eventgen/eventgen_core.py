@@ -49,7 +49,7 @@ class EventGenerator(object):
         # attach to the logging queue
         self.logger.debug("Logging Setup Complete.")
 
-        if self.args and 'configfile' in self.args:
+        if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
 
     def _load_config(self, configfile, **kwargs):
@@ -192,6 +192,11 @@ class EventGenerator(object):
             pass
 
     def _setup_loggers(self, config=None):
+        eventgen_main_logger_path = os.path.join(file_path, 'logs', 'eventgen-main.log')
+        eventgen_process_logger_path = os.path.join(file_path, 'logs', 'eventgen-process.log')
+        eventgen_listener_logger_path = os.path.join(file_path, 'logs', 'eventgen-listener-process.log')
+        eventgen_hec_logger_path = os.path.join(file_path, 'logs', 'splunk-hec-handler.log')
+        eventgen_error_logger_path = os.path.join(file_path, 'logs', 'eventgen-errors.log')
         if not config:
             self.logger_config = {
                 'version': 1,
@@ -209,31 +214,31 @@ class EventGenerator(object):
                     },
                     'file': {
                         'class': 'logging.FileHandler',
-                        'filename': 'eventgen_main.log',
+                        'filename': eventgen_main_logger_path,
                         'mode': 'w',
                         'formatter': 'detailed',
                     },
                     'eventgenfile': {
                         'class': 'logging.FileHandler',
-                        'filename': 'eventgen-process.log',
+                        'filename': eventgen_process_logger_path,
                         'mode': 'w',
                         'formatter': 'detailed',
                     },
                     'eventgen_listener_file': {
                         'class': 'logging.FileHandler',
-                        'filename': 'eventgen-listener-process.log',
+                        'filename': eventgen_listener_logger_path,
                         'mode': 'w',
                         'formatter': 'detailed',
                     },
                     'splunk_hec_file': {
                         'class': 'logging.FileHandler',
-                        'filename': 'splunk_hec_handler.log',
+                        'filename': eventgen_hec_logger_path,
                         'mode': 'w',
                         'formatter': 'detailed',
                     },
                     'errors': {
                         'class': 'logging.FileHandler',
-                        'filename': 'eventgen-errors.log',
+                        'filename': eventgen_error_logger_path,
                         'mode': 'w',
                         'level': 'ERROR',
                         'formatter': 'detailed',
@@ -241,7 +246,7 @@ class EventGenerator(object):
                 },
                 'loggers': {
                     'eventgen': {
-                        'handlers': ['eventgenfile']
+                        'handlers': ['eventgenfile', 'errors', 'console']
                     },
                     'eventgen_listener': {
                         'handlers': ['eventgen_listener_file']
@@ -269,9 +274,12 @@ class EventGenerator(object):
         logging.Logger.debugv = debugv
         self.logger = logging.getLogger('eventgen')
         self.loggingQueue = None
-        hec_info = self.get_hec_info_from_conf()
-        self.hec_logging_handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1])
-        logging.getLogger().addHandler(self.hec_logging_handler)
+        try:
+            hec_info = self.get_hec_info_from_conf()
+            self.hec_logging_handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1])
+            logging.getLogger().addHandler(self.hec_logging_handler)
+        except Exception as e:
+            self.logger.exception(e)
 
     def get_hec_info_from_conf(self):
         hec_info = [None, None]

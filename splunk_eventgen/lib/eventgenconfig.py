@@ -208,45 +208,10 @@ class Config(object):
         # return in order of precedence:  __plugins, __outputPlugins, None
         # Note: because of the above KeyError Exception we should never return
         # None, but it is the sane behavior for a getter method
-        return self.plugins.get(name,self.outputPlugins.get(name,None))
+        return self.plugins.get(name, self.outputPlugins.get(name, None))
 
-    def makeSplunkEmbedded(self, sessionKey=None):
-        """Setup operations for being Splunk Embedded.  This is legacy operations mode, just a little bit obfuscated now.
-        We wait 5 seconds for a sessionKey or 'debug' on stdin, and if we time out then we run in standalone mode.
-        If we're not Splunk embedded, we operate simpler.  No rest handler for configurations. We only read configs
-        in our parent app's directory."""
-
-        fileHandler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen.log', maxBytes=25000000, backupCount=5)
-        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-        fileHandler.setFormatter(formatter)
-        # fileHandler.setLevel(logging.DEBUG)
-        logobj = logging.getLogger('eventgen')
-        logobj.handlers = [ ] # Remove existing StreamHandler if we're embedded
-        logobj.addHandler(fileHandler)
-        self.logger.info("Running as Splunk embedded")
-
-        # 6/7/14 Add Metrics logger so we can output JSON metrics for Splunk
-        fileHandler = logging.handlers.RotatingFileHandler(os.environ['SPLUNK_HOME'] + '/var/log/splunk/eventgen_metrics.log', maxBytes=25000000, backupCount=5)
-        formatter = logging.Formatter('%(message)s')
-        fileHandler.setFormatter(formatter)
-        # fileHandler.setLevel(logging.DEBUG)
-        logobj = logging.getLogger('eventgen_metrics')
-        logobj.addHandler(fileHandler)
-        import splunk.auth as auth
-        import splunk.entity as entity
-        # 5/7/12 CS For some reason Splunk will not import the modules into global in its copy of python
-        # This is a hacky workaround, but it does fix the problem
-        globals()['auth'] = locals()['auth']
-        # globals()['bundle'] = locals()['bundle']
-        globals()['entity'] = locals()['entity']
-        # globals()['rest'] = locals()['rest']
-        # globals()['util'] = locals()['util']
-
-        if sessionKey == None:
-            self.sessionKey = auth.getSessionKey('admin', 'changeme')
-        else:
-            self.sessionKey = sessionKey
-
+    def makeSplunkEmbedded(self, sessionKey):
+        self.sessionKey = sessionKey
         self.splunkEmbedded = True
 
     def getSplunkUrl(self, s):
@@ -293,13 +258,14 @@ class Config(object):
         self._buildConfDict()
         # Set defaults config instance variables to 'global' section
         # This establishes defaults for other stanza settings
-        for key, value in self._confDict['global'].items():
-            value = self._validateSetting('global', key, value)
-            setattr(self, key, value)
+        if 'global' in self._confDict:
+            for key, value in self._confDict['global'].items():
+                value = self._validateSetting('global', key, value)
+                setattr(self, key, value)
 
-        del self._confDict['global']
-        if 'default' in self._confDict:
-            del self._confDict['default']
+            del self._confDict['global']
+            if 'default' in self._confDict:
+                del self._confDict['default']
 
         tempsamples = [ ]
         tempsamples2 = [ ]
@@ -410,7 +376,7 @@ class Config(object):
             if s.sampleDir == None:
                 self.logger.debug("Sample directory not specified in config, setting based on standard")
                 if self.splunkEmbedded and not STANDALONE:
-                    s.sampleDir = os.path.join(self.greatgrandparentdir, s.app, 'samples')
+                    s.sampleDir = os.path.normpath(os.path.join(self.grandparentdir, '..', '..', '..', s.app, 'samples'))
                 else:
                     # 2/1/15 CS  Adding support for looking for samples based on the config file specified on
                     # the command line.
@@ -854,7 +820,8 @@ class Config(object):
 
         if self.splunkEmbedded and not STANDALONE:
             self.logger.info('Retrieving eventgen configurations from /configs/eventgen')
-            self._confDict = entity.getEntities('configs/eventgen', count=-1, sessionKey=self.sessionKey)
+            import splunk.entity as entity
+            self._confDict = entity.getEntities('configs/conf-eventgen', count=-1, sessionKey=self.sessionKey)
         else:
             self.logger.info('Retrieving eventgen configurations with ConfigParser()')
             # We assume we're in a bin directory and that there are default and local directories

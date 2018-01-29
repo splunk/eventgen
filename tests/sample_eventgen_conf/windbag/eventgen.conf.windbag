@@ -1,4 +1,4 @@
-[windbag]
-generator = windbag
-perDayVolume =
-outputMode = stdout
+[perdayvolume]
+sampleDir = tests/sample_eventgen_conf/perdayvolume
+perDayVolume = 1.0
+outputMode = modinput

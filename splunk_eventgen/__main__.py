@@ -235,7 +235,6 @@ def build_splunk_app(dest, remove=True):
     target_file = os.path.join(dest, 'sa_eventgen.spl')
     module_file, module_path, module_description = imp.find_module('splunk_eventgen')
     splunk_app = os.path.join(module_path, 'splunk_app')
-    lib_dir = os.path.join(module_path, 'lib')
     try:
         shutil.copytree(splunk_app, directory)
     except OSError as e:
@@ -244,8 +243,8 @@ def build_splunk_app(dest, remove=True):
             sys.exit(3)
         else:
             raise
-    directory_lib_dir = os.path.join(directory, 'lib')
-    shutil.copytree(lib_dir, directory_lib_dir)
+    directory_lib_dir = os.path.join(directory, 'lib', 'splunk_eventgen')
+    shutil.copytree(module_path, directory_lib_dir)
     make_tarfile(target_file, directory)
     if remove:
         shutil.rmtree(directory)

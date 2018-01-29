@@ -28,12 +28,14 @@ class DefaultGenerator(GeneratorPlugin):
                 count = sdlen
             while len(eventsDict) < count:
                 eventsDict.append(self._sample.sampleDict[random.randint(0, sdlen-1)])
+
         # If we're bundlelines, create count copies of the sampleDict
         elif self._sample.bundlelines:
             eventsDict = [ ]
             self.logger.debugv("Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" % (self._sample.name, self._sample.app, count))
             for x in xrange(count):
                 eventsDict.extend(self._sample.sampleDict)
+
         # Otherwise fill count events into eventsDict or keep making copies of events out of sampleDict until
         # eventsDict is as big as count
         else:
@@ -48,10 +50,12 @@ class DefaultGenerator(GeneratorPlugin):
                 self.logger.debugv("Current eventsDict: %s" % eventsDict)
                 # run a modulus on the size of the eventdict to figure out what the last event was.  Populate to count
                 # from there.
+
                 while len(eventsDict) < count:
-                    nextEventToUse = self._sample.sampleDict[len(eventsDict) % len(self._sample.sampleDict)]
-                    self.logger.debugv("Next event to add: %s" % nextEventToUse)
-                    eventsDict.append(nextEventToUse)
+                    if len(self._sample.sampleDict):
+                        nextEventToUse = self._sample.sampleDict[len(eventsDict) % len(self._sample.sampleDict)]
+                        self.logger.debugv("Next event to add: %s" % nextEventToUse)
+                        eventsDict.append(nextEventToUse)
                 self.logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" % (self._sample.name, self._sample.app, len(eventsDict)))
 
         eventcount=0
