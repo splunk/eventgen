@@ -245,6 +245,9 @@ def build_splunk_app(dest, remove=True):
             raise
     directory_lib_dir = os.path.join(directory, 'lib', 'splunk_eventgen')
     shutil.copytree(module_path, directory_lib_dir)
+    directory_default_dir = os.path.join(directory, 'default', 'eventgen.conf')
+    eventgen_conf = os.path.join(module_path, 'default', 'eventgen.conf')
+    shutil.copyfile(eventgen_conf, directory_default_dir)
     make_tarfile(target_file, directory)
     if remove:
         shutil.rmtree(directory)
