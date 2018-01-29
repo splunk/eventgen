@@ -1,4 +1,8 @@
-[perdayvolume]
-sampleDir = tests/sample_eventgen_conf/perdayvolume
-perDayVolume = 1.0
-outputMode = modinput
+[windbag]
+generator = windbag
+earliest = -3s
+latest = now
+interval = -1
+count = 5
+end = 5
+outputMode = stdout
