@@ -585,7 +585,7 @@ class ModularInput(object):
             return 1
         except ValueError:
             # The file could not be loaded
-            logger.error("Could not read checkpoint file for last time run, if this persists debug input immediately")
+            logger.exception("Could not read checkpoint file for last time run, if this persists debug input immediately")
             return 1
         except Exception as e:
             logger.exception("Unexpected exception caught, enforcing extra run, exception info: " + str(e))
@@ -762,7 +762,7 @@ class ModularInput(object):
             except FieldValidationException as e:
                 if log_exception_and_continue:
                     # Discard the invalid stanza.
-                    logger.error("Discarding invalid input stanza '%s': %s" % (stanza_name, str(e)))
+                    logger.exception("Discarding invalid input stanza '%s': %s" % (stanza_name, str(e)))
                 else:
                     raise e
 
@@ -794,7 +794,7 @@ class ModularInput(object):
                 except ValueError as e:
                     # This should never happen unless the author of the modular input
                     # fails to specify "duration" as an IntegerField.
-                    logger.error("Input stanza '%s' specified an invalid duration: %s" % (stanza.get('name', 'unknown'), str(e)))
+                    logger.exception("Input stanza '%s' specified an invalid duration: %s" % (stanza.get('name', 'unknown'), str(e)))
                     # Exit with non-zero exit code so services/admin/inputstatus correctly reflects script status.
                     sys.exit(1)
 
