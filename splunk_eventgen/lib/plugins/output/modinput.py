@@ -38,8 +38,7 @@ class ModInputOutputPlugin(OutputPlugin):
                     m = q.pop(0)
                 except IndexError:
                     m = False
-        
-        # out += '</stream>'
+
         print out
         sys.stdout.flush()
 

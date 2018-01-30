@@ -1,4 +1,8 @@
 [windbag]
 generator = windbag
-perDayVolume =
+earliest = -3s
+latest = now
+interval = -1
+count = 5
+end = 5
 outputMode = stdout

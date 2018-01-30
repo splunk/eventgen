@@ -1,0 +1,144 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import os
+import re
+import sys
+import json
+import time
+import logging
+import argparse
+
+# Set path so libraries will load
+from splunk.clilib.bundle_paths import make_splunkhome_path
+sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib']))
+sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib', 'splunk_eventgen', 'lib']))
+
+# from splunk_eventgen.lib.modinput import ModularInput
+# from splunk_eventgen.lib.modinput.fields import BooleanField, Field
+# from splunk_eventgen.lib.xmloutput import setupLogger, XMLOutputManager
+
+from modinput.fields import BooleanField, Field
+from xmloutput import setupLogger, XMLOutputManager
+from modinput import ModularInput
+from splunk_eventgen import eventgen_core
+from splunk_eventgen.lib import eventgenconfig
+
+# Initialize logging
+logger = setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [Eventgen] %(message)s', level=logging.INFO,
+                     log_name="modinput_eventgen.log", logger_name="eventgen_app")
+
+
+class SimpleNamespace(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+
+class Eventgen(ModularInput):
+    scheme_args = {
+                    'title': "SA-Eventgen",
+                    'description': "This modular input generates data for Splunk.",
+                    'use_external_validation': "true",
+                    'streaming_mode': "xml",
+                    'use_single_instance': "False"
+    }
+
+    def __init__(self):
+        logger.debug("Setting up SA-Eventgen Modular Input")
+        self.output = XMLOutputManager()
+
+        args = [
+            BooleanField("VERBOSE", "VERBOSE", "Verbose mode", required_on_create=True, required_on_edit=True)
+        ]
+        ModularInput.__init__(self, self.scheme_args, args)
+
+    def create_args(self):
+        parser = argparse.ArgumentParser(prog="SA-Eventgen")
+        args = parser.parse_args()
+        args.daemon = False
+        args.verbosity = None
+        args.version = False
+        args.backfill = None
+        args.count = None
+        args.devnull = False
+        args.disableOutputQueue = False
+        args.end = None
+        args.generators = None
+        args.interval = None
+        args.keepoutput = False
+        args.modinput = False
+        args.multiprocess = False
+        args.outputters = None
+        args.profiler = False
+        args.sample = None
+        args.version = False
+        args.subcommand = 'generate'
+        args.verbosity = 3
+        args.wsgi = False
+        return args
+
+    def prepare_config(self, args):
+        new_args = {}
+        outputer = [key for key in ["keepoutput", "devnull", "modinput"] if getattr(args, key)]
+        if len(outputer) > 0:
+            new_args["override_outputter"] = outputer[0]
+        if getattr(args, "count"):
+            new_args["override_count"] = args.count
+        if getattr(args, "interval"):
+            new_args["override_interval"] = args.interval
+        if getattr(args, "backfill"):
+            new_args["override_backfill"] = args.backfill
+        if getattr(args, "end"):
+            new_args["override_end"] = args.end
+        if getattr(args, "multiprocess"):
+            new_args["threading"] = "process"
+        if getattr(args, "generators"):
+            new_args["override_generators"] = args.generators
+        if getattr(args, "disableOutputQueue"):
+            new_args["override_outputqueue"] = args.disableOutputQueue
+        if getattr(args, "profiler"):
+            new_args["profiler"] = args.profiler
+        return new_args
+
+    def run(self, stanza, input_config, **kwargs):
+        self.output.initStream()
+        try:
+            if input_config:
+                session_key = input_config.session_key
+
+            logger.info("Input Config is: {}".format(input_config))
+            created_arguments = self.create_args()
+            new_args = self.prepare_config(created_arguments)
+            try:
+                config = eventgenconfig.Config(configfile=None, **new_args)
+                config.makeSplunkEmbedded(sessionKey=session_key)
+                eventgen = eventgen_core.EventGenerator(created_arguments)
+                eventgen.logger.info("Finished initializing eventgen object")
+                eventgen.config = config
+                eventgen.config.parse()
+                eventgen.logger.info("Finished config parsing")
+                if eventgen.config.samples:
+                    for sample in eventgen.config.samples:
+                        sample.outputMode = "modinput"
+
+                eventgen.logger.info("Finished parse")
+                eventgen._reload_plugins()
+                eventgen.logger.info("Finished reload")
+                eventgen._setup_pools()
+                eventgen.logger.info("Finished setup pools")
+                eventgen.start()
+            except Exception as e:
+                eventgen.logger.exception(e)
+
+
+            self.output.finishStream()
+        except Exception as e:
+            logger.error("Main code exit, Exception caught: %s" % e)
+            raise e
+
+if __name__ == '__main__':
+    worker = Eventgen()
+    worker.execute()
+    sys.exit(0)
