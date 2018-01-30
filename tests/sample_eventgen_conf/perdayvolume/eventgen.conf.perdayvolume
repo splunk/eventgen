@@ -3,10 +3,10 @@ sampleDir = tests/sample_eventgen_conf/perdayvolume
 perDayVolume = 1.1
 
 outputMode = stdout
-index = main
-sourcetype = windbag
-source = windbag.log
-host = localhost
+#index = main
+#sourcetype = windbag
+#source = windbag.log
+#host = localhost
 #splunkHost = localhost
 #splunkUser = admin
 #splunkPass = changeme

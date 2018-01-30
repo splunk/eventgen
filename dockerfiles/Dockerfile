@@ -1,6 +1,7 @@
 FROM alpine:3.6
 
 ENV RABBITMQ_VERSION=3.6.13
+ENV SPLUNK_HOME=/opt/splunk
 
 RUN apk --no-cache upgrade && \
 	apk add --no-cache --update \
@@ -38,10 +39,10 @@ RUN apk --no-cache upgrade && \
 	chmod 0700 /root/.ssh && \
 	pip install requests_futures nameko pyOpenSSL --upgrade
 
-COPY sshd_config /etc/ssh/sshd_config
-COPY entrypoint.sh /sbin/entrypoint.sh
-COPY splunk_eventgen.tgz /root/splunk_eventgen.tgz
-COPY rabbitmq.config /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/rabbitmq.config
+COPY dockerfiles/sshd_config /etc/ssh/sshd_config
+COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
+COPY dist/* /root/splunk_eventgen.tgz
+COPY dockerfiles/rabbitmq.config /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/etc/rabbitmq/rabbitmq.config
 
 RUN pip install /root/splunk_eventgen.tgz && rm /root/splunk_eventgen.tgz
 
@@ -49,5 +50,5 @@ HEALTHCHECK --interval=1m --timeout=15s --start-period=5m --retries=3 \
 	CMD curl -f http://localhost:9500/status || exit 1
 
 EXPOSE 2222 5672 15672 9500
-WORKDIR /root
+WORKDIR /opt/splunk/etc/apps
 ENTRYPOINT ["/sbin/entrypoint.sh"]

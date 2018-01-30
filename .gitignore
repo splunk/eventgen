@@ -24,3 +24,5 @@ dist
 *.xml
 dist
 _book
+*.result
+venv/*

@@ -24,7 +24,7 @@ withSplunkWrapNode('orca_ci') {
         // for now skipping on large and xlarge since we don't have tests.
         stage('Run tests') {
             echo "test"
-            sh 'make test LARGE=None XLARGE=None'
+            sh 'make test XLARGE=None'
         }
 
         stage('Parse results') {
@@ -33,7 +33,10 @@ withSplunkWrapNode('orca_ci') {
 
         stage('Publish pypi') {
             if (env.BRANCH_NAME == 'develop') {
-                sh 'make push_egg_production'
+                sh 'make push_release_egg'
+            }
+            else {
+                sh 'make push_dev_egg'
             }
         }
 

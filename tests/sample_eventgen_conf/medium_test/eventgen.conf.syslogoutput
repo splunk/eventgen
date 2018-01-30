@@ -6,5 +6,6 @@ interval = 3
 count = 5
 end = 1
 outputMode = syslogout
-tcpDestinationHost = 127.0.0.1
-tcpDestinationPort = 9999
+syslogDestinationHost = 127.0.0.1
+syslogDestinationPort = 9999
+

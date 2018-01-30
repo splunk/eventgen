@@ -105,7 +105,10 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 else:
                     self.httpeventmaxsize = 10000
             self.logger.debug("Currentmax size: %s " % self.httpeventmaxsize)
-            self.httpeventServers = json.loads(config.httpeventServers)
+            if isinstance(config.httpeventServers, str):
+            	self.httpeventServers = json.loads(config.httpeventServers)
+            else:
+            	self.httpeventServers = config.httpeventServers
             self.logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
             self.createConnections()
             self.logger.debug("Pool created.")

@@ -21,7 +21,7 @@ def readme():
 setup(
     name='splunk_eventgen',
     version=VERSION,
-    description='Containerized Splunk deployment as a Service command line tool and api',
+    description='Splunk Event Generator to produce real-time, representative data',
     long_description=long_description,
     url='https://repo.splunk.com/artifactory/api/pypi/pypi-local',
     author='Splunk, Inc.',
@@ -42,7 +42,7 @@ setup(
     install_requires=[
         'pytest>=3.0.0', # Required to test functional tests in eventgen.
         'boto3',
-        'requests>=2.10.0',
+        'requests>=2.18.4',
         'requests[security]',
         'logutils>=0.3.4.1',
         'cherrypy',
@@ -50,5 +50,6 @@ setup(
         'ujson>=1.35', # way faster implementation of JSON processing
         'pyyaml',
         'httplib2',
-        'jinja2']
+        'jinja2',
+        'pyrabbit']
     )

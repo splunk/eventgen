@@ -57,19 +57,12 @@ if MEDIUM:
     return_codes.append(pytest.main(args))
 
 # Commenting out other tests that aren't added yet.
-# # Run large tests
-# if LARGE:
-#     sys.path = PATH
-#     os.environ = ENV
-#     args = [ "-n", NUM_TEST_WORKERS_LARGE, "-sv", LARGE, "--junitxml=tests_large_results.xml"]
-#     # Handle any ignored tests
-#     ignored = [ 'tests/large/test_destroy.py', 'tests/large/fixtures/']
-#     args += ["--ignore={}".format(x) for x in ignored]
-#     return_codes.append(pytest.main(args))
-#     if DESTROY:
-#         # now run destroy tests so that they do not interfere with other tests
-#         args = [ "-sv", 'tests/large/test_destroy.py', "--junitxml=test_destroy_results.xml"]
-#         return_codes.append(pytest.main(args))
+# Run large tests
+if LARGE:
+    sys.path = PATH
+    os.environ = ENV
+    args = [ "-sv", LARGE, "--junitxml=tests_large_results.xml"]
+    return_codes.append(pytest.main(args))
 #
 # # Run xlarge tests
 # if XLARGE:

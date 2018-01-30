@@ -18,13 +18,15 @@ all: egg
 egg: clean
 	python setup.py sdist
 
-push_egg_production:
-	python setup.py sdist upload -r production
+push_dev_egg:
+	python scripts/eventgen_CD.py --push pypi
+
+push_release_egg:
+	python scripts/eventgen_CD.py --push --release pypi
 
 image: setup_eventgen egg
-	cp dist/splunk_eventgen-*.tar.gz dockerfiles/splunk_eventgen.tgz
 	rm splunk_eventgen/default/eventgen_engine.conf || true
-	cd dockerfiles && docker build . -t eventgen
+	docker build -f dockerfiles/Dockerfile . -t eventgen
 
 push_image_production: image
 	docker tag eventgen:latest repo.splunk.com/splunk/products/eventgenx:latest
@@ -33,7 +35,7 @@ push_image_production: image
 test: egg test_helper test_collection_cleanup
 
 test_helper:
-	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} python:2.7.14-alpine3.6 cat
+	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} repo.splunk.com/splunk/products/eventgenx:latest cat
 
 	@echo 'Creating dirs needed for tests'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "mkdir -p $(shell pwd) "
@@ -82,12 +84,12 @@ eg_network:
 run_server: eg_network
 	docker kill eg_server || true
 	docker rm eg_server || true
-	docker run --network eg_network --name eg_server -e EVENTGEN_AMQP_HOST="eg_controller" -d -p 9500 eventgen:latest server
+	docker run --network eg_network --name eg_server -e EVENTGEN_AMQP_HOST="eg_controller" -d -p 9501:9500 eventgen:latest server
 
 run_controller: eg_network
 	docker kill eg_controller || true
 	docker rm eg_controller || true
-	docker run --name eg_controller --network eg_network -d -p 5672 -p 15672 -p 9500 eventgen:latest controller
+	docker run --name eg_controller --network eg_network -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
 
 docs:
 	docker build -t stg-repo.splunk.com/tonyl/eventgen-docs:latest documentation/

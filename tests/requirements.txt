@@ -5,3 +5,7 @@ mock
 pytest-cov
 nose
 requests
+docker
+requests_futures 
+nameko 
+pyOpenSSL
