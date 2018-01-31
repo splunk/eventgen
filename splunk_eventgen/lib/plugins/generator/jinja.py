@@ -81,49 +81,42 @@ class JinjaTime(Extension):
         time_now = time.mktime(time.localtime())
         return time_now
 
-    def _time_target_formatted(self, date_format='%Y-%m-%dT%H:%M:%S%z'):
-        target_time = self._time_target_epoch()
+    def _time_slice_formatted(self,earliest, latest, count, slices, date_format='%Y-%m-%dT%H:%M:%S%z'):
+        target_time = self._time_slice_epoch(earliest, latest, count, slices)
         return self._convert_epoch_formatted(target_time, date_format)
 
-    def _time_target_epoch(self, earliest, latest):
-        pass
-
-    def _time_backfill_target_formatted(self, date_format='%Y-%m-%dT%H:%M:%S%z'):
-        target_time = self._time_backfill_target_epoch()
-        return self._convert_epoch_formatted(target_time, date_format)
-
-    def _time_backfill_target_epoch(self):
-        pass
+    def _time_slice_epoch(self, earliest, latest, count, slices):
+        slice_start, slice_end, slice_size, slice_time = \
+            self._get_time_slice(earliest=earliest, latest=latest, slices=slices, target_slice=count, slice_type="lower")
+        return slice_time
 
     @staticmethod
     def _set_var(var_name, var_value, lineno):
         target_var = nodes.Name(var_name, 'store', lineno=lineno)
         return nodes.Assign(target_var, var_value, lineno=lineno)
 
+    @staticmethod
+    def _output_var(var_value, lineno):
+        return nodes.Output([var_value], lineno=lineno)
+
     def parse(self, parser):
         target_var_name = {
             "time_now": "time_now",
-            "time_slice": "time_target",
-            "time_backfill": "time_backfill_target"
+            "time_slice": "time_target"
         }
         tag = parser.stream.current.value
         name_base = target_var_name[tag]
         lineno = parser.stream.next().lineno
         args, kwargs = self.parse_args(parser)
         task_list = []
-        if tag == "time_now":
-            epoch_name = name_base+"_epoch"
-            formatted_name = name_base+"_formatted"
-            target_epoch_method = "_{0}_epoch".format(tag)
-            target_formatted_method = "_{0}_formatted".format(tag)
-            epoch_call = self.call_method(target_epoch_method, args=args, kwargs=kwargs, lineno=lineno)
-            formatted_call = self.call_method(target_formatted_method, args=args, kwargs=kwargs, lineno=lineno)
-            task_list.append(self._set_var(epoch_name, epoch_call, lineno))
-            task_list.append(self._set_var(formatted_name, formatted_call, lineno))
-        if tag in ["time_slice", "time_backfill"]:
-            #TODO: Make this slice work.
-            self._get_time_slice(self.earliest_epoch, self.latest_epoch, self.target_count, self.current_count, slice_type="random")
-            pass
+        epoch_name = name_base+"_epoch"
+        formatted_name = name_base+"_formatted"
+        target_epoch_method = "_{0}_epoch".format(tag)
+        target_formatted_method = "_{0}_formatted".format(tag)
+        epoch_call = self.call_method(target_epoch_method, args=args, kwargs=kwargs, lineno=lineno)
+        formatted_call = self.call_method(target_formatted_method, args=args, kwargs=kwargs, lineno=lineno)
+        task_list.append(self._set_var(epoch_name, epoch_call, lineno))
+        task_list.append(self._set_var(formatted_name, formatted_call, lineno))
         return task_list
 
     def parse_args(self, parser):
@@ -182,6 +175,9 @@ class JinjaGenerator(GeneratorPlugin):
         try:
             from jinja2 import Environment, FileSystemLoader
             self.target_count = count
+            # assume that if there is no "count" field, we want to run 1 time, and only one time.
+            if self.target_count == -1:
+                self.target_count = 1
             self.earliest = earliest
             self.latest = latest
             if hasattr(self._sample, "jinja_count_type"):
