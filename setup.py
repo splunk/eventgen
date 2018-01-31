@@ -47,6 +47,7 @@ setup(
         'logutils>=0.3.4.1',
         'cherrypy',
         'futures>=3.0.5',
+        'ujson>=1.35', # way faster implementation of JSON processing
         'pyyaml',
         'httplib2',
         'jinja2',

@@ -8,7 +8,10 @@ try:
     from concurrent.futures import ThreadPoolExecutor
 except ImportError:
     pass
-import json
+try:
+    import ujson as json
+except:
+    import json
 import random
 import urllib
 import logging
@@ -227,8 +230,13 @@ class HTTPEventOutputPlugin(OutputPlugin):
                             self.logger.debugv("Event contains host, adding to httpevent event")
                             payloadFragment['host'] = event['host']
                         if event.get('_time'):
-                            self.logger.debugv("Event contains _time, adding to httpevent event")
-                            payloadFragment['time'] = event['_time']
+                            # make sure _time can be an epoch timestamp
+                            try:
+                                float(event.get("_time"))
+                                self.logger.debugv("Event contains _time, adding to httpevent event")
+                                payloadFragment['time'] = event['_time']
+                            except:
+                                self.logger.error("Timestamp not in epoch format, ignoring event: {0}".format(event))
                         if event.get('index'):
                             self.logger.debugv("Event contains index, adding to httpevent event")
                             payloadFragment['index'] = event['index']
