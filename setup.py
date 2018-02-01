@@ -25,7 +25,7 @@ setup(
     long_description=long_description,
     url='https://repo.splunk.com/artifactory/api/pypi/pypi-local',
     author='Splunk, Inc.',
-    author_email='jvega@splunk.com',
+    author_email='tonyl@splunk.com',
     classifiers=[
         'Development Status :: 1 - Alpha',
         'Intended Audience :: Developers',
@@ -45,7 +45,6 @@ setup(
         'requests>=2.18.4',
         'requests[security]',
         'logutils>=0.3.4.1',
-        'cherrypy',
         'futures>=3.0.5',
         'ujson>=1.35', # way faster implementation of JSON processing
         'pyyaml',
