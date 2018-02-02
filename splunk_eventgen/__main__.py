@@ -232,7 +232,7 @@ def make_tarfile(output_filename, source_dir):
 def build_splunk_app(dest, remove=True):
     import errno, imp
     directory = os.path.join(dest, 'SA-Eventgen')
-    target_file = os.path.join(dest, 'sa_eventgen.spl')
+    target_file = os.path.join(dest, 'sa_eventgen_{}.spl'.format(EVENTGEN_VERSION))
     module_file, module_path, module_description = imp.find_module('splunk_eventgen')
     splunk_app = os.path.join(module_path, 'splunk_app')
     try:
