@@ -14,28 +14,24 @@ Installing Eventgen is simple. There are 3 approaches to using Eventgen - as a c
 First and foremost, you'll need to install the appropriate [Docker engine](https://docs.docker.com/engine/installation/#supported-platforms) for your operating system. Once you have Docker installed, you must login to [Artifactory](https://repo.splunk.com). For your first-time run, Eventgen requires that you be able to pull images from Artifactory. While connected to Splunk's private network (VPN, if you are remote), run the following commands:
 ```
 $ docker login repo.splunk.com
-$ docker pull repo.splunk.com/splunk/products/eventgen:latest
+$ docker pull repo.splunk.com/splunk/products/eventgenx:latest
 
-# In order to simplify communication, create an overlay network to which the eventgen containers will be created
+# In order to simplify communication, create an overlay network to which the eventgen containers will be created.
 $ docker network create --attachable --driver bridge eg_network
 
 # Bring up a controller node
-$ docker run -d -p 5672 -p 15672:15672 -p 9500:9500 --network eg_network --name eg_controller repo.splunk.com/splunk/products/eventgenx:latest controller
+$ docker run -d -p 5672 -p 15672:15672 -p 9500:9500 --network eg_network --name eg_controller repo.splunk.com/splunk/products/eventgenx:latest controller.
 
-# Bring up a server node, connecting it to the controller node
-$ docker run -d --p 5672 -p 15672 -p 9500 --network eg_network -e EVENTGEN_AMQP_HOST="eg_controller" --name eg_server repo.splunk.com/splunk/products/eventgenx:latest server
+# Bring up a server node, and specifying a docker network will automatically connect server to the controller.
+$ docker run -d -p 5672 -p 15672 -p 9500 --network eg_network -e EVENTGEN_AMQP_HOST="eg_controller" --name eg_server repo.splunk.com/splunk/products/eventgenx:latest server
+
+# Confirm that controller is running correctly. If only one SERVER instance is running, you will only one item in connected servers.
+$ curl 127.0.0.1:9500
+*** Eventgen Controller ***
+Host: <SOME_HOST_ID>
+Connected Servers: [<SOME_SERVER_ID>]
+You are running Eventgen Controller.
 ```
-
----
-
-##### Splunk App Installation #####
-
-To use Eventgen as a Splunk app, download the TGZ/SPL file from [Artifactory](https://repo.splunk.com). Then, follow the instructions below on installing the app on top of an existing Splunk installation:
-
-1. Log in to Splunk Web and navigate to Apps > Manage Apps.
-2. Click "Install app from file"
-3. Navigate to your Eventgen download, and upload the file
-4. Restart Splunk after you have been notified of a successful installation
 
 ---
 
@@ -49,18 +45,42 @@ $ pip install splunk-eventgen -i https://repo.splunk.com/artifactory/api/pypi/py
 To verify Eventgen is properly installed, run "splunk_eventgen --version" on your system. You should see information about your current Eventgen version.
 ```
 $ splunk_eventgen --version
-0.6.0
+Eventgen 0.6.0
 ```
+
+---
+
+##### Splunk App Installation #####
+
+To use Eventgen as a Splunk app, you need a SPL file. In order to generate the SPL file, install Eventgen through PyPI with the instruction above.
+
+Once you have Eventgen installed, run:
+
+```
+# This command generates spl file
+splunk_eventgen build --destination <DESIRED_PATH_TO_OUTPUT_SPL_FILE>
+```
+
+With the generated SPL file, follow these steps to install.
+1. Log in to Splunk Web and navigate to Apps > Manage Apps.
+2. Click "Install app from file".
+3. Navigate to the path where your local SPL file is and select.
+4. Restart Splunk after you have been notified of a successful installation.
+5. Go to Settings>Data inputs.
+5. Verify that SA-Eventgen shows up under Local inputs.
 
 ---
 
 ## Configure ##
 
-Now that Eventgen is installed in any of the forms above, there's still the matter of configuring it. How much data should Eventgen send? Where should Eventgen send data to? How does Eventgen send data? What type of data do you want it to send? There are two key concepts behind the configuration process of Eventgen:
+Now you probably wonder about how much data should Eventgen send? Or where should Eventgen send data to? Or how does Eventgen send data? Or what type of data do you want Eventgen to send?
+After Eventgen is installed in any of the forms mentioned above, it is time to configure Eventgen.
+There are two key concepts behind the configuration process of Eventgen:
 
 * `eventgen.conf`: This is a ini-style configuration file that Eventgen parses to set global, default, and even sample-specific settings. These settings include which plugin to use, how much data to send, and where to send it to. For more information, see [this section](TUTORIAL.md#the-configuration-file).
 * `sample files`: This is a collection of text files that Eventgen will read on initiation. Samples act as templates for the raw data that Eventgen pumps out. As such, these templates can include tokens or specific replacement strings that will get modified during processing-time (ex. timestamps updated in real-time). For more information, see [this section](TUTORIAL.md#the-sample-file).
 
+In addition, common use cases work around bundling these relevant files.
 Because Eventgen configs can be tightly coupled with custom sample files, they can be bundled up into a package itself, in the format:
 ```
 bundle/
@@ -71,6 +91,7 @@ bundle/
 		hosts.sample
 		firewall.logs
 ```
+If you have not read the sections below, please do so first and revisit bundling your files.
 
 Using the terminology above, follow the instructions below on setting up Eventgen using your desired installation:
 
@@ -87,22 +108,25 @@ Following the example from above, the container architecture of Eventgen include
 * Controller (`eg_controller`): this serves as the broadcaster
 * Server (`eg_server`): this serves as a single listener or worker
 
-If you want to scale the local Eventgen cluster using this design, simply add another `eg_server` container call (using a different `--name`), and it should automatically register with the `eg_controller`. 
+If you want to scale the local Eventgen cluster using this design, simply add another `eg_server` container call (using a different `--name`), and it should automatically register with the `eg_controller`. *NOTE [container installation](#container-installation)
 
-To interact with this architecture, you can make REST API calls against the `eg_controller`. When an appropriate request is made against the `eg_controller` server port (9500), that action will be distributed to all the server nodes connected to it for easy orchestration. This simplifies any and all interactions you need to make to properly setup a cluster. For example, see some example cURL commands below on using the `eg_controller`:
+Controller-Server architecture is a RESTful service.
+To interact with this architecture, you can make REST API calls against the `eg_controller`.
+When an appropriate request is made against the `eg_controller` server port (9500), that action will be distributed to all the server nodes connected to it for easy orchestration.
+This simplifies any and all interactions you need to make to properly setup a cluster. For example, see some example cURL commands below on using the `eg_controller`:
 
 ```
+# Assuming that a controller is deployed to your localhost and wired to port 9500
 $ curl http://localhost:9500
 *** Eventgen Controller ***
-Host: c8df86e59376
+Host: 06198584f5fc
+Connected Servers: [u'98cfac1a8507']
 You are running Eventgen Controller.
-```
 
-```
 # This should show the status of your eg_server
 $ curl http://localhost:9500/status
 {
-    "6f654722f3d8": {
+    "98cfac1a8507": {
         "EVENTGEN_STATUS": 0, 
         "CONFIGURED": false, 
         "CONFIG_FILE": "N/A", 
@@ -120,16 +144,14 @@ $ curl http://localhost:9500/status
                 "UNFINISHED_TASK": "N/A"
             }
         }, 
-        "EVENTGEN_HOST": "6f654722f3d8"
+        "EVENTGEN_HOST": "98cfac1a8507"
     }
 }
-```
 
-```
-# Additionally, it's possible to target a specific node in your distributed Eventgen cluster by using the target keyword
-$ curl http://localhost:9500/status?target=6f654722f3d8
+# Additionally, it's possible to target a specific node in your distributed Eventgen cluster by using the target keyword and eventgen_host variable
+$ curl http://localhost:9500/status?target=98cfac1a8507
 {
-    "6f654722f3d8": {
+    "98cfac1a8507": {
         "EVENTGEN_STATUS": 0, 
         "CONFIGURED": false, 
         "CONFIG_FILE": "N/A", 
@@ -147,12 +169,99 @@ $ curl http://localhost:9500/status?target=6f654722f3d8
                 "UNFINISHED_TASK": "N/A"
             }
         }, 
-        "EVENTGEN_HOST": "6f654722f3d8"
+        "EVENTGEN_HOST": "98cfac1a8507"
     }
 }
 ```
 
-Using the concept of the bundle from above, if the bundle is packaged and hosted somewhere accessible for download, simply hit the /bundle API with a POST and a JSON including the URL of your bundle.
+Now you know how to communicate with and check the status of your Eventgen instances through Eventgen controller, it is actually time to pass in a config file.
+When communicating with Eventgen controller, you need to translate your Eventgen configfile into a JSON representation.
+It is fairly simple to do so.
+```
+# If you have an Eventgen Config ini file looking like below
+[windbag]
+generator = windbag
+earliest = -3s
+latest = now
+interval = 5
+count = 5
+outputMode = stdout
+end = 15
+threading = process
+
+# can be translated to:
+{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}
+
+```
+Basically in the JSON structure, first level is a stanza and the second level dictionary is a collection of key value pairs.
+
+Let's pass in this JSON representation.
+```
+$ curl -X POST http://localhost:9500/conf -d '{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}'
+# Response comes back as JSON showing that Eventgen instance, 98cfac1a8507, is configured.
+{
+    "98cfac1a8507": {
+        "windbag": {
+            "count": "5",
+            "end": "15",
+            "generator": "windbag",
+            "interval": "5",
+            "threading": "process",
+            "outputMode": "stdout",
+            "earliest": "-3s",
+            "latest": "now"
+        }
+    }
+}
+# Let's confirm that your Eventgen instances are configured.
+$ curl http://localhost:9500/status
+{
+    "98cfac1a8507": {
+        "CONFIG_FILE": "/usr/lib/python2.7/site-packages/splunk_eventgen/default/eventgen_wsgi.conf",
+        "CONFIGURED": true,
+        "EVENTGEN_STATUS": 0,
+        "EVENTGEN_HOST": "98cfac1a8507",
+        "QUEUE_STATUS": {
+            "WORKER_QUEUE": {
+                "QUEUE_LENGTH": 0,
+                "UNFINISHED_TASK": 0
+            },
+            "SAMPLE_QUEUE": {
+                "QUEUE_LENGTH": 0,
+                "UNFINISHED_TASK": 0
+            },
+            "OUTPUT_QUEUE": {
+                "QUEUE_LENGTH": 0,
+                "UNFINISHED_TASK": 0
+            }
+        },
+        "TOTAL_VOLUME": 0.0
+    }
+}
+
+$ curl http://localhost:9500/conf
+{
+    "98cfac1a8507": {
+        "windbag": {
+            "count": "5",
+            "end": "15",
+            "generator": "windbag",
+            "interval": "5",
+            "threading": "process",
+            "outputMode": "stdout",
+            "earliest": "-3s",
+            "latest": "now"
+        }
+    }
+}
+```
+
+Great, you have successfully configured your Eventgen using a controller. We have utilized basic endpoints such as /status or /conf in the tutorials but there are more endpoints.
+Feel free to explore [Eventgen API Reference](REFERENCE.html#rest-api-reference)
+
+### Bundling your conf and sample file ###
+
+Using the concept of the bundling, if the bundle is packaged and hosted somewhere accessible for download, simply hit the /bundle API with a POST and a JSON including the URL of your bundle.
 ```
 $ curl http://localhost:9500/bundle -X POST -d '{"url": "http://artifact.server.com/bundle.tgz"}'
 Bundle event dispatched to all with url http://artifact.server.com/bundle.tgz
@@ -185,14 +294,23 @@ $ curl http://localhost:9500/conf?target=6f654722f3d8
 
 ##### Splunk App Setup #####
 
-After you have restarted Splunk, you should see Eventgen as an app in SplunkWeb. Additionally, you'll see SA-Eventgen in your Splunk apps installation directory:
+Before you start, confirm that you have successfully installed SA-Eventgen app using this instruction [Splunk App Installation](#splunk-app-installation).
+
+You should see SA-Eventgen App in SplunkWeb.
+![Local Image](./images/splunk_web_sa_eventgen.png)
+
+You should see SA-Eventgen as an input under Settings>Data inputs
+![Local Image](./images/splunk_web_sa_eventgen_modinput.png)
+
+Additionally, you'll see SA-Eventgen in your Splunk apps installation directory:
 ```
 $ cd ${SPLUNK_HOME}/etc/apps
 ```
 
-Using the concept of the bundle from above, you can package your eventgen.conf and sample files into a directory structure as outlined above. After that's done, copy/move the bundle into your `${SPLUNK_HOME}/etc/apps/` directory and restart Splunk. If you have specific samples enabled in your eventgen.conf, you should see data streaming into the specified Splunk index. 
+If SA-Eventgen App is correctly installed, there is no additional configuration required. SA-Eventgen app will automatically identify with any apps with Eventgen.conf and start generating data with that config when modinput is enabled.
 
-Through the SplunkWeb UI, navigate to the Eventgen app. If Eventgen is working correctly, you'll also have visibility into Eventgen statistics, including real-time volume generated as well as the proportion of data sent based on sample used. If the charts are not populated, you can navigate to the logs to introspect the generator queues, output queues, and more debug information.
+If you wish you add your bundle so that modinput can detect your package:
+Package your eventgen.conf and sample files into a directory structure as outlined above. After that's done, copy/move the bundle into your `${SPLUNK_HOME}/etc/apps/` directory and restart Splunk. If you have specific samples enabled in your eventgen.conf, you should see data streaming into the specified Splunk index.
 
 ---
 

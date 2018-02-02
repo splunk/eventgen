@@ -114,3 +114,42 @@ main,proxy.splunk.com,/var/log/proxy.log,proxy,"Sep 14 17:28:11:000 Connection i
 main,www.splunk.com,/var/log/httpd/access_log,access_custom,"2012-09-14 17:29:11:000 10.2.1.35 POST /playhistory/uploadhistory - 80 - 10.12.0.20 ""Mozilla/5.0 (Linux; U; Android 2.3.4; en-us; Sprint APX515CKT Build/GRJ22) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1"" 200 0 0 468 1488"
 main,proxy.splunk.com,/var/log/proxy.log,proxy,"Sep 14 17:30:11:000 Connection inbound from 5.5.5.5 to 10.2.1.35 on 10.12.0.20 closed"
 ```
+
+---
+
+## Interact with RESTful Eventgen
+
+Eventgen comes with server and controller architecture. This means easier scalability and control over multiple Eventgen instances.
+For example, in the past, interacting with three Eventgen instances required a user to manually configure each instance and start.
+Now, you only need to communicate with the controller to configure these Eventgen instances as long as they are all correctly connected to the messaging queue.
+Please note Getting Started section for installation reference.
+
+There is an [Eventgen API Reference](REFERENCE.html#rest-api-reference) that you can also reference.
+
+---
+
+## For Orca Users: Running Eventgen with Orca ##
+
+Orca 0.8.4 and above will natively support Eventgen 0.6.0 and above versions.
+
+```
+# Below command creates a specified number of eventgen instances as well as auto-configuring all servers and controllers.
+orca create --egx <NUM>
+```
+
+In addition, you can configure a custom scenario for automatic bundle install.
+
+```
+# Paste this into your ~/.orca/orca.conf
+# Below scenario will download an app from a specified path and start pumping out data
+[egxtest]
+indexers = 3
+search_heads = 2
+eventgenx_instances = 1
+ansible_params = eventgen_app=https://repo.splunk.com/artifactory/Solutions/APP/ITSI_Performance_Testing/builds/develop/latest/ITSI_Performance_Testing-1.0.0-15.tgz,eventgen_volume=50,eventgen_start=now
+
+# Simple run with this Orca command
+orca create --sc egxtest
+```
+
+

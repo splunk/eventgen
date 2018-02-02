@@ -5,7 +5,7 @@ mock
 pytest-cov
 nose
 requests
-docker
+docker==2.7.0
 requests_futures 
 nameko 
 pyOpenSSL
