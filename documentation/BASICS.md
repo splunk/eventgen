@@ -1,6 +1,6 @@
 # Welcome
 
-Thanks for checking out the tutorial.  This should hopefully get you through setting up a working event generator.  It's only a tutorial though, so if you want a complete reference of all of the available configuration options, please check out the [eventgen.conf.spec](https://github.com/splunk/eventgen/blob/master/README/eventgen.conf.spec) in the README directory.  With that, feel free to dig right in, and feel free to post to the Issues page if you have any questions.
+Thanks for checking out the tutorial.  This should hopefully get you through setting up a working event generator.  It's only a tutorial though, so if you want a complete reference of all of the available configuration options, please check out the [eventgen.conf.spec](REFERENCE.md#eventgenconfspec) in the README directory.  With that, feel free to dig right in, and feel free to post to the Issues page if you have any questions.
 
 ## Intro Video
 We've recorded a screencast to get you started.  This is definitely the fastest way to learn how to use the Eventgen.  The tutorial docs below will cover all the examples in detail, but if you want to get started quickly, check out the video:
