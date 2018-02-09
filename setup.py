@@ -27,7 +27,7 @@ setup(
     author='Splunk, Inc.',
     author_email='tonyl@splunk.com',
     classifiers=[
-        'Development Status :: 1 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Build Tools',

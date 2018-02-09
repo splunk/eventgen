@@ -2,16 +2,16 @@
 
 Installing Eventgen is simple. There are 3 approaches to using Eventgen - as a container, as a PyPI module, or as a Splunk App. Follow the instructions below depending on your ideal use:
 
-1. Use Eventgen as a [Docker container](#container-installation)
-2. Use Eventgen as a [Splunk App](#splunk-app-installation)
-3. Use Eventgen as a [Python (PyPI) package](#pypi-installation)
+* Use Eventgen as a [Docker container](#container-installation)
+* Use Eventgen as a [Splunk App](#splunk-app-installation)
+* Use Eventgen as a [Python (PyPI) package](#pypi-installation)
 
 
 ---
 
 ##### Container Installation #####
 
-First and foremost, you'll need to install the appropriate [Docker engine](https://docs.docker.com/engine/installation/#supported-platforms) for your operating system. Once you have Docker installed, you must login to [Artifactory](https://repo.splunk.com). For your first-time run, Eventgen requires that you be able to pull images from Artifactory. While connected to Splunk's private network (VPN, if you are remote), run the following commands:
+First, you need to install the appropriate [Docker engine](https://docs.docker.com/engine/installation/#supported-platforms) for your operating system. Once you have Docker installed, you must login to [Artifactory](https://repo.splunk.com). For your first-time run, Eventgen requires that you be able to pull images from Artifactory. While connected to Splunk's private network (VPN, if you are remote), run the following commands:
 ```
 $ docker login repo.splunk.com
 $ docker pull repo.splunk.com/splunk/products/eventgenx:latest
@@ -20,7 +20,7 @@ $ docker pull repo.splunk.com/splunk/products/eventgenx:latest
 $ docker network create --attachable --driver bridge eg_network
 
 # Bring up a controller node
-$ docker run -d -p 5672 -p 15672:15672 -p 9500:9500 --network eg_network --name eg_controller repo.splunk.com/splunk/products/eventgenx:latest controller.
+$ docker run -d -p 5672 -p 15672:15672 -p 9500:9500 --network eg_network --name eg_controller repo.splunk.com/splunk/products/eventgenx:latest controller
 
 # Bring up a server node, and specifying a docker network will automatically connect server to the controller.
 $ docker run -d -p 5672 -p 15672 -p 9500 --network eg_network -e EVENTGEN_AMQP_HOST="eg_controller" --name eg_server repo.splunk.com/splunk/products/eventgenx:latest server
@@ -39,8 +39,9 @@ You are running Eventgen Controller.
 
 To use Eventgen as a PyPI module, you will need to download the package from [Artifactory](https://repo.splunk.com). While connected to Splunk's private network (VPN, if you are remote), run the following command:
 ```
-$ pip install splunk-eventgen -i https://repo.splunk.com/artifactory/api/pypi/pypi/simple
+$ pip install splunk_eventgen -i https://repo.splunk.com/artifactory/api/pypi/pypi-virtual/simple
 ```
+If you run into any permission issues such as `OSError: [Errno 1] Operation not permitted`, try running it with `sudo`.
 
 To verify Eventgen is properly installed, run "splunk_eventgen --version" on your system. You should see information about your current Eventgen version.
 ```
@@ -93,27 +94,27 @@ bundle/
 ```
 If you have not read the sections below, please do so first and revisit bundling your files.
 
-Using the terminology above, follow the instructions below on setting up Eventgen using your desired installation:
+Based on your Eventgen installation, perform one of the following to set up Eventgen:
 
-1. Configuring Eventgen as a [Docker container](#container-setup)
-2. Configuring Eventgen as a [Splunk App](#splunk-app-setup)
-3. Configuring Eventgen as a [Python (PyPI) package](#pypi-setup)
+* Configuring Eventgen as a [Docker container](#container-setup)
+* Configuring Eventgen as a [Splunk App](#splunk-app-setup)
+* Configuring Eventgen as a [Python (PyPI) package](#pypi-setup)
 
 ---
 
 ##### Container Setup #####
 
-Following the example from above, the container architecture of Eventgen includes two roles:
+The new Server-Controller architecture of Eventgen includes two roles:
 
 * Controller (`eg_controller`): this serves as the broadcaster
 * Server (`eg_server`): this serves as a single listener or worker
 
-If you want to scale the local Eventgen cluster using this design, simply add another `eg_server` container call (using a different `--name`), and it should automatically register with the `eg_controller`. *NOTE [container installation](#container-installation)
+If you want to scale the local Eventgen cluster using this design, simply add another `eg_server` container call (using a different `--name`), and should automatically register with the `eg_controller`. *NOTE [container installation](#container-installation)
 
 Controller-Server architecture is a RESTful service.
-To interact with this architecture, you can make REST API calls against the `eg_controller`.
-When an appropriate request is made against the `eg_controller` server port (9500), that action will be distributed to all the server nodes connected to it for easy orchestration.
-This simplifies any and all interactions you need to make to properly setup a cluster. For example, see some example cURL commands below on using the `eg_controller`:
+To interact with this architecture, you can make REST API calls against `eg_controller`.
+When an appropriate request is made against `eg_controller`'s server port (9500), that action will be distributed to all the server nodes connected to it for easy orchestration.
+This simplifies all interactions you need to make to properly setup a cluster. Some example cURL commands using `eg_controller`:
 
 ```
 # Assuming that a controller is deployed to your localhost and wired to port 9500
@@ -174,9 +175,8 @@ $ curl http://localhost:9500/status?target=98cfac1a8507
 }
 ```
 
-Now you know how to communicate with and check the status of your Eventgen instances through Eventgen controller, it is actually time to pass in a config file.
+Now you know how to communicate with and check the status of your Eventgen instances through Eventgen controller, let's pass in a config file.
 When communicating with Eventgen controller, you need to translate your Eventgen configfile into a JSON representation.
-It is fairly simple to do so.
 ```
 # If you have an Eventgen Config ini file looking like below
 [windbag]
@@ -336,8 +336,8 @@ A quick preface on this mode of operation: due to it's complexity, this is only 
 
 1. Install and run [RabbitMQ](https://www.rabbitmq.com/download.html) locally
 2. Install [Eventgen PyPI module](SETUP.md#pypi-setup)
-3. To standup a controller, run `splunk_eventgen service --role controller`
-4. To standup a server, run `splunk_eventgen service --role server`
+3. To set up a controller, run `splunk_eventgen service --role controller`
+4. To set up a server, run `splunk_eventgen service --role server`
 5. By default, the controller and server will try to locate RabbitMQ on pyamqp://localhost:5672 using credentials guest/guest and RabbitMQ's web UI at http://localhost:15672
 6. You can change any of those parameters using the CLI - for instance, if your RabbitMQ is accessible on rabbit-mq.company.com with credentials admin/changeme you should run `splunk_eventgen service --role controller --amqp-host rabbit-mq.company.com --amqp-user admin --amqp-pass changeme`
 7. Please see `splunk_eventgen service --help` for additional CLI options
