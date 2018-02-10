@@ -197,7 +197,7 @@ Basically in the JSON structure, first level is a stanza and the second level di
 
 Let's pass in this JSON representation.
 ```
-$ curl -X POST http://localhost:9500/conf -d '{"windbag": {"generator": "windbag", "earliest": "-3s", "latest": "now", "interval": 5, "count": 5, "outputMode": "stdout", "end": 15, "threading": "process"}}'
+$ curl -X POST http://localhost:9500/conf -d '{"windbag": {"count": "5","end": "15","generator": "windbag","interval": "2","earliest": "-3s","latest": "now", "outputMode": "file", "fileName": "tutorial.txt"}}'
 # Response comes back as JSON showing that Eventgen instance, 98cfac1a8507, is configured.
 {
     "98cfac1a8507": {
@@ -205,9 +205,9 @@ $ curl -X POST http://localhost:9500/conf -d '{"windbag": {"generator": "windbag
             "count": "5",
             "end": "15",
             "generator": "windbag",
-            "interval": "5",
-            "threading": "process",
-            "outputMode": "stdout",
+            "interval": "2",
+            "fileName": "tutorial.txt",
+            "outputMode": "file",
             "earliest": "-3s",
             "latest": "now"
         }
@@ -246,14 +246,26 @@ $ curl http://localhost:9500/conf
             "count": "5",
             "end": "15",
             "generator": "windbag",
-            "interval": "5",
-            "threading": "process",
-            "outputMode": "stdout",
+            "interval": "2",
+            "fileName": "tutorial.txt",
+            "outputMode": "file",
             "earliest": "-3s",
             "latest": "now"
         }
     }
 }
+
+# Start Eventgen
+$ curl http://localhost:9500/start -X POST
+
+# Verify generated data
+$ docker exec -it <YOUR_EVENTGEN_INSTANCE_ID> bash
+$ ls
+tutorial.txt
+$ cat tutorial.txt
+# There will be bunch of WINDBAG data like the one below
+2018-02-10 03:10:30.927660 -0700 WINDBAG Event 1 of 5
+
 ```
 
 Great, you have successfully configured your Eventgen using a controller. We have utilized basic endpoints such as /status or /conf in the tutorials but there are more endpoints.
