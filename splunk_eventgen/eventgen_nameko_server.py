@@ -20,7 +20,7 @@ import logging
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
 CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default", "eventgen_wsgi.conf"))
-EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
+EVENTGEN_DEFAULT_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen.conf"))
 
 
 def get_eventgen_name_from_conf():
@@ -232,31 +232,6 @@ Output Queue Status: {7}\n'''
             config.optionxform = str
             conf_content = json.loads(conf)
 
-            # Need to persist global stanza if it exists
-            if self.eventgen_dependency.configured:
-                existing_config = ConfigParser.ConfigParser()
-                existing_config.optionxform = str
-                existing_config.read(CUSTOM_CONFIG_PATH)
-                try:
-                    past_httpeventServers = existing_config.get("global", "httpeventServers")
-                    past_httpeventOutputMode = existing_config.get("global", "httpeventOutputMode")
-                    past_threading = existing_config.get("global", "threading")
-                    past_outputMode = existing_config.get("global", "outputMode")
-                    past_useOutputQueue = existing_config.get("global", "useOutputQueue")
-                    past_maxQueueLength = existing_config.get("global", "maxQueueLength")
-                    past_generatorWorkers = existing_config.get("global", "generatorWorkers")
-                    past_maxIntervalsBeforeFlush = existing_config.get("global", "maxIntervalsBeforeFlush")
-                    config.set("global", "httpeventServers", past_httpeventServers)
-                    config.set("global", "httpeventOutputMode", past_httpeventOutputMode)
-                    config.set("global", "threading", past_threading)
-                    config.set("global", "outputMode", past_outputMode)
-                    config.set("global", "useOutputQueue", past_useOutputQueue)
-                    config.set("global", "maxQueueLength", past_maxQueueLength)
-                    config.set("global", "generatorWorkers", past_generatorWorkers)
-                    config.set("global", "maxIntervalsBeforeFlush", past_maxIntervalsBeforeFlush)
-                except:
-                    pass
-
             for sample in conf_content.iteritems():
                 sample_name = sample[0]
                 sample_key_value_pairs = sample[1]
@@ -387,7 +362,7 @@ Output Queue Status: {7}\n'''
 
             config = ConfigParser.ConfigParser()
             config.optionxform = str
-            config.read(CUSTOM_CONFIG_PATH)
+            config.read(EVENTGEN_DEFAULT_CONF_PATH)
             try:
                 config.get("global", "httpeventServers")
             except Exception as e:
@@ -395,19 +370,11 @@ Output Queue Status: {7}\n'''
                     config.add_section("global")
             config.set("global", "httpeventServers", json.dumps({"servers": self.discovered_servers}))
             config.set("global", "httpeventOutputMode", mode)
-            config.set("global", "threading", "process")
             config.set("global", "outputMode", "httpevent")
-            config.set("global", "useOutputQueue", "false")
-            config.set("global", "maxQueueLength", "438860800")  # Splunk max is max_content_length = 838860800
-            config.set("global", "generatorWorkers", "24")
-            config.set("global", "maxIntervalsBeforeFlush", "1")
 
-            with open(CUSTOM_CONFIG_PATH, 'wb') as conf_content:
+            with open(EVENTGEN_DEFAULT_CONF_PATH, 'wb') as conf_content:
                 config.write(conf_content)
 
-            self.eventgen_dependency.configured = True
-            self.eventgen_dependency.configfile = CUSTOM_CONFIG_PATH
-            self.eventgen_dependency.eventgen.reload_conf(CUSTOM_CONFIG_PATH)
             return self.get_conf()
         except Exception as e:
             self.log.exception(e)
@@ -640,7 +607,7 @@ Output Queue Status: {7}\n'''
     def http_setup(self, request):
         data = request.get_data(as_text=True)
         try:
-            return self.setup(json.loads(data))
+            return self.setup(data)
         except Exception as e:
             self.log.exception(e)
             return '400', "Exception: {}".format(e.message)
