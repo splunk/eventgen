@@ -11,12 +11,12 @@ Installing Eventgen is simple. There are 3 approaches to using Eventgen - as a c
 
 ##### Container Installation #####
 
-First, you need to install the appropriate [Docker engine](https://docs.docker.com/engine/installation/#supported-platforms) for your operating system. Once you have Docker installed, you must login to [Artifactory](https://repo.splunk.com). For your first-time run, Eventgen requires that you be able to pull images from Artifactory. While connected to Splunk's private network (VPN, if you are remote), run the following commands:
+First, you need to install the appropriate [Docker engine](https://docs.docker.com/engine/installation/#supported-platforms) for your operating system. Once you have Docker installed, you must log in to [Artifactory](https://repo.splunk.com). For your first-time run, Eventgen requires that you be able to pull images from Artifactory. While connected to Splunk's private network (VPN, if you are remote), run the following commands:
 ```
 $ docker login repo.splunk.com
 $ docker pull repo.splunk.com/splunk/products/eventgenx:latest
 
-# In order to simplify communication, create an overlay network to which the eventgen containers will be created.
+# In order to simplify communication, create an overlay network to which Eventgen containers will be created.
 $ docker network create --attachable --driver bridge eg_network
 
 # Bring up a controller node
@@ -109,12 +109,12 @@ The new Server-Controller architecture of Eventgen includes two roles:
 * Controller (`eg_controller`): this serves as the broadcaster
 * Server (`eg_server`): this serves as a single listener or worker
 
-If you want to scale the local Eventgen cluster using this design, simply add another `eg_server` container call (using a different `--name`), and should automatically register with the `eg_controller`. *NOTE [container installation](#container-installation)
+If you want to scale the local Eventgen cluster using this design, simply add another `eg_server` container call (using a different `--name`), and the new container will automatically register with the `eg_controller`. *NOTE [container installation](#container-installation)
 
 Controller-Server architecture is a RESTful service.
 To interact with this architecture, you can make REST API calls against `eg_controller`.
 When an appropriate request is made against `eg_controller`'s server port (9500), that action will be distributed to all the server nodes connected to it for easy orchestration.
-This simplifies all interactions you need to make to properly setup a cluster. Some example cURL commands using `eg_controller`:
+This simplifies all interactions you need to make to properly set up a cluster. Below are some example cURL commands using `eg_controller`:
 
 ```
 # Assuming that a controller is deployed to your localhost and wired to port 9500
@@ -175,7 +175,7 @@ $ curl http://localhost:9500/status?target=98cfac1a8507
 }
 ```
 
-Now you know how to communicate with and check the status of your Eventgen instances through Eventgen controller, let's pass in a config file.
+Now you know how to communicate with and check the status of your Eventgen instances through Eventgen controller, we can now pass a config file to the controller.
 When communicating with Eventgen controller, you need to translate your Eventgen configfile into a JSON representation.
 ```
 # If you have an Eventgen Config ini file looking like below
@@ -353,6 +353,6 @@ A quick preface on this mode of operation: due to it's complexity, this is only 
 5. By default, the controller and server will try to locate RabbitMQ on pyamqp://localhost:5672 using credentials guest/guest and RabbitMQ's web UI at http://localhost:15672
 6. You can change any of those parameters using the CLI - for instance, if your RabbitMQ is accessible on rabbit-mq.company.com with credentials admin/changeme you should run `splunk_eventgen service --role controller --amqp-host rabbit-mq.company.com --amqp-user admin --amqp-pass changeme`
 7. Please see `splunk_eventgen service --help` for additional CLI options
-8. **NOTE:** Running the controller and server on the same machine will cause port collisions for the Eventgen web server. To mitigate this, you can tell the server to run on a separate port using `splunk_eventgen service --web-server-address 0.0.0.0:9501`
+8. **NOTE:** Running the controller and server on the same machine will cause port collisions for Eventgen web server. To mitigate this, you can tell the server to run on a separate port using `splunk_eventgen service --web-server-address 0.0.0.0:9501`
 
 ---

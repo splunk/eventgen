@@ -50,5 +50,5 @@ HEALTHCHECK --interval=1m --timeout=15s --start-period=5m --retries=3 \
 	CMD curl -f http://localhost:9500/status || exit 1
 
 EXPOSE 2222 5672 15672 9500
-WORKDIR /opt/splunk/etc/apps
+WORKDIR /usr/lib/python2.7/site-packages/splunk_eventgen
 ENTRYPOINT ["/sbin/entrypoint.sh"]

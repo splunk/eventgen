@@ -3,7 +3,7 @@
 The primary source of configuration done in Eventgen is governed by the `eventgen.conf` file. 
 
 * If deployed using containers, Eventgen will look for eventgen.conf in bundles under the `default` directory. For instance, if your bundle is named "datamix-app", you should archive your eventgen.conf in "datamix-app/default/eventgen.conf".
-* If deployed as a Splunk App, Eventgen will look for eventgen.conf files for every app installed in Splunk, and will generate events for every eventgen.conf file it finds. This is convenient if you want to design event generation into a Technology Addon (TA) or other type of Splunk app. You can ship the Eventgen configurations with your app and distribute the Eventgen app separately.
+* If deployed as a Splunk App, Eventgen will look for eventgen.conf files for every app installed in Splunk, and will generate events for every eventgen.conf file it finds. This is convenient if you want to design event generation into a Technology Addon (TA) or other type of Splunk app. You can ship Eventgen configurations with your app and distribute Eventgen app separately.
 
 The INI format of eventgen.conf can have one or more stanzas. Each stanza name is a sample file it will be reading from. There a number of options available in each stanza. For instance, breaking down this tutorial file option-by-option, we can see how this file will be used to set up Eventgen:
 
@@ -33,7 +33,7 @@ This is the stanza name and the name of the file in the samples/ directory of Ev
 ```
     mode = replay
 ```
-Specify replay mode. This will leak out events at the same timing as they appear in the file (with gaps between events like they occurred in the source file). Default mode is sample, so this is required for replay mode.
+Specify replay mode. This will leak out events at the same timing as they appear in the file (with intervals between events like they occurred in the source file). Default mode is sample, so this is required for replay mode.
 
 ```
     sampletype = csv
@@ -58,7 +58,7 @@ A search to run to find the last events generated for this stanza. If this retur
 ```
     outputMode = splunkstream
 ```
-There are various outputModes available (see the [spec](REFERENCE.md#eventgenconfspec)). The splunkstream mode will output via the Splunk [receivers/stream](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTinput#receivers.2Fstream) endpoint straight into Splunk. This allows us to specify things like index, host, source and sourcetype to Splunk at index time. In this case, we're getting those values from sampletype = csv rather than specifying them here in the eventgen.conf for the sample.
+There are various outputModes available (see the [spec](REFERENCE.md#eventgenconfspec)). The splunkstream mode will output via the Splunk [receivers/stream](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTinput#receivers.2Fstream) endpoint straight into Splunk. This allows us to specify things like index, host, source and sourcetype to Splunk at index time. In this case, we're getting those values from sampletype = csv rather than specifying them here in eventgen.conf for the sample.
 
 ```
     splunkHost = localhost
@@ -134,7 +134,7 @@ There is an [Eventgen API Reference](REFERENCE.html#rest-api-reference) that you
 Orca 0.8.4 and above will natively support Eventgen 0.6.0 and above versions.
 
 ```
-# Below command creates a specified number of eventgen instances as well as auto-configuring all servers and controllers.
+# The following command creates a specified number of eventgen instances as well as auto-configuring all servers and controllers.
 orca create --egx <NUM>
 ```
 
@@ -149,7 +149,7 @@ search_heads = 2
 eventgenx_instances = 1
 ansible_params = eventgen_app=https://repo.splunk.com/artifactory/Solutions/APP/ITSI_Performance_Testing/builds/develop/latest/ITSI_Performance_Testing-1.0.0-15.tgz,eventgen_volume=50,eventgen_start=now
 
-# Simple run this Orca command
+# Simply run this Orca command
 orca create --sc egxtest
 ```
 
