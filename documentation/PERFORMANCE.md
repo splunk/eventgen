@@ -1,6 +1,6 @@
 # Intro
 
-(This Document assumes you are already familiar with [Eventgen's architecture](ARCHITECTURE.md).  It is critical you read this document first.)
+(This Document assumes you are already familiar with [Eventgen's architecture](ARCHITECTURE.md).  It is critical you read that document first.)
 
 Eventgen v4 has been designed to scale, despite no small number of obstacles put in our way by Python.  Eventgen's original goals were primarily around making it simple for people to quickly build event generators for many different use cases without needing to resort to hand writing them every time.  This brings consistency and makes it simpler for others to come behind and support the work of others.  However, none of the earlier iterations really gave much thought to performance.
 
@@ -8,7 +8,7 @@ Prior to v4, Eventgen scaling was available only by increasing the number of sam
 
 # Scaling, despite Python
 
-I'm sure had either David or I considered that we'd eventually want to scale this thing, writing it in Python wouldn't have been the first choice.  Lets face it, Python is slow, and there's plenty of emperical evidence a quick Google away.   However, Python affords us a lot of advantages in developer productivity, and it is possible to write a minimal amount of code in other environments (C/Java/etc), write the majority in Python, and get good performance.  There's a few things we must design around, which we'll explain in detail and will lead us to a quick walkthrough of some configuration tunables we've built into Eventgen.
+I'm sure had either David or I considered that we'd eventually want to scale this thing, writing it in Python wouldn't have been the first choice.  Let's face it, Python is slow, and there's plenty of emperical evidence a quick Google away.   However, Python affords us a lot of advantages in developer productivity, and it is possible to write a minimal amount of code in other environments (C/Java/etc), write the majority in Python, and get good performance.  There's a few things we must design around, which we'll explain in detail and will lead us to a quick walkthrough of some configuration tunables we've built into Eventgen.
 
 ## The Global Interpreter Lock
 
@@ -46,19 +46,19 @@ Eventgen outputs some useful log information, by default in $SPLUNK_HOME/var/log
     2014-02-02 20:57:03,091 INFO Output Queue depth: 0  Generator Queue depth: 28412 Generators Per Sec: 43 Outputters Per Sec: 43
     2014-02-02 20:57:03,091 INFO Events/Sec: 87643.8 Kilobytes/Sec: 30587.330859 GB/Day: 2520.318400
 
-Lets look at both lines.  First, we're giving you visibility into Queue depths.  Queue depths are whole numbers of worker items which are to be consumed, not total lines.  So if you have an Output Queue depth of 5, that's five whole generators work to be output, not 5 lines.  Its relatively low cost to scale up output workers, so you should always have a high enough number such that Output Queue depth stays at 0.  Generator Queue depth should also always be zero unless you're during backfill, otherwise you are falling behind and will likely never catch up.  If you're backing up, considering moving to process based threading (may be difficult as a Splunk app depending on which platform you're using).
+Let's look at both lines.  First, we're giving you visibility into Queue depths.  Queue depths are whole numbers of worker items which are to be consumed, not total lines.  So if you have an Output Queue depth of 5, that's five whole generators work to be output, not 5 lines.  Its relatively low cost to scale up output workers, so you should always have a high enough number such that Output Queue depth stays at 0.  Generator Queue depth should also always be zero unless you're during backfill, otherwise you are falling behind and will likely never catch up.  If you're backing up, considering moving to process based threading (may be difficult as a Splunk app depending on which platform you're using).
 
 The second line is simply a view into the performance of the app as a whole.  This helps us tune and compare apples to apples.
 
 # Theoretical maximums
 
-To test out our performance, we wanted to push the system to its limits.  For this, we built the windbag generator.  It does nothing but just stuff raw text into the output queue.  All the following tests and results are done on a Macbook Air which has two cores.  First, lets test the windbag plugin, with settings of 2 generator, 1 outputter, in threading mode:
+To test out our performance, we wanted to push the system to its limits.  For this, we built the windbag generator.  It does nothing but just stuff raw text into the output queue.  All the following tests and results are done on a Macbook Air which has two cores.  First, let's test the windbag plugin, with settings of 2 generator, 1 outputter, in threading mode:
 
     csharp-mbp15:eventgen csharp$ python bin/eventgen.py tests/perf/eventgen.conf.perfwindbag
     2014-02-02 21:18:59,606 INFO Output Queue depth: 100  Generator Queue depth: 6201 Generators Per Sec: 9 Outputters Per Sec: 9
     2014-02-02 21:18:59,666 INFO Events/Sec: 490000.0 Kilobytes/Sec: 21533.203125 GB/Day: 1774.281263
 
-Windbag is entirely optimized for events per second.  With longer events, we could certainly up the total bytes/sec throughput.  Now, lets see if we can get better performance by seperating generating and outputting to their own process.  Running the same again, setting ``threading = process`` in ``[global]``, we get:
+Windbag is entirely optimized for events per second.  With longer events, we could certainly up the total bytes/sec throughput.  Now, let's see if we can get better performance by seperating generating and outputting to their own process.  Running the same again, setting ``threading = process`` in ``[global]``, we get:
 
     csharp-mbp15:eventgen csharp$ python bin/eventgen.py tests/perf/eventgen.conf.perfwindbag
     2014-02-02 21:19:53,254 INFO Output Queue depth: 100  Generator Queue depth: 8491 Generators Per Sec: 8 Outputters Per Sec: 5
@@ -69,7 +69,7 @@ That's unusual.  Multiprocessing is actually way way slower!  We should dig into
     [global]
     profiler = true | false
 
-Lets set this to true and run again.  Now we need to get information on the output of Python's cProfile module.  To do that:
+Let's set this to true and run again.  Now we need to get information on the output of Python's cProfile module.  To do that:
 
     csharp-mbp15:eventgen csharp$ python -m pstats
     Welcome to the profile statistics browser.
@@ -90,7 +90,7 @@ Lets set this to true and run again.  Now we need to get information on the outp
       4400088    2.713    0.000    3.404    0.000 /Users/csharp/local/projects/eventgen/lib/plugins/output/devnull.py:16(<genexpr>)
            88    0.945    0.011    4.349    0.049 {method 'join' of 'str' objects}
 
-With this, we can see that we're actually spending most of our time in the Queueing system.  I told you it sucked!  To get around this, we've implemented zeromq to allow for faster IPC between workers.  Lets test again after setting `queueing = zeromq` in `[global]` in default/eventgen.conf.
+With this, we can see that we're actually spending most of our time in the Queueing system.  I told you it sucked!  To get around this, we've implemented zeromq to allow for faster IPC between workers.  Let's test again after setting `queueing = zeromq` in `[global]` in default/eventgen.conf.
 
     csharp-mbp15:eventgen csharp$ python bin/eventgen.py tests/perf/eventgen.conf.perfwindbag
     2014-02-02 21:37:44,119 INFO Output Queue depth: 25  Generator Queue depth: 8509 Generators Per Sec: 13 Outputters Per Sec: 11
@@ -117,7 +117,7 @@ However, our plugin architecture is rich and we can easily hand-craft generators
 
 ## Testing
 
-Okay, lets put this to the test and see what real world numbers look like.  All tests run on a Macbook air, two cores, with:
+Okay, let's put this to the test and see what real world numbers look like.  All tests run on a Macbook air, two cores, with:
 
     [global]
     generatorWorkers = 2
@@ -145,11 +145,11 @@ Okay, lets put this to the test and see what real world numbers look like.  All 
 
 ## Results & Conclusions
 
-Obviously, C goes much faster.  For another 'I told you so', Python is slow.  From our original event generator using Regexs to a hand-crafted C based weblog generator, we've increased performance by a factor of 30x.  Thats awesome!  The middle ground may also be okay in terms of performance.  In fact, next, lets look at doing this on some bigger iron.
+Obviously, C goes much faster.  For another 'I told you so', Python is slow.  From our original event generator using Regexs to a hand-crafted C based weblog generator, we've increased performance by a factor of 30x.  Thats awesome!  The middle ground may also be okay in terms of performance.  In fact, next, let's look at doing this on some bigger iron.
 
 # Testing on a 24 core machine
 
-Lastly, lets test on a bigger server sized machine and see what we can do.  We're going to test using these settings:
+Lastly, let's test on a bigger server sized machine and see what we can do.  We're going to test using these settings:
 
     [global]
     generatorWorkers = 20
@@ -157,12 +157,12 @@ Lastly, lets test on a bigger server sized machine and see what we can do.  We'r
     threading = process
     queueing = zeromq
 
-This will use most of the capacity of the machine for generating, and in my testing, does max out the machine at 100% CPU.  First, just to see on Events Per Second maximum, lets run the windbag:
+This will use most of the capacity of the machine for generating, and in my testing, does max out the machine at 100% CPU.  First, just to see on Events Per Second maximum, let's run the windbag:
 
     2014-02-02 21:55:20,351 INFO Output Queue depth: 407  Generator Queue depth: 7945 Generators Per Sec: 71 Outputters Per Sec: 29
     2014-02-02 21:55:20,352 INFO Events/Sec: 1470000.0 Kilobytes/Sec: 64599.609375 GB/Day: 5322.843790
 
-Running the cweblog generator, lets see how far we can push the machine with 20 GeneratorWorkers and 4 OutputWorkers:
+Running the cweblog generator, let's see how far we can push the machine with 20 GeneratorWorkers and 4 OutputWorkers:
 
     2014-07-01 22:39:24,597 INFO module='main' sample='null': OutputQueueDepth=57  GeneratorQueueDepth=23730 GeneratorsPerSec=344 OutputtersPerSec=345
     2014-07-01 22:39:24,597 INFO module='main' sample='null': GlobalEventsPerSec=690745.2 KilobytesPerSec=241171.648633 GigabytesPerDay=19871.931497

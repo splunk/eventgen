@@ -473,9 +473,9 @@ host.replacement = <replacement file name> | <replacement file name>:<column num
 
 ## REST API Reference ##
 
-API Reference for using Eventgen CONTROLLER it's container orchestration form.
+API endpoints for Eventgen Controller
 
-* Note, <TARGET_NAME> is equivalent to the hostname of the evengent instance
+Note, "TARGET_NAME" is a variable that should be replaced by the hostname of Eventgen instance
 
 * ```GET /index```
     * Returns an index page for a Eventgen controller

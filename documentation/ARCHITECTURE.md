@@ -1,4 +1,4 @@
-# Overview
+# Architecture Overview
 
 Eventgen a modular set of Python code, structured as a Splunk application, which allows for a number of use cases:
 
