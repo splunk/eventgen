@@ -163,7 +163,7 @@ Output Queue Status: {7}\n'''
             self.eventgen_dependency.eventgen.start(join_after_start=False)
             return "Eventgen has successfully started."
         except Exception as e:
-            self.log.exception("Exception in start method")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def stop(self):
@@ -174,7 +174,7 @@ Output Queue Status: {7}\n'''
                 return "Eventgen is stopped."
             return "There is no eventgen process running."
         except Exception as e:
-            self.log.exception("Exception in stop method")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def restart(self):
@@ -185,7 +185,7 @@ Output Queue Status: {7}\n'''
             self.start()
             return "Eventgen restarted."
         except Exception as e:
-            self.log.exception("Exception in restart method")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def get_conf(self):
@@ -210,7 +210,7 @@ Output Queue Status: {7}\n'''
                 self.send_conf_to_controller(server_conf={})
                 return json.dumps({}, indent=4)
         except Exception as e:
-            self.log.exception("Exception in get_conf")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -251,7 +251,7 @@ Output Queue Status: {7}\n'''
             self.log.info("custom_config_json is {}".format(conf_content))
             return self.get_conf()
         except Exception as e:
-            self.log.exception("Exception in set_conf")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def edit_conf(self, conf):
@@ -280,7 +280,7 @@ Output Queue Status: {7}\n'''
             self.eventgen_dependency.eventgen.reload_conf(CUSTOM_CONFIG_PATH)
             return self.get_conf()
         except Exception as e:
-            self.log.exception("Exception in edit_conf")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def bundle(self, url):
@@ -309,7 +309,7 @@ Output Queue Status: {7}\n'''
             else:
                 return self.get_conf()
         except Exception as e:
-            self.log.exception("Exception in bundle")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def setup(self, data):
@@ -377,7 +377,7 @@ Output Queue Status: {7}\n'''
 
             return self.get_conf()
         except Exception as e:
-            self.log.exception("Exception in setup")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def get_volume(self):
@@ -389,7 +389,7 @@ Output Queue Status: {7}\n'''
             self.send_volume_to_controller(total_volume=self.total_volume)
             return str(self.total_volume)
         except Exception as e:
-            self.log.exception("Exception in get_volume")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -418,7 +418,7 @@ Output Queue Status: {7}\n'''
             self.get_volume()
             return output
         except Exception as e:
-            self.log.exception("Exception in set_volume")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     def reset(self):
@@ -428,7 +428,7 @@ Output Queue Status: {7}\n'''
             self.eventgen_dependency.refresh_eventgen()
             return "Eventgen Refreshed"
         except Exception as e:
-            self.log.exception("Exception in reset")
+            self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
     ##############################################
