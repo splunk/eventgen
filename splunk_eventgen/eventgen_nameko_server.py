@@ -421,6 +421,16 @@ Output Queue Status: {7}\n'''
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
+    def reset(self):
+        self.log.info("reset method called")
+        try:
+            self.stop()
+            self.eventgen_dependency.refresh_eventgen()
+            return "Eventgen Refreshed"
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
+
     ##############################################
     ############ Event Handler Methods ###########
     ##############################################
@@ -474,6 +484,10 @@ Output Queue Status: {7}\n'''
     def event_handler_all_set_volume(self, payload):
         if payload['perDayVolume']:
             return self.set_volume(payload['perDayVolume'])
+
+    @event_handler("eventgen_controller", "all_reset", handler_type=BROADCAST, reliable_delivery=False)
+    def event_handler_all_reset(self, payload):
+        return self.reset()
 
     @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST,
                    reliable_delivery=False)
@@ -536,6 +550,11 @@ Output Queue Status: {7}\n'''
     def event_handler_set_volume(self, payload):
         if payload['perDayVolume']:
             return self.set_volume(payload['perDayVolume'])
+
+    @event_handler("eventgen_controller", "{}_reset".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
+    def event_handler_reset(self, payload):
+        return self.reset()
 
     ##############################################
     ################ HTTP Methods ################
@@ -626,6 +645,10 @@ Output Queue Status: {7}\n'''
         except Exception as e:
             self.log.exception(e)
             return '400', "Exception: {}".format(e.message)
+
+    @http('POST', '/reset')
+    def http_reset(self, request):
+        return json.dumps(self.reset())
 
     ##############################################
     ################ Helper Methods ##############

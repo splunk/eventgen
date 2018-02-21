@@ -237,6 +237,21 @@ class EventgenController(object):
             self.log.exception(e)
             return "500", "Exception: {}".format(e.message)
 
+    @rpc
+    def reset(self, target):
+        try:
+            if target == "all":
+                self.dispatch("all_reset", self.PAYLOAD)
+            else:
+                self.dispatch("{}_reset".format(target), self.PAYLOAD)
+            msg = "Reset event dispatched to {}".format(target)
+            self.log.info(msg)
+            return msg
+        except Exception as e:
+            self.log.exception(e)
+            return '500', "Exception: {}".format(e.message)
+
+
     ##############################################
     ################ HTTP Methods ################
     ##############################################
@@ -430,6 +445,10 @@ You are running Eventgen Controller.\n'''
                 return 404, json.dumps("Target not available.", indent=4)
         else:
             return 400, "Please pass in a valid object with volume."
+
+    @http('POST', '/reset')
+    def http_reset(self, request):
+        return self.reset(target="all")
 
     ##############################################
     ############### Helper Methods ###############

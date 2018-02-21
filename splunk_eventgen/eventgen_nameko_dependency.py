@@ -54,3 +54,9 @@ class EventgenDependency(DependencyProvider):
 
     def get_dependency(self, worker_ctx):
         return self
+
+    def refresh_eventgen(self):
+        self.eventgen = eventgen_core.EventGenerator(self.arguments)
+        self.configured = False
+        self.configfile = 'N/A'
+        self.log.info("Refreshed Eventgen Object: {}".format(self.eventgen))
