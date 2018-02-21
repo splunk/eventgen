@@ -514,4 +514,3 @@ class EventGenerator(object):
             return True
         return False
 
-
