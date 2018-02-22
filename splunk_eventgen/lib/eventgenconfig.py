@@ -109,6 +109,7 @@ class Config(object):
         # Rebind the internal datastore of the class to an Instance variable
         self.__dict__ = self.__sharedState
         self.configfile = configfile
+        self.sample = sample
         self.threading = threading
         self.profiler = profiler
         self.override_outputter = override_outputter
@@ -279,6 +280,10 @@ class Config(object):
         # Now iterate for the rest of the samples we've found
         # We'll create Sample objects for each of them
         for stanza, settings in self._confDict.items():
+            if self.sample is not None and self.sample != stanza:
+                self.logger.info("Skipping sample '%s' because of command line override", stanza)
+                continue
+
             sampleexists = False
             for sample in self.samples:
                 if sample.name == stanza:

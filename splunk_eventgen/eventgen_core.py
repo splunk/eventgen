@@ -59,7 +59,7 @@ class EventGenerator(object):
         :param configfile:
         :return:
         '''
-        #TODO: The old eventgne had strange cli args, and usage of args.  We should probably update the module args
+        #TODO: The old eventgen had strange cli args, and usage of args.  We should probably update the module args
         #to match more of what this is doing...
         new_args={}
         if "args" in kwargs:
@@ -83,6 +83,8 @@ class EventGenerator(object):
                 new_args["override_outputqueue"] = args.disableOutputQueue
             if getattr(args, "profiler"):
                 new_args["profiler"] = args.profiler
+            if getattr(args, "sample"):
+                new_args["sample"] = args.sample
         self.config = Config(configfile, **new_args)
         self.config.parse()
         self._reload_plugins()
