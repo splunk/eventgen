@@ -3,13 +3,16 @@ Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 '''
 
 from __future__ import division
+
+import argparse
+import errno
 import os
+import shutil
 import sys
 import time
-import yaml
-import shutil
+
 import requests
-import argparse
+
 FILE_LOCATION = os.path.dirname(os.path.abspath(__file__))
 path_prepend = os.path.join(FILE_LOCATION, 'lib')
 sys.path.append(path_prepend)
@@ -31,7 +34,7 @@ def parse_args():
     # Generate subparser
     generate_subparser = subparsers.add_parser('generate', help="Generate events using a supplied config file")
     generate_subparser.add_argument("configfile", help="Location of eventgen.conf, app folder, or name of an app in $SPLUNK_HOME/etc/apps to run")
-    generate_subparser.add_argument("-s", "--sample", help="Run specified sample only, overriding outputMode to stdout, disabling all other samples")
+    generate_subparser.add_argument("-s", "--sample", help="Run specified sample only, disabling all other samples")
     generate_subparser.add_argument("--keepoutput", action="store_true", help="Keep original outputMode for the sample")
     generate_subparser.add_argument("--devnull", action="store_true", help="Set outputMode to devnull")
     generate_subparser.add_argument("--modinput", action="store_true", help="Set outputMode to modinput, to see metadata")
