@@ -86,10 +86,10 @@ class DefaultGenerator(GeneratorPlugin):
                 if (self._sample.hostToken):
                     host = self._sample.hostToken.replace(host, s=self._sample)
 
-                try:
-                    time_val = int(time.mktime(self._sample.timestamp.timetuple()))
-                except Exception:
-                    time_val = int(time.mktime(self._sample.now().timetuple()))
+                # try:
+                time_val = int(time.mktime(self._sample.timestamp.timetuple()))
+                # except Exception:
+                #     time_val = int(time.mktime(self._sample.now().timetuple()))
 
                 l = [ { '_raw': event,
                         'index': targetevent['index'],
@@ -103,7 +103,7 @@ class DefaultGenerator(GeneratorPlugin):
                 self._out.bulksend(l)
                 self._sample.timestamp = None
             except Exception as e:
-                self.logger.exception(e)
+                self.logger.exception("Exception {} happened.".format(type(e)))
                 raise e
 
         try:
@@ -115,7 +115,7 @@ class DefaultGenerator(GeneratorPlugin):
             self.logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (
             self._sample.name, self._sample.app, timeDiffFrac))
         except Exception as e:
-            self.logger.exception(e)
+            self.logger.exception("Exception {} happened.".format(type(e)))
             raise e
 
 def load():
