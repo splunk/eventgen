@@ -344,7 +344,7 @@ $ splunk_eventgen -v generate path/to/eventgen.conf
 
 ### Controller/Server Cluster ###
 
-A quick preface on this mode of operation: due to it's complexity, this is only recommended if you're developing or comfortable with technical setups. Having said that, you can follow these instructions:
+A quick preface on this mode of operation: due to its complexity, this is only recommended if you're developing or comfortable with technical setups. Having said that, you can follow these instructions:
 
 1. Install and run [RabbitMQ](https://www.rabbitmq.com/download.html) locally
 2. Install [Eventgen PyPI module](SETUP.md#pypi-setup)
