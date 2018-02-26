@@ -86,28 +86,37 @@ class DefaultGenerator(GeneratorPlugin):
                 if (self._sample.hostToken):
                     host = self._sample.hostToken.replace(host, s=self._sample)
 
-                if self._sample.timestamp == None:
-                    self._sample.timestamp = self._sample.now()
+                try:
+                    time_val = int(time.mktime(self._sample.timestamp.timetuple()))
+                except Exception:
+                    time_val = int(time.mktime(self._sample.now().timetuple()))
+
                 l = [ { '_raw': event,
                         'index': targetevent['index'],
                         'host': host,
                         'hostRegex': self._sample.hostRegex,
                         'source': targetevent['source'],
                         'sourcetype': targetevent['sourcetype'],
-                        '_time': int(time.mktime(self._sample.timestamp.timetuple())) } ]
+                        '_time': time_val } ]
                 self.logger.debugv("Finished Processing event: %s" % eventcount)
                 eventcount += 1
                 self._out.bulksend(l)
                 self._sample.timestamp = None
             except Exception as e:
+                self.logger.exception(e)
                 raise e
 
-        endTime = datetime.datetime.now()
-        timeDiff = endTime - startTime
-        timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
-        self.logger.debugv("Interval complete, flushing feed")
-        self._out.flush(endOfInterval=True)
-        self.logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (self._sample.name, self._sample.app, timeDiffFrac) )
+        try:
+            endTime = datetime.datetime.now()
+            timeDiff = endTime - startTime
+            timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
+            self.logger.debugv("Interval complete, flushing feed")
+            self._out.flush(endOfInterval=True)
+            self.logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (
+            self._sample.name, self._sample.app, timeDiffFrac))
+        except Exception as e:
+            self.logger.exception(e)
+            raise e
 
 def load():
     return DefaultGenerator
