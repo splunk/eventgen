@@ -256,11 +256,10 @@ class EventGenerator(object):
                     'splunk_hec_logger': {
                         'handlers': ['splunk_hec_file']
                     }
-
                 },
                 'root': {
                     'level': 'DEBUG',
-                    'handlers': ['console', 'errors', 'file']
+                    'handlers': ['errors', 'file']
                 },
             }
         else:

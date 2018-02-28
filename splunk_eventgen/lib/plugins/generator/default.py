@@ -86,10 +86,10 @@ class DefaultGenerator(GeneratorPlugin):
                 if (self._sample.hostToken):
                     host = self._sample.hostToken.replace(host, s=self._sample)
 
-                # try:
-                time_val = int(time.mktime(self._sample.timestamp.timetuple()))
-                # except Exception:
-                #     time_val = int(time.mktime(self._sample.now().timetuple()))
+                try:
+                    time_val = int(time.mktime(self._sample.timestamp.timetuple()))
+                except Exception:
+                    time_val = int(time.mktime(self._sample.now().timetuple()))
 
                 l = [ { '_raw': event,
                         'index': targetevent['index'],
