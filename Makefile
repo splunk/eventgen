@@ -19,9 +19,11 @@ egg: clean
 	python setup.py sdist
 
 push_dev_egg:
+	rm -f splunk_eventgen/logs/*.log
 	python scripts/eventgen_CD.py --push pypi
 
 push_release_egg:
+	rm -f splunk_eventgen/logs/*.log
 	python scripts/eventgen_CD.py --push --release pypi
 
 image: setup_eventgen egg
