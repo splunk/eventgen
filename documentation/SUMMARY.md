@@ -1,4 +1,4 @@
-# Summary
+# Eventgen
 
 * [Getting Started](SETUP.md)
     * [Install](SETUP.md#install)
