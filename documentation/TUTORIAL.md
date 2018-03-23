@@ -118,6 +118,80 @@ main,proxy.splunk.com,/var/log/proxy.log,proxy,"Sep 14 17:30:11:000 Connection i
 
 ---
 
+## Use Jinja Templates with Eventgen
+
+Traditionally, Eventgen sample files have been a collection of real logs that are used to replicate the data.
+We added support for Jinja templates so that users can dynamically generate a sample file using a well-known and easy-to-learn Jinja module.
+In addition to Jinja's ease of use, Jinja templates can include or inherit other templates so that users have freedom to stack different templates.
+
+Simple conf file and Jinja template look like:
+```
+# Conf File
+[Test_Jinja]
+end = 1
+count = 1
+generator = jinja
+jinja_template_dir = templates
+jinja_target_template = test_jinja.template
+jinja_variables = {"large_number":50000}
+earliest = -3s
+latest = now
+outputMode = stdout
+
+# Jinja Template (file test_jinja.template)
+{% for _ in range(0, large_number) %}
+{%- time_now -%}
+        {"_time":"{{ time_now_epoch }}", "_raw":"{{ time_now_formatted }}  I like little windbags
+        Im at: {{ loop.index }} out of: {{ large_number }}
+        I'm also hungry, can I have a pizza?"}
+{% endfor %}
+```
+
+Running Eventgen with above conf file and template would result in below output.
+With above template, Eventgen iterates through a loop of 50000 and generate the data according to the template.
+Note that the template is in a JSON format with a key "_raw" which is a raw string of data. It is necessary that you follow this pattern for Eventgen Jinja generator to work.
+```
+2018-03-23T14:48:19  I like little windbags
+        Im at: 0 out of: 50000
+        I'm also hungry, can I have a pizza?
+2018-03-23T14:48:19  I like little windbags
+        Im at: 1 out of: 50000
+        I'm also hungry, can I have a pizza?
+2018-03-23T14:48:19  I like little windbags
+        Im at: 2 out of: 50000
+        I'm also hungry, can I have a pizza?
+... and so on with the loop count
+```
+
+Let's look at how to extend an existing template.
+
+```
+{%- block head -%}
+    {% include "another_jinja.template" %}
+{%- endblock -%}
+```
+Adding above block imports the contents of another_jinja.template into your current template.
+
+```
+# extends block inherits a specified template
+{% extends "super_jinja.template" %}
+```
+Adding above block makes your current template inherits the contents of super_jinja.template. Since Jinja is Python based, you can only inherit from a single template.
+
+Also, with Jinja templates, users can define mini functions (macro) inside of the template.
+
+For example, using macro block allows you to define a function that is reusable in your template.
+```
+{% macro input(name) -%}
+    name = {{[0,1,2,3,4,5,6,7,8,9]|random}}
+{%- endmacro -%}
+```
+Using macros will make your template reusable and easy to read.
+
+These are a fraction of examples how flexible and dynamic Jinja module is. Please note [Jinja2 Documentation](http://jinja.pocoo.org/docs/2.10/).
+
+---
+
 ## Interact with RESTful Eventgen
 
 Eventgen comes with server and controller architecture. This means easier scalability and control over multiple Eventgen instances.
