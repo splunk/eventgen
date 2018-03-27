@@ -148,8 +148,6 @@ outputMode = stdout
 ```
 
 Running Eventgen with above conf file and template would result in below output.
-With above template, Eventgen iterates through a loop of 50000 and generate the data according to the template.
-Note that the template is in a JSON format with a key "_raw" which is a raw string of data. It is necessary that you follow this pattern for Eventgen Jinja generator to work.
 ```
 2018-03-23T14:48:19  I like little windbags
         Im at: 0 out of: 50000
@@ -162,6 +160,9 @@ Note that the template is in a JSON format with a key "_raw" which is a raw stri
         I'm also hungry, can I have a pizza?
 ... and so on with the loop count
 ```
+With above template, Eventgen iterates through a loop of 50000 and generate the data according to the template.
+Note that the template is in a JSON format with a key "_raw" which is a raw string of data. It is necessary that you follow this pattern for Eventgen Jinja generator to work.
+
 
 Let's look at how to extend an existing template.
 
@@ -170,13 +171,13 @@ Let's look at how to extend an existing template.
     {% include "another_jinja.template" %}
 {%- endblock -%}
 ```
-Adding above block imports the contents of another_jinja.template into your current template.
+Adding above block imports the contents of another_jinja.template into your current template. You can include many templates.
 
 ```
 # extends block inherits a specified template
 {% extends "super_jinja.template" %}
 ```
-Adding above block makes your current template inherits the contents of super_jinja.template. Since Jinja is Python based, you can only inherit from a single template.
+Adding above block makes your current template inherit the contents of super_jinja.template. You can only inherit from a single template.
 
 Also, with Jinja templates, users can define mini functions (macro) inside of the template.
 
@@ -188,7 +189,7 @@ For example, using macro block allows you to define a function that is reusable 
 ```
 Using macros will make your template reusable and easy to read.
 
-These are a fraction of examples how flexible and dynamic Jinja module is. Please note [Jinja2 Documentation](http://jinja.pocoo.org/docs/2.10/).
+These are a fraction of examples how flexible and dynamic Jinja module is. For more information about Jinja, see [Jinja2 Documentation](http://jinja.pocoo.org/docs/2.10/).
 
 ---
 
