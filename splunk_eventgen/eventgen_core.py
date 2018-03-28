@@ -458,7 +458,7 @@ class EventGenerator(object):
         :return:
         '''
         try:
-            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks or not self.workerQueue.empty() or self.workerQueue.unfinished_tasks > 0:
+            while self.started and (not self.sampleQueue.empty() or not self.workerQueue.empty()):
                 time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
@@ -470,24 +470,30 @@ class EventGenerator(object):
         # empty the sample queue:
         self.config.stopping = True
         self.stopping = True
-        self.started = False
+
         self.logger.info("All timers exited, joining generation queue until it's empty.")
         self.workerQueue.join()
         # if we're in multiprocess, make sure that since all the timers stopped, we don't let any more generators get added.
         if self.args.multiprocess:
             self.genconfig["stopping"] = True
             for worker in self.workerPool:
-                while worker.exitcode == None:
+                count = 0
+                # We wait for a minute until terminating the worker
+                while worker.exitcode == None and count != 20:
+                    if count == 30:
+                        self.logger.info("Terminating worker {0}".format(worker._name))
+                        worker.terminate()
+                        count = 0
+                        break
                     self.logger.info("Worker {0} still working, waiting for it to finish.".format(worker._name))
-                    time.sleep(1)
-
+                    time.sleep(2)
+                    count += 1
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
         self.logger.info("All items fully processed, stopping.")
         self.hec_logging_handler._stopFlushTimer()
+        self.started = False
         self.stopping = False
-
-
 
     def reload_conf(self, configfile):
         '''
@@ -509,9 +515,6 @@ class EventGenerator(object):
             # If all queues are empty and there is an unfinished task, eventgen is running.
             if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty():
                 self.logger.info("Queues are all empty")
-                return (self.outputQueue.unfinished_tasks +
-                        self.sampleQueue.unfinished_tasks +
-                        self.workerQueue.unfinished_tasks) > 0
-            return True
+                return self.started
         return False
 
