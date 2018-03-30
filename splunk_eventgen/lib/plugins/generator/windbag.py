@@ -11,12 +11,10 @@ class WindbagGenerator(GeneratorPlugin):
     def gen(self, count, earliest, latest, samplename=None):
         # print type(latest - earliest).total_seconds()
         time_interval = timedelta.total_seconds((latest - earliest)) / count
-        eventlist = []
         for i in xrange(count):
             current_time_object = earliest + datetime.timedelta(0, time_interval*(i+1))
-            event = {'_raw': '{0} -0700 WINDBAG Event {1} of {2}'.format(current_time_object, (i+1), count)}
-            eventlist.append(event)
-        self._out.bulksend(eventlist)
+            msg = '{0} -0700 WINDBAG Event {1} of {2}'.format(current_time_object, (i+1), count)
+            self._out.send(msg)
         return 0
 
 
