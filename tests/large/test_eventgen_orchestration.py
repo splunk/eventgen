@@ -239,7 +239,7 @@ class TestEventgenOrchestration(object):
 	def test_server_stop(self):
 		r = requests.post("http://127.0.0.1:{}/stop".format(self.server_eventgen_webport))
 		assert r.status_code == 200
-		assert json.loads(r.content) == "There is no eventgen process running."
+		assert json.loads(r.content) == "Eventgen is stopped."
 
 	def test_server_bundle(self):
 		r = requests.post("http://127.0.0.1:{}/bundle".format(self.server_eventgen_webport))
