@@ -37,17 +37,23 @@ You are running Eventgen Controller.
 
 ##### PyPI Installation #####
 
-To use Eventgen as a PyPI module, you will need to download the package from [Artifactory](https://repo.splunk.com). While connected to Splunk's private network (VPN, if you are remote), run the following command:
-```
-$ pip install splunk_eventgen -i https://repo.splunk.com/artifactory/api/pypi/pypi-virtual/simple
-```
-If you run into any permission issues such as `OSError: [Errno 1] Operation not permitted`, try running it with `sudo`.
+To use Eventgen as a PyPI module, you need to download the source code first. Make sure to check that you have a correct branch to build your Eventgen module.
 
-To verify Eventgen is properly installed, run "splunk_eventgen --version" on your system. You should see information about your current Eventgen version.
+Then run below commands inside Eventgen directory:
 ```
+# if you don't have make module, run python setup.py sdist
+$ make egg
+
+# you should see a tar file inside of dist directory
+$ ls dist
+splunk_eventgen-0.6.x.tar.gz
+
+$ pip install splunk_eventgen-0.6.x.tar.gz
+
 $ splunk_eventgen --version
-Eventgen 0.6.0
+Eventgen 0.6.x
 ```
+Now you are ready to use Eventgen as a pip module.
 
 ---
 
