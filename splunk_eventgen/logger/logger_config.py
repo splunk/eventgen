@@ -19,14 +19,9 @@ controller_logger_config = {
             'formatter': 'detailed',
         }
     },
-    'loggers': {
-        'eventgen_controller': {
-            'handlers': ['main']
-        }
-    },
     'root': {
         'level': 'DEBUG',
-        'handlers': ['console']
+        'handlers': ['console', 'main']
     },
 }
 

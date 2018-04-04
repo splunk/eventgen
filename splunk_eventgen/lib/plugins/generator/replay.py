@@ -26,7 +26,7 @@ class ReplayGenerator(GeneratorPlugin):
     def set_time_and_send(self, rpevent, event_time, earliest, latest):
         # temporary time append
         rpevent['_raw'] = rpevent['_raw'][:-1]
-        rpevent['_time'] = event_time
+        rpevent['_time'] = (event_time - datetime.datetime(1970,1,1)).total_seconds()
 
         event = rpevent['_raw']
 
@@ -72,11 +72,11 @@ class ReplayGenerator(GeneratorPlugin):
             if line['_raw'][-1] != '\n':
                 line['_raw'] += '\n'
 
-            index = getattr(line, 'index', self._sample.index)
-            host = getattr(line, 'host', self._sample.host)
-            hostRegex = getattr(line, 'hostRegex', self._sample.hostRegex)
-            source = getattr(line, 'source', self._sample.source)
-            sourcetype = getattr(line, 'sourcetype', self._sample.sourcetype)
+            index = line.get('index', self._sample.index)
+            host = line.get('host', self._sample.host)
+            hostRegex = line.get('hostRegex', self._sample.hostRegex)
+            source = line.get('source', self._sample.source)
+            sourcetype = line.get('sourcetype', self._sample.sourcetype)
             rpevent = {'_raw': line['_raw'], 'index': index, 'host': host, 'hostRegex': hostRegex,
                        'source': source, 'sourcetype': sourcetype}
 
