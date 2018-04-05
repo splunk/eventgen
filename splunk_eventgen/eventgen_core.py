@@ -45,7 +45,7 @@ class EventGenerator(object):
         self.config = None
         self.args = args
 
-        self._setup_loggers()
+        self._setup_loggers(args=args)
         # attach to the logging queue
         self.logger.debug("Logging Setup Complete.")
 
@@ -193,12 +193,13 @@ class EventGenerator(object):
         else:
             pass
 
-    def _setup_loggers(self, config=None):
-        eventgen_main_logger_path = os.path.join(file_path, 'logs', 'eventgen-main.log')
-        eventgen_process_logger_path = os.path.join(file_path, 'logs', 'eventgen-process.log')
-        eventgen_listener_logger_path = os.path.join(file_path, 'logs', 'eventgen-listener-process.log')
-        eventgen_hec_logger_path = os.path.join(file_path, 'logs', 'splunk-hec-handler.log')
-        eventgen_error_logger_path = os.path.join(file_path, 'logs', 'eventgen-errors.log')
+    def _setup_loggers(self, args=None, config=None):
+        log_path = getattr(args, "log_path", os.path.join(file_path, 'logs'))
+        eventgen_main_logger_path = os.path.join(log_path, 'eventgen-main.log')
+        eventgen_process_logger_path = os.path.join(log_path, 'eventgen-process.log')
+        eventgen_listener_logger_path = os.path.join(log_path, 'eventgen-listener-process.log')
+        eventgen_hec_logger_path = os.path.join(log_path, 'splunk-hec-handler.log')
+        eventgen_error_logger_path = os.path.join(log_path, 'eventgen-errors.log')
         if not config:
             self.logger_config = {
                 'version': 1,

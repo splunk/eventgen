@@ -77,6 +77,7 @@ class Eventgen(ModularInput):
         args.subcommand = 'generate'
         args.verbosity = 3
         args.wsgi = False
+        args.log_path = make_splunkhome_path(['var', 'log', 'splunk'])
         return args
 
     def prepare_config(self, args):

@@ -47,6 +47,7 @@ def parse_args():
     generate_subparser.add_argument("--disableOutputQueue", action="store_true", help="Disable reducer step")
     generate_subparser.add_argument("--multiprocess", action="store_true", help="Use multiprocesing instead of threading")
     generate_subparser.add_argument("--profiler", action="store_true", help="Turn on cProfiler")
+    generate_subparser.add_argument("--log-path", type=str, default="{0}/logs".format(FILE_LOCATION))
     # Build subparser
     build_subparser = subparsers.add_parser('build', help="Will build different forms of sa-eventgen")
     build_subparser.add_argument("--mode", type=str, default="splunk-app", help="Specify what type of package to build, defaults to splunk-app mode.")
