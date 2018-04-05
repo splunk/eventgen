@@ -382,6 +382,9 @@ class Sample(object):
         if os.path.getsize(self.filePath) > 10000000 or self.sampletype != 'csv':
             self._openSampleFile()
             return self._sampleFH
+        elif self.sampletype == 'csv':
+            self.loadSample()
+            return self.sampleDict
         else:
             self.loadSample()
             return self.sampleLines

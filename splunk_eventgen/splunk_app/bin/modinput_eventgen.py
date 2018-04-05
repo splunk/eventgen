@@ -111,27 +111,29 @@ class Eventgen(ModularInput):
             logger.info("Input Config is: {}".format(input_config))
             created_arguments = self.create_args()
             new_args = self.prepare_config(created_arguments)
+            logger.info("Prepared Config")
             try:
-                config = eventgenconfig.Config(configfile=None, **new_args)
-                config.makeSplunkEmbedded(sessionKey=session_key)
                 eventgen = eventgen_core.EventGenerator(created_arguments)
-                eventgen.logger.info("Finished initializing eventgen object")
+                logger.info("Eventgen object generated")
+                config = eventgenconfig.Config(configfile=None, **new_args)
+                logger.info("Config object generated")
+                config.makeSplunkEmbedded(sessionKey=session_key)
+                logger.info("Config made Splunk Embedded")
                 eventgen.config = config
                 eventgen.config.parse()
-                eventgen.logger.info("Finished config parsing")
+                logger.info("Finished config parsing")
                 if eventgen.config.samples:
                     for sample in eventgen.config.samples:
                         sample.outputMode = "modinput"
 
-                eventgen.logger.info("Finished parse")
+                logger.info("Finished parse")
                 eventgen._reload_plugins()
-                eventgen.logger.info("Finished reload")
+                logger.info("Finished reload")
                 eventgen._setup_pools()
-                eventgen.logger.info("Finished setup pools")
+                logger.info("Finished setup pools")
                 eventgen.start()
             except Exception as e:
-                eventgen.logger.exception(e)
-
+                logger.exception(e)
 
             self.output.finishStream()
         except Exception as e:
