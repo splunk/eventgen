@@ -250,7 +250,6 @@ class Sample(object):
                 elif self.backfill[-1] == 'h':
                     return current_time - datetime.timedelta(hours=int(backfill_time))
                 elif self.backfill[-1] == 'd':
-
                     return current_time - datetime.timedelta(days=int(backfill_time))
         return current_time
 
