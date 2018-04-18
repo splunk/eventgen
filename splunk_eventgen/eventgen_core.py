@@ -455,7 +455,7 @@ class EventGenerator(object):
     def join_process(self):
         '''
         This method will attach the current object to the queues existing for generation and will call stop after all
-        generation is complete.  If the queue never finishes, this will lock the main process to the child indefinitly.
+        generation is complete.  If the queue never finishes, this will lock the main process to the child indefinitely.
         :return:
         '''
         try:
@@ -514,8 +514,13 @@ class EventGenerator(object):
             # If all queues are not empty, eventgen is running.
             # If all queues are empty and all tasks are finished, eventgen is not running.
             # If all queues are empty and there is an unfinished task, eventgen is running.
-            if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty():
-                self.logger.info("Queues are all empty")
+            if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty() \
+                    and self.sampleQueue.unfinished_tasks <= 0 \
+                    and self.outputQueue.unfinished_tasks <= 0 \
+                    and self.workerQueue.unfinished_tasks <= 0:
+                self.logger.info("Queues are all empty and there are no pending tasks")
                 return self.started
+            else:
+                return True
         return False
 
