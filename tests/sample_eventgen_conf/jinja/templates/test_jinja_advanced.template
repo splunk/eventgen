@@ -1,0 +1,17 @@
+{% macro input(name) -%}
+    name = {{[0,1,2,3,4,5,6,7,8,9]|random}}
+{%- endmacro -%}
+{% macro guid() -%}{% for n in [0,1,2,3,4,5] %}{{ [0,1,2,3,4,5,6,7,8,9]|random }}{% endfor %}{%- endmacro -%}
+
+{% for _ in range(0, large_number) %}
+{%- time_now -%}
+        {"_time": "{{ time_now_epoch }}",
+        "_raw": "{{ time_now_formatted }} userID={{range(1, userIDRange) | random}} User messsage is 'new guid is: {{guid()}}', sender={{sender}}",
+        "source": "user",
+        "sourceType": "userEvent"}
+{% endfor %}
+
+{%- block head -%}
+    {% include "test_jinja_advanced_extension.template" %}
+{%- endblock -%}
+
