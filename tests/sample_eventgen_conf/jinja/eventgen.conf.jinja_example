@@ -1,0 +1,11 @@
+[Advanced_Jinja]
+end = 1
+count = 1
+interval = 3
+generator = jinja
+jinja_template_dir = templates
+jinja_target_template = test_jinja_advanced.template
+jinja_variables = {"large_number":10, "userIDRange": 500, "userMessage": "mockMessage", "sender": "mockSender"}
+earliest = -3s
+latest = now
+outputMode = stdout
