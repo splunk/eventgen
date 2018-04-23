@@ -1,0 +1,28 @@
+[replay]
+sampleDir = tests/sample_eventgen_conf/replay
+mode = replay
+timeMultiple = 1
+backfill = -5s
+#backfillSearch = index=main sourcetype=windbag
+sampletype = raw
+
+outputMode = stdout
+index = main
+sourcetype = windbag
+source = windbag.log
+host = localhost
+#splunkHost = localhost
+#splunkUser = admin
+#splunkPass = changeme
+end = 1
+
+# outputMode = file
+# fileName = /tmp/internal.log
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+token.0.replacementType = replaytimestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S
+
+token.1.token = @@integer
+token.1.replacementType = random
+token.1.replacement = integer[0:10]

@@ -1,0 +1,8 @@
+[weblog]
+generator = cweblog
+earliest = now
+latest = now
+interval = 3
+count = 2000
+outputMode = stdout
+backfill = -1d

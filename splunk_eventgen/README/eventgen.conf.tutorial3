@@ -1,0 +1,75 @@
+# Note, these samples assume you're installed as an app or a symbolic link in 
+# $SPLUNK_HOME/etc/apps/eventgen.  If not, please change the paths below.
+
+[sample.tutorial3]
+interval = 1
+earliest = -1s
+latest = now
+count = 100000
+hourOfDayRate = { "0": 0.30, "1": 0.10, "2": 0.05, "3": 0.10, "4": 0.15, "5": 0.25, "6": 0.35, "7": 0.50, "8": 0.60, "9": 0.65, "10": 0.70, "11": 0.75, "12": 0.77, "13": 0.80, "14": 0.82, "15": 0.85, "16": 0.87, "17": 0.90, "18": 0.95, "19": 1.0, "20": 0.85, "21": 0.70, "22": 0.60, "23": 0.45 }
+dayOfWeekRate = { "0": 0.55, "1": 0.97, "2": 0.95, "3": 0.90, "4": 0.97, "5": 1.0, "6": 0.99 }
+randomizeCount = 0.2
+backfill = -1h
+backfillSearch = sourcetype=be_log
+
+# outputMode = spool
+# spoolDir = $SPLUNK_HOME/var/spool/splunk
+# spoolFile = <SAMPLE>
+
+# outputMode = file
+# fileName = /tmp/lotsofevents.log
+
+# outputMode = splunkstream
+outputMode = stdout
+
+index=main
+host=be-01.splunk.com
+source=/var/log/be/event.log
+sourcetype=be_log
+
+# Host/User/pass only necessary if running outside of splunk!
+splunkHost = wimpy.splunk.com
+splunkPort = 10089
+#splunkHost = localhost
+splunkUser = admin
+splunkPass = changeme
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
+token.0.replacementType = timestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S
+
+token.1.token = transType=(\w+)
+token.1.replacementType = random
+token.1.replacement = list[ "New", "New", "Change", "Change", "Change", "Delete" ]
+
+token.2.token = transID=(\d+)
+token.2.replacementType = integerid
+token.2.replacement = 100000
+
+token.3.token = transGUID=([0-9a-fA-F]+)
+token.3.replacementType = random
+token.3.replacement = guid
+
+token.4.token = userName=(\w+)
+token.4.replacementType = file
+#token.4.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/userName.sample
+token.4.replacement = /Users/csharp/local/projects/eventgen/samples/userName.sample
+
+token.5.token = city="(\w+)"
+token.5.replacementType = mvfile
+#token.5.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:2
+token.5.replacement = /Users/csharp/local/projects/eventgen/samples/markets.sample:2
+
+token.6.token = state=(\w+)
+token.6.replacementType = mvfile
+#token.6.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:3
+token.6.replacement = /Users/csharp/local/projects/eventgen/samples/markets.sample:3
+
+token.7.token = zip=(\d+)
+token.7.replacementType = mvfile
+#token.7.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:1
+token.7.replacement = /Users/csharp/local/projects/eventgen/samples/markets.sample:1
+
+token.8.token = value=(\d+)
+token.8.replacementType = random
+token.8.replacement = float[0.000:10.000]

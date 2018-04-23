@@ -1,0 +1,5 @@
+
+# Application-level permissions
+[eventgen]
+access = read : [ * ], write : [ admin ]
+export = system

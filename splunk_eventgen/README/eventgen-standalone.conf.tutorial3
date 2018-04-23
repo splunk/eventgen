@@ -1,0 +1,269 @@
+[sample.mobilemusic.csv]
+sampletype = csv
+interval = 3
+earliest = -3s
+latest = now
+count = 10
+bundlelines = true
+hourOfDayRate = { "0": 0.30, "1": 0.10, "2": 0.05, "3": 0.10, "4": 0.15, "5": 0.25, "6": 0.35, "7": 0.50, "8": 0.60, "9": 0.65, "10": 0.70, "11": 0.75, "12": 0.77, "13": 0.80, "14": 0.82, "15": 0.85, "16": 0.87, "17": 0.90, "18": 0.95, "19": 1.0, "20": 0.85, "21": 0.70, "22": 0.60, "23": 0.45 }
+dayOfWeekRate = { "0": 0.97, "1": 0.95, "2": 0.90, "3": 0.97, "4": 1.0, "5": 0.99, "6": 0.55 }
+randomizeCount = 0.2
+
+# outputMode = file
+# fileName = /tmp/mobilemusic.log
+
+outputMode = splunkstream
+
+# Host/User/pass only necessary if running outside of splunk!
+splunkHost = localhost
+splunkUser = admin
+splunkPass = changeme
+
+# outputMode = stormstream
+# projectID = <projectid>
+# accessToken = <accesstoken>
+# source = eventgen
+# sourcetype = business_event
+
+token.0.token = ((\w+\s+\d+\s+\d{2}:\d{2}:\d{2}:\d{3})|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}))
+token.0.replacementType = replaytimestamp
+token.0.replacement = ["%b %d %H:%M:%S:%f", "%Y-%m-%d %H:%M:%S:%f"]
+
+token.1.token = (aaa2)
+token.1.replacementType = file
+token.1.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/radhosts.sample
+
+token.2.token = radiusd\[(\d+)\]
+token.2.replacementType = file
+token.2.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/radPIDs.sample
+
+token.3.token = (5559031692)@splunktel.com
+token.3.replacementType = mvfile
+token.3.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/mdn.sample:1
+
+token.4.token = (10\.94\.63\.34)
+token.4.replacementType = file
+token.4.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/internal_ips.sample
+
+token.5.token = (130\.253\.37\.97)
+token.5.replacementType = file
+token.5.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/external_ips.sample
+
+token.6.token = (10\.2\.1\.35)
+token.6.replacementType = file
+token.6.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/webhosts.sample
+
+token.7.token = (POST /playhistory/uploadhistory)
+token.7.replacementType = file
+token.7.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/uris.sample
+
+# These replacements are taken from uris.sample
+token.8.token = (\$sartId\$)
+token.8.replacementType = file
+token.8.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/searchArtists.sample
+
+token.9.token = (\$trackId\$)
+token.9.replacementType = file
+token.9.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/trackIDs.sample
+
+token.10.token = (\$artId\$)
+token.10.replacementType = file
+token.10.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/artIDs.sample
+
+token.11.token = (\$mdn\$)
+token.11.replacementType = mvfile
+token.11.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/mdn.sample:1
+# End replacements from uris.sample
+
+token.12.token = "(Mozilla/5\.0[^"]+)"
+token.12.replacementType = file
+token.12.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/useragents.sample
+
+token.13.token = \s{1}(468)\s{1}
+token.13.replacementType = random
+token.13.replacement = integer[100:1000]
+
+token.14.token = \s{1}(1488)\s{1}
+token.14.replacementType = random
+token.14.replacement = integer[200:4000]
+
+# Failures.  We want far less events per second for this, approximately 2% of total
+[sample.mobilemusicfailure.csv]
+sampletype = csv
+interval = 15
+earliest = -15s
+latest = now
+count = 1
+bundlelines = true
+hourOfDayRate = { "0": 0.30, "1": 0.10, "2": 0.05, "3": 0.10, "4": 0.15, "5": 0.25, "6": 0.35, "7": 0.50, "8": 0.60, "9": 0.65, "10": 0.70, "11": 0.75, "12": 0.77, "13": 0.80, "14": 0.82, "15": 0.85, "16": 0.87, "17": 0.90, "18": 0.95, "19": 1.0, "20": 0.85, "21": 0.70, "22": 0.60, "23": 0.45 }
+dayOfWeekRate = { "0": 0.97, "1": 0.95, "2": 0.90, "3": 0.97, "4": 1.0, "5": 0.99, "6": 0.55 }
+randomizeCount = 0.2
+
+# outputMode = file
+# fileName = /tmp/mobilemusic.log
+
+outputMode = splunkstream
+
+# Host/User/pass only necessary if running outside of splunk!
+splunkHost = localhost
+splunkUser = admin
+splunkPass = changeme
+
+# outputMode = stormstream
+# projectID = <projectid>
+# accessToken = <accesstoken>
+# source = eventgen
+# sourcetype = business_event
+
+token.0.token = ((\w+\s+\d+\s+\d{2}:\d{2}:\d{2}:\d{3})|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}))
+token.0.replacementType = replaytimestamp
+token.0.replacement = ["%b %d %H:%M:%S:%f", "%Y-%m-%d %H:%M:%S:%f"]
+
+token.1.token = (aaa2)
+token.1.replacementType = file
+token.1.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/radhosts.sample
+
+token.2.token = radiusd\[(\d+)\]
+token.2.replacementType = file
+token.2.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/radPIDs.sample
+
+token.3.token = (5559031692)@splunktel.com
+token.3.replacementType = mvfile
+token.3.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/mdn.sample:1
+
+token.4.token = (10\.94\.63\.34)
+token.4.replacementType = file
+token.4.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/internal_ips.sample
+
+token.5.token = (130\.253\.37\.97)
+token.5.replacementType = file
+token.5.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/external_ips.sample
+
+token.6.token = (10\.2\.1\.35)
+token.6.replacementType = file
+token.6.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/webhosts.sample
+
+token.7.token = (POST /playhistory/uploadhistory)
+token.7.replacementType = file
+token.7.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/uris.sample
+
+# These replacements are taken from uris.sample
+token.8.token = (\$sartId\$)
+token.8.replacementType = file
+token.8.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/searchArtists.sample
+
+token.9.token = (\$trackId\$)
+token.9.replacementType = file
+token.9.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/trackIDs.sample
+
+token.10.token = (\$artId\$)
+token.10.replacementType = file
+token.10.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/artIDs.sample
+
+token.11.token = (\$mdn\$)
+token.11.replacementType = mvfile
+token.11.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/mdn.sample:1
+# End replacements from uris.sample
+
+# token.12.token = "Mozilla/5.0 (Linux; U; Android 2.3.4; en-us; Sprint APX515CKT Build/GRJ22) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1"
+# token.12.replacementType = file
+# token.12.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/useragents.sample
+
+token.13.token = \s{1}(468)\s{1}
+token.13.replacementType = random
+token.13.replacementType = integer[100:1000]
+
+token.14.token = \s{1}(1488)\s{1}
+token.14.replacementType = random
+token.14.replacementType = integer[200:4000]
+
+# This is the one failure that'll show up in our form search.  We want this to not be rated by time, it
+# should happen once per minute
+[sample.mobilemusicfailuresearch.csv]
+sampletype = csv
+interval = 60
+earliest = -60s
+latest = now
+count = 1
+bundlelines = true
+hourOfDayRate = { "0": 0.30, "1": 0.10, "2": 0.05, "3": 0.10, "4": 0.15, "5": 0.25, "6": 0.35, "7": 0.50, "8": 0.60, "9": 0.65, "10": 0.70, "11": 0.75, "12": 0.77, "13": 0.80, "14": 0.82, "15": 0.85, "16": 0.87, "17": 0.90, "18": 0.95, "19": 1.0, "20": 0.85, "21": 0.70, "22": 0.60, "23": 0.45 }
+dayOfWeekRate = { "0": 0.97, "1": 0.95, "2": 0.90, "3": 0.97, "4": 1.0, "5": 0.99, "6": 0.55 }
+randomizeCount = 0.2
+
+# outputMode = file
+# fileName = /tmp/mobilemusic.log
+
+outputMode = splunkstream
+
+# Host/User/pass only necessary if running outside of splunk!
+splunkHost = localhost
+splunkUser = admin
+splunkPass = changeme
+
+# outputMode = stormstream
+# projectID = <projectid>
+# accessToken = <accesstoken>
+# source = eventgen
+# sourcetype = business_event
+
+token.0.token = ((\w+\s+\d+\s+\d{2}:\d{2}:\d{2}:\d{3})|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}))
+token.0.replacementType = replaytimestamp
+token.0.replacement = ["%b %d %H:%M:%S:%f", "%Y-%m-%d %H:%M:%S:%f"]
+
+token.1.token = (aaa2)
+token.1.replacementType = file
+token.1.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/radhosts.sample
+
+token.2.token = radiusd\[(\d+)\]
+token.2.replacementType = file
+token.2.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/radPIDs.sample
+
+token.3.token = (5559031692)@splunktel.com
+token.3.replacementType = static
+token.3.replacement = 5556374832
+
+token.4.token = (10\.94\.63\.34)
+token.4.replacementType = file
+token.4.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/internal_ips.sample
+
+token.5.token = (130\.253\.37\.97)
+token.5.replacementType = file
+token.5.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/external_ips.sample
+
+token.6.token = (10\.2\.1\.35)
+token.6.replacementType = file
+token.6.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/webhosts.sample
+
+token.7.token = (POST /playhistory/uploadhistory)
+token.7.replacementType = file
+token.7.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/uris.sample
+
+# These replacements are taken from uris.sample
+token.8.token = (\$sartId\$)
+token.8.replacementType = file
+token.8.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/searchArtists.sample
+
+token.9.token = (\$trackId\$)
+token.9.replacementType = file
+token.9.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/trackIDs.sample
+
+token.10.token = (\$artId\$)
+token.10.replacementType = file
+token.10.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/artIDs.sample
+
+token.11.token = (\$mdn\$)
+token.11.replacementType = static
+token.11.replacement = 5556374832
+# End replacements from uris.sample
+
+# token.12.token = "Mozilla/5.0 (Linux; U; Android 2.3.4; en-us; Sprint APX515CKT Build/GRJ22) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1"
+# token.12.replacementType = file
+# token.12.replacement = $SPLUNK_HOME/etc/apps/oidemo/samples/useragents.sample
+
+token.13.token = \s{1}(468)\s{1}
+token.13.replacementType = random
+token.13.replacementType = integer[100:1000]
+
+token.14.token = \s{1}(1488)\s{1}
+token.14.replacementType = random
+token.14.replacementType = integer[200:4000]
