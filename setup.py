@@ -50,5 +50,6 @@ setup(
         'pyyaml',
         'httplib2',
         'jinja2',
-        'pyrabbit']
+        'pyrabbit==1.1.0'
+    ]
     )
