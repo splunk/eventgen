@@ -233,7 +233,6 @@ def exclude_function(filename):
     last_index = filename.rfind('/')
     if last_index != -1:
         if filename[last_index + 1:].startswith('.'):
-            print filename
             return True
     if filename.endswith('.pyo') or filename.endswith('.pyc'):
         return True
