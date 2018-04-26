@@ -228,10 +228,16 @@ def run_nameko(args):
             # runner.wait completed
             break
 
+def exclude_function(filename):
+    if filename.endswith('.pyo') or filename.endswith('.pyc'):
+        return True
+    else:
+        return False
+
 def make_tarfile(output_filename, source_dir):
     import tarfile
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname=os.path.basename(source_dir))
+        tar.add(source_dir, arcname=os.path.basename(source_dir), exclude=exclude_function)
 
 def build_splunk_app(dest, remove=True):
     import errno, imp
