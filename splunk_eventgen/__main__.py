@@ -229,6 +229,11 @@ def run_nameko(args):
             break
 
 def exclude_function(filename):
+    # removing any hidden . files.
+    last_index = filename.rfind('/')
+    if last_index != -1:
+        if filename[last_index + 1:].startswith('.'):
+            return True
     if filename.endswith('.pyo') or filename.endswith('.pyc'):
         return True
     else:
