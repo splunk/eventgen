@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-
-import os
-import re
 import sys
-import json
-import time
 import logging
 import argparse
 
@@ -13,10 +8,6 @@ import argparse
 from splunk.clilib.bundle_paths import make_splunkhome_path
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib']))
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib', 'splunk_eventgen', 'lib']))
-
-# from splunk_eventgen.lib.modinput import ModularInput
-# from splunk_eventgen.lib.modinput.fields import BooleanField, Field
-# from splunk_eventgen.lib.xmloutput import setupLogger, XMLOutputManager
 
 from modinput.fields import BooleanField, Field
 from xmloutput import setupLogger, XMLOutputManager
@@ -105,10 +96,10 @@ class Eventgen(ModularInput):
 
     def run(self, stanza, input_config, **kwargs):
         self.output.initStream()
+        logger.info("Initialized streaming")
         try:
             if input_config:
                 session_key = input_config.session_key
-
             logger.info("Input Config is: {}".format(input_config))
             created_arguments = self.create_args()
             new_args = self.prepare_config(created_arguments)
@@ -126,17 +117,17 @@ class Eventgen(ModularInput):
                 if eventgen.config.samples:
                     for sample in eventgen.config.samples:
                         sample.outputMode = "modinput"
-
                 logger.info("Finished parse")
                 eventgen._reload_plugins()
                 logger.info("Finished reload")
                 eventgen._setup_pools()
                 logger.info("Finished setup pools")
-                eventgen.start()
+                eventgen.start(join_after_start=True)
+                logger.info("Finished running start")
             except Exception as e:
                 logger.exception(e)
-
             self.output.finishStream()
+            logger.info("Finished streaming")
         except Exception as e:
             logger.error("Main code exit, Exception caught: %s" % e)
             raise e
