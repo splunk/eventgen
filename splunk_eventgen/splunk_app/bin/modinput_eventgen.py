@@ -136,6 +136,7 @@ if __name__ == '__main__':
     def handler(signum, frame):
         logger.info("Taking signal {0}. Exiting".format(signum))
         sys.exit(0)
+    # Need 13 when Splunk stop is called.
     signal.signal(13, handler)
     worker = Eventgen()
     worker.execute()
