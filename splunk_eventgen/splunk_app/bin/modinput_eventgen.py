@@ -19,7 +19,6 @@ from splunk_eventgen.lib import eventgenconfig
 logger = setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [Eventgen] %(message)s', level=logging.INFO,
                      log_name="modinput_eventgen.log", logger_name="eventgen_app")
 
-
 class SimpleNamespace(dict):
     """dot.notation access to dictionary attributes"""
     __getattr__ = dict.get
@@ -133,6 +132,11 @@ class Eventgen(ModularInput):
             raise e
 
 if __name__ == '__main__':
+    import signal
+    def handler(signum, frame):
+        logger.info("Taking signal {0}. Exiting".format(signum))
+        sys.exit(0)
+    signal.signal(13, handler)
     worker = Eventgen()
     worker.execute()
     sys.exit(0)
