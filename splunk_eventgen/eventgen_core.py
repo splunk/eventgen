@@ -241,9 +241,6 @@ class EventGenerator(object):
                     }
                 },
                 'loggers': {
-                    'eventgen': {
-                        'handlers': ['console']
-                    },
                     'eventgen_listener': {
                         'handlers': ['eventgen_listener_file']
                     },
@@ -253,7 +250,7 @@ class EventGenerator(object):
                 },
                 'root': {
                     'level': 'DEBUG',
-                    'handlers': ['errors', 'file']
+                    'handlers': ['errors', 'file', 'console']
                 },
             }
         else:
