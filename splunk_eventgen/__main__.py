@@ -250,6 +250,8 @@ def build_splunk_app(dest, remove=True):
     target_file = os.path.join(dest, 'sa_eventgen_{}.spl'.format(EVENTGEN_VERSION))
     module_file, module_path, module_description = imp.find_module('splunk_eventgen')
     splunk_app = os.path.join(module_path, 'splunk_app')
+    splunk_app_samples = os.path.join(splunk_app, "samples")
+    shutil.copytree(os.path.join(module_path, "samples"), splunk_app_samples)
     try:
         shutil.copytree(splunk_app, directory)
     except OSError as e:
@@ -264,6 +266,7 @@ def build_splunk_app(dest, remove=True):
     eventgen_conf = os.path.join(module_path, 'default', 'eventgen.conf')
     shutil.copyfile(eventgen_conf, directory_default_dir)
     make_tarfile(target_file, directory)
+    shutil.rmtree(splunk_app_samples)
     if remove:
         shutil.rmtree(directory)
 
