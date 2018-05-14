@@ -242,7 +242,7 @@ class EventGenerator(object):
                 },
                 'loggers': {
                     'eventgen': {
-                        'handlers': ['file', 'errors', 'console']
+                        'handlers': ['console']
                     },
                     'eventgen_listener': {
                         'handlers': ['eventgen_listener_file']
