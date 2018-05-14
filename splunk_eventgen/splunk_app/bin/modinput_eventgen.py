@@ -137,7 +137,7 @@ def handler(signum, frame):
     sys.exit(0)
 
 if __name__ == '__main__':
-    signal.signal(13, handler)
+    signal.signal(signal.SIGPIPE, handler)
     worker = Eventgen()
     worker.execute()
     sys.exit(0)
