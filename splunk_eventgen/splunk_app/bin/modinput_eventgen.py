@@ -3,6 +3,7 @@
 import sys
 import logging
 import argparse
+import signal
 
 # Set path so libraries will load
 from splunk.clilib.bundle_paths import make_splunkhome_path
@@ -131,12 +132,11 @@ class Eventgen(ModularInput):
             logger.error("Main code exit, Exception caught: %s" % e)
             raise e
 
+def handler(signum, frame):
+    logger.info("Taking signal {0}. Exiting".format(signum))
+    sys.exit(0)
+
 if __name__ == '__main__':
-    import signal
-    def handler(signum, frame):
-        logger.info("Taking signal {0}. Exiting".format(signum))
-        sys.exit(0)
-    # Need 13 when Splunk stop is called.
     signal.signal(13, handler)
     worker = Eventgen()
     worker.execute()

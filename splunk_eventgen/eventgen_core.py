@@ -196,7 +196,6 @@ class EventGenerator(object):
     def _setup_loggers(self, args=None, config=None):
         log_path = getattr(args, "log_path", os.path.join(file_path, 'logs'))
         eventgen_main_logger_path = os.path.join(log_path, 'eventgen-main.log')
-        eventgen_process_logger_path = os.path.join(log_path, 'eventgen-process.log')
         eventgen_listener_logger_path = os.path.join(log_path, 'eventgen-listener-process.log')
         eventgen_hec_logger_path = os.path.join(log_path, 'splunk-hec-handler.log')
         eventgen_error_logger_path = os.path.join(log_path, 'eventgen-errors.log')
@@ -218,12 +217,6 @@ class EventGenerator(object):
                     'file': {
                         'class': 'logging.FileHandler',
                         'filename': eventgen_main_logger_path,
-                        'mode': 'w',
-                        'formatter': 'detailed',
-                    },
-                    'eventgenfile': {
-                        'class': 'logging.FileHandler',
-                        'filename': eventgen_process_logger_path,
                         'mode': 'w',
                         'formatter': 'detailed',
                     },
@@ -249,7 +242,7 @@ class EventGenerator(object):
                 },
                 'loggers': {
                     'eventgen': {
-                        'handlers': ['eventgenfile', 'errors', 'console']
+                        'handlers': ['file', 'errors', 'console']
                     },
                     'eventgen_listener': {
                         'handlers': ['eventgen_listener_file']
