@@ -170,7 +170,7 @@ class AwsS3OutputPlugin(OutputPlugin):
                 self.logger.error('failed sending events, reason: %s ' % e)
 
     def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_awss3out')
+        self.logger = logging.getLogger('eventgen')
 
 
 def load():

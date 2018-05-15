@@ -46,6 +46,7 @@ class SplunkHECHandler(logging.Handler):
         atexit.register(self._stopFlushTimer)
 
         self.log = logging.getLogger(self._name)
+        self.log.setLevel(logging.DEBUG)
         self.log.info("SplunkHECHandler logger is initialized")
 
         try:

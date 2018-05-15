@@ -273,6 +273,7 @@ def build_splunk_app(dest, remove=True):
 def main():
     cwd = os.getcwd()
     args = parse_args()
+    print args
     if args.subcommand == "generate":
         eventgen = eventgen_core.EventGenerator(args=args)
         eventgen.start()

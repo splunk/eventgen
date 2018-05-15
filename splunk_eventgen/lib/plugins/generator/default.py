@@ -62,6 +62,8 @@ class DefaultGenerator(GeneratorPlugin):
         for targetevent in eventsDict:
             try:
                 event = targetevent['_raw']
+                if event == "\n":
+                    continue
 
                 # Maintain state for every token in a given event
                 # Hash contains keys for each file name which is assigned a list of values

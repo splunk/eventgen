@@ -47,7 +47,7 @@ class EventGenerator(object):
 
         self._setup_loggers(args=args)
         # attach to the logging queue
-        self.logger.debug("Logging Setup Complete.")
+        self.logger.info("Logging Setup Complete.")
 
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
@@ -205,19 +205,21 @@ class EventGenerator(object):
                 'formatters': {
                     'detailed': {
                         'class': 'logging.Formatter',
-                        'format': '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
+                        'format': '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s',
+                        'datefmt': '%Y-%m-%d %H:%M:%S'
                     }
                 },
                 'handlers': {
                     'console': {
                         'class': 'logging.StreamHandler',
-                        'level': 'INFO',
+                        'level': 'DEBUG',
                         'formatter': 'detailed',
                     },
                     'file': {
                         'class': 'logging.FileHandler',
                         'filename': eventgen_main_logger_path,
                         'mode': 'w',
+                        'level': 'DEBUG',
                         'formatter': 'detailed',
                     },
                     'eventgen_listener_file': {
@@ -241,17 +243,16 @@ class EventGenerator(object):
                     }
                 },
                 'loggers': {
+                    'eventgen': {
+                        'handlers': ['file', 'errors', 'console']
+                    },
                     'eventgen_listener': {
-                        'handlers': ['eventgen_listener_file']
+                        'handlers': ['eventgen_listener_file', 'console']
                     },
                     'splunk_hec_logger': {
-                        'handlers': ['splunk_hec_file']
+                        'handlers': ['splunk_hec_file', 'console']
                     }
-                },
-                'root': {
-                    'level': 'DEBUG',
-                    'handlers': ['errors', 'file', 'console']
-                },
+                }
             }
         else:
             self.logger_config = config
@@ -265,6 +266,10 @@ class EventGenerator(object):
                 self._log(DEBUG_LEVELV_NUM, message, args, **kws)
         logging.Logger.debugv = debugv
         self.logger = logging.getLogger('eventgen')
+        if self.args.verbosity >= 1:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel((logging.INFO))
         self.loggingQueue = None
         try:
             hec_info = self.get_hec_info_from_conf()
