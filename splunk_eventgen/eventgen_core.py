@@ -31,7 +31,6 @@ EVENTGEN_DIR = os.path.realpath(os.path.join(file_path, ".."))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(file_path, "default", "eventgen_engine.conf"))
 
 import json
-import time
 class JSONFormatter(logging.Formatter):
     """
     Quick and dirty formatter that turns the log into a quick json format
