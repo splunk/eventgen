@@ -238,7 +238,6 @@ class EventGenerator(object):
                 logger.setLevel((logging.INFO))
             logger.propagate = False
             logger.handlers = []
-            logger.parent = None
             if args and not args.modinput_mode:
                 logger.addHandler(console_handler)
             logger.addHandler(file_handler)
@@ -421,6 +420,7 @@ class EventGenerator(object):
                         self.logger.exception(ie)
                     except Exception as e:
                         self.logger.exception(e)
+                        raise e
         return ret
 
     def start(self, join_after_start=True):
