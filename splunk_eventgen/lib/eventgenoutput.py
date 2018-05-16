@@ -120,7 +120,7 @@ class Output(object):
                 # self.config.bytesSent.add(sum(tmp))
                 if self.config.splunkEmbedded and len(tmp)>0:
                     metrics = logging.getLogger('eventgen_metrics')
-                    metrics.error(json.dumps({'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'),
-                            'sample': self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)}))
+                    metrics.info({'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'),
+                            'sample': self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)})
                 tmp = None
                 outputer.run()
