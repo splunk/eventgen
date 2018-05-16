@@ -33,7 +33,7 @@ def setInterval(interval):
 class SplunkHECHandler(logging.Handler):
 
     def __init__(self, targetserver, hec_token, eventgen_name=None):
-        self._name = 'splunk_hec_logger'
+        self._name = 'eventgen_splunk_hec_logger'
         self.targetserver = targetserver
         self.hec_token = hec_token
         self.host = socket.gethostname()
