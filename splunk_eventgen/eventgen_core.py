@@ -295,7 +295,7 @@ class EventGenerator(object):
 
             #Configure the metrics logging handler
             # Configure splunk hec logger
-            logger = logging.getLogger('eventgen_metrics_logger')
+            logger = logging.getLogger('eventgen_metrics')
             logger.setLevel(logging.INFO)
             logger.propagate = False
             logger.handlers = []
