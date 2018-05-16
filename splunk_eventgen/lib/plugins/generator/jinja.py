@@ -5,8 +5,10 @@ try:
     import ujson as json
 except:
     import json as json
+
 from jinja2 import nodes
 from jinja2.ext import Extension
+
 import random
 
 class CantFindTemplate(Exception):

@@ -17,7 +17,7 @@ from splunk_eventgen import eventgen_core
 from splunk_eventgen.lib import eventgenconfig
 
 # Initialize logging
-logger = setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [Eventgen] %(message)s', level=logging.INFO,
+logger = setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [Eventgen] %(message)s', level=logging.DEBUG,
                      log_name="modinput_eventgen.log", logger_name="eventgen_app")
 
 class SimpleNamespace(dict):
@@ -40,10 +40,10 @@ class Eventgen(ModularInput):
         logger.debug("Setting up SA-Eventgen Modular Input")
         self.output = XMLOutputManager()
 
-        args = [
+        self.args = [
             BooleanField("VERBOSE", "VERBOSE", "Verbose mode", required_on_create=True, required_on_edit=True)
         ]
-        ModularInput.__init__(self, self.scheme_args, args)
+        ModularInput.__init__(self, self.scheme_args, self.args)
 
     def create_args(self):
         parser = argparse.ArgumentParser(prog="SA-Eventgen")
@@ -66,9 +66,10 @@ class Eventgen(ModularInput):
         args.sample = None
         args.version = False
         args.subcommand = 'generate'
-        args.verbosity = 3
+        args.verbosity = 0
         args.wsgi = False
         args.log_path = make_splunkhome_path(['var', 'log', 'splunk'])
+        args.modinput_mode = True
         return args
 
     def prepare_config(self, args):
@@ -133,7 +134,7 @@ class Eventgen(ModularInput):
             raise e
 
 def handler(signum, frame):
-    logger.info("Taking signal {0}. Exiting".format(signum))
+    logger.info("Eventgen Modinput takes signal {0}. Exiting".format(signum))
     sys.exit(0)
 
 if __name__ == '__main__':

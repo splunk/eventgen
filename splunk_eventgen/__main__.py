@@ -30,6 +30,7 @@ def parse_args():
                                      description='Splunk Event Generation Tool')
     parser.add_argument("-v", "--verbosity", action="count", help="increase output verbosity")
     parser.add_argument("--version", action='version', default=False, version='%(prog)s ' + EVENTGEN_VERSION)
+    parser.add_argument("--modinput-mode", default=False)
     subparsers = parser.add_subparsers(title='commands', help="valid subcommands", dest='subcommand')
     # Generate subparser
     generate_subparser = subparsers.add_parser('generate', help="Generate events using a supplied config file")

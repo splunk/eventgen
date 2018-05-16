@@ -25,7 +25,7 @@ class TcpOutputPlugin(OutputPlugin):
         self.s.close()
 
     def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_tcpout')
+        self.logger = logging.getLogger('eventgen')
 
 def load():
     """Returns an instance of the plugin"""

@@ -23,7 +23,7 @@ class UdpOutputPlugin(OutputPlugin):
         self.logger.info("Flushing in udpout.")
 
     def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_udpout')
+        self.logger = logging.getLogger('eventgen')
 
 def load():
     """Returns an instance of the plugin"""

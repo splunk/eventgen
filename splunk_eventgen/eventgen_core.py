@@ -47,7 +47,7 @@ class EventGenerator(object):
 
         self._setup_loggers(args=args)
         # attach to the logging queue
-        self.logger.debug("Logging Setup Complete.")
+        self.logger.info("Logging Setup Complete.")
 
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
@@ -95,12 +95,15 @@ class EventGenerator(object):
         # Initialize plugins
         # Plugins must be loaded before objects that do work, otherwise threads and processes generated will not have
         # the modules loaded in active memory.
-        self.config.outputPlugins = { }
-        plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'output'), self.config.outputPlugins, 'output')
-        self.config.validOutputModes.extend(plugins)
-        self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'generator'), self.config.plugins, 'generator')
-        plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'rater'), self.config.plugins, 'rater')
-        self.config._complexSettings['rater'] = plugins
+        try:
+            self.config.outputPlugins = { }
+            plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'output'), self.config.outputPlugins, 'output')
+            self.config.validOutputModes.extend(plugins)
+            self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'generator'), self.config.plugins, 'generator')
+            plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'rater'), self.config.plugins, 'rater')
+            self.config._complexSettings['rater'] = plugins
+        except Exception as e:
+            self.logger.exception(e)
 
     def _setup_pools(self):
         '''
@@ -200,65 +203,70 @@ class EventGenerator(object):
         eventgen_hec_logger_path = os.path.join(log_path, 'splunk-hec-handler.log')
         eventgen_error_logger_path = os.path.join(log_path, 'eventgen-errors.log')
         if not config:
-            self.logger_config = {
-                'version': 1,
-                'formatters': {
-                    'detailed': {
-                        'class': 'logging.Formatter',
-                        'format': '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
-                    }
-                },
-                'handlers': {
-                    'console': {
-                        'class': 'logging.StreamHandler',
-                        'level': 'INFO',
-                        'formatter': 'detailed',
-                    },
-                    'file': {
-                        'class': 'logging.FileHandler',
-                        'filename': eventgen_main_logger_path,
-                        'mode': 'w',
-                        'formatter': 'detailed',
-                    },
-                    'eventgen_listener_file': {
-                        'class': 'logging.FileHandler',
-                        'filename': eventgen_listener_logger_path,
-                        'mode': 'w',
-                        'formatter': 'detailed',
-                    },
-                    'splunk_hec_file': {
-                        'class': 'logging.FileHandler',
-                        'filename': eventgen_hec_logger_path,
-                        'mode': 'w',
-                        'formatter': 'detailed',
-                    },
-                    'errors': {
-                        'class': 'logging.FileHandler',
-                        'filename': eventgen_error_logger_path,
-                        'mode': 'w',
-                        'level': 'ERROR',
-                        'formatter': 'detailed',
-                    }
-                },
-                'loggers': {
-                    'eventgen': {
-                        'handlers': ['file', 'errors', 'console']
-                    },
-                    'eventgen_listener': {
-                        'handlers': ['eventgen_listener_file']
-                    },
-                    'splunk_hec_logger': {
-                        'handlers': ['splunk_hec_file']
-                    }
-                },
-                'root': {
-                    'level': 'DEBUG',
-                    'handlers': ['errors', 'file']
-                },
-            }
+            log_format = '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
+            date_format = '%Y-%m-%d %H:%M:%S'
+
+            # Set up formatter
+            detailed_formatter = logging.Formatter(log_format, datefmt=date_format)
+
+            # Set up handlers
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(detailed_formatter)
+            console_handler.setLevel(logging.DEBUG)
+
+            file_handler = logging.handlers.RotatingFileHandler(eventgen_main_logger_path, maxBytes=2500000, backupCount=10)
+            file_handler.setFormatter(detailed_formatter)
+            file_handler.setLevel(logging.DEBUG)
+
+            eventgen_listener_file_handler = logging.handlers.RotatingFileHandler(eventgen_listener_logger_path, maxBytes=2500000, backupCount=10)
+            eventgen_listener_file_handler.setFormatter(detailed_formatter)
+            eventgen_listener_file_handler.setLevel(logging.DEBUG)
+
+            splunk_hec_file_handler = logging.handlers.RotatingFileHandler(eventgen_hec_logger_path, maxBytes=2500000, backupCount=10)
+            splunk_hec_file_handler.setFormatter(detailed_formatter)
+            splunk_hec_file_handler.setLevel(logging.DEBUG)
+
+            error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000, backupCount=10)
+            error_file_handler.setFormatter(detailed_formatter)
+            error_file_handler.setLevel(logging.ERROR)
+
+            # Configure eventgen logger
+            logger = logging.getLogger('eventgen')
+            if self.args.verbosity >= 1:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel((logging.INFO))
+            logger.propagate = False
+            logger.handlers = []
+            if args and not args.modinput_mode:
+                logger.addHandler(console_handler)
+            logger.addHandler(file_handler)
+            logger.addHandler(error_file_handler)
+
+            # Configure eventgen listener
+            logger = logging.getLogger('eventgen_listener')
+            if self.args.verbosity >= 1:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel((logging.INFO))
+            logger.propagate = False
+            logger.handlers = []
+            logger.addHandler(eventgen_listener_file_handler)
+            logger.addHandler(error_file_handler)
+
+            # Configure splunk hec logger
+            logger = logging.getLogger('eventgen_splunk_hec_logger')
+            if self.args.verbosity >= 1:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel((logging.INFO))
+            logger.propagate = False
+            logger.handlers = []
+            logger.addHandler(splunk_hec_file_handler)
+            logger.addHandler(error_file_handler)
         else:
             self.logger_config = config
-        logging.config.dictConfig(self.logger_config)
+            logging.config.dictConfig(self.logger_config)
         # We need to have debugv from the olderversions of eventgen.
         DEBUG_LEVELV_NUM = 9
         logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
@@ -413,7 +421,6 @@ class EventGenerator(object):
                     except Exception as e:
                         self.logger.exception(e)
                         raise e
-
         return ret
 
     def start(self, join_after_start=True):

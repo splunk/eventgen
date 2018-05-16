@@ -142,7 +142,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                         splunkhttp = None
 
     def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_splunkstreamout')
+        self.logger = logging.getLogger('eventgen')
 
 
 def load():

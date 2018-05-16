@@ -1,8 +1,12 @@
 from __future__ import division
 from outputplugin import OutputPlugin
 import requests
-import boto3
-import botocore.exceptions
+try:
+    import boto3
+    import botocore.exceptions
+    boto_imported = True
+except ImportError:
+    boto_imported = False
 import uuid
 import datetime
 import threading
@@ -37,12 +41,18 @@ class AwsS3OutputPlugin(OutputPlugin):
 
     def __init__(self, sample):
 
+
+
         # Override maxQueueLength to EventPerKey so that each flush
         # will generate one aws key
         if sample.awsS3EventPerKey:
             sample.maxQueueLength = sample.awsS3EventPerKey
 
         OutputPlugin.__init__(self, sample)
+
+        if not boto_imported:
+            self.logger.error("There is no boto3 or botocore library available")
+            return
 
         # disable any "requests" warnings
         requests.packages.urllib3.disable_warnings()
@@ -170,7 +180,7 @@ class AwsS3OutputPlugin(OutputPlugin):
                 self.logger.error('failed sending events, reason: %s ' % e)
 
     def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_awss3out')
+        self.logger = logging.getLogger('eventgen')
 
 
 def load():
