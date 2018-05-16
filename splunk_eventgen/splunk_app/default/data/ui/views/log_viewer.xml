@@ -32,7 +32,7 @@
   <row>
     <table>
       <title>Eventgen Logs</title>
-      <searchString>index=_internal sourcetype="eventgen_main" | table _time, host, index, _raw</searchString>
+      <searchString>index=_internal sourcetype="eventgen_main" OR sourcetype="eventgen_modinput" | table _time, host, index, _raw</searchString>
       <earliestTime>$time_picker.earliest$</earliestTime>
       <latestTime>$time_picker.latest$</latestTime>
       <option name="showPager">true</option>
