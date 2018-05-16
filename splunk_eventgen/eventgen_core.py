@@ -30,6 +30,28 @@ file_path=os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(file_path, ".."))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(file_path, "default", "eventgen_engine.conf"))
 
+import json
+import time
+class JSONFormatter(logging.Formatter):
+    """
+    Quick and dirty formatter that turns the log into a quick json format
+    """
+    def format(self, record):
+        message = record.msg
+        if not isinstance(message, dict):
+            #The record is probably a string
+            try:
+                message = json.loads(message)
+            except ValueError:
+                #Abort, just store the message as an attribute
+                message = {"message": message}
+
+        if "timestamp" not in message:
+            message["timestamp"] = super(JSONFormatter, self).formatTime(record, self.datefmt)
+        if "level" not in message:
+            message["level"] = logging.getLevelName(record.levelno)
+        return json.dumps(message)
+
 class EventGenerator(object):
     def __init__(self, args=None):
         '''
@@ -201,6 +223,7 @@ class EventGenerator(object):
         eventgen_main_logger_path = os.path.join(log_path, 'eventgen-main.log')
         eventgen_listener_logger_path = os.path.join(log_path, 'eventgen-listener-process.log')
         eventgen_hec_logger_path = os.path.join(log_path, 'splunk-hec-handler.log')
+        eventgen_metrics_logger_path = os.path.join(log_path, 'eventgen-metrics.log')
         eventgen_error_logger_path = os.path.join(log_path, 'eventgen-errors.log')
         if not config:
             log_format = '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
@@ -208,6 +231,7 @@ class EventGenerator(object):
 
             # Set up formatter
             detailed_formatter = logging.Formatter(log_format, datefmt=date_format)
+            json_formatter = JSONFormatter(log_format, datefmt=date_format)
 
             # Set up handlers
             console_handler = logging.StreamHandler()
@@ -229,6 +253,10 @@ class EventGenerator(object):
             error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000, backupCount=10)
             error_file_handler.setFormatter(detailed_formatter)
             error_file_handler.setLevel(logging.ERROR)
+
+            metrics_file_handler = logging.handlers.RotatingFileHandler(eventgen_metrics_logger_path, maxBytes=2500000, backupCount=10)
+            metrics_file_handler.setFormatter(json_formatter)
+            metrics_file_handler.setLevel(logging.INFO)
 
             # Configure eventgen logger
             logger = logging.getLogger('eventgen')
@@ -264,6 +292,15 @@ class EventGenerator(object):
             logger.handlers = []
             logger.addHandler(splunk_hec_file_handler)
             logger.addHandler(error_file_handler)
+
+            #Configure the metrics logging handler
+            # Configure splunk hec logger
+            logger = logging.getLogger('eventgen_metrics_logger')
+            logger.setLevel(logging.INFO)
+            logger.propagate = False
+            logger.handlers = []
+            logger.addHandler(metrics_file_handler)
+
         else:
             self.logger_config = config
             logging.config.dictConfig(self.logger_config)
