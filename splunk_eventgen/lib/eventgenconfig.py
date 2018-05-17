@@ -770,7 +770,7 @@ class Config(object):
 
     def _validateTimezone(self, value):
         """Callback for complexSetting timezone which will parse and validate the timezone"""
-        self.logger.debug("Parsing timezone '%s'" % (value))
+        self.logger.debug("Parsing timezone {}".format(value))
         if value.find('local') >= 0:
             value = datetime.timedelta(days=1)
         else:
@@ -782,38 +782,38 @@ class Config(object):
                     mod = -100
                 value = datetime.timedelta(hours=int(int(value) / 100.0), minutes=int(value) % mod )
             except:
-                self.logger.error("Could not parse timezone '%s' for '%s'" % (value, key))
-                raise ValueError("Could not parse timezone '%s' for '%s'" % (value, key))
-        self.logger.debug("Parsed timezone '%s'" % (value))
+                self.logger.error("Could not parse timezone {}".format(value))
+                raise ValueError("Could not parse timezone {}".format(value))
+        self.logger.debug("Parsed timezone {}".format(value))
         return value
 
     def _validateCount(self, value):
         """Callback to override count to -1 if set to 0 in the config, otherwise return int"""
-        self.logger.debug("Validating count of %s" % value)
+        self.logger.debug("Validating count of {}".format(value))
         # 5/13/14 CS Hack to take a zero count in the config and set it to a value which signifies
         # the special condition rather than simply being zero events, setting to -1
         try:
             value = int(value)
         except:
-            self.logger.error("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
-            raise ValueError("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
+            self.logger.error("Could not parse int for count {}".format(value))
+            raise ValueError("Could not parse int for count {}".format(value))
 
         if value == 0:
             value = -1
-        self.logger.debug("Count set to %d" % value)
+        self.logger.debug("Count set to {}".format(value))
 
         return value
 
     def _validateSeed(self, value):
         """Callback to set random seed"""
-        self.logger.debug("Validating random seed of %s" % value)
+        self.logger.debug("Validating random seed {}".format(value))
         try:
             value = int(value)
         except:
-            self.logger.error("Could not parse int for 'seed' in stanza '%s'" % (key, stanza))
-            raise ValueError("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
+            self.logger.error("Could not parse int for seed {}".format(value))
+            raise ValueError("Could not parse int for seed {}".format(value))
 
-        self.logger.info("Using random seed %s" % value)
+        self.logger.info("Using random seed {}".format(value))
         random.seed(value)
 
 

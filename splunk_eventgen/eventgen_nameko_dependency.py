@@ -35,6 +35,7 @@ def create_args():
     args.subcommand = 'generate'
     args.verbosity = 1
     args.wsgi = True
+    args.modinput_mode = False
     return args
 
 class EventgenDependency(DependencyProvider):
