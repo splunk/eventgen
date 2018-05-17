@@ -73,9 +73,13 @@ test_collection_cleanup:
 	docker stop ${EVENTGEN_TEST_IMAGE}
 
 clean:
-	rm -rf dist *.egg-info *.log *.xml
+	rm *.spl || true
+	rm -rf dist *.egg-info *.log *.xml || true
+	rm splunk_eventgen/logs/*.log || true
 	docker stop ${EVENTGEN_TEST_IMAGE} || true
 	docker rm ${EVENTGEN_TEST_IMAGE} || true
+	docker network rm eg_network || true
+	docker network rm eg_network_test || true
 
 setup_eventgen:
 	wget -O splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
@@ -97,3 +101,6 @@ docs:
 	docker build -t stg-repo.splunk.com/tonyl/eventgen-docs:latest documentation/
 	docker push stg-repo.splunk.com/tonyl/eventgen-docs:latest
 	python documentation/deploy.py --certs ~/.orca
+
+build_spl: clean
+	python -m splunk_eventgen build --destination ./
