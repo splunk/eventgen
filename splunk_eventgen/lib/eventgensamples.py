@@ -192,16 +192,16 @@ class Sample(object):
                         # when calling strptime, so if we get that, try again
                         while currentTime == None:
                             try:
+                                # Checking for timezone adjustment
                                 if timeString[-5] == "+":
                                     timeString = timeString[:-5]
                                 currentTime = datetime.datetime.strptime(timeString, timeFormat)
                             except AttributeError:
                                 pass
-                    # self.logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
+                    self.logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
                     if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
-                raise
                 self.logger.warning("Match found ('%s') but time parse failed. Timeformat '%s' Event '%s'" % (timeString, timeFormat, event))
         if type(currentTime) != datetime.datetime:
             # Total fail
