@@ -80,6 +80,7 @@ class ReplayGenerator(GeneratorPlugin):
                 sourcetype = line.get('sourcetype', self._sample.sourcetype)
                 rpevent = {'_raw': line['_raw'], 'index': index, 'host': host, 'hostRegex': hostRegex,
                            'source': source, 'sourcetype': sourcetype}
+
             except:
                 if line[-1] != '\n':
                     line += '\n'
@@ -92,8 +93,12 @@ class ReplayGenerator(GeneratorPlugin):
             try:
                 current_event_timestamp = self._sample.getTSFromEvent(line[self._sample.timeField])
             except ValueError as e:
-                self.logger.exception(e)
-                raise e
+                try:
+                    self.logger.debug("Sample timeField {} doesn't work. Changing it to _time.".format(self._sample.timeField))
+                    current_event_timestamp = self._sample.getTSFromEvent(line["_time"])
+                except Exception as e:
+                    self.logger.exception(e)
+                    continue
 
             # Always flush the first event
             if previous_event is None:
