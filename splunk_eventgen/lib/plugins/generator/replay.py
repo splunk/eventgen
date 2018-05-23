@@ -96,7 +96,7 @@ class ReplayGenerator(GeneratorPlugin):
                     self.logger.debug("Sample timeField {} failed to locate. Trying to locate _time field.".format(self._sample.timeField))
                     current_event_timestamp = self._sample.getTSFromEvent(line["_time"])
                 except ValueError as e:
-                    self.logger.exception(e)
+                    self.logger.exception("Extracting timestamp from an event failed.")
                     continue
 
             # Always flush the first event
