@@ -192,10 +192,13 @@ class Sample(object):
                         # when calling strptime, so if we get that, try again
                         while currentTime == None:
                             try:
+                                # Checking for timezone adjustment
+                                if timeString[-5] == "+":
+                                    timeString = timeString[:-5]
                                 currentTime = datetime.datetime.strptime(timeString, timeFormat)
                             except AttributeError:
                                 pass
-                    # self.logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
+                    self.logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
                     if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
@@ -381,7 +384,7 @@ class Sample(object):
                         self.sampleDict[i]['_raw'] += '\n'
 
     def get_loaded_sample(self):
-        if os.path.getsize(self.filePath) > 10000000 or self.sampletype != 'csv':
+        if self.sampletype != 'csv' and os.path.getsize(self.filePath) > 10000000 :
             self._openSampleFile()
             return self._sampleFH
         elif self.sampletype == 'csv':
