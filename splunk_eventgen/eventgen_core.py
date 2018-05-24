@@ -53,7 +53,7 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(message)
 
 class EventGenerator(object):
-    def __init__(self, args=None, plugins=None):
+    def __init__(self, args=None ):
         '''
         This object will allow you to generate and control eventgen.  It should be handed the parse_args object
         from __main__ and will hand the argument object to the config parser of eventgen5.  This will provide the
@@ -61,7 +61,6 @@ class EventGenerator(object):
         start to control all of the configuration items that are global, and the config object should only handle the
         localized .conf entries.
         :param args: __main__ parse_args() object.
-        :param plugins: additonal plugin objects to load on creation.
         '''
         self.stopping = False
         self.started = False
