@@ -101,7 +101,7 @@ class Config(object):
                          'mode': ['sample', 'replay'],
                          'threading': ['thread', 'process']}
 
-    def __init__(self, configfile, sample=None, override_outputter=False, override_count=False,
+    def __init__(self, configfile=None, sample=None, override_outputter=False, override_count=False,
                  override_interval=False, override_backfill=False, override_end=False,
                  threading="thread", override_generators=None, override_outputqueue=False,
                  profiler=False):
