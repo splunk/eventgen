@@ -2,6 +2,7 @@
 # encoding: utf-8
 from lib.eventgenconfig import Config
 from lib.eventgentimer import Timer
+from lib.eventgenexceptions import PluginNotLoaded, FailedLoadingPlugin
 import logging
 import logging.config
 import os
@@ -52,7 +53,7 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(message)
 
 class EventGenerator(object):
-    def __init__(self, args=None):
+    def __init__(self, args=None, plugins=None):
         '''
         This object will allow you to generate and control eventgen.  It should be handed the parse_args object
         from __main__ and will hand the argument object to the config parser of eventgen5.  This will provide the
@@ -60,6 +61,7 @@ class EventGenerator(object):
         start to control all of the configuration items that are global, and the config object should only handle the
         localized .conf entries.
         :param args: __main__ parse_args() object.
+        :param plugins: additonal plugin objects to load on creation.
         '''
         self.stopping = False
         self.started = False
@@ -125,6 +127,19 @@ class EventGenerator(object):
             self.config._complexSettings['rater'] = plugins
         except Exception as e:
             self.logger.exception(e)
+
+    def _load_custom_plugins(self, PluginNotLoadedException):
+        plugintype = PluginNotLoadedException.type
+        plugin = PluginNotLoadedException.name
+        bindir = PluginNotLoadedException.bindir
+        libdir = PluginNotLoadedException.libdir
+        plugindir = PluginNotLoadedException.plugindir
+        pluginsdict = self.config.plugins if plugintype in ('generator', 'rater') else self.config.outputPlugins
+        #APPPERF-263: be picky when loading from an app bindir (only load name)
+        self._initializePlugins(bindir, pluginsdict, plugintype, name=plugin)
+
+        #APPPERF-263: be greedy when scanning plugin dir (eat all the pys)
+        self._initializePlugins(plugindir, pluginsdict, plugintype)
 
     def _setup_pools(self):
         '''
@@ -469,8 +484,15 @@ class EventGenerator(object):
             if s.interval > 0 or s.mode == 'replay' or s.end != "0":
                 self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
                 # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
-                t = Timer(1.0, sample=s, config=self.config,
+                try:
+                    t = Timer(1.0, sample=s, config=self.config,
                           genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
+                except PluginNotLoaded as pnl:
+                    self._load_custom_plugins(pnl)
+                    t = Timer(1.0, sample=s, config=self.config,
+                              genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
+                except Exception as e:
+                    raise e
                 self.sampleQueue.put(t)
         if join_after_start:
             self.logger.info("All timers started, joining queue until it's empty.")
