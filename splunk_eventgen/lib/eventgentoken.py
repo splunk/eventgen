@@ -87,7 +87,7 @@ class Token(object):
         """Executes regular expression finditer and returns the re.Match object"""
         return re.findall(self.token, event)
         
-    def replace(self, event, et=None, lt=None, s=None):
+    def replace(self, event, et=None, lt=None, s=None, pivot_timestamp=None):
         """Replaces all instances of this token in provided event and returns event"""
         if not getattr(self, 'logger', None):
             self._setup_logging()
@@ -98,7 +98,7 @@ class Token(object):
             self.logger.debugv("Timestamp replacement with et '%s' and lt '%s'" % (et, lt))
 
         if len(tokenMatch) > 0:
-            replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)], et, lt, s)
+            replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)], et, lt, s, pivot_timestamp=pivot_timestamp)
             if replacement is not None or self.replacementType == 'replaytimestamp':
                 # logger.debug("Replacement: '%s'" % replacement)
                 ## Iterate matches
@@ -134,7 +134,7 @@ class Token(object):
                 self._lastts = None
         return event
                     
-    def  _getReplacement(self, old=None, earliestTime=None, latestTime=None, s=None):
+    def  _getReplacement(self, old=None, earliestTime=None, latestTime=None, s=None, pivot_timestamp=None):
         if self.replacementType == 'static':
             return self.replacement
         # This logic is done in replay.py
@@ -144,7 +144,9 @@ class Token(object):
             if s.earliest and s.latest:
                 if earliestTime and latestTime:
                     if latestTime>=earliestTime:
-                        if s.timestamp == None:
+                        if pivot_timestamp:
+                            replacementTime = pivot_timestamp
+                        elif s.timestamp == None:
                             minDelta = 0
 
                             ## Compute timeDelta as total_seconds

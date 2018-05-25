@@ -5,6 +5,7 @@ from __future__ import division
 from generatorplugin import GeneratorPlugin
 import datetime, time
 import random
+from eventgentimestamp import EventgenTimestamp
 
 
 class DefaultGenerator(GeneratorPlugin):
@@ -70,16 +71,18 @@ class DefaultGenerator(GeneratorPlugin):
                 # picked from a random line in that file
                 mvhash = { }
 
+                pivot_timestamp = EventgenTimestamp.get_random_timestamp(earliest, latest, self._sample.earliest, self._sample.latest)
+
                 ## Iterate tokens
                 for token in self._sample.tokens:
                     token.mvhash = mvhash
                     # self.logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
                     self.logger.debugv("Sending event to token replacement: Event:{0} Token:{1}".format(event, token))
-                    event = token.replace(event, et=earliest, lt=latest, s=self._sample)
+                    event = token.replace(event, et=earliest, lt=latest, s=self._sample, pivot_timestamp=pivot_timestamp)
                     self.logger.debugv("finished replacing token")
                     if token.replacementType == 'timestamp' and self._sample.timeField != '_raw':
                         self._sample.timestamp = None
-                        token.replace(targetevent[self._sample.timeField], et=self._sample.earliestTime(), lt=self._sample.latestTime(), s=self._sample)
+                        token.replace(targetevent[self._sample.timeField], et=self._sample.earliestTime(), lt=self._sample.latestTime(), s=self._sample, pivot_timestamp=pivot_timestamp)
                 if(self._sample.hostToken):
                     # clear the host mvhash every time, because we need to re-randomize it
                     self._sample.hostToken.mvhash = {}
@@ -89,7 +92,7 @@ class DefaultGenerator(GeneratorPlugin):
                     host = self._sample.hostToken.replace(host, s=self._sample)
 
                 try:
-                    time_val = int(time.mktime(self._sample.timestamp.timetuple()))
+                    time_val = int(time.mktime(pivot_timestamp.timetuple()))
                 except Exception:
                     time_val = int(time.mktime(self._sample.now().timetuple()))
 
