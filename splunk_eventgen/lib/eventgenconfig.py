@@ -8,6 +8,7 @@ import json
 import pprint
 from eventgensamples import Sample
 from eventgentoken import Token
+from eventgenexceptions import PluginNotLoaded, FailedLoadingPlugin
 import urllib
 import types
 import random
@@ -111,6 +112,7 @@ class Config(object):
         self.configfile = configfile
         self.sample = sample
         self.threading = threading
+        self.extraplugins = []
         self.profiler = profiler
         self.override_outputter = override_outputter
         self.override_count = override_count
@@ -191,16 +193,16 @@ class Config(object):
                     if plugin != None:
                         self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'"
                                      % (plugintype, plugin, s.name))
-                        pluginsdict = self.plugins if plugintype in ('generator', 'rater') else self.outputPlugins
                         bindir = os.path.join(s.sampleDir, os.pardir, 'bin')
                         libdir = os.path.join(s.sampleDir, os.pardir, 'lib')
                         plugindir = os.path.join(libdir, 'plugins', plugintype)
-
-                        #APPPERF-263: be picky when loading from an app bindir (only load name)
-                        self.__initializePlugins(bindir, pluginsdict, plugintype, name=plugin)
-
-                        #APPPERF-263: be greedy when scanning plugin dir (eat all the pys)
-                        self.__initializePlugins(plugindir, pluginsdict, plugintype)
+                        targetplugin = PluginNotLoaded(bindir=bindir, libdir=libdir,
+                                                       plugindir=plugindir, name=plugin, type=plugintype)
+                        if targetplugin.name not in self.extraplugins:
+                            self.extraplugins.append(targetplugin.name)
+                            raise targetplugin
+                        else:
+                            raise FailedLoadingPlugin(name=plugin)
 
         # APPPERF-263: consult both __outputPlugins and __plugins
         if not name in self.plugins and not name in self.outputPlugins:
