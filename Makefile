@@ -76,6 +76,9 @@ clean:
 	rm *.spl || true
 	rm -rf dist *.egg-info *.log *.xml || true
 	rm splunk_eventgen/logs/*.log || true
+	find . -name "*.pyc" -type f -delete || true
+	find . -name "*.log" -type f -delete || true
+	find . -name "*.pyc" -type f -delete || true
 	docker stop ${EVENTGEN_TEST_IMAGE} || true
 	docker rm ${EVENTGEN_TEST_IMAGE} || true
 	docker network rm eg_network || true
