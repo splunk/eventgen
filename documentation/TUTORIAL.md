@@ -206,7 +206,7 @@ There is an [Eventgen API Reference](REFERENCE.html#rest-api-reference) that you
 
 ## For Orca Users: Running Eventgen with Orca ##
 
-Orca 0.8.4 and above will natively support Eventgen 0.6.0 and above versions.
+Orca 0.8.4 and above will natively support Eventgen 6.0.0 and above versions.
 
 ```
 # The following command creates a specified number of eventgen instances as well as auto-configuring all servers and controllers.
