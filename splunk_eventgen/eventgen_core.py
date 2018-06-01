@@ -2,6 +2,7 @@
 # encoding: utf-8
 from lib.eventgenconfig import Config
 from lib.eventgentimer import Timer
+from lib.eventgenexceptions import PluginNotLoaded, FailedLoadingPlugin
 import logging
 import logging.config
 import os
@@ -11,6 +12,7 @@ from Queue import Queue, Empty
 from threading import Thread
 import time
 import ConfigParser
+from logger import splunk_hec_logging_handler
 
 lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.insert(0, lib_path_prepend)
@@ -29,8 +31,29 @@ file_path=os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(file_path, ".."))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(file_path, "default", "eventgen_engine.conf"))
 
+import json
+class JSONFormatter(logging.Formatter):
+    """
+    Quick and dirty formatter that turns the log into a quick json format
+    """
+    def format(self, record):
+        message = record.msg
+        if not isinstance(message, dict):
+            #The record is probably a string
+            try:
+                message = json.loads(message)
+            except ValueError:
+                #Abort, just store the message as an attribute
+                message = {"message": message}
+
+        if "timestamp" not in message:
+            message["timestamp"] = super(JSONFormatter, self).formatTime(record, self.datefmt)
+        if "level" not in message:
+            message["level"] = logging.getLevelName(record.levelno)
+        return json.dumps(message)
+
 class EventGenerator(object):
-    def __init__(self, args=None):
+    def __init__(self, args=None ):
         '''
         This object will allow you to generate and control eventgen.  It should be handed the parse_args object
         from __main__ and will hand the argument object to the config parser of eventgen5.  This will provide the
@@ -46,7 +69,7 @@ class EventGenerator(object):
 
         self._setup_loggers(args=args)
         # attach to the logging queue
-        self.logger.debug("Logging Setup Complete.")
+        self.logger.info("Logging Setup Complete.")
 
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
@@ -94,12 +117,28 @@ class EventGenerator(object):
         # Initialize plugins
         # Plugins must be loaded before objects that do work, otherwise threads and processes generated will not have
         # the modules loaded in active memory.
-        self.config.outputPlugins = { }
-        plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'output'), self.config.outputPlugins, 'output')
-        self.config.validOutputModes.extend(plugins)
-        self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'generator'), self.config.plugins, 'generator')
-        plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'rater'), self.config.plugins, 'rater')
-        self.config._complexSettings['rater'] = plugins
+        try:
+            self.config.outputPlugins = { }
+            plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'output'), self.config.outputPlugins, 'output')
+            self.config.validOutputModes.extend(plugins)
+            self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'generator'), self.config.plugins, 'generator')
+            plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'rater'), self.config.plugins, 'rater')
+            self.config._complexSettings['rater'] = plugins
+        except Exception as e:
+            self.logger.exception(e)
+
+    def _load_custom_plugins(self, PluginNotLoadedException):
+        plugintype = PluginNotLoadedException.type
+        plugin = PluginNotLoadedException.name
+        bindir = PluginNotLoadedException.bindir
+        libdir = PluginNotLoadedException.libdir
+        plugindir = PluginNotLoadedException.plugindir
+        pluginsdict = self.config.plugins if plugintype in ('generator', 'rater') else self.config.outputPlugins
+        #APPPERF-263: be picky when loading from an app bindir (only load name)
+        self._initializePlugins(bindir, pluginsdict, plugintype, name=plugin)
+
+        #APPPERF-263: be greedy when scanning plugin dir (eat all the pys)
+        self._initializePlugins(plugindir, pluginsdict, plugintype)
 
     def _setup_pools(self):
         '''
@@ -195,76 +234,89 @@ class EventGenerator(object):
     def _setup_loggers(self, args=None, config=None):
         log_path = getattr(args, "log_path", os.path.join(file_path, 'logs'))
         eventgen_main_logger_path = os.path.join(log_path, 'eventgen-main.log')
-        eventgen_process_logger_path = os.path.join(log_path, 'eventgen-process.log')
         eventgen_listener_logger_path = os.path.join(log_path, 'eventgen-listener-process.log')
         eventgen_hec_logger_path = os.path.join(log_path, 'splunk-hec-handler.log')
+        eventgen_metrics_logger_path = os.path.join(log_path, 'eventgen-metrics.log')
         eventgen_error_logger_path = os.path.join(log_path, 'eventgen-errors.log')
         if not config:
-            self.logger_config = {
-                'version': 1,
-                'formatters': {
-                    'detailed': {
-                        'class': 'logging.Formatter',
-                        'format': '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
-                    }
-                },
-                'handlers': {
-                    'console': {
-                        'class': 'logging.StreamHandler',
-                        'level': 'INFO',
-                        'formatter': 'detailed',
-                    },
-                    'file': {
-                        'class': 'logging.FileHandler',
-                        'filename': eventgen_main_logger_path,
-                        'mode': 'w',
-                        'formatter': 'detailed',
-                    },
-                    'eventgenfile': {
-                        'class': 'logging.FileHandler',
-                        'filename': eventgen_process_logger_path,
-                        'mode': 'w',
-                        'formatter': 'detailed',
-                    },
-                    'eventgen_listener_file': {
-                        'class': 'logging.FileHandler',
-                        'filename': eventgen_listener_logger_path,
-                        'mode': 'w',
-                        'formatter': 'detailed',
-                    },
-                    'splunk_hec_file': {
-                        'class': 'logging.FileHandler',
-                        'filename': eventgen_hec_logger_path,
-                        'mode': 'w',
-                        'formatter': 'detailed',
-                    },
-                    'errors': {
-                        'class': 'logging.FileHandler',
-                        'filename': eventgen_error_logger_path,
-                        'mode': 'w',
-                        'level': 'ERROR',
-                        'formatter': 'detailed',
-                    }
-                },
-                'loggers': {
-                    'eventgen': {
-                        'handlers': ['eventgenfile', 'errors', 'console']
-                    },
-                    'eventgen_listener': {
-                        'handlers': ['eventgen_listener_file']
-                    },
-                    'splunk_hec_logger': {
-                        'handlers': ['splunk_hec_file']
-                    }
-                },
-                'root': {
-                    'level': 'DEBUG',
-                    'handlers': ['errors', 'file']
-                },
-            }
+            log_format = '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
+            date_format = '%Y-%m-%d %H:%M:%S'
+
+            # Set up formatter
+            detailed_formatter = logging.Formatter(log_format, datefmt=date_format)
+            json_formatter = JSONFormatter(log_format, datefmt=date_format)
+
+            # Set up handlers
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(detailed_formatter)
+            console_handler.setLevel(logging.DEBUG)
+
+            file_handler = logging.handlers.RotatingFileHandler(eventgen_main_logger_path, maxBytes=2500000, backupCount=10)
+            file_handler.setFormatter(detailed_formatter)
+            file_handler.setLevel(logging.DEBUG)
+
+            eventgen_listener_file_handler = logging.handlers.RotatingFileHandler(eventgen_listener_logger_path, maxBytes=2500000, backupCount=10)
+            eventgen_listener_file_handler.setFormatter(detailed_formatter)
+            eventgen_listener_file_handler.setLevel(logging.DEBUG)
+
+            splunk_hec_file_handler = logging.handlers.RotatingFileHandler(eventgen_hec_logger_path, maxBytes=2500000, backupCount=10)
+            splunk_hec_file_handler.setFormatter(detailed_formatter)
+            splunk_hec_file_handler.setLevel(logging.DEBUG)
+
+            error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000, backupCount=10)
+            error_file_handler.setFormatter(detailed_formatter)
+            error_file_handler.setLevel(logging.ERROR)
+
+            metrics_file_handler = logging.handlers.RotatingFileHandler(eventgen_metrics_logger_path, maxBytes=2500000, backupCount=10)
+            metrics_file_handler.setFormatter(json_formatter)
+            metrics_file_handler.setLevel(logging.INFO)
+
+            # Configure eventgen logger
+            logger = logging.getLogger('eventgen')
+            if self.args.verbosity >= 1:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel((logging.INFO))
+            logger.propagate = False
+            logger.handlers = []
+            if args and not args.modinput_mode:
+                logger.addHandler(console_handler)
+            logger.addHandler(file_handler)
+            logger.addHandler(error_file_handler)
+
+            # Configure eventgen listener
+            logger = logging.getLogger('eventgen_listener')
+            if self.args.verbosity >= 1:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel((logging.INFO))
+            logger.propagate = False
+            logger.handlers = []
+            logger.addHandler(eventgen_listener_file_handler)
+            logger.addHandler(error_file_handler)
+
+            # Configure splunk hec logger
+            logger = logging.getLogger('eventgen_splunk_hec_logger')
+            if self.args.verbosity >= 1:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel((logging.INFO))
+            logger.propagate = False
+            logger.handlers = []
+            logger.addHandler(splunk_hec_file_handler)
+            logger.addHandler(error_file_handler)
+
+            #Configure the metrics logging handler
+            # Configure splunk hec logger
+            logger = logging.getLogger('eventgen_metrics')
+            logger.setLevel(logging.INFO)
+            logger.propagate = False
+            logger.handlers = []
+            logger.addHandler(metrics_file_handler)
+
         else:
             self.logger_config = config
-        logging.config.dictConfig(self.logger_config)
+            logging.config.dictConfig(self.logger_config)
         # We need to have debugv from the olderversions of eventgen.
         DEBUG_LEVELV_NUM = 9
         logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
@@ -413,7 +465,6 @@ class EventGenerator(object):
                     except Exception as e:
                         self.logger.exception(e)
                         raise e
-
         return ret
 
     def start(self, join_after_start=True):
@@ -426,8 +477,15 @@ class EventGenerator(object):
             if s.interval > 0 or s.mode == 'replay' or s.end != "0":
                 self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
                 # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
-                t = Timer(1.0, sample=s, config=self.config,
+                try:
+                    t = Timer(1.0, sample=s, config=self.config,
                           genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
+                except PluginNotLoaded as pnl:
+                    self._load_custom_plugins(pnl)
+                    t = Timer(1.0, sample=s, config=self.config,
+                              genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
+                except Exception as e:
+                    raise e
                 self.sampleQueue.put(t)
         if join_after_start:
             self.logger.info("All timers started, joining queue until it's empty.")
@@ -485,6 +543,7 @@ class EventGenerator(object):
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
         self.logger.info("All items fully processed, stopping.")
+        self.hec_logging_handler._stopFlushTimer()
         self.started = False
         self.stopping = False
 

@@ -15,17 +15,8 @@ sys.path.append(path_prepend + '/python_dateutil-1.4.1-py2.7.egg')
 import dateutil.parser as dateutil_parser
 
 # If we're inside eventgen, we'll have a global logger, if not set one up
-try:
-    if logger == None:
-        logger = logging.getLogger('timeparser')
-except NameError:
-    logger = logging.getLogger('timeparser')
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
-    
+logging.getLogger('eventgen')
+
 # 5-5-2012 CS  Replacing TimeParser with our own code to remove Splunk dependency
 # Based off spec for relative time identifiers at http://docs.splunk.com/Documentation/Splunk/latest/SearchReference/SearchTimeModifiers#How_to_specify_relative_time_modifiers
 # If we're not relative, we'll try to parse it as an ISO compliant time

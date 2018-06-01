@@ -43,7 +43,7 @@ class ModInputOutputPlugin(OutputPlugin):
         sys.stdout.flush()
 
     def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_modinputout')
+        self.logger = logging.getLogger('eventgen')
 
 def load():
     """Returns an instance of the plugin"""

@@ -268,4 +268,4 @@ In your app's eventgen.conf file, sample files for file and mvfile substitution 
 
 ## Wrapping up
 
-We hope the tutorial covers most use cases you would need.  If you have something you're struggling to model, please reach out to the current development team.  We believe we can cover just about anything you'd want to model with this Eventgen, but if not, we're happy to add features to the software so that everyone can benefit!
+We hope the tutorial covers most use cases you would need.  If you have something you're struggling to model, please reach out to Tony Lee (tonyl@splunk.com).  We believe we can cover just about anything you'd want to model with this Eventgen, but if not, we're happy to add features to the software so that everyone can benefit!

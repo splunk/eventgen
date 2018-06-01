@@ -41,7 +41,7 @@ class SpoolOutputPlugin(OutputPlugin):
             self.logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
 
     def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_spoolout')
+        self.logger = logging.getLogger('eventgen')
 
 
 def load():

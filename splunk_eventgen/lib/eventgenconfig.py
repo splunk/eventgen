@@ -8,6 +8,7 @@ import json
 import pprint
 from eventgensamples import Sample
 from eventgentoken import Token
+from eventgenexceptions import PluginNotLoaded, FailedLoadingPlugin
 import urllib
 import types
 import random
@@ -101,7 +102,7 @@ class Config(object):
                          'mode': ['sample', 'replay'],
                          'threading': ['thread', 'process']}
 
-    def __init__(self, configfile, sample=None, override_outputter=False, override_count=False,
+    def __init__(self, configfile=None, sample=None, override_outputter=False, override_count=False,
                  override_interval=False, override_backfill=False, override_end=False,
                  threading="thread", override_generators=None, override_outputqueue=False,
                  profiler=False):
@@ -111,6 +112,7 @@ class Config(object):
         self.configfile = configfile
         self.sample = sample
         self.threading = threading
+        self.extraplugins = []
         self.profiler = profiler
         self.override_outputter = override_outputter
         self.override_count = override_count
@@ -191,16 +193,16 @@ class Config(object):
                     if plugin != None:
                         self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'"
                                      % (plugintype, plugin, s.name))
-                        pluginsdict = self.plugins if plugintype in ('generator', 'rater') else self.outputPlugins
                         bindir = os.path.join(s.sampleDir, os.pardir, 'bin')
                         libdir = os.path.join(s.sampleDir, os.pardir, 'lib')
                         plugindir = os.path.join(libdir, 'plugins', plugintype)
-
-                        #APPPERF-263: be picky when loading from an app bindir (only load name)
-                        self.__initializePlugins(bindir, pluginsdict, plugintype, name=plugin)
-
-                        #APPPERF-263: be greedy when scanning plugin dir (eat all the pys)
-                        self.__initializePlugins(plugindir, pluginsdict, plugintype)
+                        targetplugin = PluginNotLoaded(bindir=bindir, libdir=libdir,
+                                                       plugindir=plugindir, name=plugin, type=plugintype)
+                        if targetplugin.name not in self.extraplugins:
+                            self.extraplugins.append(targetplugin.name)
+                            raise targetplugin
+                        else:
+                            raise FailedLoadingPlugin(name=plugin)
 
         # APPPERF-263: consult both __outputPlugins and __plugins
         if not name in self.plugins and not name in self.outputPlugins:
@@ -770,7 +772,7 @@ class Config(object):
 
     def _validateTimezone(self, value):
         """Callback for complexSetting timezone which will parse and validate the timezone"""
-        self.logger.debug("Parsing timezone '%s'" % (value))
+        self.logger.debug("Parsing timezone {}".format(value))
         if value.find('local') >= 0:
             value = datetime.timedelta(days=1)
         else:
@@ -782,38 +784,38 @@ class Config(object):
                     mod = -100
                 value = datetime.timedelta(hours=int(int(value) / 100.0), minutes=int(value) % mod )
             except:
-                self.logger.error("Could not parse timezone '%s' for '%s'" % (value, key))
-                raise ValueError("Could not parse timezone '%s' for '%s'" % (value, key))
-        self.logger.debug("Parsed timezone '%s'" % (value))
+                self.logger.error("Could not parse timezone {}".format(value))
+                raise ValueError("Could not parse timezone {}".format(value))
+        self.logger.debug("Parsed timezone {}".format(value))
         return value
 
     def _validateCount(self, value):
         """Callback to override count to -1 if set to 0 in the config, otherwise return int"""
-        self.logger.debug("Validating count of %s" % value)
+        self.logger.debug("Validating count of {}".format(value))
         # 5/13/14 CS Hack to take a zero count in the config and set it to a value which signifies
         # the special condition rather than simply being zero events, setting to -1
         try:
             value = int(value)
         except:
-            self.logger.error("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
-            raise ValueError("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
+            self.logger.error("Could not parse int for count {}".format(value))
+            raise ValueError("Could not parse int for count {}".format(value))
 
         if value == 0:
             value = -1
-        self.logger.debug("Count set to %d" % value)
+        self.logger.debug("Count set to {}".format(value))
 
         return value
 
     def _validateSeed(self, value):
         """Callback to set random seed"""
-        self.logger.debug("Validating random seed of %s" % value)
+        self.logger.debug("Validating random seed {}".format(value))
         try:
             value = int(value)
         except:
-            self.logger.error("Could not parse int for 'seed' in stanza '%s'" % (key, stanza))
-            raise ValueError("Could not parse int for 'count' in stanza '%s'" % (key, stanza))
+            self.logger.error("Could not parse int for seed {}".format(value))
+            raise ValueError("Could not parse int for seed {}".format(value))
 
-        self.logger.info("Using random seed %s" % value)
+        self.logger.info("Using random seed {}".format(value))
         random.seed(value)
 
 

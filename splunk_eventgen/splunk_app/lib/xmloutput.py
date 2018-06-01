@@ -26,8 +26,7 @@ def setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [ModInput] %(
     logger.handlers = []
     logger.addHandler(file_handler)
 
-    logger.debug("Init ModularInput logger")
-
+    logger.debug("Initialized ModularInput Logger")
     return logger
 
 

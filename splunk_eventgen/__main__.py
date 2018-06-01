@@ -30,6 +30,7 @@ def parse_args():
                                      description='Splunk Event Generation Tool')
     parser.add_argument("-v", "--verbosity", action="count", help="increase output verbosity")
     parser.add_argument("--version", action='version', default=False, version='%(prog)s ' + EVENTGEN_VERSION)
+    parser.add_argument("--modinput-mode", default=False)
     subparsers = parser.add_subparsers(title='commands', help="valid subcommands", dest='subcommand')
     # Generate subparser
     generate_subparser = subparsers.add_parser('generate', help="Generate events using a supplied config file")
@@ -228,10 +229,21 @@ def run_nameko(args):
             # runner.wait completed
             break
 
+def exclude_function(filename):
+    # removing any hidden . files.
+    last_index = filename.rfind('/')
+    if last_index != -1:
+        if filename[last_index + 1:].startswith('.'):
+            return True
+    if filename.endswith('.pyo') or filename.endswith('.pyc'):
+        return True
+    else:
+        return False
+
 def make_tarfile(output_filename, source_dir):
     import tarfile
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname=os.path.basename(source_dir))
+        tar.add(source_dir, arcname=os.path.basename(source_dir), exclude=exclude_function)
 
 def build_splunk_app(dest, remove=True):
     import errno, imp
@@ -239,6 +251,8 @@ def build_splunk_app(dest, remove=True):
     target_file = os.path.join(dest, 'sa_eventgen_{}.spl'.format(EVENTGEN_VERSION))
     module_file, module_path, module_description = imp.find_module('splunk_eventgen')
     splunk_app = os.path.join(module_path, 'splunk_app')
+    splunk_app_samples = os.path.join(splunk_app, "samples")
+    shutil.copytree(os.path.join(module_path, "samples"), splunk_app_samples)
     try:
         shutil.copytree(splunk_app, directory)
     except OSError as e:
@@ -253,6 +267,7 @@ def build_splunk_app(dest, remove=True):
     eventgen_conf = os.path.join(module_path, 'default', 'eventgen.conf')
     shutil.copyfile(eventgen_conf, directory_default_dir)
     make_tarfile(target_file, directory)
+    shutil.rmtree(splunk_app_samples)
     if remove:
         shutil.rmtree(directory)
 

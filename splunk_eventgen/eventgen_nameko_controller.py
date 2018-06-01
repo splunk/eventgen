@@ -8,6 +8,7 @@ import logging
 import os
 import socket
 from logger.logger_config import controller_logger_config
+from logger import splunk_hec_logging_handler
 import time
 import json
 
@@ -35,6 +36,8 @@ class EventgenController(object):
     logging.config.dictConfig(controller_logger_config)
     log = logging.getLogger(name)
     hec_info = get_hec_info_from_conf()
+    handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1], eventgen_name=name)
+    log.addHandler(handler)
     log.info("Logger set as eventgen_controller")
     host = socket.gethostname() + '_controller'
 

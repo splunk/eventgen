@@ -222,7 +222,7 @@ In addition, you can configure a custom scenario for automatic bundle install.
 indexers = 3
 search_heads = 2
 eventgenx_instances = 1
-ansible_params = eventgen_app=<YOUR_SPLUNK_APP_PATH>
+ansible_params = eventgen_app=https://repo.splunk.com/artifactory/Solutions/APP/ITSI_Performance_Testing/builds/develop/latest/ITSI_Performance_Testing-1.0.0-15.tgz,eventgen_volume=50,eventgen_start=now
 
 # Simply run this Orca command
 orca create --sc egxtest

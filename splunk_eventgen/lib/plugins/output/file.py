@@ -73,7 +73,7 @@ class FileOutputPlugin(OutputPlugin):
             self._fileHandle.close()
 
     def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_fileout')
+        self.logger = logging.getLogger('eventgen')
 
 def load():
     """Returns an instance of the plugin"""

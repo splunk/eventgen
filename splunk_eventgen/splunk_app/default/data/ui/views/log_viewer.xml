@@ -8,17 +8,6 @@
         <latestTime>now</latestTime>
       </default>
     </input>
-    <input type="checkbox" token="level" searchWhenChanged="true">
-      <label>Log Level</label>
-      <choice value="DEBUG">DEBUG</choice>
-      <choice value="DEBUGV">DEBUGV</choice>
-      <choice value="INFO">INFO</choice>
-      <choice value="WARN">WARN</choice>
-      <choice value="ERROR">ERROR</choice>
-      <default>INFO,WARN,ERROR</default>
-      <valuePrefix>level=</valuePrefix>
-      <delimiter> OR </delimiter>
-    </input>
     <input type="multiselect" token="module" searchWhenChanged="true">
       <label>Module</label>
       <populatingSearch fieldForLabel="module" fieldForValue="module">index=_internal sourcetype=eventgen | stats count by module</populatingSearch>
@@ -43,7 +32,7 @@
   <row>
     <table>
       <title>Eventgen Logs</title>
-      <searchString>index=_internal sourcetype=eventgen $level$ $module$ $sample$ $search$ | table _time, level, module, sample, message</searchString>
+      <searchString>index=_internal sourcetype="eventgen_main" OR sourcetype="eventgen_modinput" | table _time, host, index, _raw</searchString>
       <earliestTime>$time_picker.earliest$</earliestTime>
       <latestTime>$time_picker.latest$</latestTime>
       <option name="showPager">true</option>

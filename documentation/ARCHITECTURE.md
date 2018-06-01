@@ -8,7 +8,7 @@ Eventgen a modular set of Python code, structured as a Splunk application, which
 * Generation using custom code to model a scenario
 * Output to Splunk modular input or any number of pluggable output modes
 
-Prior to version 4, Eventgen was a monolithic set of code with dozens of configuration tuneables all driving a complex set of conditional code.  Over its life, Eventgen has grown so many tunables that the code had essentially become unmaintainable. This drove a desire to rearchitect the code to make it more modular.
+Prior to version 4, Eventgen was a monolithic set of code with dozens of configuration tuneables all driving a complex set of conditional code.  Over its life, Eventgen has grown so many tunables that the code had essentially become unmaintainable.  This drove a desire by Brian Bingham (bbingham@splunk.com), the primary Eventgen maintainer, to rearchitect the code to make it more modular.
 
 A second set of requirements also drove the version 4 re-architecture.  There continue to be a number of eventgens written internally to Splunk, and while most of those developers would be happy using Eventgen, either the config syntax is more arduous to learn than writing some python code or the scenario they want to model simply isn't possible using relatively naive methods of looking for events and replacing regex identified tokens with substitutions from random selections.  Replay mode is also insuffucient in that they do not want to have to base the eventgens on real data.
 

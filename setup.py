@@ -23,7 +23,8 @@ setup(
     version=VERSION,
     description='Splunk Event Generator to produce real-time, representative data',
     long_description=long_description,
-    author='Splunk Inc.',
+    author='Splunk, Inc.',
+    author_email='tonyl@splunk.com',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',

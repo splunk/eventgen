@@ -181,7 +181,7 @@ class S2SOutputPlugin(OutputPlugin):
             self.s2s.send_event(m['index'], m['host'], m['source'], m['sourcetype'], m['_raw'], m['_time'])
 
     def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_s2sout')
+        self.logger = logging.getLogger('eventgen')
 
 
 def load():
