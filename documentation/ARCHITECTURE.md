@@ -48,7 +48,7 @@ Given the complexity and the reimplementation of a number of features during the
 
 # Server-Controller Architecture
 
-This is a new feature included in/from the version 0.6.0. Traditionally, it has been difficult to configure multiple Eventgen instances at the same time. The performance of a single Eventgen instance is often limited in its architecture and compute power of the host machine.
+This is a new feature included in/from the version 6.0.0. Traditionally, it has been difficult to configure multiple Eventgen instances at the same time. The performance of a single Eventgen instance is often limited in its architecture and compute power of the host machine.
 Therefore, it is inevitable to use more than one Eventgen instance for larger data generation. We introduce server-controller architecture to do this in a more user friendly way.
 
 In Server-Controller Architecture, we may have one or multiple servers (Eventgen instances), one controller and one instance of RabbitMQ. It is ok to run RabbitMQ locally with the controller.

@@ -46,12 +46,12 @@ $ make egg
 
 # you should see a tar file inside of dist directory
 $ ls dist
-splunk_eventgen-0.6.x.tar.gz
+splunk_eventgen-6.x.x.tar.gz
 
-$ pip install splunk_eventgen-0.6.x.tar.gz
+$ pip install splunk_eventgen-6.x.x.tar.gz
 
 $ splunk_eventgen --version
-Eventgen 0.6.x
+Eventgen 6.x.x
 ```
 Now you are ready to use Eventgen as a pip module.
 
