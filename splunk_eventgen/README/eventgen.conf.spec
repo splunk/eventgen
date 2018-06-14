@@ -112,7 +112,7 @@ outputWorkers = <number of worker threads>
 outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout
     * Specifies how to output log data.  Modinput is default.
     * If setting spool, should set spoolDir
-    * If setting file, should set logFile
+    * If setting file, should set fileName
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser and splunkPassword if not Splunk embedded
     * If setting s2s, should set splunkHost and splunkPort
     * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort
