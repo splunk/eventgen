@@ -117,7 +117,7 @@ class Eventgen(ModularInput):
                 logger.info("Finished config parsing")
                 if eventgen.config.samples:
                     for sample in eventgen.config.samples:
-                        if sample.outputMode != "spool" or sample.outputMode != "file":
+                        if sample.outputMode not in ["spool", "file"]:
                             sample.outputMode = "modinput"
                 logger.info("Finished parse")
                 eventgen._reload_plugins()
