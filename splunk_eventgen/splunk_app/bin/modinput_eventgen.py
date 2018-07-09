@@ -138,8 +138,12 @@ def handler(signum, frame):
     logger.info("Eventgen Modinput takes signal {0}. Exiting".format(signum))
     sys.exit(0)
 
+def handle_signal():
+    if not sys.platform.startswith('win') and sys.platform != "cygwin":
+        signal.signal(signal.SIGPIPE, handler)
+
 if __name__ == '__main__':
-    signal.signal(signal.SIGPIPE, handler)
+    handle_signal()
     worker = Eventgen()
     worker.execute()
     sys.exit(0)
