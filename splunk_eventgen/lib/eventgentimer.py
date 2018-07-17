@@ -47,6 +47,7 @@ class Timer(object):
             rater_class = self.config.getPlugin('rater.' + self.sample.rater, self.sample)
             self.rater = rater_class(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
+            self.outputPlugin = self.config.getPlugin('output.' + self.sample.outputMode, self.sample)
         self.logger.info("Start '%s' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
 
     # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.

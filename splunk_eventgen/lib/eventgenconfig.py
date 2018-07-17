@@ -180,29 +180,29 @@ class Config(object):
         make sure we look in __outputPlugins as well. For some reason we
         keep 2 separate dicts of plugins.
         '''
+        plugintype=name.split(".")[0]
         if not name in self.plugins and not name in self.outputPlugins:
             # 2/1/15 CS If we haven't already seen the plugin, try to load it
             # Note, this will only work for plugins which do not specify config validation
             # parameters.  If they do, configs may not validate for user provided plugins.
             if s:
-                for plugintype in ['generator', 'rater', 'output']:
-                    if plugintype in ('generator', 'rater'):
-                        plugin = getattr(s, plugintype)
+                if plugintype in ('generator', 'rater'):
+                    plugin = getattr(s, plugintype)
+                else:
+                    plugin = getattr(s, 'outputMode')
+                if plugin != None:
+                    self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'"
+                                 % (plugintype, plugin, s.name))
+                    bindir = os.path.join(s.sampleDir, os.pardir, 'bin')
+                    libdir = os.path.join(s.sampleDir, os.pardir, 'lib')
+                    plugindir = os.path.join(libdir, 'plugins', plugintype)
+                    targetplugin = PluginNotLoaded(bindir=bindir, libdir=libdir,
+                                                   plugindir=plugindir, name=plugin, type=plugintype)
+                    if targetplugin.name not in self.extraplugins:
+                        self.extraplugins.append(targetplugin.name)
+                        raise targetplugin
                     else:
-                        plugin = getattr(s, 'outputMode')
-                    if plugin != None:
-                        self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'"
-                                     % (plugintype, plugin, s.name))
-                        bindir = os.path.join(s.sampleDir, os.pardir, 'bin')
-                        libdir = os.path.join(s.sampleDir, os.pardir, 'lib')
-                        plugindir = os.path.join(libdir, 'plugins', plugintype)
-                        targetplugin = PluginNotLoaded(bindir=bindir, libdir=libdir,
-                                                       plugindir=plugindir, name=plugin, type=plugintype)
-                        if targetplugin.name not in self.extraplugins:
-                            self.extraplugins.append(targetplugin.name)
-                            raise targetplugin
-                        else:
-                            raise FailedLoadingPlugin(name=plugin)
+                        raise FailedLoadingPlugin(name=plugin)
 
         # APPPERF-263: consult both __outputPlugins and __plugins
         if not name in self.plugins and not name in self.outputPlugins:
