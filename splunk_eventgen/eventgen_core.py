@@ -251,23 +251,23 @@ class EventGenerator(object):
             console_handler.setFormatter(detailed_formatter)
             console_handler.setLevel(logging.DEBUG)
 
-            file_handler = logging.handlers.RotatingFileHandler(eventgen_main_logger_path, maxBytes=2500000, backupCount=10)
+            file_handler = logging.handlers.RotatingFileHandler(eventgen_main_logger_path, maxBytes=2500000, backupCount=20)
             file_handler.setFormatter(detailed_formatter)
             file_handler.setLevel(logging.DEBUG)
 
-            eventgen_listener_file_handler = logging.handlers.RotatingFileHandler(eventgen_listener_logger_path, maxBytes=2500000, backupCount=10)
+            eventgen_listener_file_handler = logging.handlers.RotatingFileHandler(eventgen_listener_logger_path, maxBytes=2500000, backupCount=20)
             eventgen_listener_file_handler.setFormatter(detailed_formatter)
             eventgen_listener_file_handler.setLevel(logging.DEBUG)
 
-            splunk_hec_file_handler = logging.handlers.RotatingFileHandler(eventgen_hec_logger_path, maxBytes=2500000, backupCount=10)
+            splunk_hec_file_handler = logging.handlers.RotatingFileHandler(eventgen_hec_logger_path, maxBytes=2500000, backupCount=20)
             splunk_hec_file_handler.setFormatter(detailed_formatter)
             splunk_hec_file_handler.setLevel(logging.DEBUG)
 
-            error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000, backupCount=10)
+            error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000, backupCount=20)
             error_file_handler.setFormatter(detailed_formatter)
             error_file_handler.setLevel(logging.ERROR)
 
-            metrics_file_handler = logging.handlers.RotatingFileHandler(eventgen_metrics_logger_path, maxBytes=2500000, backupCount=10)
+            metrics_file_handler = logging.handlers.RotatingFileHandler(eventgen_metrics_logger_path, maxBytes=2500000, backupCount=20)
             metrics_file_handler.setFormatter(json_formatter)
             metrics_file_handler.setLevel(logging.INFO)
 

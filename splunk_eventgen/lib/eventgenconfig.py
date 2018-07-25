@@ -261,6 +261,7 @@ class Config(object):
         self._buildConfDict()
         # Set defaults config instance variables to 'global' section
         # This establishes defaults for other stanza settings
+        print self._confDict
         if 'global' in self._confDict:
             for key, value in self._confDict['global'].items():
                 value = self._validateSetting('global', key, value)
@@ -394,6 +395,7 @@ class Config(object):
                             s.sampleDir = os.path.join(os.getcwd(), 'samples')
                     else:
                         s.sampleDir = os.path.join(os.getcwd(), 'samples')
+                        print 'oooo'
                     if not os.path.exists(s.sampleDir):
                         newSampleDir = os.path.join(os.sep.join(os.getcwd().split(os.sep)[:-1]), 'samples')
                         self.logger.error("Path not found for samples '%s', trying '%s'" % (s.sampleDir, newSampleDir))
@@ -478,7 +480,8 @@ class Config(object):
                 sampleFiles = os.listdir(s.sampleDir)
                 for sample in sampleFiles:
                     results = re.match(s.name, sample)
-                    if results != None:
+                    if results:
+                        self.logger.debug("Matched file {0} with sample name {1}".format(results.group(0), s.name))
                         samplePath = os.path.join(s.sampleDir, sample)
                         if os.path.isfile(samplePath):
                             self.logger.debug("Found sample file '%s' for app '%s' using config '%s' with priority '%s'; adding to list" \
@@ -491,9 +494,8 @@ class Config(object):
                 # 9/16/15 Change bit us, now only append if we're a generator other than the two stock generators
                 if not s.disabled and not (s.generator == "default" or s.generator == "replay"):
                     tempsamples2.append(s)
+            print foundFiles, '*******'
             for f in foundFiles:
-                # TODO: Not sure why we use deepcopy here, seems point less.
-                #news = copy.deepcopy(s)
                 news = s
                 news.filePath = f
                 # 12/3/13 CS TODO These are hard coded but should be handled via the modular config system
@@ -618,6 +620,7 @@ class Config(object):
         self._confDict = None
 
         # 9/2/15 Try autotimestamp values, add a timestamp if we find one
+        print self.samples
         for s in self.samples:
             if s.generator == 'default':
                 s.loadSample()
