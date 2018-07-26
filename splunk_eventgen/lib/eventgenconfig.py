@@ -261,18 +261,27 @@ class Config(object):
         self._buildConfDict()
         # Set defaults config instance variables to 'global' section
         # This establishes defaults for other stanza settings
-        print self._confDict
         if 'global' in self._confDict:
             for key, value in self._confDict['global'].items():
                 value = self._validateSetting('global', key, value)
                 setattr(self, key, value)
-
             del self._confDict['global']
             if 'default' in self._confDict:
                 del self._confDict['default']
 
         tempsamples = [ ]
         tempsamples2 = [ ]
+
+        stanza_map = {}
+        stanza_list = []
+        for stanza in self._confDict.keys():
+            stanza_list.append(stanza)
+            stanza_map[stanza] = []
+
+        for stanza, settings in self._confDict.iteritems():
+            for stanza_item in stanza_list:
+                if stanza != stanza_item and re.match(stanza, stanza_item):
+                    stanza_map[stanza_item].append(stanza)
 
         # 1/16/16 CS Trying to clean up the need to have attributes hard coded into the Config object
         # and instead go off the list of valid settings that could be set
@@ -297,7 +306,43 @@ class Config(object):
                 s = Sample(stanza)
 
                 s.updateConfig(self)
+
+                # Get the latest token number of the current stanza
+                last_token_number = 0
                 for key, value in settings.items():
+                    if 'token' in key and int(key[6]) > last_token_number:
+                        last_token_number = int(key[6])
+
+                # Apply global tokens to the current stanza
+                kv_pair_items = settings.items()
+                if stanza in stanza_map:
+                    for global_stanza in stanza_map[stanza]:
+                        i = 0
+                        while True:
+                            if 'token.{}.token'.format(i) in self._confDict[global_stanza]:
+                                token = self._confDict[global_stanza].get('token.{}.token'.format(i))
+                                replacement = self._confDict[global_stanza].get('token.{}.replacement'.format(i))
+                                replacementType = self._confDict[global_stanza].get('token.{}.replacementType'.format(i))
+
+                                last_token_number += 1
+                                if token:
+                                    k = 'token.{}.token'.format(last_token_number)
+                                    v = token
+                                    kv_pair_items.append((k, v))
+                                if replacement:
+                                    k = 'token.{}.replacement'.format(last_token_number)
+                                    v = replacement
+                                    kv_pair_items.append((k, v))
+                                if replacementType:
+                                    k = 'token.{}.replacementType'.format(last_token_number)
+                                    v = replacementType
+                                    kv_pair_items.append((k, v))
+
+                                i += 1
+                            else:
+                                break
+
+                for key, value in kv_pair_items:
                     oldvalue = value
                     try:
                         value = self._validateSetting(stanza, key, value)
@@ -395,7 +440,6 @@ class Config(object):
                             s.sampleDir = os.path.join(os.getcwd(), 'samples')
                     else:
                         s.sampleDir = os.path.join(os.getcwd(), 'samples')
-                        print 'oooo'
                     if not os.path.exists(s.sampleDir):
                         newSampleDir = os.path.join(os.sep.join(os.getcwd().split(os.sep)[:-1]), 'samples')
                         self.logger.error("Path not found for samples '%s', trying '%s'" % (s.sampleDir, newSampleDir))
@@ -475,7 +519,6 @@ class Config(object):
                     except (IOError, ValueError):
                         token.replacement = token.replacement
 
-
             if os.path.exists(s.sampleDir):
                 sampleFiles = os.listdir(s.sampleDir)
                 for sample in sampleFiles:
@@ -487,6 +530,7 @@ class Config(object):
                             self.logger.debug("Found sample file '%s' for app '%s' using config '%s' with priority '%s'; adding to list" \
                                 % (sample, s.app, s.name, s._priority) )
                             foundFiles.append(samplePath)
+
             # If we didn't find any files, log about it
             if len(foundFiles) == 0:
                 self.logger.warning("Sample '%s' in config but no matching files" % s.name)
@@ -494,28 +538,29 @@ class Config(object):
                 # 9/16/15 Change bit us, now only append if we're a generator other than the two stock generators
                 if not s.disabled and not (s.generator == "default" or s.generator == "replay"):
                     tempsamples2.append(s)
-            print foundFiles, '*******'
+
             for f in foundFiles:
-                news = s
-                news.filePath = f
-                # 12/3/13 CS TODO These are hard coded but should be handled via the modular config system
-                # Maybe a generic callback for all plugins which will modify sample based on the filename
-                # found?
-                # Override <SAMPLE> with real name
-                if s.outputMode == 'spool' and s.spoolFile == self.spoolFile:
-                    news.spoolFile = f.split(os.sep)[-1]
-                if s.outputMode == 'file' and s.fileName == None and s.spoolFile == self.spoolFile:
-                    news.fileName = os.path.join(s.spoolDir, f.split(os.sep)[-1])
-                elif s.outputMode == 'file' and s.fileName == None and s.spoolFile != None:
-                    news.fileName = os.path.join(s.spoolDir, s.spoolFile)
-                # Override s.name with file name.  Usually they'll match unless we've been a regex
-                # 6/22/12 CS Save original name for later matching
-                news._origName = news.name
-                news.name = f.split(os.sep)[-1]
-                if not news.disabled:
-                    tempsamples2.append(news)
-                else:
-                    self.logger.info("Sample '%s' for app '%s' is marked disabled." % (news.name, news.app))
+                if s.name in f:
+                    news = s
+                    news.filePath = f
+                    # 12/3/13 CS TODO These are hard coded but should be handled via the modular config system
+                    # Maybe a generic callback for all plugins which will modify sample based on the filename
+                    # found?
+                    # Override <SAMPLE> with real name
+                    if s.outputMode == 'spool' and s.spoolFile == self.spoolFile:
+                        news.spoolFile = f.split(os.sep)[-1]
+                    if s.outputMode == 'file' and s.fileName == None and s.spoolFile == self.spoolFile:
+                        news.fileName = os.path.join(s.spoolDir, f.split(os.sep)[-1])
+                    elif s.outputMode == 'file' and s.fileName == None and s.spoolFile != None:
+                        news.fileName = os.path.join(s.spoolDir, s.spoolFile)
+                    # Override s.name with file name.  Usually they'll match unless we've been a regex
+                    # 6/22/12 CS Save original name for later matching
+                    news._origName = news.name
+                    news.name = f.split(os.sep)[-1]
+                    if not news.disabled:
+                        tempsamples2.append(news)
+                    else:
+                        self.logger.info("Sample '%s' for app '%s' is marked disabled." % (news.name, news.app))
 
         # Clear tempsamples, we're going to reuse it
         tempsamples = [ ]
@@ -620,7 +665,6 @@ class Config(object):
         self._confDict = None
 
         # 9/2/15 Try autotimestamp values, add a timestamp if we find one
-        print self.samples
         for s in self.samples:
             if s.generator == 'default':
                 s.loadSample()
