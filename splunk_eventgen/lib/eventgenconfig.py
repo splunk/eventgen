@@ -318,6 +318,8 @@ class Config(object):
                 if stanza in stanza_map:
                     for global_stanza in stanza_map[stanza]:
                         i = 0
+
+                        # Scan for tokens first
                         while True:
                             if 'token.{}.token'.format(i) in self._confDict[global_stanza]:
                                 token = self._confDict[global_stanza].get('token.{}.token'.format(i))
@@ -341,6 +343,11 @@ class Config(object):
                                 i += 1
                             else:
                                 break
+
+                        keys = settings.keys()
+                        for k,v in self._confDict[global_stanza].items():
+                            if 'token' not in k and k not in keys:
+                                kv_pair_items.append((k,v))
 
                 for key, value in kv_pair_items:
                     oldvalue = value
