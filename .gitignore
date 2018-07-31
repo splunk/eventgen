@@ -26,3 +26,4 @@ dist
 _book
 *.result
 venv/*
+*.log.*

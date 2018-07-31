@@ -91,14 +91,14 @@ class ReplayGenerator(GeneratorPlugin):
             # If timestamp doesn't exist, the sample file should be fixed to include timestamp for every event.
             try:
                 current_event_timestamp = self._sample.getTSFromEvent(rpevent[self._sample.timeField])
-            except ValueError as e:
+            except Exception as e:
                 try:
                     current_event_timestamp = self._sample.getTSFromEvent(line[self._sample.timeField])
-                except ValueError as e:
+                except Exception as e:
                     try:
                         self.logger.debug("Sample timeField {} failed to locate. Trying to locate _time field.".format(self._sample.timeField))
                         current_event_timestamp = self._sample.getTSFromEvent(line["_time"])
-                    except ValueError as e:
+                    except Exception as e:
                         self.logger.exception("Extracting timestamp from an event failed.")
                         continue
 
