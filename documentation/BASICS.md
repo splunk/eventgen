@@ -1,11 +1,7 @@
 # Welcome
 
-Thanks for checking out the tutorial.  This should hopefully get you through setting up a working event generator.  It's only a tutorial though, so if you want a complete reference of all of the available configuration options, please check out the [eventgen.conf.spec](REFERENCE.md#eventgenconfspec) in the README directory.  With that, feel free to dig right in, and feel free to post to the Issues page if you have any questions.
-
-## Intro Video
-We've recorded a screencast to get you started.  This is definitely the fastest way to learn how to use Eventgen.  The tutorial docs below will cover all the examples in detail, but if you want to get started quickly, check out the video:
-
-[Get Started with Eventgen!](http://youtu.be/9S-ZeGEfRKg?hd=1)
+Thanks for checking out the tutorial.
+This should hopefully get you through setting up a working event generator.  It's only a tutorial though, so if you want a complete reference of all of the available configuration options, please check out the [eventgen.conf.spec](REFERENCE.md#eventgenconfspec) in the README directory.  With that, feel free to dig right in, and feel free to post to the Issues page if you have any questions.
 
 ## Replay Example
 
@@ -18,20 +14,20 @@ To build a seed for your new Eventgen, I recommend taking an export from an exis
 This example was pulled from a simple search of \_internal on my Splunk instance.
 
 ### Running the example
-You can easily run these examples by hand.  In fact, for testing purposes, I almost always change outputMode = file (you can see it commented out in most of the tutorials) and run Eventgen by hand to make sure my substitutions are set up correctly.  In this case, assuming you've customized the tutorial file for your splunk host, username and password, lets run the tutorial and see it replay these events.  From the base directory of Eventgen:
+You can easily run these examples by hand.  In fact, for testing purposes, I almost always change outputMode = stdout to visually examine the data. Run the command below from the base directory of Eventgen.
 
-    python bin/eventgen.py README/eventgen.conf.tutorial1
+    python -m splunk_eventgen generate splunk_eventgen/README/eventgen.conf.tutorial1
 
-You should now see events showing up in your main index.  You can see Eventgen will sleep between events as it sees gaps in the events in the source log.
+You should now see events showing up on your terminal window.  You can see Eventgen will sleep between events as it sees gaps in the events in the source log.
 
 ### Wrapping up the first example
 This will cover most, if not all, of most people's use cases.  Find a real world example of what you want to generate events off, extract it from Splunk or a log file, and toss it into Eventgen.  Assuming that meets all your needs, you might want to skip to the [Deployment](#deployment) section.
 
 ## Basic Sample
 
-Next, lets build a basic noise generator from a log file.  This will use sample mode, which take a file and replay all or a subset of that file every X seconds, defined by the interval.  Sample mode is the original way eventgen ran, and it's still very useful for generating random data where you want to engineer the data generated from the ground up.  Our example file will be eventgen.conf.tutorial2, located again in the README directory.  To run the example:
+Next, lets build a basic noise generator from a log file.  This will use sample mode, which take a file and replay all or a subset of that file every X seconds, defined by the interval.  Sample mode is the original way eventgen ran, and it's still very useful for generating random data where you want to engineer the data generated from the ground up. To run the example:
 
-    python bin/eventgen.py README/eventgen.conf.tutorial2
+    python -m splunk_eventgen generate splunk_eventgen/README/eventgen.conf.tutorial2
 
 ### Grabbing and rating events
 
