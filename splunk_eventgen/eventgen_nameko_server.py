@@ -317,10 +317,12 @@ Output Queue Status: {7}\n'''
             data = {}
         if type(data) != dict:
             data = json.loads(data)
+
         try:
             # set default values that follow default ORCA setting
             mode = data.get("mode", "roundrobin")
             hostname_template = data.get("hostname_template", "idx{0}")
+            hosts = data.get("other_hosts", [])
             protocol = data.get("protocol", "https")
             key = data.get("key", "00000000-0000-0000-0000-000000000000")
             key_name = data.get("key_name", "eventgen")
@@ -329,29 +331,52 @@ Output Queue Status: {7}\n'''
             mgmt_port = int(data.get("mgmt_port", 8089))
             new_key = bool(data.get("new_key", True))
 
+            def create_new_hec_key(hostname):
+                requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/http".format(
+                        hostname, mgmt_port),
+                        auth=("admin", password),
+                        data={"disabled": "0"},
+                        verify=False)
+                requests.delete(
+                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}".format(
+                                hostname, mgmt_port,key_name),
+                        verify=False,
+                        auth=("admin", password)
+                    )
+                requests.post(
+                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(
+                                hostname, mgmt_port),
+                        verify=False,
+                        auth=("admin", password),
+                        data={"name": key_name})
+                r = requests.post(
+                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(
+                                hostname, mgmt_port, key_name),
+                        verify=False,
+                        auth=("admin", password))
+                return str(json.loads(r.text)["entry"][0]["content"]["token"])
+
             self.discovered_servers = []
+            for host in hosts:
+                try:
+                    formatted_hostname = socket.gethostbyname(host)
+                    if new_key:
+                        key = create_new_hec_key(formatted_hostname)
+
+                    self.discovered_servers.append({"protocol": str(protocol),
+                                                    "address": str(formatted_hostname),
+                                                    "port": str(hec_port),
+                                                    "key": str(key)})
+                except socket.gaierror:
+                    continue
+
             counter = 1
             while True:
                 try:
                     formatted_hostname = socket.gethostbyname(hostname_template.format(counter))
                     if new_key:
-                        requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/http".format(
-                            formatted_hostname, mgmt_port),
-                                      auth=("admin", password),
-                                      data={"disabled": "0"},
-                                      verify=False)
-                        requests.post(
-                            "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(
-                                formatted_hostname, mgmt_port),
-                            verify=False,
-                            auth=("admin", password),
-                            data={"name": key_name})
-                        r = requests.post(
-                            "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(
-                                formatted_hostname, mgmt_port, key_name),
-                            verify=False,
-                            auth=("admin", password))
-                        key = str(json.loads(r.text)["entry"][0]["content"]["token"])
+                        key = create_new_hec_key(formatted_hostname)
+
                     self.discovered_servers.append({"protocol": str(protocol),
                                                     "address": str(formatted_hostname),
                                                     "port": str(hec_port),
