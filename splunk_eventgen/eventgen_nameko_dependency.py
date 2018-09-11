@@ -33,7 +33,7 @@ def create_args():
     args.sample = None
     args.version = False
     args.subcommand = 'generate'
-    args.verbosity = 1
+    args.verbosity = 0
     args.wsgi = True
     args.modinput_mode = False
     return args

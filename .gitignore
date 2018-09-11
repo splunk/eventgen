@@ -26,4 +26,8 @@ dist
 _book
 *.result
 venv/*
+<<<<<<< Updated upstream
 *.log.*
+=======
+*eventgen*.log*
+>>>>>>> Stashed changes
