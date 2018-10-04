@@ -21,5 +21,8 @@ RUN cd /root/ && gitbook install
 
 EXPOSE 4000
 
+HEALTHCHECK --interval=1m --timeout=15s --start-period=1m --retries=3 \
+	CMD curl -f http://localhost:4000 || exit 1
+
 WORKDIR /root/
 ENTRYPOINT ["/sbin/entrypoint.sh"]
