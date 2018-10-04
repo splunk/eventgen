@@ -5,6 +5,8 @@ RUN apk upgrade --update && \
 	apk add --no-cache --update \
 	nodejs \
 	nodejs-npm \
+	curl \
+	python3 \
 	build-base && \ 
 	rm -rf /var/cache/apk/* && \
 	npm install -g npm q gitbook-cli lodash commander optimist bash-color fs-extra
