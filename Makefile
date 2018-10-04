@@ -103,7 +103,9 @@ run_controller: eg_network
 docs:
 	docker build -t stg-repo.splunk.com/tonyl/eventgen-docs:latest documentation/
 	docker push stg-repo.splunk.com/tonyl/eventgen-docs:latest
-	python documentation/deploy.py --certs ~/.orca
+	kubectl delete -f documentation/eventgendocs.yml || true
+	sleep 30
+	kubectl apply -f documentation/eventgendocs.yml
 
 build_spl: clean
 	python -m splunk_eventgen build --destination ./
