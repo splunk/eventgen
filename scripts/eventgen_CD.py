@@ -10,7 +10,7 @@ import re
 import subprocess
 import json
 import shutil
-import github
+from github import Github
 
 file_location = os.path.dirname(os.path.realpath(__file__))
 splunk_eventgen_location = os.path.normpath(os.path.join(file_location, ".."))
