@@ -77,7 +77,6 @@ def prepare_external_release(new_version, splunkbase, github):
         pass    # (https://splunkbase.splunk.com/app/1924/edit/#/hosting)
     if github:
         external_repo = Repo(eventgen_external_location)
-        is_bare = external_repo.bare()
 
 
 def remove_internal_references():
@@ -154,15 +153,15 @@ def main():
     if args.push:
         push_pypi(args)
     # Copy files to new directories for editing
-    if os.path.exists(eventgen_external_location):
-        shutil.rmtree(eventgen_external_location)
-    shutil.copytree(splunk_eventgen_location, eventgen_external_location)
-    if os.path.exists(eventgen_internal_location):
-        shutil.rmtree(eventgen_internal_location)
-    shutil.copytree(splunk_eventgen_location, eventgen_internal_location)
+    #if os.path.exists(eventgen_external_location):
+    #    shutil.rmtree(eventgen_external_location)
+    #shutil.copytree(splunk_eventgen_location, eventgen_external_location)
+    #if os.path.exists(eventgen_internal_location):
+    #    shutil.rmtree(eventgen_internal_location)
+    #shutil.copytree(splunk_eventgen_location, eventgen_internal_location)
     # Prepare for releases based on command-line arguments
-    prepare_internal_release(args.version, args.artifactory, args.pip, args.container)
-    prepare_external_release(args.version, args.splunkbase, args.github)
+    #prepare_internal_release(args.version, args.artifactory, args.pip, args.container)
+    #prepare_external_release(args.version, args.splunkbase, args.github)
 
 
 if __name__ == "__main__":
