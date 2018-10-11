@@ -10,7 +10,7 @@ import re
 import subprocess
 import json
 import shutil
-from github import Github
+import github
 
 file_location = os.path.dirname(os.path.realpath(__file__))
 splunk_eventgen_location = os.path.normpath(os.path.join(file_location, ".."))
@@ -90,7 +90,7 @@ def prepare_internal_release(new_version, artifactory, pip, container):
     update_versions(new_version+'.dev0', eventgen_internal_location)
 
 
-def prepare_external_release(new_version, splunkbase, github):
+def prepare_external_release(new_version, splunkbase, external_github):
     """
     Remove all sensitive Splunk information from codebase and publish to specified external sources
     """
@@ -100,7 +100,7 @@ def prepare_external_release(new_version, splunkbase, github):
     # handle publishing methods
     if splunkbase:
         pass
-    if github:
+    if external_github:
         pass
 
 
@@ -109,7 +109,7 @@ def remove_internal_references(new_version):
     Remove all files / in-line references to Splunk credentials and other sensitive information
     """
     # Checkout new branch for external release
-    #g = Github(ACCESS_TOKEN)
+    #g = github.Github(ACCESS_TOKEN)
     p = subprocess.call(["make", "clean"], cwd=eventgen_external_location)
     # TODO: remove splunk link inside setup.py
     for relative_path in internal_remove_paths:
@@ -156,7 +156,7 @@ def parse():
     # external: splunkbase, github
     parser.add_argument("--splunkbase", "--sb", default=False, action="store_true",
                         help="Publish eventgen as an app to external/public splunkbase")
-    parser.add_argument("--github", "--gh", default=False, action="store_true",
+    parser.add_argument("--external-github", "--gh", default=False, action="store_true",
                         help="Publish release version to external/public Github repository")
     parser.add_argument("--version", type=str, default=None, required=True,
                         help="specify version of new release")
@@ -185,7 +185,7 @@ def main():
     shutil.copytree(splunk_eventgen_location, eventgen_internal_location)
     # Prepare for releases based on command-line arguments
     prepare_internal_release(args.version, args.artifactory, args.pip, args.container)
-    prepare_external_release(args.version, args.splunkbase, args.github)
+    prepare_external_release(args.version, args.splunkbase, args.external_github)
 
 
 if __name__ == "__main__":
