@@ -10,12 +10,12 @@ import re
 import subprocess
 import json
 import shutil
+from git import Repo
 
 file_location = os.path.dirname(os.path.realpath(__file__))
 splunk_eventgen_location = os.path.normpath(os.path.join(file_location, ".."))
 eventgen_external_location = os.path.normpath(os.path.join(splunk_eventgen_location, "..", "eventgen_external"))
 eventgen_internal_location = os.path.normpath(os.path.join(splunk_eventgen_location, "..", "eventgen_internal"))
-conf_file = os.path.normpath(os.path.join(splunk_eventgen_location, "splunk_eventgen/splunk_app/default/app.conf"))
 internal_remove_paths = ["Makefile", "Jenkinsfile", "scripts", "documentation/deploy.py", "documentation/node_modules",
                          "documentation/_book", "documentation/CHANGELOG.md"]
 
@@ -23,11 +23,13 @@ sys.path.insert(0, splunk_eventgen_location)
 from splunk_eventgen.__init__ import _set_dev_version, _set_release_version
 
 
-def update_versions(new_version, version_file, conf_file):
+def update_versions(new_version, root_path):
     """
     Update all version references to the new release version
     """
     # update version file
+    version_file = os.path.normpath(os.path.join(root_path, "splunk_eventgen/version.json"))
+    conf_file = os.path.normpath(os.path.join(root_path, "splunk_eventgen/splunk_app/default/app.conf"))
     with open(version_file, "r") as infile:
         version_json = json.load(infile)
         version_json["version"] = new_version
@@ -47,13 +49,11 @@ def prepare_internal_release(new_version, artifactory, pip, container):
     Prepare documentation for release and publish to specified internal sources
     """
     # AFTER CUTTING NEW release/x.x.x BRANCH:
-    version_file = os.path.normpath(os.path.join(eventgen_internal_location, "splunk_eventgen/version.json"))
-    conf_file = os.path.normpath(os.path.join(eventgen_internal_location, "splunk_eventgen/splunk_app/default/app.conf"))
-    update_versions(new_version, version_file, conf_file)
-    # push to bitbucket repository
-    #p = subprocess.Popen(["make", "push_release_egg"], cwd=splunk_eventgen_location)
-    #p = subprocess.Popen(["make", "push_image_production"], cwd=splunk_eventgen_location)
-    # write a release notes and distribute to productsall + eng (commit messages?)
+    update_versions(new_version, eventgen_internal_location)
+    # TODO: push to bitbucket repository
+    p = subprocess.Popen(["make", "push_release_egg"], cwd=eventgen_internal_location)
+    p = subprocess.Popen(["make", "push_image_production"], cwd=eventgen_internal_location)
+    # TODO: write a release notes and distribute to productsall + eng (commit messages? manual?)
     # handle publishing methods
     if artifactory:
         pass
@@ -62,7 +62,7 @@ def prepare_internal_release(new_version, artifactory, pip, container):
     if container:
         pass
     # update latest develop version.json with next dev version
-    update_versions(new_version+'.dev0', version_file, conf_file)
+    update_versions(new_version+'.dev0', eventgen_internal_location)
 
 
 def prepare_external_release(new_version, splunkbase, github):
@@ -70,15 +70,14 @@ def prepare_external_release(new_version, splunkbase, github):
     Remove all sensitive Splunk information from codebase and publish to specified external sources
     """
     # AFTER CUTTING NEW release/x.x.x_open_source BRANCH
-    version_file = os.path.normpath(os.path.join(eventgen_external_location, "splunk_eventgen/version.json"))
-    conf_file = os.path.normpath(os.path.join(eventgen_external_location, "splunk_eventgen/splunk_app/default/app.conf"))
-    update_versions(new_version, version_file, conf_file)
-    #remove_internal_references()
+    update_versions(new_version, eventgen_external_location)
+    remove_internal_references()
     # handle publishing methods
     if splunkbase:
         pass    # (https://splunkbase.splunk.com/app/1924/edit/#/hosting)
     if github:
-        pass
+        external_repo = Repo(eventgen_external_location)
+        is_bare = external_repo.bare()
 
 
 def remove_internal_references():
@@ -86,7 +85,7 @@ def remove_internal_references():
     Remove all files / in-line references to Splunk credentials and other sensitive information
     """
     # copy files to new path? git checkout/push new branch?
-    p = subprocess.Popen(["make", "clean"], cwd=splunk_eventgen_location)
+    p = subprocess.Popen(["make", "clean"], cwd=eventgen_external_location)
     # remove splunk link inside setup.py
     for relative_path in internal_remove_paths:
         path = os.path.normpath(os.path.join(splunk_eventgen_location, relative_path))
@@ -94,13 +93,6 @@ def remove_internal_references():
             shutil.rmtree(path)
         else:
             os.remove(path)
-    # rm Makefile
-    # rm Jenkinsfile
-    # rm -rf scripts
-    # rm documentation/deploy.py
-    # rm -rf documentation/node_modules
-    # rm -rf documentation/_book
-    # rm documentation/CHANGELOG.md
 
     # TODO: remove below code block from eventgen_core.py in _setup_loggers method:
         # try:
