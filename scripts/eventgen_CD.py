@@ -17,6 +17,10 @@ eventgen_external_location = os.path.normpath(os.path.join(splunk_eventgen_locat
 eventgen_internal_location = os.path.normpath(os.path.join(splunk_eventgen_location, "..", "eventgen_internal"))
 internal_remove_paths = ["Makefile", "Jenkinsfile", "scripts", "documentation/deploy.py", "documentation/node_modules",
                          "documentation/_book", "documentation/CHANGELOG.md"]
+splunkbase_url = "https://splunkbase.splunk.com/app/1924/edit/#/hosting"
+artifactory_url = ""
+internal_git_url = ""
+external_git_url = ""
 
 sys.path.insert(0, splunk_eventgen_location)
 from splunk_eventgen.__init__ import _set_dev_version, _set_release_version
@@ -73,7 +77,7 @@ def prepare_external_release(new_version, splunkbase, github):
     remove_internal_references()
     # handle publishing methods
     if splunkbase:
-        pass    # (https://splunkbase.splunk.com/app/1924/edit/#/hosting)
+        pass    # splunkbase_url defined at beginning of file
     if github:
         pass
 
@@ -82,23 +86,22 @@ def remove_internal_references():
     """
     Remove all files / in-line references to Splunk credentials and other sensitive information
     """
-    # copy files to new path? git checkout/push new branch?
+    # TODO: copy files to new path? git checkout/push new branch?
     p = subprocess.Popen(["make", "clean"], cwd=eventgen_external_location)
-    # remove splunk link inside setup.py
+    # TODO: remove splunk link inside setup.py
     for relative_path in internal_remove_paths:
-        path = os.path.normpath(os.path.join(splunk_eventgen_location, relative_path))
+        path = os.path.normpath(os.path.join(eventgen_external_location, relative_path))
         if os.path.isdir(path):
             shutil.rmtree(path)
         else:
             os.remove(path)
-
     # TODO: remove below code block from eventgen_core.py in _setup_loggers method:
-        # try:
-        #   hec_info = self.get_hec_info_from_conf()
-        #   self.hec_logging_handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1])
-        #   logging.getLogger().addHandler(self.hec_logging_handler)
-        # except Exception as e:
-        #    self.logger.exception(e)
+    # try:
+    #   hec_info = self.get_hec_info_from_conf()
+    #   self.hec_logging_handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1])
+    #   logging.getLogger().addHandler(self.hec_logging_handler)
+    # except Exception as e:
+    #    self.logger.exception(e)
 
 
 def push_pypi(args):
@@ -137,7 +140,6 @@ def parse():
 
     ## Adding Pypi Module subparser
     pypi_subparser = subparsers.add_parser("pypi", help="Build/deploy pypi module to production")
-
     return parser.parse_args()
 
 
@@ -152,15 +154,15 @@ def main():
     if args.push:
         push_pypi(args)
     # Copy files to new directories for editing
-    #if os.path.exists(eventgen_external_location):
-    #    shutil.rmtree(eventgen_external_location)
-    #shutil.copytree(splunk_eventgen_location, eventgen_external_location)
-    #if os.path.exists(eventgen_internal_location):
-    #    shutil.rmtree(eventgen_internal_location)
-    #shutil.copytree(splunk_eventgen_location, eventgen_internal_location)
+    if os.path.exists(eventgen_external_location):
+        shutil.rmtree(eventgen_external_location)
+    shutil.copytree(splunk_eventgen_location, eventgen_external_location)
+    if os.path.exists(eventgen_internal_location):
+        shutil.rmtree(eventgen_internal_location)
+    shutil.copytree(splunk_eventgen_location, eventgen_internal_location)
     # Prepare for releases based on command-line arguments
-    #prepare_internal_release(args.version, args.artifactory, args.pip, args.container)
-    #prepare_external_release(args.version, args.splunkbase, args.github)
+    prepare_internal_release(args.version, args.artifactory, args.pip, args.container)
+    prepare_external_release(args.version, args.splunkbase, args.github)
 
 
 if __name__ == "__main__":
