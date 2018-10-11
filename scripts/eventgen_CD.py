@@ -10,7 +10,6 @@ import re
 import subprocess
 import json
 import shutil
-from git import Repo
 
 file_location = os.path.dirname(os.path.realpath(__file__))
 splunk_eventgen_location = os.path.normpath(os.path.join(file_location, ".."))
@@ -76,7 +75,7 @@ def prepare_external_release(new_version, splunkbase, github):
     if splunkbase:
         pass    # (https://splunkbase.splunk.com/app/1924/edit/#/hosting)
     if github:
-        external_repo = Repo(eventgen_external_location)
+        pass
 
 
 def remove_internal_references():
