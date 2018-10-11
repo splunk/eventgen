@@ -10,6 +10,7 @@ import re
 import subprocess
 import json
 import shutil
+from github import Github
 
 file_location = os.path.dirname(os.path.realpath(__file__))
 splunk_eventgen_location = os.path.normpath(os.path.join(file_location, ".."))
@@ -24,6 +25,27 @@ external_git_url = ""
 
 sys.path.insert(0, splunk_eventgen_location)
 from splunk_eventgen.__init__ import _set_dev_version, _set_release_version
+
+
+def execute_command(command, working_dir):
+    """
+
+    """
+    cwd = os.getcwd()
+    os.chdir(working_dir)
+    output = os.system(command)
+    os.chdir(cwd)
+    return output
+
+def create_external_branch(repo_path, new_version):
+    """
+    Create a new release branch for our external git repository, assuming our current branch is up to date.
+    """
+    # Change to the directory that holds our .git reference
+    branch_status = execute_command("git status", repo_path)
+    # Check if current branch is clean / up-to-date | TODO: need to test
+    if "nothing to commit, working tree clean" in branch_status:
+        execute_command("git checkout -b release/{}".format(new_version), repo_path)
 
 
 def update_versions(new_version, root_path):
@@ -54,8 +76,8 @@ def prepare_internal_release(new_version, artifactory, pip, container):
     # AFTER CUTTING NEW release/x.x.x BRANCH:
     update_versions(new_version, eventgen_internal_location)
     # TODO: push to bitbucket repository
-    p = subprocess.Popen(["make", "push_release_egg"], cwd=eventgen_internal_location)
-    p = subprocess.Popen(["make", "push_image_production"], cwd=eventgen_internal_location)
+    #p = subprocess.Popen(["make", "push_release_egg"], cwd=eventgen_internal_location)
+    #p = subprocess.Popen(["make", "push_image_production"], cwd=eventgen_internal_location)
     # TODO: write a release notes and distribute to productsall + eng (commit messages? manual?)
     # handle publishing methods
     if artifactory:
@@ -74,26 +96,27 @@ def prepare_external_release(new_version, splunkbase, github):
     """
     # AFTER CUTTING NEW release/x.x.x_open_source BRANCH
     update_versions(new_version, eventgen_external_location)
-    remove_internal_references()
+    remove_internal_references(new_version)
     # handle publishing methods
     if splunkbase:
-        pass    # splunkbase_url defined at beginning of file
+        pass
     if github:
         pass
 
 
-def remove_internal_references():
+def remove_internal_references(new_version):
     """
     Remove all files / in-line references to Splunk credentials and other sensitive information
     """
-    # TODO: copy files to new path? git checkout/push new branch?
-    p = subprocess.Popen(["make", "clean"], cwd=eventgen_external_location)
+    # Checkout new branch for external release
+    #g = Github(ACCESS_TOKEN)
+    p = subprocess.call(["make", "clean"], cwd=eventgen_external_location)
     # TODO: remove splunk link inside setup.py
     for relative_path in internal_remove_paths:
         path = os.path.normpath(os.path.join(eventgen_external_location, relative_path))
         if os.path.isdir(path):
             shutil.rmtree(path)
-        else:
+        elif os.path.exists(path):
             os.remove(path)
     # TODO: remove below code block from eventgen_core.py in _setup_loggers method:
     # try:
@@ -135,8 +158,8 @@ def parse():
                         help="Publish eventgen as an app to external/public splunkbase")
     parser.add_argument("--github", "--gh", default=False, action="store_true",
                         help="Publish release version to external/public Github repository")
-    parser.add_argument("--version", type=str, default=None,
-                                help="specify version of new release, REQUIRED")
+    parser.add_argument("--version", type=str, default=None, required=True,
+                        help="specify version of new release")
 
     ## Adding Pypi Module subparser
     pypi_subparser = subparsers.add_parser("pypi", help="Build/deploy pypi module to production")
