@@ -2,6 +2,7 @@
 pytest
 pytest-xdist
 mock
+pygithub
 pytest-cov
 nose
 requests
