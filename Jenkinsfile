@@ -63,7 +63,8 @@ withSplunkWrapNode('orca_ci') {
         echo "Exception Caught: ${e.getMessage()}"
         currentBuild.result = 'FAILURE'
         // want to collect and parse test results so we get a nice notification on hipchat
-        junit 'test*.xml'
+        sh 'make test_collection_cleanup'
+	junit 'test*.xml'
     } 
     finally {
         step([$class: 'StashNotifier'])

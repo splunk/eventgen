@@ -1,17 +1,114 @@
 #!/usr/bin/env python2
 # encoding: utf-8
-
+"""
+Continuous Delivery script that automates code deployment from the cut of release branches
+"""
 import argparse
 import os
 import sys
 import re
 import subprocess
+import json
+import shutil
 
 file_location = os.path.dirname(os.path.realpath(__file__))
-splunk_eventgen_location = os.path.normpath(os.path.join(file_location, '..'))
+splunk_eventgen_location = os.path.normpath(os.path.join(file_location, ".."))
+eventgen_external_location = os.path.normpath(os.path.join(splunk_eventgen_location, "..", "eventgen_external"))
+eventgen_internal_location = os.path.normpath(os.path.join(splunk_eventgen_location, "..", "eventgen_internal"))
+conf_file = os.path.normpath(os.path.join(splunk_eventgen_location, "splunk_eventgen/splunk_app/default/app.conf"))
+internal_remove_paths = ["Makefile", "Jenkinsfile", "scripts", "documentation/deploy.py", "documentation/node_modules",
+                         "documentation/_book", "documentation/CHANGELOG.md"]
 
 sys.path.insert(0, splunk_eventgen_location)
 from splunk_eventgen.__init__ import _set_dev_version, _set_release_version
+
+
+def update_versions(new_version, version_file, conf_file):
+    """
+    Update all version references to the new release version
+    """
+    # update version file
+    with open(version_file, "r") as infile:
+        version_json = json.load(infile)
+        version_json["version"] = new_version
+    with open(version_file, "w") as outfile:
+        json.dump(version_json, outfile)
+    # update version and reset build # in app.conf
+    with open(conf_file, "r") as infile:
+        lines = infile.read()
+        lines = re.sub("build = [0-9]*", "build = 1", lines)
+        lines = re.sub("version = [0-9.dev]*", "version = {}".format(new_version), lines)
+    with open(conf_file, "w") as outfile:
+        outfile.write(lines)
+
+
+def prepare_internal_release(new_version, artifactory, pip, container):
+    """
+    Prepare documentation for release and publish to specified internal sources
+    """
+    # AFTER CUTTING NEW release/x.x.x BRANCH:
+    version_file = os.path.normpath(os.path.join(eventgen_internal_location, "splunk_eventgen/version.json"))
+    conf_file = os.path.normpath(os.path.join(eventgen_internal_location, "splunk_eventgen/splunk_app/default/app.conf"))
+    update_versions(new_version, version_file, conf_file)
+    # push to bitbucket repository
+    #p = subprocess.Popen(["make", "push_release_egg"], cwd=splunk_eventgen_location)
+    #p = subprocess.Popen(["make", "push_image_production"], cwd=splunk_eventgen_location)
+    # write a release notes and distribute to productsall + eng (commit messages?)
+    # handle publishing methods
+    if artifactory:
+        pass
+    if pip:
+        pass
+    if container:
+        pass
+    # update latest develop version.json with next dev version
+    update_versions(new_version+'.dev0', version_file, conf_file)
+
+
+def prepare_external_release(new_version, splunkbase, github):
+    """
+    Remove all sensitive Splunk information from codebase and publish to specified external sources
+    """
+    # AFTER CUTTING NEW release/x.x.x_open_source BRANCH
+    version_file = os.path.normpath(os.path.join(eventgen_external_location, "splunk_eventgen/version.json"))
+    conf_file = os.path.normpath(os.path.join(eventgen_external_location, "splunk_eventgen/splunk_app/default/app.conf"))
+    update_versions(new_version, version_file, conf_file)
+    #remove_internal_references()
+    # handle publishing methods
+    if splunkbase:
+        pass    # (https://splunkbase.splunk.com/app/1924/edit/#/hosting)
+    if github:
+        pass
+
+
+def remove_internal_references():
+    """
+    Remove all files / in-line references to Splunk credentials and other sensitive information
+    """
+    # copy files to new path? git checkout/push new branch?
+    p = subprocess.Popen(["make", "clean"], cwd=splunk_eventgen_location)
+    # remove splunk link inside setup.py
+    for relative_path in internal_remove_paths:
+        path = os.path.normpath(os.path.join(splunk_eventgen_location, relative_path))
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
+    # rm Makefile
+    # rm Jenkinsfile
+    # rm -rf scripts
+    # rm documentation/deploy.py
+    # rm -rf documentation/node_modules
+    # rm -rf documentation/_book
+    # rm documentation/CHANGELOG.md
+
+    # TODO: remove below code block from eventgen_core.py in _setup_loggers method:
+        # try:
+        #   hec_info = self.get_hec_info_from_conf()
+        #   self.hec_logging_handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1])
+        #   logging.getLogger().addHandler(self.hec_logging_handler)
+        # except Exception as e:
+        #    self.logger.exception(e)
 
 
 def push_pypi(args):
@@ -19,17 +116,38 @@ def push_pypi(args):
     push = subprocess.Popen(["python", "setup.py", "sdist", "upload", "-r", "production"], cwd=splunk_eventgen_location)
     push.wait()
 
+
 def parse():
-    parser = argparse.ArgumentParser(prog='Eventgen Continuous Deployment',
-                                     description='Build and upload pip or Docker images')
-    subparsers = parser.add_subparsers(title='package_type',
-                                       help="please specify which package type to build or deploy", dest='subcommand')
-    parser.add_argument("--push", default=False, action='store_true',
-                        help="Pypi pushes to production, Container pushes to branch path unless --production flag passed, then versioned Eventgen created")
-    parser.add_argument('--dev', default=True, action='store_true', help='specify the package if its dev')
-    parser.add_argument('--release', default=False, action='store_true', help='specify the package if its release')
+    parser = argparse.ArgumentParser(prog="Eventgen Continuous Deployment",
+                                     description="Build and upload pip or Docker images")
+    subparsers = parser.add_subparsers(title="package_type",
+                                       help="please specify which package type to build or deploy", dest="subcommand")
+    parser.add_argument("--push", default=False, action="store_true",
+                        help="Pypi pushes to production, Container pushes to branch path unless --production flag"
+                             "passed, then versioned Eventgen created")
+    parser.add_argument("--dev", default=False, action="store_true", help="specify the package if its dev")
+    parser.add_argument("--release", default=False, action="store_true", help="specify the package if its release")
+    parser.add_argument("--pdf", default=False, action="store_true", help="Generate a pdf from the documentation")
+
+    # internal: .spl (app), pip module, container
+    parser.add_argument("--artifactory", "--af", default=False, action="store_true",
+                        help="Publish eventgen app to Splunk internal Artifactory as .spl file")
+    parser.add_argument("--pip", default=False, action="store_true",
+                        help="Publish version update to internal eventgen pip module")
+    parser.add_argument("--container", "--ct", default=False, action="store_true",
+                        help="Publish new container to internal")
+
+    # external: splunkbase, github
+    parser.add_argument("--splunkbase", "--sb", default=False, action="store_true",
+                        help="Publish eventgen as an app to external/public splunkbase")
+    parser.add_argument("--github", "--gh", default=False, action="store_true",
+                        help="Publish release version to external/public Github repository")
+    parser.add_argument("--version", type=str, default=None,
+                                help="specify version of new release, REQUIRED")
+
     ## Adding Pypi Module subparser
-    pypi_subparser = subparsers.add_parser('pypi', help="Build/deploy pypi module to production")
+    pypi_subparser = subparsers.add_parser("pypi", help="Build/deploy pypi module to production")
+
     return parser.parse_args()
 
 
@@ -43,6 +161,17 @@ def main():
         _set_release_version()
     if args.push:
         push_pypi(args)
+    # Copy files to new directories for editing
+    if os.path.exists(eventgen_external_location):
+        shutil.rmtree(eventgen_external_location)
+    shutil.copytree(splunk_eventgen_location, eventgen_external_location)
+    if os.path.exists(eventgen_internal_location):
+        shutil.rmtree(eventgen_internal_location)
+    shutil.copytree(splunk_eventgen_location, eventgen_internal_location)
+    # Prepare for releases based on command-line arguments
+    prepare_internal_release(args.version, args.artifactory, args.pip, args.container)
+    prepare_external_release(args.version, args.splunkbase, args.github)
+
 
 if __name__ == "__main__":
     main()
