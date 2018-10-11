@@ -252,7 +252,7 @@ class TestEventgenOrchestration(object):
         output = json.loads(r.content)
         assert output
 
-    @pytest.skip(reason="volume endpoints are not returning useful json objects, needs investigating")
+    @pytest.mark.skip(reason="volume endpoints are not returning useful json objects, needs investigating")
     def test_server_get_and_set_volume(self):
         r = requests.post("http://127.0.0.1:{}/volume".format(self.server_eventgen_webport), json={"perDayVolume": 10})
         assert r.status_code == 200
