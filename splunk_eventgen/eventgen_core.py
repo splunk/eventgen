@@ -337,12 +337,14 @@ class EventGenerator(object):
         logging.Logger.debugv = debugv
         self.logger = logging.getLogger('eventgen')
         self.loggingQueue = None
+        # This code block must be removed before external release
         try:
             hec_info = self.get_hec_info_from_conf()
             self.hec_logging_handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1])
             logging.getLogger().addHandler(self.hec_logging_handler)
         except Exception as e:
             self.logger.exception(e)
+        # This code block must be removed before external release
 
     def get_hec_info_from_conf(self):
         hec_info = [None, None]
