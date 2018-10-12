@@ -10,7 +10,6 @@ import re
 import subprocess
 import json
 import shutil
-from github import Github
 
 file_location = os.path.dirname(os.path.realpath(__file__))
 splunk_eventgen_location = os.path.normpath(os.path.join(file_location, ".."))
@@ -36,6 +35,7 @@ def execute_command(command, working_dir):
     output = os.system(command)
     os.chdir(cwd)
     return output
+
 
 def create_external_branch(repo_path, new_version):
     """
@@ -109,7 +109,7 @@ def remove_internal_references(new_version):
     Remove all files / in-line references to Splunk credentials and other sensitive information
     """
     # Checkout new branch for external release
-    #g = github.Github(ACCESS_TOKEN)
+    execute_command("")
     p = subprocess.call(["make", "clean"], cwd=eventgen_external_location)
     # TODO: remove splunk link inside setup.py
     for relative_path in internal_remove_paths:
