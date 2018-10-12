@@ -108,8 +108,16 @@ def remove_internal_references(new_version):
     """
     Remove all files / in-line references to Splunk credentials and other sensitive information
     """
-    # Checkout new branch for external release
-    execute_command("")
+
+    # Checkout new branch for external release - function?
+    response = os.popen("git status")
+    if "nothing to commit, working tree clean" in response.read():
+        cwd = os.getcwd()
+        #os.chdir(eventgen_external_location)
+        response = os.popen("git checkout -b release/{}".format(new_version))
+        print(response.read())
+        #os.chdir(cwd)
+
     p = subprocess.call(["make", "clean"], cwd=eventgen_external_location)
     # TODO: remove splunk link inside setup.py
     for relative_path in internal_remove_paths:
