@@ -46,7 +46,6 @@ def update_versions(new_version, root_path):
     """
     Update all version references to the new release version
     """
-    # update version file
     version_file = os.path.normpath(os.path.join(root_path, "splunk_eventgen/version.json"))
     conf_file = os.path.normpath(os.path.join(root_path, "splunk_eventgen/splunk_app/default/app.conf"))
     with open(version_file, "r") as infile:
@@ -160,7 +159,7 @@ def parse():
                         help="Publish eventgen as an app to external/public splunkbase")
     parser.add_argument("--external-bitbucket", "--ebb", default=False, action="store_true",
                         help="Publish release version to public, external Bitbucket repository")
-    parser.add_argument("--version", "--v", type=str, default=None, required=True,
+    parser.add_argument("--version", "--v", type=str, default=None,
                         help="specify version of new release")
     ## Adding Pypi Module subparser
     pypi_subparser = subparsers.add_parser("pypi", help="Build/deploy pypi module to production")
@@ -185,8 +184,9 @@ def main():
         shutil.rmtree(eventgen_internal_location)
     shutil.copytree(splunk_eventgen_location, eventgen_internal_location)
     # Prepare for releases based on command-line arguments
-    prepare_internal_release(args.version, args.artifactory, args.pip, args.container, args.internal_bitbucket)
-    prepare_external_release(args.version, args.splunkbase, args.external_bitbucket)
+    if args.version:
+        prepare_internal_release(args.version, args.artifactory, args.pip, args.container, args.internal_bitbucket)
+        prepare_external_release(args.version, args.splunkbase, args.external_bitbucket)
 
 
 if __name__ == "__main__":
