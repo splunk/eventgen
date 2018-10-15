@@ -2,15 +2,18 @@
 # encoding: utf-8
 
 import os
+import re
 import time
 import json
 import pytest
 import requests
+import ConfigParser
 from docker import APIClient
 from random import choice
 from string import ascii_lowercase
 # Code to suppress insecure https warnings
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -25,7 +28,7 @@ def generate_random_string():
 
 def wait_for_response(url, timeout=60):
     start, end = time.time(), time.time()
-    while end-start < timeout:
+    while end - start < timeout:
         try:
             r = requests.get(url)
             r.raise_for_status()
@@ -49,7 +52,8 @@ class TestEventgenOrchestration(object):
     def setup_class(cls):
         # Build the image from scratch
         cls.client = APIClient(base_url="unix://var/run/docker.sock")
-        response = cls.client.build(path=REPO_DIR, dockerfile=os.path.join("dockerfiles", "Dockerfile"), tag=IMAGE_NAME, rm=True, nocache=True, pull=True, stream=False)
+        response = cls.client.build(path=REPO_DIR, dockerfile=os.path.join("dockerfiles", "Dockerfile"), tag=IMAGE_NAME,
+                                    rm=True, nocache=True, pull=True, stream=False)
         for line in response:
             print line,
         # Create a network for both the controller + server to run in
@@ -66,13 +70,16 @@ class TestEventgenOrchestration(object):
         TestEventgenOrchestration.controller_id = container["Id"]
         print container["Id"]
         cls.controller_container = cls.client.inspect_container(container["Id"])
-        cls.controller_eventgen_webport = cls.controller_container["NetworkSettings"]["Ports"]["9500/tcp"][0]["HostPort"]
-        cls.controller_rabbitmq_webport = cls.controller_container["NetworkSettings"]["Ports"]["15672/tcp"][0]["HostPort"]
+        cls.controller_eventgen_webport = cls.controller_container["NetworkSettings"]["Ports"]["9500/tcp"][0][
+            "HostPort"]
+        cls.controller_rabbitmq_webport = cls.controller_container["NetworkSettings"]["Ports"]["15672/tcp"][0][
+            "HostPort"]
         # Start the server
         print 'creating server'
         container = cls.client.create_container(image=IMAGE_NAME,
                                                 command="server",
-                                                environment=["EVENTGEN_AMQP_HOST={}".format(cls.controller_container["Id"][:12])],
+                                                environment=["EVENTGEN_AMQP_HOST={}".format(
+                                                    cls.controller_container["Id"][:12])],
                                                 host_config=host_config,
                                                 networking_config=networking_config)
         cls.client.start(container["Id"])
@@ -126,7 +133,8 @@ class TestEventgenOrchestration(object):
         assert "Start event dispatched to all" in r.content
 
     def test_controller_start_with_target(self):
-        r = requests.post("http://127.0.0.1:{}/start/{}".format(self.controller_eventgen_webport, TestEventgenOrchestration.server_id[:12]))
+        r = requests.post("http://127.0.0.1:{}/start/{}".format(self.controller_eventgen_webport,
+                                                                TestEventgenOrchestration.server_id[:12]))
         assert r.status_code == 200
         assert "Start event dispatched to {}".format(TestEventgenOrchestration.server_id[:12]) in r.content
 
@@ -136,7 +144,8 @@ class TestEventgenOrchestration(object):
         assert "Stop event dispatched to all" in r.content
 
     def test_controller_stop_with_target(self):
-        r = requests.post("http://127.0.0.1:{}/stop/{}".format(self.controller_eventgen_webport, TestEventgenOrchestration.server_id[:12]))
+        r = requests.post("http://127.0.0.1:{}/stop/{}".format(self.controller_eventgen_webport,
+                                                               TestEventgenOrchestration.server_id[:12]))
         assert r.status_code == 200
         assert "Stop event dispatched to {}".format(TestEventgenOrchestration.server_id[:12]) in r.content
 
@@ -146,7 +155,8 @@ class TestEventgenOrchestration(object):
         assert "Stop event dispatched to all" in r.content
 
     def test_controller_restart_with_target(self):
-        r = requests.post("http://127.0.0.1:{}/stop/{}".format(self.controller_eventgen_webport, TestEventgenOrchestration.server_id[:12]))
+        r = requests.post("http://127.0.0.1:{}/stop/{}".format(self.controller_eventgen_webport,
+                                                               TestEventgenOrchestration.server_id[:12]))
         assert r.status_code == 200
         assert "Stop event dispatched to {}".format(TestEventgenOrchestration.server_id[:12]) in r.content
 
@@ -156,14 +166,18 @@ class TestEventgenOrchestration(object):
         assert "Please pass in a valid object with bundle URL" in r.content
 
     def test_controller_bundle_with_url(self):
-        r = requests.post("http://127.0.0.1:{}/bundle".format(self.controller_eventgen_webport), json={"url": "http://server.com/bundle.tgz"})
+        r = requests.post("http://127.0.0.1:{}/bundle".format(self.controller_eventgen_webport),
+                          json={"url": "http://server.com/bundle.tgz"})
         assert r.status_code == 200
         assert "Bundle event dispatched to all with url http://server.com/bundle.tgz" in r.content
 
     def test_controller_bundle_with_url_and_target(self):
-        r = requests.post("http://127.0.0.1:{}/bundle/{}".format(self.controller_eventgen_webport, TestEventgenOrchestration.server_id[:12]), json={"url": "http://server.com/bundle.tgz"})
+        r = requests.post("http://127.0.0.1:{}/bundle/{}".format(self.controller_eventgen_webport,
+                                                                 TestEventgenOrchestration.server_id[:12]),
+                          json={"url": "http://server.com/bundle.tgz"})
         assert r.status_code == 200
-        assert "Bundle event dispatched to {} with url http://server.com/bundle.tgz".format(TestEventgenOrchestration.server_id[:12]) in r.content
+        assert "Bundle event dispatched to {} with url http://server.com/bundle.tgz".format(
+            TestEventgenOrchestration.server_id[:12]) in r.content
 
     def test_controller_get_volume(self):
         r = requests.get("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
@@ -177,12 +191,15 @@ class TestEventgenOrchestration(object):
         assert "Please pass in a valid object with volume" in r.content
 
     def test_controller_set_volume_with_volume(self):
-        r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport), json={"perDayVolume": 10})
+        r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport),
+                          json={"perDayVolume": 10})
         assert r.status_code == 200
         assert "set_volume event dispatched to all" in r.content
 
     def test_controller_set_volume_with_volume_and_target(self):
-        r = requests.post("http://127.0.0.1:{}/volume/{}".format(self.controller_eventgen_webport, TestEventgenOrchestration.server_id[:12]), json={"perDayVolume": 10})
+        r = requests.post("http://127.0.0.1:{}/volume/{}".format(self.controller_eventgen_webport,
+                                                                 TestEventgenOrchestration.server_id[:12]),
+                          json={"perDayVolume": 10})
         assert r.status_code == 200
         assert "set_volume event dispatched to {}".format(TestEventgenOrchestration.server_id[:12]) in r.content
 
@@ -247,7 +264,8 @@ class TestEventgenOrchestration(object):
         assert "Please pass in a valid object with bundle URL" in r.content
 
     def test_server_bundle_with_url(self):
-        r = requests.post("http://127.0.0.1:{}/bundle".format(self.server_eventgen_webport), json={"url": "https://repo.splunk.com/artifactory/Solutions/APP/ITSI_Performance_Testing/builds/develop/latest/ITSI_Performance_Testing-1.0.0-15.tgz"})
+        r = requests.post("http://127.0.0.1:{}/bundle".format(self.server_eventgen_webport), json={
+            "url": "https://repo.splunk.com/artifactory/Solutions/APP/ITSI_Performance_Testing/builds/develop/latest/ITSI_Performance_Testing-1.0.0-15.tgz"})
         assert r.status_code == 200
         output = json.loads(r.content)
         assert output
@@ -257,14 +275,14 @@ class TestEventgenOrchestration(object):
         r = requests.post("http://127.0.0.1:{}/volume".format(self.server_eventgen_webport), json={"perDayVolume": 10})
         assert r.status_code == 200
         assert json.loads(r.content)
-        r = requests.get("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
+        r = requests.get("http://127.0.0.1:{}/volume".format(self.server_eventgen_webport))
         assert r.status_code == 200
         output = json.loads(r.content)
         assert output == 10.0
         r = requests.post("http://127.0.0.1:{}/volume".format(self.server_eventgen_webport), json={"perDayVolume": 150})
         assert r.status_code == 200
         assert json.loads(r.content)
-        r = requests.get("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
+        r = requests.get("http://127.0.0.1:{}/volume".format(self.server_eventgen_webport))
         assert r.status_code == 200
         output = json.loads(r.content)
         assert output == 150.0

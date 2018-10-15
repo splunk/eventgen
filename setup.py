@@ -52,4 +52,4 @@ setup(
         'jinja2',
         'pyrabbit==1.1.0'
     ]
-)
+    )
