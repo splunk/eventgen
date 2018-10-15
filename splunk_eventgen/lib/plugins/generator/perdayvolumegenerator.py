@@ -58,10 +58,8 @@ class PerDayVolumeGenerator(GeneratorPlugin):
                 sizeremaining = size - currentreadsize
 
                 #targetlinesize = syself._sample.getsizeof(self._sample.sampleDict[targetline])
-                # self.logger.debugv("Printed Line: %s" % self._sample.sampleDict[targetline])
                 targetlinesize =len(self._sample.sampleDict[targetline]['_raw'])
 
-                # self.logger.debugv("Target Line: %s, Target Size Remaining: %s, TargetLineSize: %s" % (targetline, sizeremaining, targetlinesize))
                 if targetlinesize <= sizeremaining or targetlinesize*.9 <= sizeremaining:
                     currentreadsize += targetlinesize
                     eventsDict.append(self._sample.sampleDict[targetline])
