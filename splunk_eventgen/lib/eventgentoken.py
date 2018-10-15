@@ -93,9 +93,6 @@ class Token(object):
             self._setup_logging()
         offset = 0
         tokenMatch = list(self._finditer(event))
-        #self.logger.debugv("Found %d matches for token: '%s' of type '%s' in sample '%s'" % (len(tokenMatch), self.token, self.replacementType, s.name))
-        #if self.replacementType == 'timestamp':
-        #    self.logger.debugv("Timestamp replacement with et '%s' and lt '%s'" % (et, lt))
 
         if len(tokenMatch) > 0:
             replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)], et, lt, s, pivot_timestamp=pivot_timestamp)

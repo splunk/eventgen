@@ -83,7 +83,6 @@ class PerDayVolumeGenerator(GeneratorPlugin):
             ## Iterate tokens
             for token in self._sample.tokens:
                 token.mvhash = mvhash
-                # self.logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
                 event = token.replace(event, et=earliest, lt=latest, s=self._sample)
                 if token.replacementType == 'timestamp' and self._sample.timeField != '_raw':
                     self._sample.timestamp = None
