@@ -18,9 +18,6 @@ eventgen_internal_location = os.path.normpath(os.path.join(splunk_eventgen_locat
 internal_core_file = os.path.normpath(os.path.join(eventgen_internal_location, "splunk_eventgen", "eventgen_core.py"))
 internal_remove_paths = ["Makefile", "Jenkinsfile", "scripts", "documentation/deploy.py", "documentation/node_modules",
                          "documentation/_book", "documentation/CHANGELOG.md"]
-# TODO: get correct links below and resolve what documentation needs to be refactored (for its internal links)
-splunkbase_url = "https://splunkbase.splunk.com/app/1924/edit/#/hosting"
-artifactory_url = ""
 
 sys.path.insert(0, splunk_eventgen_location)
 from splunk_eventgen.__init__ import _set_dev_version, _set_release_version
@@ -62,44 +59,41 @@ def update_versions(new_version, root_path):
         outfile.write(lines)
 
 
-def prepare_internal_release(new_version, artifactory, pip, container, bitbucket):
+def prepare_internal_release(new_version, artifactory, pip, container):
     """
     Prepare documentation for release and publish to specified internal sources
     """
     output = create_branch("release/{}".format(new_version), eventgen_internal_location)
     update_versions(new_version, eventgen_internal_location)
-    # handle publishing methods
     if artifactory:
-        print("Pushing .spl file to artifactory")
+        print("Building .spl file for internal artifactory directory")
         build_splunk_app(eventgen_internal_location, source=eventgen_internal_location, remove=True)
     if pip:
-        print("Pushing eventgen package to internal PyPI index")
         push_pypi(eventgen_internal_location)
     if container:
-        print("Pushing new eventgen image")
         push_image(eventgen_internal_location)
     # TODO: write a release notes and distribute to productsall + eng (commit messages? manual?)
     # Develop branches are updated manually for now, don't update with dev version yet
     # update_versions(new_version+'.dev0', eventgen_internal_location)
 
-def prepare_external_release(new_version, splunkbase, bitbucket):
+
+def prepare_external_release(new_version, splunkbase):
     """
     Remove all sensitive Splunk information from codebase and publish to specified external sources
     """
     output = create_branch("release/{}_open_source".format(new_version), eventgen_external_location)
     update_versions(new_version, eventgen_external_location)
     remove_internal_references(new_version)
-    # handle publishing methods
     if splunkbase:
-        print("Pushing eventgen app to splunkbase")
+        print("Building .spl file for external splunkbase directory")
+        build_splunk_app(eventgen_external_location, source=eventgen_external_location, remove=True)
 
 
 def remove_internal_references(new_version):
     """
     Remove all files and/or in-line references to Splunk credentials and other sensitive information
     """
-    # TODO: remove splunk link inside setup.py
-        # edit: remove all splunk links (repo.splunk.com...)
+    # TODO: remove all splunk links (only repo.splunk.com?)
     for relative_path in internal_remove_paths:
         path = os.path.normpath(os.path.join(eventgen_external_location, relative_path))
         if os.path.isdir(path):
@@ -145,20 +139,15 @@ def parse():
     parser.add_argument("--dev", default=False, action="store_true", help="specify the package if its dev")
     parser.add_argument("--release", default=False, action="store_true", help="specify the package if its release")
     parser.add_argument("--pdf", default=False, action="store_true", help="Generate a pdf from the documentation")
-    # internal: .spl (app), pip module, container
+    # internal/external publish args
     parser.add_argument("--artifactory", "--af", default=False, action="store_true",
                         help="Publish eventgen app to Splunk internal Artifactory as .spl file")
     parser.add_argument("--pip", default=False, action="store_true",
                         help="Publish version update to internal eventgen pip module")
     parser.add_argument("--container", "--ct", default=False, action="store_true",
                         help="Publish new container to internal")
-    parser.add_argument("--internal-bitbucket", "--ibb", default=False, action="store_true",
-                        help="Publish release version to public, internal Bitbucket repository")
-    # external: splunkbase, github
     parser.add_argument("--splunkbase", "--sb", default=False, action="store_true",
                         help="Publish eventgen as an app to external/public splunkbase")
-    parser.add_argument("--external-bitbucket", "--ebb", default=False, action="store_true",
-                        help="Publish release version to public, external Bitbucket repository")
     parser.add_argument("--version", "--v", type=str, default=None,
                         help="specify version of new release")
     ## Adding Pypi Module subparser
@@ -185,8 +174,8 @@ def main():
     shutil.copytree(splunk_eventgen_location, eventgen_internal_location)
     # Prepare for releases based on command-line arguments
     if args.version:
-        prepare_internal_release(args.version, args.artifactory, args.pip, args.container, args.internal_bitbucket)
-        prepare_external_release(args.version, args.splunkbase, args.external_bitbucket)
+        prepare_internal_release(args.version, args.artifactory, args.pip, args.container)
+        prepare_external_release(args.version, args.splunkbase)
 
 
 if __name__ == "__main__":
