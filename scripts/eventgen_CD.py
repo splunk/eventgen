@@ -175,7 +175,7 @@ def main():
     if args.release:
         _set_release_version()
     if args.push:
-        push_pypi()
+        push_pypi(splunk_eventgen_location)
     # Copy files to new directories for editing
     if os.path.exists(eventgen_external_location):
         shutil.rmtree(eventgen_external_location)
