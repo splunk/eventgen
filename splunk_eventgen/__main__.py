@@ -245,8 +245,9 @@ def make_tarfile(output_filename, source_dir):
     with tarfile.open(output_filename, "w:gz") as tar:
         tar.add(source_dir, arcname=os.path.basename(source_dir), exclude=exclude_function)
 
-def build_splunk_app(dest, remove=True):
+def build_splunk_app(dest, source=os.getcwd(), remove=True):
     import errno, imp
+    os.chdir(source)
     directory = os.path.join(dest, 'SA-Eventgen')
     target_file = os.path.join(dest, 'sa_eventgen_{}.spl'.format(EVENTGEN_VERSION))
     module_file, module_path, module_description = imp.find_module('splunk_eventgen')

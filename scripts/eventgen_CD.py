@@ -18,18 +18,20 @@ eventgen_internal_location = os.path.normpath(os.path.join(splunk_eventgen_locat
 internal_core_file = os.path.normpath(os.path.join(eventgen_internal_location, "splunk_eventgen", "eventgen_core.py"))
 internal_remove_paths = ["Makefile", "Jenkinsfile", "scripts", "documentation/deploy.py", "documentation/node_modules",
                          "documentation/_book", "documentation/CHANGELOG.md"]
+# TODO: get correct links below and resolve what documentation needs to be refactored (for its internal links)
 splunkbase_url = "https://splunkbase.splunk.com/app/1924/edit/#/hosting"
 artifactory_url = ""
 
 sys.path.insert(0, splunk_eventgen_location)
 from splunk_eventgen.__init__ import _set_dev_version, _set_release_version
+from splunk_eventgen.__main__ import build_splunk_app
 
 
 def create_branch(branch_name, working_dir):
     """
     Create a new github branch from the latest develop branch
     """
-    # clone from a link? access to both bitbucket and github?
+    # Make sure our branch is clean and we can checkout
     response = os.popen("git status")
     if "nothing to commit, working tree clean" in response.read():
         cwd = os.getcwd()
@@ -37,8 +39,7 @@ def create_branch(branch_name, working_dir):
         response = os.popen("git checkout -b {}; make clean".format(branch_name))
         os.chdir(cwd)
     else:
-        # Break script workflow if encountered - we don't want to prepare further for release until ready
-        raise Exception("Branch '{}' was not created, exiting...")
+        raise Exception("Current branch is not clean, cannot checkout new branch")
 
 
 def update_versions(new_version, root_path):
@@ -71,15 +72,16 @@ def prepare_internal_release(new_version, artifactory, pip, container, bitbucket
     # handle publishing methods
     if artifactory:
         print("Pushing .spl file to artifactory")
+        build_splunk_app(eventgen_internal_location, source=eventgen_internal_location, remove=True)
     if pip:
         print("Pushing eventgen package to internal PyPI index")
+        push_pypi(eventgen_internal_location)
     if container:
         print("Pushing new eventgen image")
-    if bitbucket:
-        print("Pushing internal eventgen release to bitbucket repository")
+        push_image(eventgen_internal_location)
     # TODO: write a release notes and distribute to productsall + eng (commit messages? manual?)
-    # update latest develop version.json with next dev version
-    update_versions(new_version+'.dev0', eventgen_internal_location)
+    # Develop branches are updated manually for now, don't update with dev version yet
+    # update_versions(new_version+'.dev0', eventgen_internal_location)
 
 def prepare_external_release(new_version, splunkbase, bitbucket):
     """
@@ -91,8 +93,6 @@ def prepare_external_release(new_version, splunkbase, bitbucket):
     # handle publishing methods
     if splunkbase:
         print("Pushing eventgen app to splunkbase")
-    if bitbucket:
-        print("Pushing external eventgen release to bitbucket repository")
 
 
 def remove_internal_references(new_version):
@@ -121,9 +121,17 @@ def remove_internal_references(new_version):
         outfile.writelines(new_lines)
 
 
-def push_pypi(args):
+def push_image(eventgen_location):
+    print("Pushing docker image")
+    cwd = os.getcwd()
+    os.chdir(eventgen_location)
+    response = os.popen("make push_image_production")
+    os.chdir(cwd)
+
+
+def push_pypi(eventgen_location):
     print "Pushing PyPI..."
-    push = subprocess.Popen(["python", "setup.py", "sdist", "upload", "-r", "production"], cwd=splunk_eventgen_location)
+    push = subprocess.Popen(["python", "setup.py", "sdist", "upload", "-r", "production"], cwd=eventgen_location)
     push.wait()
 
 
@@ -154,7 +162,10 @@ def parse():
                         help="Publish release version to public, external Bitbucket repository")
     parser.add_argument("--version", "--v", type=str, default=None, required=True,
                         help="specify version of new release")
-    # TODO: analyze and change the default values of parameters if necessary
+    ## Adding Pypi Module subparser
+    pypi_subparser = subparsers.add_parser("pypi", help="Build/deploy pypi module to production")
+    return parser.parse_args()
+
 
 def main():
     # Parse out the options, and execute for "help"
@@ -165,7 +176,7 @@ def main():
     if args.release:
         _set_release_version()
     if args.push:
-        push_pypi(args)
+        push_pypi()
     # Copy files to new directories for editing
     if os.path.exists(eventgen_external_location):
         shutil.rmtree(eventgen_external_location)
