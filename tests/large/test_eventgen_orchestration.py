@@ -13,7 +13,6 @@ from random import choice
 from string import ascii_lowercase
 # Code to suppress insecure https warnings
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -21,14 +20,12 @@ REPO_DIR = os.path.join(FILE_DIR, "..", "..")
 IMAGE_NAME = "eventgen:test"
 NETWORK_NAME = "eg_network_test"
 
-
 def generate_random_string():
     return ''.join(choice(ascii_lowercase) for b in range(20))
 
-
 def wait_for_response(url, timeout=60):
     start, end = time.time(), time.time()
-    while end - start < timeout:
+    while end-start < timeout:
         try:
             r = requests.get(url)
             r.raise_for_status()
