@@ -17,40 +17,61 @@ eventgen_external_location = os.path.normpath(os.path.join(splunk_eventgen_locat
 eventgen_internal_location = os.path.normpath(os.path.join(splunk_eventgen_location, "..", "eventgen_internal"))
 internal_core_file = os.path.normpath(os.path.join(eventgen_internal_location, "splunk_eventgen", "eventgen_core.py"))
 internal_remove_paths = ["Makefile", "Jenkinsfile", "scripts", "documentation/deploy.py", "documentation/node_modules",
-                         "documentation/_book", "documentation/CHANGELOG.md"]
+                         "documentation/_book", "documentation/CHANGELOG.md", "splunk_eventgen/setup.py"]
+internal_link_paths = ["tests/large/test_eventgen_orchestration.py", "tests/requirements.txt"]
+internal_link_comment = "# This code block must be removed/changed before external release"
+test_categories = ["tests/small", "tests/medium", "tests/large"]
 
 sys.path.insert(0, splunk_eventgen_location)
 from splunk_eventgen.__init__ import _set_dev_version, _set_release_version
 from splunk_eventgen.__main__ import build_splunk_app
 
 
-def create_branch(branch_name, working_dir):
+def remove_internal_links():
     """
-    Create a new github branch from the latest develop branch
+    Replace Splunk internal links with empty strings. If the links are used by a test file, mark the test as skipped.
+    """
+    for relative_path in internal_link_paths:
+        path = os.path.normpath(os.path.join(eventgen_external_location, relative_path))
+        is_test = False
+        for category in test_categories:
+            if category in path:
+                is_test = True
+        with open(path, 'r') as infile:
+            lines = infile.read()
+            lines = re.sub(".*splunk\.com.*", "", lines)
+            if is_test:
+                lines = re.sub(internal_link_comment, '@pytest.mark.skip(reason="This test uses an internal link")',
+                               lines)
+        with open(path, 'w') as outfile:
+            outfile.write(lines)
+
+def create_branch(branch_name, eventgen_location):
+    """
+    Create a new github branch from the latest develop branch.
     """
     # Make sure our branch is clean and we can checkout
     response = os.popen("git status")
     if "nothing to commit, working tree clean" in response.read():
         cwd = os.getcwd()
-        os.chdir(working_dir)
+        os.chdir(eventgen_location)
         response = os.popen("git checkout -b {}; make clean".format(branch_name))
         os.chdir(cwd)
     else:
         raise Exception("Current branch is not clean, cannot checkout new branch")
 
 
-def update_versions(new_version, root_path):
+def update_versions(new_version, eventgen_location):
     """
-    Update all version references to the new release version
+    Update all version references for the new release and reset the build counter.
     """
-    version_file = os.path.normpath(os.path.join(root_path, "splunk_eventgen/version.json"))
-    conf_file = os.path.normpath(os.path.join(root_path, "splunk_eventgen/splunk_app/default/app.conf"))
+    version_file = os.path.normpath(os.path.join(eventgen_location, "splunk_eventgen/version.json"))
+    conf_file = os.path.normpath(os.path.join(eventgen_location, "splunk_eventgen/splunk_app/default/app.conf"))
     with open(version_file, "r") as infile:
         version_json = json.load(infile)
         version_json["version"] = new_version
     with open(version_file, "w") as outfile:
         json.dump(version_json, outfile)
-    # update version and reset build # in app.conf
     with open(conf_file, "r") as infile:
         lines = infile.read()
         lines = re.sub("build = [0-9]*", "build = 1", lines)
@@ -61,7 +82,7 @@ def update_versions(new_version, root_path):
 
 def prepare_internal_release(new_version, artifactory, pip, container):
     """
-    Prepare documentation for release and publish to specified internal sources
+    Prepare documentation for release and publish to specified internal sources.
     """
     output = create_branch("release/{}".format(new_version), eventgen_internal_location)
     update_versions(new_version, eventgen_internal_location)
@@ -72,28 +93,29 @@ def prepare_internal_release(new_version, artifactory, pip, container):
         push_pypi(eventgen_internal_location)
     if container:
         push_image(eventgen_internal_location)
-    # TODO: write a release notes and distribute to productsall + eng (commit messages? manual?)
+    # TODO: write a release notes and distribute to productsall + eng (may need to refactor docs/samples first)
     # Develop branches are updated manually for now, don't update with dev version yet
     # update_versions(new_version+'.dev0', eventgen_internal_location)
 
 
 def prepare_external_release(new_version, splunkbase):
     """
-    Remove all sensitive Splunk information from codebase and publish to specified external sources
+    Remove all sensitive Splunk information from codebase and publish to specified external sources.
     """
     output = create_branch("release/{}_open_source".format(new_version), eventgen_external_location)
     update_versions(new_version, eventgen_external_location)
-    remove_internal_references(new_version)
+    remove_internal_references()
     if splunkbase:
         print("Building .spl file for external splunkbase directory")
         build_splunk_app(eventgen_external_location, source=eventgen_external_location, remove=True)
 
 
-def remove_internal_references(new_version):
+def remove_internal_references():
     """
-    Remove all files and/or in-line references to Splunk credentials and other sensitive information
+    Remove all files and/or in-line references to Splunk credentials and other sensitive information.
     """
-    # TODO: remove all splunk links (only repo.splunk.com?)
+    remove_internal_links()
+    # Remove unnecessary/sensitive files
     for relative_path in internal_remove_paths:
         path = os.path.normpath(os.path.join(eventgen_external_location, relative_path))
         if os.path.isdir(path):
@@ -106,7 +128,7 @@ def remove_internal_references(new_version):
         lines = infile.read().split('\n')
         new_lines = ""
         for line in lines:
-            if "# This code block must be removed before external release" in line:
+            if internal_link_comment in line:
                 found = not found
             elif not found:
                 new_lines += (line+"\n")
