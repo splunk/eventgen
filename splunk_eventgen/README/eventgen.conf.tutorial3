@@ -23,12 +23,12 @@ backfillSearch = sourcetype=be_log
 outputMode = stdout
 
 index=main
-host=be-01.splunk.com
+host=host1.foobar.com
 source=/var/log/be/event.log
 sourcetype=be_log
 
 # Host/User/pass only necessary if running outside of splunk!
-splunkHost = wimpy.splunk.com
+splunkHost = host3.foobar.com
 splunkPort = 10089
 #splunkHost = localhost
 splunkUser = admin

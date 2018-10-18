@@ -102,7 +102,7 @@ Replaying random events from a file is an easy way to build an eventgen.  Someti
 
     outputMode = splunkstream
     index=main
-    host=be-01.splunk.com
+    host=host1.foobar.com
     source=/var/log/be/event.log
     sourcetype=be_log
 
@@ -145,7 +145,7 @@ Replaying random events from a file is an easy way to build an eventgen.  Someti
     
 ### Output modes
     index=main
-    host=splunktelbe-01.splunk.com
+    host=splunktelhost1.foobar.com
     source=eventgen
     sourcetype=business_event
 

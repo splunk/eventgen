@@ -17,7 +17,7 @@ randomizeCount = 0.2
 
 outputMode = splunkstream
 index=main
-host=splunktelbe-01.splunk.com
+host=splunktelhost1.foobar.com
 source=eventgen
 sourcetype=business_event
 
