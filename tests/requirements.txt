@@ -1,3 +1,4 @@
+-i https://repo.splunk.com/artifactory/api/pypi/pypi/simple
 pytest==3.3.2
 pytest-xdist
 mock
