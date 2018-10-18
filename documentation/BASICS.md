@@ -145,7 +145,7 @@ Replaying random events from a file is an easy way to build an eventgen.  Someti
     
 ### Output modes
     index=main
-    host=splunktelhost1.foobar.com
+    host=host4.foobar.com
     source=eventgen
     sourcetype=business_event
 
