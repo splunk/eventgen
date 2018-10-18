@@ -247,6 +247,7 @@ def make_tarfile(output_filename, source_dir):
 
 def build_splunk_app(dest, source=os.getcwd(), remove=True):
     import errno, imp
+    cwd = os.getcwd()
     os.chdir(source)
     directory = os.path.join(dest, 'SA-Eventgen')
     target_file = os.path.join(dest, 'sa_eventgen_{}.spl'.format(EVENTGEN_VERSION))
@@ -257,6 +258,7 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
     try:
         shutil.copytree(splunk_app, directory)
     except OSError as e:
+        os.chdir(cwd)
         if e.errno == errno.EEXIST:
             print("Directory already exists. Please remove before continuing")
             sys.exit(3)
@@ -271,6 +273,7 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
     shutil.rmtree(splunk_app_samples)
     if remove:
         shutil.rmtree(directory)
+    os.chdir(cwd)
 
 def main():
     cwd = os.getcwd()
