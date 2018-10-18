@@ -12,7 +12,6 @@ from Queue import Queue, Empty
 from threading import Thread
 import time
 import ConfigParser
-from logger import splunk_hec_logging_handler
 
 lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.insert(0, lib_path_prepend)
@@ -553,7 +552,6 @@ class EventGenerator(object):
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
         self.logger.info("All items fully processed, stopping.")
-        self.hec_logging_handler._stopFlushTimer()
         self.started = False
         self.stopping = False
 
