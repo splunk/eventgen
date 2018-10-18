@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: eventgendocs
-        image: stg-repo.splunk.com/tonyl/eventgen-docs:latest
+        image: "Insert internal staging artifact url here"
         imagePullPolicy: Always
         ports:
         - containerPort: 4000
