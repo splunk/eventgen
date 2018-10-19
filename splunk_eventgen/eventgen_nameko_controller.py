@@ -8,21 +8,11 @@ import logging
 import os
 import socket
 from logger.logger_config import controller_logger_config
-from logger import splunk_hec_logging_handler
 import time
 import json
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
-
-def get_hec_info_from_conf():
-    hec_info = [None, None]
-    config = ConfigParser.ConfigParser()
-    if os.path.isfile(EVENTGEN_ENGINE_CONF_PATH):
-        config.read(EVENTGEN_ENGINE_CONF_PATH)
-        hec_info[0] = config.get('heclogger', 'hec_url', 1)
-        hec_info[1] = config.get('heclogger', 'hec_key', 1)
-    return hec_info
 
 def exit_handler(client, hostname, logger):
     client.delete_vhost(hostname)
@@ -35,9 +25,6 @@ class EventgenController(object):
     PAYLOAD = 'Payload'
     logging.config.dictConfig(controller_logger_config)
     log = logging.getLogger(name)
-    hec_info = get_hec_info_from_conf()
-    handler = splunk_hec_logging_handler.SplunkHECHandler(targetserver=hec_info[0], hec_token=hec_info[1], eventgen_name=name)
-    log.addHandler(handler)
     log.info("Logger set as eventgen_controller")
     host = socket.gethostname() + '_controller'
 

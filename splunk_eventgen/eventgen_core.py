@@ -234,7 +234,6 @@ class EventGenerator(object):
         log_path = getattr(args, "log_path", os.path.join(file_path, 'logs'))
         eventgen_main_logger_path = os.path.join(log_path, 'eventgen-main.log')
         eventgen_listener_logger_path = os.path.join(log_path, 'eventgen-listener-process.log')
-        eventgen_hec_logger_path = os.path.join(log_path, 'splunk-hec-handler.log')
         eventgen_metrics_logger_path = os.path.join(log_path, 'eventgen-metrics.log')
         eventgen_error_logger_path = os.path.join(log_path, 'eventgen-errors.log')
         eventgen_server_logger_path = os.path.join(log_path, 'eventgen-server.log')
@@ -258,10 +257,6 @@ class EventGenerator(object):
             eventgen_listener_file_handler = logging.handlers.RotatingFileHandler(eventgen_listener_logger_path, maxBytes=2500000, backupCount=20)
             eventgen_listener_file_handler.setFormatter(detailed_formatter)
             eventgen_listener_file_handler.setLevel(logging.DEBUG)
-
-            splunk_hec_file_handler = logging.handlers.RotatingFileHandler(eventgen_hec_logger_path, maxBytes=2500000, backupCount=20)
-            splunk_hec_file_handler.setFormatter(detailed_formatter)
-            splunk_hec_file_handler.setLevel(logging.DEBUG)
 
             error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000, backupCount=20)
             error_file_handler.setFormatter(detailed_formatter)
@@ -299,17 +294,6 @@ class EventGenerator(object):
             logger.addHandler(eventgen_listener_file_handler)
             logger.addHandler(error_file_handler)
 
-            # Configure splunk hec logger
-            logger = logging.getLogger('eventgen_splunk_hec_logger')
-            if self.args.verbosity >= 1:
-                logger.setLevel(logging.DEBUG)
-            else:
-                logger.setLevel((logging.INFO))
-            logger.propagate = False
-            logger.handlers = []
-            logger.addHandler(splunk_hec_file_handler)
-            logger.addHandler(error_file_handler)
-
             # Configure eventgen mertics logger
             logger = logging.getLogger('eventgen_metrics')
             logger.setLevel(logging.INFO)
@@ -336,15 +320,6 @@ class EventGenerator(object):
         logging.Logger.debugv = debugv
         self.logger = logging.getLogger('eventgen')
         self.loggingQueue = None
-
-    def get_hec_info_from_conf(self):
-        hec_info = [None, None]
-        config = ConfigParser.ConfigParser()
-        if os.path.isfile(EVENTGEN_ENGINE_CONF_PATH):
-            config.read(EVENTGEN_ENGINE_CONF_PATH)
-            hec_info[0] = config.get('heclogger', 'hec_url', 1)
-            hec_info[1] = config.get('heclogger', 'hec_key', 1)
-        return hec_info
 
     def _worker_do_work(self, work_queue, logging_queue):
         while not self.stopping:
