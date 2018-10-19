@@ -42,7 +42,7 @@ setup(
     install_requires=[
         'pytest>=3.0.0', # Required to test functional tests in eventgen.
         'boto3',
-        'requests>=2.19.0',
+        'requests==2.19.1',
         'requests[security]',
         'logutils>=0.3.4.1',
         'futures>=3.0.5',
