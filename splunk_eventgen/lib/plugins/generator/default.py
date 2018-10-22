@@ -76,10 +76,7 @@ class DefaultGenerator(GeneratorPlugin):
                 ## Iterate tokens
                 for token in self._sample.tokens:
                     token.mvhash = mvhash
-                    # self.logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
-                    self.logger.debugv("Sending event to token replacement: Event:{0} Token:{1}".format(event, token))
                     event = token.replace(event, et=earliest, lt=latest, s=self._sample, pivot_timestamp=pivot_timestamp)
-                    self.logger.debugv("finished replacing token")
                     if token.replacementType == 'timestamp' and self._sample.timeField != '_raw':
                         self._sample.timestamp = None
                         token.replace(targetevent[self._sample.timeField], et=self._sample.earliestTime(), lt=self._sample.latestTime(), s=self._sample, pivot_timestamp=pivot_timestamp)
@@ -103,7 +100,6 @@ class DefaultGenerator(GeneratorPlugin):
                         'source': targetevent['source'],
                         'sourcetype': targetevent['sourcetype'],
                         '_time': time_val } ]
-                self.logger.debugv("Finished Processing event: %s" % eventcount)
                 eventcount += 1
                 self._out.bulksend(l)
                 self._sample.timestamp = None

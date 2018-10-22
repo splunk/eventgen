@@ -313,6 +313,7 @@ Output Queue Status: {7}\n'''
             return '500', "Exception: {}".format(e.message)
 
     def setup(self, data):
+        self.log.info("setup method called with {}".format(json.loads(data)))
         if not data:
             data = {}
         if type(data) != dict:
@@ -325,7 +326,7 @@ Output Queue Status: {7}\n'''
             hosts = data.get("other_hosts", [])
             protocol = data.get("protocol", "https")
             key = data.get("key", "00000000-0000-0000-0000-000000000000")
-            key_name = data.get("key_name", "eventgen")
+            key_name = data.get("key_name", "eventgen") + '_' + self.host
             password = data.get("password", "Chang3d!")
             hec_port = int(data.get("hec_port", 8088))
             mgmt_port = int(data.get("mgmt_port", 8089))
