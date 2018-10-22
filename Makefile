@@ -90,9 +90,9 @@ run_controller: eg_network
 	docker run --name eg_controller --network eg_network -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
 
 docs:
-    npm install -g gitbook-serve
-    cd documentation/
-    gitbookserve
+	npm install -g gitbook-serve
+	cd documentation/
+	gitbookserve
 
 build_spl: clean
 	python -m splunk_eventgen build --destination ./
