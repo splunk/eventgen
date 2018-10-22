@@ -27,7 +27,7 @@ push_release_egg:
 	python scripts/eventgen_CD.py --push --release pypi
 
 image: setup_eventgen egg
-	rm splunk_eventgen/default/eventgen_en gine.conf || true
+	rm splunk_eventgen/default/eventgen_engine.conf || true
 	docker build -f dockerfiles/Dockerfile . -t eventgen
 
 test: egg test_helper test_collection_cleanup
