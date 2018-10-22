@@ -1,4 +1,4 @@
-    FROM alpine:3.6
+FROM alpine:3.6
 
 ENV RABBITMQ_VERSION=3.6.13
 ENV EVENTGEN_PATH=/usr/lib/python2.7/site-packages/splunk_eventgen
