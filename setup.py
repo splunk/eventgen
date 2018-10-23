@@ -23,7 +23,6 @@ setup(
     version=VERSION,
     description='Splunk Event Generator to produce real-time, representative data',
     long_description=long_description,
-    url='https://repo.splunk.com/artifactory/api/pypi/pypi-local',
     author='Splunk, Inc.',
     author_email='tonyl@splunk.com',
     classifiers=[
