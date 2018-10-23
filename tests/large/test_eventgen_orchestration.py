@@ -37,7 +37,6 @@ def wait_for_response(url, timeout=60):
 
 @pytest.mark.large
 class TestEventgenOrchestration(object):
-<<<<<<< HEAD
 	'''
 	This test class is used to test the Docker image published as part of this repo.
 	Specifically, this is testing:
