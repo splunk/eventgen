@@ -50,6 +50,7 @@ setup(
         'pyyaml',
         'httplib2',
         'jinja2',
-        'pyrabbit==1.1.0'
+        'pyrabbit==1.1.0',
+        'urllib3==1.23' # 'requests' dependency bug
     ]
     )
