@@ -1,6 +1,5 @@
 [sample.shoppingapacheBrowse]
 sampleDir = tests/sample_eventgen_conf/perf/weblog
-disabled=false
 mode = sample
 outputMode = devnull
 index = main
@@ -26,22 +25,22 @@ token.0.replacement = %d/%b/%Y %H:%M:%S:%f
 # replace client IP
 token.1.token = (XXXXXXXXXX)
 token.1.replacementType = file
-token.1.replacement = tests/perf/weblog/external_ips.sample
+token.1.replacement = tests/sample_eventgen_conf/perf/weblog/external_ips.sample
 
 # replace server name
 token.2.token = (YYYYYYYYYY)
 token.2.replacementType = file
-token.2.replacement = tests/perf/weblog/webhosts.sample
+token.2.replacement = tests/sample_eventgen_conf/perf/weblog/webhosts.sample
 
 # replace user agent string
 token.3.token = (DDDDDDDDDD)
 token.3.replacementType = file
-token.3.replacement = tests/perf/weblog/useragents.sample
+token.3.replacement = tests/sample_eventgen_conf/perf/weblog/useragents.sample
 
 # replace status
 token.4.token = (FFFFFFFFFF)
 token.4.replacementType = file
-token.4.replacement = tests/perf/weblog/webserverstatus.sample
+token.4.replacement = tests/sample_eventgen_conf/perf/weblog/webserverstatus.sample
 
 # replace size
 token.5.token = (GGGGGGGGGG)

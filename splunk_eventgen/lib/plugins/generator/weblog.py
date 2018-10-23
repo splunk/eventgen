@@ -8,22 +8,22 @@ class WeblogGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
-        f = open('tests/perf/weblog/external_ips.sample')
+        f = open('tests/sample_eventgen_conf/perf/weblog/external_ips.sample')
         self.external_ips = [x.strip() for x in f.readlines()]
         self.external_ips_len = len(self.external_ips)
         f.close()
 
-        f = open('tests/perf/weblog/webhosts.sample')
+        f = open('tests/sample_eventgen_conf/perf/weblog/webhosts.sample')
         self.webhosts = [x.strip() for x in f.readlines()]
         f.close()
         self.webhosts_len = len(self.webhosts)
 
-        f = open('tests/perf/weblog/useragents.sample')
+        f = open('tests/sample_eventgen_conf/perf/weblog/useragents.sample')
         self.useragents = [x.strip() for x in f.readlines()]
         f.close()
         self.useragents_len = len(self.useragents)
 
-        f = open('tests/perf/weblog/webserverstatus.sample')
+        f = open('tests/sample_eventgen_conf/perf/weblog/webserverstatus.sample')
         self.webserverstatus = [x.strip() for x in f.readlines()]
         f.close()
         self.webserverstatus_len = len(self.webserverstatus)

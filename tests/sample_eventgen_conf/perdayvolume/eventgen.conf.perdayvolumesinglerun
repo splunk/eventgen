@@ -9,9 +9,6 @@ index = main
 sourcetype = windbag
 source = windbag.log
 host = localhost
-#splunkHost = localhost
-#splunkUser = admin
-#splunkPass = changeme
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp

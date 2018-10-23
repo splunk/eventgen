@@ -1,6 +1,6 @@
 [replay]
 sampleDir = tests/sample_eventgen_conf/replay
-mode = replay
+mode = sample
 timeMultiple = 2
 autotimestamp = true
 

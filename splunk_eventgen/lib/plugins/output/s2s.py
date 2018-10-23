@@ -166,8 +166,8 @@ class S2S:
 class S2SOutputPlugin(OutputPlugin):
     name = 's2s'
     MAXQUEUELENGTH = 10
-
     s2s = None
+    useOutputQueue = True
 
     def __init__(self, sample):
         OutputPlugin.__init__(self, sample)
