@@ -38,13 +38,10 @@ class ReplayGenerator(GeneratorPlugin):
         ## Iterate tokens
         for token in self._sample.tokens:
             token.mvhash = mvhash
-            # self.logger.debugv("Replacing token '%s' of type '%s' in event '%s'" % (token.token, token.replacementType, event))
-            self.logger.debugv("Sending event to token replacement: Event:{0} Token:{1}".format(event, token))
             if token.replacementType in ['timestamp', 'replaytimestamp'] :
                 event = token.replace(event, et=event_time, lt=event_time, s=self._sample)
             else:
                 event = token.replace(event, s=self._sample)
-        self.logger.debugv("finished replacing token")
         if (self._sample.hostToken):
             # clear the host mvhash every time, because we need to re-randomize it
             self._sample.hostToken.mvhash = {}
