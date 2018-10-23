@@ -245,9 +245,10 @@ class TestEventgenOrchestration(object):
 		r = requests.post("http://127.0.0.1:{}/bundle".format(self.server_eventgen_webport))
 		assert r.status_code == 400
 		assert "Please pass in a valid object with bundle URL" in r.content
-	
+
+	@pytest.mark.skip(reason="This test uses Splunk internal references, should not run on external releases")
 	def test_server_bundle_with_url(self):
-		r = requests.post("http://127.0.0.1:{}/bundle".format(self.server_eventgen_webport), json={"url": "https://repo.splunk.com/artifactory/Solutions/APP/ITSI_Performance_Testing/builds/develop/latest/ITSI_Performance_Testing-1.0.0-15.tgz"})
+		r = requests.post("http://127.0.0.1:{}/bundle".format(self.server_eventgen_webport), json={"url": ""})
 		assert r.status_code == 200
 		output = json.loads(r.content)
 		assert output
