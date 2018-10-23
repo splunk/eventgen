@@ -5,11 +5,12 @@ CURTIME ?= $(shell date +%s)
 EVENTGEN_TEST_IMAGE = "eventgen-test-container"
 TESTS ?= large
 TEST_ARGS += ${TESTS}
-ENGINE_CONF_SOURCE ?= "https://repo.splunk.com/artifactory/Solutions/Common/misc/eventgen_engine.conf"
+ENGINE_CONF_SOURCE ?= "https://raw.githubusercontent.com/splunk/eventgen/develop/splunk_eventgen/default/eventgen.conf"
 SMALL ?= 'tests/small'
 MEDIUM ?= 'tests/medium'
 LARGE ?= 'tests/large'
 XLARGE ?= 'tests/xlarge'
+LATEST_IMAGE ?= ""
 
 .PHONY: tests
 
@@ -18,26 +19,14 @@ all: egg
 egg: clean
 	python setup.py sdist
 
-push_dev_egg:
-	rm -f splunk_eventgen/logs/*.log
-	python scripts/eventgen_CD.py --push pypi
-
-push_release_egg:
-	rm -f splunk_eventgen/logs/*.log
-	python scripts/eventgen_CD.py --push --release pypi
-
 image: setup_eventgen egg
 	rm splunk_eventgen/default/eventgen_engine.conf || true
 	docker build -f dockerfiles/Dockerfile . -t eventgen
 
-push_image_production: image
-	docker tag eventgen:latest repo.splunk.com/splunk/products/eventgenx:latest
-	docker push repo.splunk.com/splunk/products/eventgenx:latest
-
 test: egg test_helper test_collection_cleanup
 
 test_helper:
-	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} repo.splunk.com/splunk/products/eventgenx:latest cat
+	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} ${LATEST_IMAGE} cat
 
 	@echo 'Creating dirs needed for tests'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "mkdir -p $(shell pwd) "
@@ -101,9 +90,9 @@ run_controller: eg_network
 	docker run --name eg_controller --network eg_network -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
 
 docs:
-	docker build -t stg-repo.splunk.com/tonyl/eventgen-docs:latest documentation/
-	docker push stg-repo.splunk.com/tonyl/eventgen-docs:latest
-	python documentation/deploy.py --certs ~/.orca
+	npm install -g gitbook-serve
+	cd documentation/
+	gitbookserve
 
 build_spl: clean
 	python -m splunk_eventgen build --destination ./

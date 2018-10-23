@@ -23,7 +23,6 @@ setup(
     version=VERSION,
     description='Splunk Event Generator to produce real-time, representative data',
     long_description=long_description,
-    url='https://repo.splunk.com/artifactory/api/pypi/pypi-local',
     author='Splunk, Inc.',
     author_email='tonyl@splunk.com',
     classifiers=[
@@ -50,6 +49,7 @@ setup(
         'pyyaml',
         'httplib2',
         'jinja2',
-        'pyrabbit==1.1.0'
+        'pyrabbit==1.1.0',
+        'urllib3==1.23' # 'requests' dependency bug
     ]
     )

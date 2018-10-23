@@ -5,8 +5,8 @@ latest = now
 interval = -1
 count = 5
 end = 5
-
 outputMode = stdout
+
 [windbag2]
 generator = windbag
 earliest = -3s
