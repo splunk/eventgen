@@ -7,7 +7,7 @@ latest = now
 interval = 1
 randomizeEvents = true
 backfill = -15m
-end = -5m
+end = 3
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp

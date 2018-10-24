@@ -5,6 +5,7 @@ latest = now
 interval = 3
 count = 5
 outputMode = stdout
+end = 1
 
 [sample]
 sampleDir = tests/sample_eventgen_conf/sample
@@ -13,6 +14,7 @@ count = 3
 earliest = -3s
 latest = now
 interval = 3
+end = 1
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp
@@ -31,6 +33,7 @@ hourOfDayRate = { "0": 0.30, "1": 0.20, "2": 0.20, "3": 0.20, "4": 0.20, "5": 0.
 dayOfWeekRate = { "0": 0.97, "1": 0.95, "2": 0.90, "3": 0.97, "4": 1.0, "5": 0.99, "6": 0.55 }
 randomizeCount = 0.2
 backfill = -5m
+end = 1
 
 token.0.token = ((\w+\s+\d+\s+\d{2}:\d{2}:\d{2}:\d{3})|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}))
 token.0.replacementType = replaytimestamp
@@ -38,8 +41,9 @@ token.0.replacement = ["%b %d %H:%M:%S:%f", "%Y-%m-%d %H:%M:%S:%f"]
 
 [replay]
 sampleDir = tests/sample_eventgen_conf/replay
-mode = replay
+generator = replay
 timeMultiple = 2
+end = 1
 
 outputMode = stdout
 index = main
@@ -60,6 +64,7 @@ latest = now
 interval = 3
 bundlelines = true
 sampletype = csv
+end = 1
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp
@@ -73,6 +78,7 @@ earliest = -3s
 latest = now
 interval = 3
 breaker = ^\d{14}\.\d{6}
+end = 1
 
 token.0.token = ^(\d{14})\.\d{6}
 token.0.replacementType = timestamp
