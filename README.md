@@ -3,17 +3,24 @@
 The Splunk Event Generator is a utility which allows its user to easily build real-time event generators.
 The current maintainers of this project are Brian Bingham (bbingham@splunk.com), Tony Lee (tonyl@splunk.com), and Jack Meixensperger (jackm@splunk.com).
 
-The goals of this project are ambitious but simple:
+The goals of this project:
 
-* Eliminate the need for hand coded event generators in Splunk apps.
-* Allow for portability of event generators between applications, and allow templates to be quickly adapted between use cases.
-* Allow every type of event or transaction to be modeled inside Eventgen.
+* Eliminate the need for hand coded event generators in Splunk apps
+* Allow for portability of event generators between applications and allow templates to be quickly adapted between use cases
+* Allow every type of event or transaction to be modeled inside Eventgen
 
 To get you started, please setup a documentation
 
-### Tutorial
+### Documentation
 
-Documentation is packaged through [Gitbook](https://www.gitbook.com/).
+Documentation is packaged by [Gitbook](https://www.gitbook.com/).
+
+##### Requirements
+Installing GitBook is easy and straightforward. Your system just needs to meet these two requirements:
+* NodeJS (v4.0.0 and above is recommended)
+* Windows, Linux, Unix, or Mac OS X
+
+
 It is free to use and easy to install [Installation Guide](https://toolchain.gitbook.com/setup.html).
 Once you have Gitbook installed, run Gitbook to serve documentation directory.
 

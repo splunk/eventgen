@@ -91,6 +91,9 @@ available at [http://contributor-covenant.org/version/1/4][version]
 [version]: http://contributor-covenant.org/version/1/4/
 
 ### Past / Active(marked as *) Contributors
+bbingham*
+arctan5x*
+jmeixensperger*
 coccyx
 Jaykul
 allanwsplk
@@ -101,5 +104,4 @@ soniageorge
 kyanite
 LukeMurphey
 shakeelmohamed
-bbingham*
-arctan5x*
+
