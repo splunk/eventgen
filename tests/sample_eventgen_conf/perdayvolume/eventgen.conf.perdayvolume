@@ -2,6 +2,8 @@
 sampleDir = tests/sample_eventgen_conf/perdayvolume
 perDayVolume = 1.1
 outputMode = stdout
+interval = 1
+end = 10
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp

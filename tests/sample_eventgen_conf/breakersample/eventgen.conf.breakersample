@@ -6,6 +6,7 @@ earliest = -3s
 latest = now
 interval = 3
 breaker = ^\d{14}\.\d{6}
+end = 3
 
 token.0.token = ^(\d{14})\.\d{6}
 token.0.replacementType = timestamp

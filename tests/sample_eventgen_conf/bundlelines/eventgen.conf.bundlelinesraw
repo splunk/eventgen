@@ -6,6 +6,7 @@ earliest = -3s
 latest = now
 interval = 3
 bundlelines = true
+end = 3
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp

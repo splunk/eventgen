@@ -5,6 +5,7 @@ count = 10
 earliest = -3s
 latest = now
 interval = 3
+end = 5
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp

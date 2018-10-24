@@ -1,6 +1,6 @@
 [timeorder]
 sampleDir = tests/sample_eventgen_conf/replay
-mode = replay
+generator = replay
 timeMultiple = 2
 sampletype = csv
 timeField = _time
