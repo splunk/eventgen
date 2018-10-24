@@ -65,6 +65,8 @@ clean:
 	rm *.spl || true
 	rm -rf dist *.egg-info *.log *.xml || true
 	rm splunk_eventgen/logs/*.log || true
+	rm -rf .idea || true
+	rm -rf _book || true
 	find . -name "*.pyc" -type f -delete || true
 	find . -name "*.log" -type f -delete || true
 	find . -name "*.pyc" -type f -delete || true
