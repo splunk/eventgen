@@ -13,27 +13,11 @@ To get you started, please setup a documentation
 
 ### Documentation
 
-Documentation is packaged by [GitBook](https://www.gitbook.com/).
-
-##### Requirements
-Installing GitBook is easy and straightforward. Your system just needs to meet these two requirements:
-* NodeJS (v4.0.0 and above is recommended)
-* Windows, Linux, Unix, or Mac OS X
-
-Install with NPM
-```
-npm install gitbook-cli -g
-```
-
-##### How to Run
-```
-# Hosts Eventgen GitBook on localhost:4000
-gitbook serve ./documentation
-```
+Documentation is hosted at [Eventgen Documentation](http://splunk.github.io/eventgen/).
 
 ### Contributing
 
-Please note [CONTRIBUTING.md](CONTRIBUTING.md). You can also find past and current contributors in the document.
+Please note [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### License
 
@@ -42,4 +26,4 @@ The Splunk Event Generator is licensed under the Apache License 2.0. Details can
 ### Support
 
 This software is released as-is. Splunk provides no warranty and no support on this software.
-If you have any issues with the software, please feel free to reach out to the current maintainers and we would be happy to help you.
+If you have any issues with the software, please file an issue (https://github.com/splunk/eventgen/issues/new)
