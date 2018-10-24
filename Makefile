@@ -67,6 +67,8 @@ clean:
 	rm splunk_eventgen/logs/*.log || true
 	rm -rf .idea || true
 	rm -rf _book || true
+	rm -rf documentation/_book || true
+	rm -rf documentation/node_modules || true
 	find . -name "*.pyc" -type f -delete || true
 	find . -name "*.log" -type f -delete || true
 	find . -name "*.pyc" -type f -delete || true

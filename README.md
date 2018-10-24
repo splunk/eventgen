@@ -20,6 +20,13 @@ Installing GitBook is easy and straightforward. Your system just needs to meet t
 * NodeJS (v4.0.0 and above is recommended)
 * Windows, Linux, Unix, or Mac OS X
 
+Install with NPM
+```
+npm install gitbook-cli -g
+```
+
+##### 
+
 
 It is free to use and easy to install [Installation Guide](https://toolchain.gitbook.com/setup.html).
 Once you have Gitbook installed, run Gitbook to serve documentation directory.
