@@ -13,7 +13,7 @@ To get you started, please setup a documentation
 
 ### Documentation
 
-Documentation is packaged by [Gitbook](https://www.gitbook.com/).
+Documentation is packaged by [GitBook](https://www.gitbook.com/).
 
 ##### Requirements
 Installing GitBook is easy and straightforward. Your system just needs to meet these two requirements:
@@ -25,11 +25,11 @@ Install with NPM
 npm install gitbook-cli -g
 ```
 
-##### 
-
-
-It is free to use and easy to install [Installation Guide](https://toolchain.gitbook.com/setup.html).
-Once you have Gitbook installed, run Gitbook to serve documentation directory.
+##### How to Run
+```
+# Hosts Eventgen GitBook on localhost:4000
+gitbook serve ./documentation
+```
 
 ### Contributing
 
