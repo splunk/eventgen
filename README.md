@@ -9,8 +9,6 @@ The goals of this project:
 * Allow for portability of event generators between applications and allow templates to be quickly adapted between use cases
 * Allow every type of event or transaction to be modeled inside Eventgen
 
-To get you started, please setup a documentation
-
 ### Documentation
 
 Documentation is hosted at [Eventgen Documentation](http://splunk.github.io/eventgen/).
