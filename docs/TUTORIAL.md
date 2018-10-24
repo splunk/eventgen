@@ -125,6 +125,8 @@ We added support for Jinja templates so that users can dynamically generate a sa
 In addition to Jinja's ease of use, Jinja templates can include or inherit other templates so that users have freedom to stack different templates.
 
 Simple conf file and Jinja template look like:
+
+{% raw %}
 ```
 # Conf File
 [Test_Jinja]
@@ -138,6 +140,7 @@ earliest = -3s
 latest = now
 outputMode = stdout
 
+
 # Jinja Template (file test_jinja.template)
 {% for _ in range(0, large_number) %}
 {%- time_now -%}
@@ -146,6 +149,7 @@ outputMode = stdout
         I'm also hungry, can I have a pizza?"}
 {% endfor %}
 ```
+{% endraw %}
 
 Running Eventgen with above conf file and template would result in below output.
 ```
@@ -166,27 +170,38 @@ Note that the template is in a JSON format with a key "_raw" which is a raw stri
 
 Let's look at how to extend an existing template.
 
+{% raw %}
 ```
 {%- block head -%}
     {% include "another_jinja.template" %}
 {%- endblock -%}
 ```
+{% endraw %}
+
 Adding above block imports the contents of another_jinja.template into your current template. You can include many templates.
 
+
+{% raw %}
 ```
 # extends block inherits a specified template
 {% extends "super_jinja.template" %}
 ```
+{% endraw %}
+
 Adding above block makes your current template inherit the contents of super_jinja.template. You can only inherit from a single template.
 
 Also, with Jinja templates, users can define mini functions (macro) inside of the template.
 
 For example, using macro block allows you to define a function that is reusable in your template.
+
+{% raw %}
 ```
 {% macro input(name) -%}
     name = {{[0,1,2,3,4,5,6,7,8,9]|random}}
 {%- endmacro -%}
 ```
+{% endraw %}
+
 Using macros will make your template reusable and easy to read.
 
 These are a fraction of examples how flexible and dynamic Jinja module is. For more information about Jinja, see [Jinja2 Documentation](http://jinja.pocoo.org/docs/2.10/).
