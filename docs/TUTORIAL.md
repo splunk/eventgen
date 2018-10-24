@@ -180,17 +180,20 @@ Let's look at how to extend an existing template.
 
 Adding above block imports the contents of another_jinja.template into your current template. You can include many templates.
 
+
+{% raw %}
 ```
 # extends block inherits a specified template
-{% raw %}
 {% extends "super_jinja.template" %}
-{% endraw %}
 ```
+{% endraw %}
+
 Adding above block makes your current template inherit the contents of super_jinja.template. You can only inherit from a single template.
 
 Also, with Jinja templates, users can define mini functions (macro) inside of the template.
 
 For example, using macro block allows you to define a function that is reusable in your template.
+
 {% raw %}
 ```
 {% macro input(name) -%}
@@ -198,6 +201,7 @@ For example, using macro block allows you to define a function that is reusable 
 {%- endmacro -%}
 ```
 {% endraw %}
+
 Using macros will make your template reusable and easy to read.
 
 These are a fraction of examples how flexible and dynamic Jinja module is. For more information about Jinja, see [Jinja2 Documentation](http://jinja.pocoo.org/docs/2.10/).
