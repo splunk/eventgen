@@ -93,7 +93,7 @@ def timeParser(ts='now', timezone=datetime.timedelta(days=1), now=None, utcnow=N
                     elif resultsdict['snapunit'] in ('mon', 'month', 'months'):
                         ret = datetime.datetime(ret.year, ret.month, 1, 0, 0, 0, 0)
                     elif resultsdict['snapunit'] in ('q', 'qtr', 'qtrs', 'quarter', 'quarters'):
-                        ret = datetime.datetime(ret.year, (math.floor(ret.month / 3) * 3), 1, 0, 0, 0, 0)
+                        ret = datetime.datetime(ret.year, int(math.floor(ret.month / 3.3 + 1) * 3), 1, 0, 0, 0, 0)
                     elif resultsdict['snapunit'] in ('y', 'yr', 'yrs', 'year', 'years'):
                         ret = datetime.datetime(ret.year, 1, 1, 0, 0, 0, 0)
                         
