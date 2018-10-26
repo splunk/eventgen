@@ -1,0 +1,57 @@
+# Note, these samples assume you're installed as an app or a symbolic link in 
+# $SPLUNK_HOME/etc/apps/eventgen.  If not, please change the paths below.
+
+[sample.tutorial4]
+sampletype = csv
+interval = 3
+earliest = -3s
+latest = now
+count = 10
+bundlelines = true
+hourOfDayRate = { "0": 0.30, "1": 0.10, "2": 0.05, "3": 0.10, "4": 0.15, "5": 0.25, "6": 0.35, "7": 0.50, "8": 0.60, "9": 0.65, "10": 0.70, "11": 0.75, "12": 0.77, "13": 0.80, "14": 0.82, "15": 0.85, "16": 0.87, "17": 0.90, "18": 0.95, "19": 1.0, "20": 0.85, "21": 0.70, "22": 0.60, "23": 0.45 }
+dayOfWeekRate = { "0": 0.97, "1": 0.95, "2": 0.90, "3": 0.97, "4": 1.0, "5": 0.99, "6": 0.55 }
+randomizeCount = 0.2
+
+# outputMode = file
+# fileName = /tmp/mobilemusic.log
+
+outputMode = splunkstream
+
+# Host/User/pass only necessary if running outside of splunk!
+splunkHost = localhost
+splunkUser = admin
+splunkPass = changeme
+
+# outputMode = stormstream
+# projectID = <projectid>
+# accessToken = <accesstoken>
+# source = eventgen
+# sourcetype = business_event
+
+token.0.token = ((\w+\s+\d+\s+\d{2}:\d{2}:\d{2}:\d{3})|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}))
+token.0.replacementType = replaytimestamp
+token.0.replacement = ["%b %d %H:%M:%S:%f", "%Y-%m-%d %H:%M:%S:%f"]
+
+token.1.token = (5\.5\.5\.5)
+token.1.replacementType = file
+token.1.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/external_ips.sample
+
+token.2.token = (10\.2\.1\.35)
+token.2.replacementType = file
+token.2.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/webhosts.sample
+
+token.3.token = (POST /playhistory/uploadhistory)
+token.3.replacementType = file
+token.3.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/uris.sample
+
+token.4.token = "(Mozilla/5\.0[^"]+)"
+token.4.replacementType = file
+token.4.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/useragents_mobile.sample
+
+token.5.token = \s{1}(468)\s{1}
+token.5.replacementType = random
+token.5.replacement = integer[100:1000]
+
+token.6.token = \s{1}(1488)\s{1}
+token.6.replacementType = random
+token.6.replacement = integer[200:4000]

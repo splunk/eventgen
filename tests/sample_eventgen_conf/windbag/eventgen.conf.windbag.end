@@ -1,0 +1,17 @@
+[windbag]
+generator = windbag
+earliest = -3s
+latest = now
+interval = -1
+count = 5
+end = 5
+outputMode = stdout
+
+[windbag2]
+generator = windbag
+earliest = -3s
+latest = now
+interval = 3
+count = 5
+end = 5
+outputMode = stdout

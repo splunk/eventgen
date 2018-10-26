@@ -1,0 +1,56 @@
+:orphan:
+
+.. _whats-new:
+
+What's New in logutils
+======================
+
+Version 0.3.4
+-------------
+
+- Return non-zero error code from "setup.py test" when a test fails.
+- Make the dictConfig tests work with both Python 2.x and 3.x.
+
+Version 0.3.3
+-------------
+
+- Added encoding support to ColorizingStreamHandler.
+
+Version 0.3.2
+-------------
+
+- Improvements in QueueListener implementation.
+- Added redis module with RedisQueueHandler and
+  RedisQueueListener.
+- Added unit test for a handler in a module
+  where absolute imports are used.
+
+Version 0.3.1
+-------------
+
+- Improvements in setup.py and documentation.
+
+Version 0.3
+-----------
+
+- Added caches for BraceMessage/DollarMessage.
+- Added ColorizingStreamHandler.
+
+Version 0.2
+-----------
+
+- Updated docstrings for improved documentation.
+- Added hasHanders() function.
+- Changed LoggerAdapter.hasHandlers() to use logutils.hasHandlers().
+- Documentation improvements.
+- NullHandler moved to logutils package (from queue package).
+- Formatter added to logutils package. Adds support for {}- and $-formatting
+  in format strings, as well as %-formatting.
+- BraceMessage and DollarMessage classes added to facilitate {}- and $-
+  formatting in logging calls (as opposed to Formatter formats).
+- Added some more unit tests.
+
+Version 0.1
+-----------
+
+First public release.

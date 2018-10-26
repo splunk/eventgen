@@ -1,0 +1,117 @@
+food,FI-AG-G08,Bread,5,'Apple iOS'
+food,FI-AG-G08,Bread,5,'Apple iOS'
+food,FI-AG-G08,Bread,5,Android
+food,FI-AG-G08,Bread,5,'Apple iOS'
+food,BS-AG-G09,Crackers,10,'Apple iOS'
+food,BS-AG-G09,Crackers,10,'Apple iOS'
+food,BS-AG-G09,Crackers,10,'Apple iOS'
+animal,PZ-SG-G05,'Grumpy Billy Goat',15,'Apple iOS'
+animal,PZ-SG-G05,'Grumpy Billy Goat',15,'Apple iOS'
+animal,PZ-SG-G05,'Grumpy Billy Goat',15,'Apple iOS'
+animal,PZ-SG-G05,'Grumpy Billy Goat',15,'Apple iOS'
+animal,PZ-SG-G05,'Grumpy Billy Goat',15,Android
+animal,PZ-SG-G05,'Grumpy Billy Goat',15,Android
+animal,PZ-SG-G05,'Grumpy Billy Goat',15,'Apple iOS'
+animal,PZ-SG-G05,'Grumpy Billy Goat',15,'Apple iOS'
+animal,MB-AG-T0,'Sheepish Sheep',20,'Apple iOS'
+animal,MB-AG-T0,'Sheepish Sheep',20,'Apple iOS'
+animal,MB-AG-T0,'Sheepish Sheep',20,'Apple iOS'
+animal,MB-AG-T0,'Sheepish Sheep',20,'Apple iOS'
+cheese,ST-RF-M04,Manchego,25,'Apple iOS'
+cheese,ST-RF-M04,Manchego,25,'Apple iOS'
+cheese,ST-RF-M04,Manchego,25,'Apple OS X'
+cheese,ST-AR-G09,Cotija,25,Windows
+cheese,ST-AR-G09,Cotija,25,'Apple iOS'
+cheese,SP-FA-R08,Feta,30,'Apple iOS'
+cheese,ST-RF-M04,Manchego,25,Windows
+cheese,ST-RF-M04,Manchego,25,Windows
+cheese,ST-RF-M04,Manchego,25,'Apple OS X'
+cheese,ST-AR-G09,Cotija,25,Windows
+cheese,ST-AR-G09,Cotija,25,'Apple OS X'
+cheese,SP-FA-R08,Feta,30,'Apple OS X'
+cheese,SC-QT-G12,Camembert,35,'Apple iOS'
+cheese,SC-QT-G12,Camembert,35,'Apple OS X'
+cheese,SC-QT-G12,Camembert,35,'Apple OS X'
+cheese,SC-MG-G10,Roquefort,40,'Apple iOS'
+armor,DC-SG-G02,'Superbly Comfortable Boots',95,Windows
+animal,WC-SH-T0,'Jersey Shore Cow',50,'Apple iOS'
+animal,WC-SH-T0,'Jersey Shore Cow',50,'Apple iOS'
+animal,WC-SH-T0,'Jersey Shore Cow',50,'Apple OS X'
+food,MB-AG-G0,Wine,60,'Apple iOS'
+food,MB-AG-G0,Wine,60,Android
+armor,DC-SG-G02,'Superbly Comfortable Boots',95,Windows
+armor,DC-SG-G02,'Superbly Comfortable Boots',95,Windows
+armor,DC-SG-G02,'Superbly Comfortable Boots',95,'Apple OS X'
+tools,CU-PG-G06,'Cheese Board of Glory',100,Android
+tools,CU-PG-G06,'Cheese Board of Glory',100,Android
+armor,DC-SG-G02,'Superbly Comfortable Boots',95,'Apple OS X'
+armor,DC-SG-G02,'Superbly Comfortable Boots',95,'Apple iOS'
+tools,WC-SH-A01,'Epic Fondue Set',150,'Apple iOS'
+tools,WC-SH-A01,'Epic Fondue Set',150,Android
+tools,AB-TR-N89,'Robotic Cow Milker',500,Windows
+armor,DC-SG-G02,'Superbly Comfortable Boots',95,Android
+armor,DC-SG-G02,'Superbly Comfortable Boots',95,Windows
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Apple OS X'
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Apple OS X'
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Apple OS X'
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Apple OS X'
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Apple OS X'
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Apple OS X'
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Apple OS X'
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Apple OS X'
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,Android
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Apple iOS'
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,Windows
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,Windows
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,Windows
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Windows Mobile'
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,Windows
+armor,DB-SG-G01,'Vegan Friendly Gloves',85,'Apple OS X'
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,'Apple OS X'
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,'Apple OS X'
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,'Apple OS X'
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,'Apple OS X'
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,'Apple OS X'
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,'Windows Mobile'
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,'Apple OS X'
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,Windows
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,Windows
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,Windows
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,'Apple iOS'
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,Android
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,Windows
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,Windows
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,Windows
+armor,FS-SG-G03,'Fire Resistant Suit of Provolone',125,'Apple iOS'
+weapon,MR-AB-Y18,'Burrata 45',70,'Apple iOS'
+weapon,MR-AB-Y18,'Burrata 45',70,'Apple iOS'
+weapon,MR-AB-Y18,'Burrata 45',70,'Apple iOS'
+weapon,MR-AB-Y18,'Burrata 45',70,'Apple iOS'
+weapon,MR-AB-Y18,'Burrata 45',70,Android
+weapon,MR-AB-Y18,'Burrata 45',70,Android
+weapon,MR-AB-Y18,'Burrata 45',70,'Windows Mobile''
+weapon,MR-AB-Y18,'Burrata 45',70,Windows
+weapon,WC-SH-A02,'Deadly Sharp Cheese Knife',45,Android
+weapon,WC-SH-A02,'Deadly Sharp Cheese Knife',45,Android
+weapon,WC-SH-A02,'Deadly Sharp Cheese Knife',45,Android
+weapon,WC-SH-A02,'Deadly Sharp Cheese Knife',45,Android
+weapon,WC-SH-A02,'Deadly Sharp Cheese Knife',45,Android
+weapon,WC-SH-A02,'Deadly Sharp Cheese Knife',45,Android
+weapon,WC-SH-A02,'Deadly Sharp Cheese Knife',45,'Apple iOS'
+weapon,WC-SH-A02,'Deadly Sharp Cheese Knife',45,'Apple iOS'
+weapon,PB-MR-F89,'Mozzarella Ninja Sticks',25,'Apple iOS'
+weapon,PB-MR-F89,'Mozzarella Ninja Sticks',25,'Apple iOS'
+weapon,PB-MR-F89,'Mozzarella Ninja Sticks',25,'Apple iOS'
+weapon,PB-MR-F89,'Mozzarella Ninja Sticks',25,'Apple iOS'
+weapon,PB-MR-F89,'Mozzarella Ninja Sticks',25,'Apple iOS'
+weapon,PB-MR-F89,'Mozzarella Ninja Sticks',25,'Apple iOS'
+weapon,PB-MR-F89,'Mozzarella Ninja Sticks',25,Windows
+weapon,PB-MR-F89,'Mozzarella Ninja Sticks',25,Windows
+weapon,FT-QB-J56,'Weaponized Stilton',35,Android
+weapon,FT-QB-J56,'Weaponized Stilton',35,Android
+weapon,FT-QB-J56,'Weaponized Stilton',35,'Apple iOS'
+weapon,FT-QB-J56,'Weaponized Stilton',35,'Apple iOS'
+weapon,FT-QB-J56,'Weaponized Stilton',35,'Apple iOS'
+weapon,FT-QB-J56,'Weaponized Stilton',35,'Apple iOS'
+weapon,FT-QB-J56,'Weaponized Stilton',35,'Apple iOS'
+weapon,FT-QB-J56,'Weaponized Stilton',35,'Apple iOS'

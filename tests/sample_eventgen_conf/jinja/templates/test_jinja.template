@@ -1,0 +1,4 @@
+{%- time_now -%}
+        {"_time":"{{ time_now_epoch }}", "_raw":"{{ time_now_formatted }}  I like little windbags
+        Im at: {{ eventgen_count }} out of: {{ eventgen_maxcount }}
+        I'm also hungry, can I have a pizza?"}

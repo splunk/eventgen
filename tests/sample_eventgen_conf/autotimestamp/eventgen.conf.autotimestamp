@@ -1,0 +1,12 @@
+[replay]
+sampleDir = tests/sample_eventgen_conf/replay
+mode = sample
+timeMultiple = 2
+autotimestamp = true
+end = 1
+
+outputMode = stdout
+index = main
+sourcetype = windbag
+source = windbag.log
+host = localhost

@@ -1,0 +1,68 @@
+[weblog.sample]
+mode = sample
+sampletype = csv
+outputMode = file
+fileName = tests/weblog.out
+fileMaxBytes = 10485760000
+interval = 3
+earliest = -3s
+latest = now
+count = 800
+randomizeCount = 0.33
+randomizeEvents = true
+backfill = -10m
+
+# replace timestamp
+token.0.token = \d{1,2}/\w{3}/\d{4}\s\d{2}:\d{2}:\d{2}:\d{1,3}
+token.0.replacementType = timestamp
+token.0.replacement = %d/%b/%Y %H:%M:%S:%f
+
+# replace client IP
+token.1.token = (XXXXXXXXXX)
+token.1.replacementType = file
+token.1.replacement = samples/external_ips.sample
+
+# replace server name
+token.2.token = (YYYYYYYYYY)
+token.2.replacementType = file
+token.2.replacement = tests/test1/webhosts.sample
+
+# replace product ID
+token.3.token = (AAAAAAAAAA)
+token.3.replacementType = file
+token.3.replacement = tests/test1/products.sample
+
+# replace item ID
+token.4.token = (BBBBBBBBBB)
+token.4.replacementType = file
+token.4.replacement = tests/test1/items.sample
+
+# replace category ID
+token.5.token = (CCCCCCCCCC)
+token.5.replacementType = file
+token.5.replacement = tests/test1/categories.sample
+
+# replace user agent string
+token.6.token = (DDDDDDDDDD)
+token.6.replacementType = file
+token.6.replacement = tests/test1/useragents.sample
+
+# replace action string
+token.7.token = (EEEEEEEEEE)
+token.7.replacementType = file
+token.7.replacement = tests/test1/shoppingactions.sample
+
+# replace status
+token.8.token = (FFFFFFFFFF)
+token.8.replacementType = file
+token.8.replacement = tests/test1/webserverstatus.sample
+
+# replace size
+token.9.token = (GGGGGGGGGG)
+token.9.replacementType = random
+token.9.replacement = integer[200:4000]
+
+# replace time taken
+token.10.token = (HHHHHHHHHH)
+token.10.replacementType = random
+token.10.replacement = integer[100:1000]

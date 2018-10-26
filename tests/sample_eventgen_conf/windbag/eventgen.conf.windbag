@@ -1,0 +1,8 @@
+[windbag]
+generator = windbag
+earliest = -3s
+latest = now
+interval = 3
+count = 10
+end = 3
+outputMode = stdout

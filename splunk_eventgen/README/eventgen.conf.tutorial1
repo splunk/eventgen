@@ -1,0 +1,35 @@
+[sample.tutorial1]
+mode = replay
+sampletype = csv
+timeMultiple = 2
+#backfill = -15m
+#backfillSearch = index=main sourcetype=splunkd
+
+outputMode = stdout
+#outputMode = splunkstream
+#splunkHost = localhost
+#splunkUser = admin
+#splunkPass = changeme
+
+# outputMode = file
+# fileName = /tmp/internal.log
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3,6}
+token.0.replacementType = timestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S,%f
+
+token.1.token = \d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}.\d{3,6}
+token.1.replacementType = timestamp
+token.1.replacement = %m-%d-%Y %H:%M:%S.%f
+
+token.2.token = \d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2}.\d{3,6}
+token.2.replacementType = timestamp
+token.2.replacement = %d/%b/%Y:%H:%M:%S.%f
+
+token.3.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+token.3.replacementType = timestamp
+token.3.replacement = %Y-%m-%d %H:%M:%S
+
+token.4.token = \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}
+token.4.replacementType = timestamp
+token.4.replacement = %Y-%m-%dT%H:%M:%S
