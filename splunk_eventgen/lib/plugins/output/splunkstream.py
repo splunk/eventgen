@@ -54,7 +54,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
             # For faster processing, we need to break these up by source combos
             # so they'll each get their own thread.
             # Fixes a bug where we're losing source and sourcetype with bundlelines type transactions
-            queues = { }
+            queues = deque(q)
             for row in q:
                 if row['source'] is None:
                     row['source'] = ''
