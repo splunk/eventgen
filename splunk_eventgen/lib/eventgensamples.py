@@ -372,6 +372,18 @@ class Sample(object):
                 csvReader = csv.DictReader(self._sampleFH)
                 for line in csvReader:
                     if '_raw' in line:
+                        # Use conf-defined values for these params instead of sample-defined ones
+                        current_line_keys = line.keys()
+                        if "host" not in current_line_keys:
+                            line["host"] = self.host
+                        if "hostRegex" not in current_line_keys:
+                            line["hostRegex"] = self.hostRegex
+                        if "source" not in current_line_keys:
+                            line["source"] = self.source
+                        if "sourcetype" not in current_line_keys:
+                            line["sourcetype"] = self.sourcetype
+                        if "index" not in current_line_keys:
+                            line["index"] = self.index
                         self.sampleDict.append(line)
                         self.sampleLines.append(line['_raw'])
                     else:
