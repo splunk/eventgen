@@ -95,8 +95,8 @@ class Timer(object):
                 end = True
             count = self.rater.rate()
             #First run of the generator, see if we have any backfill work to do.
-            #TODO: I think self.countdown can just go away.
             if self.countdown <= 0:
+               
                 if self.sample.backfill and not self.sample.backfilldone:
                     realtime = self.sample.now(realnow=True)
                     if "-" in self.sample.backfill[0]:
@@ -185,5 +185,6 @@ class Timer(object):
                         end = True
 
             else:
-                self.countdown -= self.time
                 time.sleep(self.time)
+                self.countdown -= self.time
+                
