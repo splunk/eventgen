@@ -260,8 +260,10 @@ You are running Eventgen Controller.\n'''
 
     @http('GET', '/status')
     def http_status(self, request):
+        current_time = time.time()
+        self.log.info("call http_status, current time:{}".format(current_time))
         self.status("all")
-        return json.dumps(self.process_server_status(), indent=4)
+        return json.dumps(self.process_server_status(current_time), indent=4)
 
     @http('GET', '/status/<string:target>')
     def http_status_target(self, request, target="all"):
@@ -444,6 +446,9 @@ You are running Eventgen Controller.\n'''
     def receive_status(self, data):
         if data['server_name'] and data['server_status']:
             self.server_status[data['server_name']] = data['server_status']
+            rec_time = time.time()
+            self.log.info("receive {}'s status, update the status at time:{}".format(data['server_name'],rec_time))
+            self.server_status['time'] = rec_time
 
     def receive_conf(self, data):
         if data['server_name']:
@@ -453,14 +458,20 @@ You are running Eventgen Controller.\n'''
         if data['server_name'] and data["total_volume"]:
             self.server_confs[data['server_name']] = data['total_volume']
 
-    def process_server_status(self):
+    def process_server_status(self, current_time):
         current_server_vhosts = self.get_current_server_vhosts()
+        server_time = self.server_status['time'] if 'time' in self.server_status else 0
+        server_vhost_len = len(self.server_status) if 'time' not in self.server_status else len(self.server_status)-1
         if current_server_vhosts:
             # Try for 15 iterations to get results from current server vhosts
             for i in range(15):
-                if len(self.server_status) != len(current_server_vhosts):
+                if server_vhost_len != len(current_server_vhosts) or server_time < current_time:
                     time.sleep(0.3)
                     current_server_vhosts = self.get_current_server_vhosts()
+                    server_time = self.server_status['time'] if 'time' in self.server_status else 0
+                    server_vhost_len = len(self.server_status) if 'time' not in self.server_status else len(self.server_status)-1
+                else:
+                    break
             dump_value = self.server_status
         else:
             dump_value = {}
