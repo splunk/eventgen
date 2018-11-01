@@ -248,6 +248,8 @@ class JinjaGenerator(GeneratorPlugin):
                                 target_line["source"] = self._sample.source
                             if "sourcetype" not in current_line_keys:
                                 target_line["sourcetype"] = self._sample.sourcetype
+                            if "index" not in current_line_keys:
+                                target_line["index"] = self._sample.index
                             lines_out.append(target_line)
                         else:
                             break

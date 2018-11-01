@@ -6,4 +6,3 @@ interval = 3
 count = 2000
 outputMode = devnull
 backfill = -1h
-end = 1
