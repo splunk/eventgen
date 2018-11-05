@@ -5,6 +5,9 @@ from generatorplugin import GeneratorPlugin
 import datetime, time
 import re
 
+from eventgentimestamp import EventgenTimestamp
+
+
 
 class ReplayGenerator(GeneratorPlugin):
     queueable = False
@@ -64,6 +67,9 @@ class ReplayGenerator(GeneratorPlugin):
         # Otherwise, backfill time equals to the current time
         self.backfill_time = self._sample.get_backfill_time(self.current_time)
 
+        if not self._sample.backfill or self._sample.backfilldone:
+            self.backfill_time = EventgenTimestamp.get_random_timestamp(earliest, latest, self._sample.earliest, self._sample.latest)
+
         for line in self._sample.get_loaded_sample():
             # Add newline to a raw line if necessary
             try:
@@ -110,9 +116,9 @@ class ReplayGenerator(GeneratorPlugin):
             time_difference = current_event_timestamp - previous_event_timestamp
 
             if self.backfill_time + time_difference >= self.current_time:
-                current_time_diff = self.current_time - self.backfill_time
-                sleep_time = time_difference - current_time_diff
-                time.sleep(sleep_time.seconds)
+                sleep_time = time_difference - (self.current_time - self.backfill_time)
+                if self._sample.backfill and not self._sample.backfilldone:
+                    time.sleep(sleep_time.seconds)
                 self.current_time += sleep_time
                 self.backfill_time = self.current_time
             else:
@@ -120,8 +126,6 @@ class ReplayGenerator(GeneratorPlugin):
             previous_event = rpevent
             previous_event_timestamp = current_event_timestamp
             self.set_time_and_send(rpevent, self.backfill_time, earliest, latest)
-
-            # TODO: token replacement
 
         self._out.flush(endOfInterval=True)
         return

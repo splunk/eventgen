@@ -657,14 +657,14 @@ class Config(object):
                 s.generator = 'perdayvolumegenerator'
             elif s.mode == 'replay':
                 self.logger.debug("Setting defaults for replay samples")
-                s.earliest = 'now'
-                s.latest = 'now'
+                s.earliest = 'now' if not s.earliest else s.earliest
+                s.latest = 'now' if not s.latest else s.latest
                 s.count = 1
                 s.randomizeCount = None
                 s.hourOfDayRate = None
                 s.dayOfWeekRate = None
                 s.minuteOfHourRate = None
-                s.interval = 0
+                s.interval = 0 if not s.interval else s.interval
                 # 12/29/13 CS Moved replay generation to a new replay generator plugin
                 s.generator = 'replay'
 
