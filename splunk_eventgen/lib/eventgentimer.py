@@ -135,6 +135,7 @@ class Timer(object):
 
                     et = self.sample.earliestTime()
                     lt = self.sample.latestTime()
+
                     try:
                         if count < 1:
                             self.logger.info("There is no data to be generated in worker {0} because the count is {1}.".format(self.sample.config.generatorWorkers, count))
