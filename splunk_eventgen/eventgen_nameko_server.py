@@ -79,8 +79,13 @@ class EventgenServer(object):
         '''
         res = dict()
         if self.eventgen_dependency.eventgen.check_running():
+            # running
             status = 1
+        elif self.eventgen_dependency.eventgen.completed == True:
+            # all samples completed and stop
+            status = 2
         else:
+            # not start yet
             status = 0
         res["EVENTGEN_STATUS"] = status
         res["EVENTGEN_HOST"] = self.host
@@ -160,7 +165,7 @@ Output Queue Status: {7}\n'''
                 return "There is not config file known to eventgen. Pass in the config file to /conf before you start."
             if self.eventgen_dependency.eventgen.check_running():
                 return "Eventgen already started."
-            self.eventgen_dependency.eventgen.start(join_after_start=False)
+            self.eventgen_dependency.eventgen.start(join_after_start=True)
             return "Eventgen has successfully started."
         except Exception as e:
             self.log.exception(e)

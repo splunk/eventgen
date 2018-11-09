@@ -63,6 +63,7 @@ class EventGenerator(object):
         '''
         self.stopping = False
         self.started = False
+        self.completed = False
         self.config = None
         self.args = args
 
@@ -455,6 +456,7 @@ class EventGenerator(object):
         self.stopping = False
         self.started = True
         self.config.stopping = False
+        self.completed = False
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
@@ -498,6 +500,7 @@ class EventGenerator(object):
                 time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
+            self.completed = True
         except Exception as e:
             self.logger.exception(e)
             raise e
