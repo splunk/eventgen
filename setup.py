@@ -50,6 +50,6 @@ setup(
         'jinja2',
         'pyrabbit==1.1.0',
         'urllib3==1.23',
-        'pyOpenSSL==18.0.0'
+        'pyOpenSSL'
     ]
     )
