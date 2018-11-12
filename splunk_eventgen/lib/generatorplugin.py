@@ -8,6 +8,8 @@ import httplib2, urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 from eventgenoutput import Output
+from eventgentimestamp import EventgenTimestamp
+import time
 
 class GeneratorPlugin(object):
     sampleLines = None
@@ -36,6 +38,66 @@ class GeneratorPlugin(object):
     def __setstate__(self, d):
         self.__dict__ = d
         self._setup_logging()
+
+    def build_events(self, eventsDict, startTime, earliest, latest):
+        eventcount = 0
+        for targetevent in eventsDict:
+            try:
+                event = targetevent['_raw']
+                if event == "\n":
+                    continue
+                # Maintain state for every token in a given event, Hash contains keys for each file name which is
+                # assigned a list of values picked from a random line in that file
+                mvhash = {}
+                pivot_timestamp = EventgenTimestamp.get_random_timestamp(earliest, latest, self._sample.earliest,
+                                                                         self._sample.latest)
+                ## Iterate tokens
+                for token in self._sample.tokens:
+                    token.mvhash = mvhash
+                    event = token.replace(event, et=earliest, lt=latest, s=self._sample,
+                                          pivot_timestamp=pivot_timestamp)
+                    if token.replacementType == 'timestamp' and self._sample.timeField != '_raw':
+                        self._sample.timestamp = None
+                        token.replace(targetevent[self._sample.timeField], et=self._sample.earliestTime(),
+                                      lt=self._sample.latestTime(), s=self._sample, pivot_timestamp=pivot_timestamp)
+                if (self._sample.hostToken):
+                    # clear the host mvhash every time, because we need to re-randomize it
+                    self._sample.hostToken.mvhash = {}
+
+                host = targetevent['host']
+                if (self._sample.hostToken):
+                    host = self._sample.hostToken.replace(host, s=self._sample)
+
+                try:
+                    time_val = int(time.mktime(pivot_timestamp.timetuple()))
+                except Exception:
+                    time_val = int(time.mktime(self._sample.now().timetuple()))
+
+                l = [{'_raw': event,
+                      'index': targetevent['index'],
+                      'host': host,
+                      'hostRegex': self._sample.hostRegex,
+                      'source': targetevent['source'],
+                      'sourcetype': targetevent['sourcetype'],
+                      '_time': time_val}]
+                eventcount += 1
+                self._out.bulksend(l)
+                self._sample.timestamp = None
+            except Exception as e:
+                self.logger.exception("Exception {} happened.".format(type(e)))
+                raise e
+
+        try:
+            endTime = datetime.datetime.now()
+            timeDiff = endTime - startTime
+            timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
+            self.logger.debugv("Interval complete, flushing feed")
+            self._out.flush(endOfInterval=True)
+            self.logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (
+                self._sample.name, self._sample.app, timeDiffFrac))
+        except Exception as e:
+            self.logger.exception("Exception {} happened.".format(type(e)))
+            raise e
 
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen')

@@ -11,7 +11,6 @@ import imp
 from Queue import Queue, Empty
 from threading import Thread
 import time
-import ConfigParser
 
 lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.insert(0, lib_path_prepend)
@@ -325,7 +324,11 @@ class EventGenerator(object):
         while not self.stopping:
             try:
                 item = work_queue.get(timeout=10)
+                startTime = time.time()
                 item.run()
+                totalTime = time.time() - startTime
+                if totalTime > self.config.interval:
+                    self.logger.warning("work took longer than current interval, queue/threading throughput limitation")
                 work_queue.task_done()
             except Empty:
                 pass

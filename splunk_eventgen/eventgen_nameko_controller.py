@@ -30,6 +30,7 @@ class EventgenController(object):
 
     server_status = {}
     server_confs = {}
+    server_volumes = {}
 
     osvars, config = dict(os.environ), {}
     config["AMQP_HOST"] = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
@@ -400,13 +401,13 @@ You are running Eventgen Controller.\n'''
     @http('GET', '/volume')
     def http_get_volume(self, request):
         self.get_volume(target="all")
-        return json.dumps(self.process_server_confs(), indent=4)
+        return json.dumps(self.process_server_volumes(), indent=4)
 
     @http('GET', '/volume/<string:target>')
     def http_get_volume_target(self, request, target="all"):
         if self.check_vhost(target):
             self.get_volume(target=target)
-            processed_server_confs = self.process_server_confs()
+            processed_server_confs = self.process_server_volumes()
             try:
                 return json.dumps(processed_server_confs[target], indent=4)
             except:
@@ -451,7 +452,7 @@ You are running Eventgen Controller.\n'''
 
     def receive_volume(self, data):
         if data['server_name'] and data["total_volume"]:
-            self.server_confs[data['server_name']] = data['total_volume']
+            self.server_volumes[data['server_name']] = data['total_volume']
 
     def process_server_status(self):
         current_server_vhosts = self.get_current_server_vhosts()
@@ -479,6 +480,20 @@ You are running Eventgen Controller.\n'''
         else:
             dump_value = {}
         self.server_confs = {}
+        return dump_value
+
+    def process_server_volumes(self):
+        current_server_vhosts = self.get_current_server_vhosts()
+        if current_server_vhosts:
+            # Try for 15 iterations to get results from current server vhosts
+            for i in range(15):
+                if len(self.server_volumes) != len(current_server_vhosts):
+                    time.sleep(0.3)
+                    current_server_vhosts = self.get_current_server_vhosts()
+            dump_value = self.server_volumes
+        else:
+            dump_value = {}
+        self.server_volumes = {}
         return dump_value
 
     def get_current_server_vhosts(self):

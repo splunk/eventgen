@@ -157,7 +157,7 @@ class Timer(object):
 
                                 try:
                                     self.generatorQueue.put(genPlugin)
-                                    self.logger.info("Worker# %d: Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (worker_id, count, self.sample.name, et, lt))
+                                    self.logger.info("Worker# {0}: Put {1} MB of events in queue for sample '{2}' with et '{3}' and lt '{4}'".format(worker_id, round((count / 1024.0 / 1024), 4), self.sample.name, et, lt))
                                 except Full:
                                     self.logger.warning("Generator Queue Full. Skipping current generation.")
                     except Exception as e:
