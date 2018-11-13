@@ -88,6 +88,7 @@ class GeneratorPlugin(object):
                 raise e
 
         try:
+            # TODO: Change this logic so that we don't lose all events if an exception is hit (try/except/break?)
             endTime = datetime.datetime.now()
             timeDiff = endTime - startTime
             timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
