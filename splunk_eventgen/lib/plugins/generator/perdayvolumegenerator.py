@@ -56,62 +56,16 @@ class PerDayVolumeGenerator(GeneratorPlugin):
             while currentreadsize <= size:
                 targetline = linecount % linesinfile
                 sizeremaining = size - currentreadsize
-
-                #targetlinesize = syself._sample.getsizeof(self._sample.sampleDict[targetline])
-                targetlinesize =len(self._sample.sampleDict[targetline]['_raw'])
-
+                targetlinesize = len(self._sample.sampleDict[targetline]['_raw'])
                 if targetlinesize <= sizeremaining or targetlinesize*.9 <= sizeremaining:
                     currentreadsize += targetlinesize
                     eventsDict.append(self._sample.sampleDict[targetline])
                 else:
                     break
                 linecount += 1
-
             self.logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" % (self._sample.name, self._sample.app, len(eventsDict)))
 
-
-        for x in range(len(eventsDict)):
-            event = eventsDict[x]['_raw']
-
-            # Maintain state for every token in a given event
-            # Hash contains keys for each file name which is assigned a list of values
-            # picked from a random line in that file
-            mvhash = { }
-
-            ## Iterate tokens
-            for token in self._sample.tokens:
-                token.mvhash = mvhash
-                event = token.replace(event, et=earliest, lt=latest, s=self._sample)
-                if token.replacementType == 'timestamp' and self._sample.timeField != '_raw':
-                    self._sample.timestamp = None
-                    token.replace(self._sample.sampleDict[x][self._sample.timeField], et=self._sample.earliestTime(), lt=self._sample.latestTime(), s=self._sample)
-            if(self._sample.hostToken):
-                # clear the host mvhash every time, because we need to re-randomize it
-                self._sample.hostToken.mvhash = {}
-
-            host = eventsDict[x]['host']
-            if (self._sample.hostToken):
-                host = self._sample.hostToken.replace(host, s=self._sample)
-
-            if self._sample.timestamp == None:
-                self._sample.timestamp = self._sample.now()
-            l = [ { '_raw': event,
-                    'index': eventsDict[x]['index'],
-                    'host': host,
-                    'hostRegex': self._sample.hostRegex,
-                    'source': eventsDict[x]['source'],
-                    'sourcetype': eventsDict[x]['sourcetype'],
-                    '_time': time.mktime(self._sample.timestamp.timetuple()) } ]
-
-            self._out.bulksend(l)
-            self._sample.timestamp = None
-
-        endTime = datetime.datetime.now()
-        timeDiff = endTime - startTime
-        timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
-        self.logger.debugv("Interval complete, flushing feed")
-        self._out.flush(endOfInterval=True)
-        self.logger.info("Generation of sample '%s' in app '%s' completed in %s secondself._sample." % (self._sample.name, self._sample.app, timeDiffFrac) )
+        GeneratorPlugin.build_events(self, eventsDict, startTime, earliest, latest)
 
 def load():
     return PerDayVolumeGenerator

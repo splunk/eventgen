@@ -10,7 +10,6 @@ SMALL ?= 'tests/small'
 MEDIUM ?= 'tests/medium'
 LARGE ?= 'tests/large'
 XLARGE ?= 'tests/xlarge'
-LATEST_IMAGE ?= ""
 
 .PHONY: tests
 
