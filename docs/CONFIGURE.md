@@ -33,12 +33,10 @@ sample you wish to create, followed by key = value tuning options for that sampl
 [windbag]
   count=100
   
-[.*bag]  
-  generator=windbag
 ```
 Stanza names are one of the most important things and have default things it'll try to match.  Stanza names will preform a match
-search for a name of a sample file located in the current directory, or in a sample directory.  If there is no match, it'll check if it's
-a PCRE, and then try to match any previous samples loaded.  If there's a match, the stanza settings will be applied to all matches.  Lastely,
+search for a name of a sample file located in the current directory, or in a sample directory.  If there is no match, eventgen will attempt
+match any previous samples loaded.  If there's a match, the stanza settings will be applied to all matches.  Lastely,
 if there is no match on the sample name or on the regex, then it'll check to see if there is a generator plugin name, and then will load that plugin for
 generation.  **Please note, "default" is a reserved name, and should not be used in any stanza title.**  If you wish to apply a setting to all samples, please use the 
 stanza name "global".

@@ -111,7 +111,7 @@ A quick preface on this mode of operation: due to its complexity, this is only r
 2. Install [Eventgen PyPI module](SETUP.md#pypi-setup)
 3. To set up a controller, run `splunk_eventgen service --role controller`
 4. To set up a server, run `splunk_eventgen service --role server`
-5. By default, the controller and server will try to locate RabbitMQ on pyamqp://localhost:5672 using credentials guest/guest and RabbitMQ's web UI at http://localhost:15672
+5. By default, the controller and server will try to locate RabbitMQ on pyamqp://localhost:5672 using credentials guest/guest and RabbitMQ's web UI at http://localhost:15672.  If you're running another rabbitMQ server, you may error out.
 6. You can change any of those parameters using the CLI - for instance, if your RabbitMQ is accessible on rabbit-mq.company.com with credentials admin/changeme you should run `splunk_eventgen service --role controller --amqp-host rabbit-mq.company.com --amqp-user admin --amqp-pass changeme`
 7. Please see `splunk_eventgen service --help` for additional CLI options
 8. **NOTE:** Running the controller and server on the same machine will cause port collisions for Eventgen web server. To mitigate this, you can tell the server to run on a separate port using `splunk_eventgen service --web-server-address 0.0.0.0:9501`
