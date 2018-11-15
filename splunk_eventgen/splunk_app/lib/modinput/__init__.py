@@ -38,6 +38,7 @@ from .fields import IntervalField
 from .fields import ListField
 from .fields import RangeField
 from .fields import RegexField
+from .fields import SeverityField
 
 from xmloutput import setupLogger, XMLOutputManager
 

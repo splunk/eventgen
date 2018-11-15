@@ -107,6 +107,8 @@ class EventGenerator(object):
                 new_args["profiler"] = args.profiler
             if getattr(args, "sample"):
                 new_args["sample"] = args.sample
+            if getattr(args, "verbosity"):
+                new_args["verbosity"] = args.verbosity
         self.config = Config(configfile, **new_args)
         self.config.parse()
         self._reload_plugins()
@@ -273,10 +275,7 @@ class EventGenerator(object):
 
             # Configure eventgen logger
             logger = logging.getLogger('eventgen')
-            if self.args.verbosity >= 1:
-                logger.setLevel(logging.DEBUG)
-            else:
-                logger.setLevel((logging.INFO))
+            logger.setLevel(self.args.VERBOSITY or logging.ERROR)
             logger.propagate = False
             logger.handlers = []
             if args and not args.modinput_mode:
@@ -286,10 +285,7 @@ class EventGenerator(object):
 
             # Configure eventgen listener
             logger = logging.getLogger('eventgen_listener')
-            if self.args.verbosity >= 1:
-                logger.setLevel(logging.DEBUG)
-            else:
-                logger.setLevel((logging.INFO))
+            logger.setLevel(self.args.VERBOSITY or logging.ERROR)
             logger.propagate = False
             logger.handlers = []
             logger.addHandler(eventgen_listener_file_handler)
