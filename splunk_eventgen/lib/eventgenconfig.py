@@ -45,7 +45,7 @@ class Config(object):
 
     # Externally used vars
     debug = False
-    verbose = False
+    verbosity = logging.ERROR
     splunkEmbedded = False
     sessionKey = None
     grandparentdir = None
@@ -82,7 +82,7 @@ class Config(object):
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
                     'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
                     'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort',
-                    'verbose', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse']
+                    'verbosity', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
@@ -105,7 +105,7 @@ class Config(object):
     def __init__(self, configfile=None, sample=None, override_outputter=False, override_count=False,
                  override_interval=False, override_backfill=False, override_end=False,
                  threading="thread", override_generators=None, override_outputqueue=False,
-                 profiler=False):
+                 profiler=False, VERBOSITY=40):
         """Setup Config object.  Sets up Logging and path related variables."""
         # Rebind the internal datastore of the class to an Instance variable
         self.__dict__ = self.__sharedState
@@ -119,6 +119,7 @@ class Config(object):
         self.override_interval = override_interval
         self.override_backfill = override_backfill
         self.override_end = override_end
+        self.verbosity = VERBOSITY
         self._setup_logging()
         if override_generators >= 0:
             self.generatorWorkers = override_generators
