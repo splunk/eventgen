@@ -95,8 +95,8 @@ class Timer(object):
                 end = True
             count = self.rater.rate()
             #First run of the generator, see if we have any backfill work to do.
-            #TODO: I think self.countdown can just go away.
             if self.countdown <= 0:
+               
                 if self.sample.backfill and not self.sample.backfilldone:
                     realtime = self.sample.now(realnow=True)
                     if "-" in self.sample.backfill[0]:
@@ -135,30 +135,31 @@ class Timer(object):
 
                     et = self.sample.earliestTime()
                     lt = self.sample.latestTime()
-                    try:
-                        # Spawn workers at the beginning of job rather than wait for next interval
-                        self.logger.info("Start '%d' generatorWorkers for sample '%s'" % (
-                        self.sample.config.generatorWorkers, self.sample.name))
-                        for worker_id in range(self.config.generatorWorkers):
-                            # self.generatorPlugin is only an instance, now we need a real plugin.
-                            # make a copy of the sample so if it's mutated by another process, it won't mess up geeneration
-                            # for this generator.
-                            copy_sample = copy.copy(self.sample)
-                            genPlugin = self.generatorPlugin(sample=copy_sample)
-                            # need to make sure we set the queue right if we're using multiprocessing or thread modes
-                            genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
-                            genPlugin.updateCounts(count=count,
-                                                   start_time=et,
-                                                   end_time=lt)
 
-                            try:
-                                self.generatorQueue.put(genPlugin)
-                            except Full:
-                                self.logger.warning("Generator Queue Full. Skipping current generation.")
-                            self.logger.info(
-                                "Worker# %d: Put %d events in queue for sample '%s' with et '%s' and lt '%s'" % (
-                                worker_id, count, self.sample.name, et, lt))
-                            # TODO: put this back to just catching a full queue
+                    try:
+                        if count < 1:
+                            self.logger.info("There is no data to be generated in worker {0} because the count is {1}.".format(self.sample.config.generatorWorkers, count))
+                        else:
+                            # Spawn workers at the beginning of job rather than wait for next interval
+                            self.logger.info("Start '%d' generatorWorkers for sample '%s'" % (
+                            self.sample.config.generatorWorkers, self.sample.name))
+                            for worker_id in range(self.config.generatorWorkers):
+                                # self.generatorPlugin is only an instance, now we need a real plugin.
+                                # make a copy of the sample so if it's mutated by another process, it won't mess up geeneration
+                                # for this generator.
+                                copy_sample = copy.copy(self.sample)
+                                genPlugin = self.generatorPlugin(sample=copy_sample)
+                                # need to make sure we set the queue right if we're using multiprocessing or thread modes
+                                genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
+                                genPlugin.updateCounts(count=count,
+                                                    start_time=et,
+                                                    end_time=lt)
+
+                                try:
+                                    self.generatorQueue.put(genPlugin)
+                                    self.logger.info("Worker# {0}: Put {1} MB of events in queue for sample '{2}' with et '{3}' and lt '{4}'".format(worker_id, round((count / 1024.0 / 1024), 4), self.sample.name, et, lt))
+                                except Full:
+                                    self.logger.warning("Generator Queue Full. Skipping current generation.")
                     except Exception as e:
                         self.logger.exception(e)
                         if self.stopping:
@@ -185,5 +186,6 @@ class Timer(object):
                         end = True
 
             else:
-                self.countdown -= self.time
                 time.sleep(self.time)
+                self.countdown -= self.time
+                

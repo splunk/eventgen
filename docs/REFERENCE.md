@@ -56,7 +56,6 @@ host = 127.0.0.1
 outputWorkers = 1
 generator = default
 rater = config
-generatorWorkers = 1
 timeField = _raw
 threading = thread
 profiler = false
@@ -240,10 +239,6 @@ generator = default | <plugin>
     * Specifies the generator plugin to use.  Default generator will give behavior of eventgen pre-3.0
       which exclusively uses settings in eventgen.conf to control behavior.  Generators in 3.0 are now
       pluggable python modules which can be custom code.
-
-generatorWorkers = <number of generator threads>
-    * Specifies how many threads to use to generate events
-    * Defaults to 1
 
 rater = config | <plugin>
     * Specifies which rater plugin to use.  Default rater uses hourOfDayRate, etc, settings to specify

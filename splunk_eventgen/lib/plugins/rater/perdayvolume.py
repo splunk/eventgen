@@ -3,6 +3,7 @@ from config import ConfigRater
 import datetime
 import random
 
+
 class PerDayVolume(ConfigRater):
     name = 'PerDayVolumeRater'
     stopping = False
@@ -45,7 +46,7 @@ class PerDayVolume(ConfigRater):
                 rateFactor *= randFactor
             except:
                 import traceback
-                stack =  traceback.format_exc()
+                stack = traceback.format_exc()
                 self.logger.error("Randomize count failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.hourOfDayRate) == dict:
             try:
@@ -54,7 +55,7 @@ class PerDayVolume(ConfigRater):
                 rateFactor *= rate
             except KeyError:
                 import traceback
-                stack =  traceback.format_exc()
+                stack = traceback.format_exc()
                 self.logger.error("Hour of day rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.dayOfWeekRate) == dict:
             try:
@@ -68,7 +69,7 @@ class PerDayVolume(ConfigRater):
                 rateFactor *= rate
             except KeyError:
                 import traceback
-                stack =  traceback.format_exc()
+                stack = traceback.format_exc()
                 self.logger.error("Hour of day rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.minuteOfHourRate) == dict:
             try:
@@ -77,7 +78,7 @@ class PerDayVolume(ConfigRater):
                 rateFactor *= rate
             except KeyError:
                 import traceback
-                stack =  traceback.format_exc()
+                stack = traceback.format_exc()
                 self.logger.error("Minute of hour rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.dayOfMonthRate) == dict:
             try:
@@ -86,7 +87,7 @@ class PerDayVolume(ConfigRater):
                 rateFactor *= rate
             except KeyError:
                 import traceback
-                stack =  traceback.format_exc()
+                stack = traceback.format_exc()
                 self.logger.error("Day of Month rate for sample '%s' failed.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.monthOfYearRate) == dict:
             try:
@@ -95,14 +96,15 @@ class PerDayVolume(ConfigRater):
                 rateFactor *= rate
             except KeyError:
                 import traceback
-                stack =  traceback.format_exc()
+                stack = traceback.format_exc()
                 self.logger.error("Month Of Year rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         self.logger.debug("Size per interval: %s, rate factor to adjust by: %s" % (perintervalvolume, rateFactor))
         ret = int(round(perintervalvolume * rateFactor, 0))
         if rateFactor != 1.0:
             self.logger.debug("Original count: %s Rated count: %s Rate factor: %s" % (count, ret, rateFactor))
-        self.logger.info("Finished rating, returning interval rate: %s" % ret)
+        self.logger.debug("Finished rating, interval: {0}s, generation rate: {1} MB/interval".format(interval, round((ret / 1024 / 1024), 4)))
         return ret
+
 
 def load():
     return PerDayVolume

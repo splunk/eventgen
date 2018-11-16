@@ -79,8 +79,13 @@ class EventgenServer(object):
         '''
         res = dict()
         if self.eventgen_dependency.eventgen.check_running():
+            # running
             status = 1
+        elif self.eventgen_dependency.eventgen.completed == True:
+            # all samples completed and stop
+            status = 2
         else:
+            # not start yet
             status = 0
         res["EVENTGEN_STATUS"] = status
         res["EVENTGEN_HOST"] = self.host
@@ -278,6 +283,8 @@ Output Queue Status: {7}\n'''
             self.eventgen_dependency.configured = True
             self.eventgen_dependency.configfile = CUSTOM_CONFIG_PATH
             self.eventgen_dependency.eventgen.reload_conf(CUSTOM_CONFIG_PATH)
+            if self.eventgen_dependency.eventgen.check_running():
+                self.restart()
             return self.get_conf()
         except Exception as e:
             self.log.exception(e)
@@ -411,7 +418,9 @@ Output Queue Status: {7}\n'''
         try:
             config = json.loads(self.get_conf())
             self.log.info(config)
-            self.total_volume = float(self.get_data_volumes(config))
+            fetched_volume = float(self.get_data_volumes(config))
+            if fetched_volume:
+                self.total_volume = fetched_volume
             self.send_volume_to_controller(total_volume=self.total_volume)
             return str(self.total_volume)
         except Exception as e:
@@ -431,14 +440,21 @@ Output Queue Status: {7}\n'''
             config = json.loads(self.get_conf())
             # Initial total volume check
             self.get_volume()
+            num_stanzas = 0
             if not self.total_volume:
                 self.log.warn("There is no stanza found with perDayVolume")
-                return self.get_conf()
+                num_stanzas = len(config.keys())
+                self.total_volume = volume
             ratio = float(volume) / float(self.total_volume)
             update_json = {}
             for stanza in config.keys():
-                if "perDayVolume" in config[stanza].keys():
-                    divided_value = float(config[stanza]["perDayVolume"]) * ratio
+                if isinstance(config[stanza], dict):
+                    if "perDayVolume" in config[stanza].keys():
+                        divided_value = float(config[stanza]["perDayVolume"]) * ratio
+                    else:
+                        if not num_stanzas:
+                            num_stanzas = 1
+                        divided_value = float(volume) / float(num_stanzas)
                     update_json[stanza] = {"perDayVolume": divided_value}
             output = self.edit_conf(json.dumps(update_json))
             self.get_volume()
@@ -732,7 +748,7 @@ Output Queue Status: {7}\n'''
         '''
         total_volume = 0
         for stanza in config.keys():
-            if "perDayVolume" in config[stanza].keys():
+            if isinstance(config[stanza], dict) and "perDayVolume" in config[stanza].keys():
                 total_volume += float(config[stanza]["perDayVolume"])
         self.log.info("Total volume is currently {}".format(total_volume))
         return total_volume

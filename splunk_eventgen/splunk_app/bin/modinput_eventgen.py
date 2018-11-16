@@ -10,7 +10,7 @@ from splunk.clilib.bundle_paths import make_splunkhome_path
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib']))
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib', 'splunk_eventgen', 'lib']))
 
-from modinput.fields import BooleanField, Field
+from modinput.fields import BooleanField, Field, SeverityField
 from xmloutput import setupLogger, XMLOutputManager
 from modinput import ModularInput
 from splunk_eventgen import eventgen_core
@@ -41,15 +41,15 @@ class Eventgen(ModularInput):
         self.output = XMLOutputManager()
 
         self.args = [
-            BooleanField("VERBOSE", "VERBOSE", "Verbose mode", required_on_create=True, required_on_edit=True)
+            SeverityField("VERBOSITY", "Verbosity", "Logging Level (ERROR, INFO, DEBUG, WARN, CRITICAL)", required_on_create=True, required_on_edit=True)
         ]
         ModularInput.__init__(self, self.scheme_args, self.args)
 
     def create_args(self):
+        logger.debug("Creating default args for modinput")
         parser = argparse.ArgumentParser(prog="SA-Eventgen")
         args = parser.parse_args()
         args.daemon = False
-        args.verbosity = None
         args.version = False
         args.backfill = None
         args.count = None
@@ -66,7 +66,7 @@ class Eventgen(ModularInput):
         args.sample = None
         args.version = False
         args.subcommand = 'generate'
-        args.verbosity = 0
+        args.VERBOSITY = logging.ERROR
         args.wsgi = False
         args.log_path = make_splunkhome_path(['var', 'log', 'splunk'])
         args.modinput_mode = True
@@ -93,6 +93,8 @@ class Eventgen(ModularInput):
             new_args["override_outputqueue"] = args.disableOutputQueue
         if getattr(args, "profiler"):
             new_args["profiler"] = args.profiler
+        if getattr(args, "VERBOSITY"):
+            new_args["VERBOSITY"] = args.VERBOSITY
         return new_args
 
     def run(self, stanza, input_config, **kwargs):

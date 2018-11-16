@@ -243,18 +243,28 @@ class Sample(object):
         else:
             if self.backfill[0] == '-':
                 backfill_time = self.backfill[1:-1]
+                time_unit = self.backfill[-1]
                 if self.backfill[-2:] == 'ms':
+                    time_unit = 'ms'
                     backfill_time = self.backfill[1:-2]
-                    return current_time - datetime.timedelta(milliseconds=int(backfill_time))
-                elif self.backfill[-1] == 's':
-                    return current_time - datetime.timedelta(seconds=int(backfill_time))
-                elif self.backfill[-1] == 'm':
-                    return current_time - datetime.timedelta(minutes=int(backfill_time))
-                elif self.backfill[-1] == 'h':
-                    return current_time - datetime.timedelta(hours=int(backfill_time))
-                elif self.backfill[-1] == 'd':
-                    return current_time - datetime.timedelta(days=int(backfill_time))
+                return get_time_difference(current_time=current_time, different_time=backfill_time, sign='-', time_unit=time_unit)
+            else:
+                self.logger.error("Backfill time is not in the past.")
         return current_time
+    
+    def get_time_difference(self, current_time, different_time, sign='-', time_unit='ms'):
+        if time_unit == 'ms':
+            return current_time + (int(sign + '1') * datetime.timedelta(milliseconds=int(different_time)))
+        elif time_unit == 's':
+            return current_time + (int(sign + '1') * datetime.timedelta(seconds=int(different_time)))
+        elif time_unit == 'm':
+            return current_time + (int(sign + '1') * datetime.timedelta(minutes=int(different_time)))
+        elif time_unit == 'h':
+            return current_time + (int(sign + '1') * datetime.timedelta(hours=int(different_time)))
+        elif time_unit == 'd':
+            return current_time + (int(sign + '1') * datetime.timedelta(days=int(different_time)))
+
+
 
 
     def earliestTime(self):
@@ -372,6 +382,18 @@ class Sample(object):
                 csvReader = csv.DictReader(self._sampleFH)
                 for line in csvReader:
                     if '_raw' in line:
+                        # Use conf-defined values for these params instead of sample-defined ones
+                        current_line_keys = line.keys()
+                        if "host" not in current_line_keys:
+                            line["host"] = self.host
+                        if "hostRegex" not in current_line_keys:
+                            line["hostRegex"] = self.hostRegex
+                        if "source" not in current_line_keys:
+                            line["source"] = self.source
+                        if "sourcetype" not in current_line_keys:
+                            line["sourcetype"] = self.sourcetype
+                        if "index" not in current_line_keys:
+                            line["index"] = self.index
                         self.sampleDict.append(line)
                         self.sampleLines.append(line['_raw'])
                     else:

@@ -11,7 +11,6 @@ import imp
 from Queue import Queue, Empty
 from threading import Thread
 import time
-import ConfigParser
 
 lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.insert(0, lib_path_prepend)
@@ -63,6 +62,7 @@ class EventGenerator(object):
         '''
         self.stopping = False
         self.started = False
+        self.completed = False
         self.config = None
         self.args = args
 
@@ -106,6 +106,8 @@ class EventGenerator(object):
                 new_args["profiler"] = args.profiler
             if getattr(args, "sample"):
                 new_args["sample"] = args.sample
+            if getattr(args, "verbosity"):
+                new_args["verbosity"] = args.verbosity
         self.config = Config(configfile, **new_args)
         self.config.parse()
         self._reload_plugins()
@@ -233,7 +235,7 @@ class EventGenerator(object):
     def _setup_loggers(self, args=None, config=None):
         log_path = getattr(args, "log_path", os.path.join(file_path, 'logs'))
         eventgen_main_logger_path = os.path.join(log_path, 'eventgen-main.log')
-        eventgen_listener_logger_path = os.path.join(log_path, 'eventgen-listener-process.log')
+        eventgen_controller_logger_path = os.path.join(log_path, 'eventgen-controller.log')
         eventgen_metrics_logger_path = os.path.join(log_path, 'eventgen-metrics.log')
         eventgen_error_logger_path = os.path.join(log_path, 'eventgen-errors.log')
         eventgen_server_logger_path = os.path.join(log_path, 'eventgen-server.log')
@@ -254,9 +256,9 @@ class EventGenerator(object):
             file_handler.setFormatter(detailed_formatter)
             file_handler.setLevel(logging.DEBUG)
 
-            eventgen_listener_file_handler = logging.handlers.RotatingFileHandler(eventgen_listener_logger_path, maxBytes=2500000, backupCount=20)
-            eventgen_listener_file_handler.setFormatter(detailed_formatter)
-            eventgen_listener_file_handler.setLevel(logging.DEBUG)
+            eventgen_controller_file_handler = logging.handlers.RotatingFileHandler(eventgen_controller_logger_path, maxBytes=2500000, backupCount=20)
+            eventgen_controller_file_handler.setFormatter(detailed_formatter)
+            eventgen_controller_file_handler.setLevel(logging.DEBUG)
 
             error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000, backupCount=20)
             error_file_handler.setFormatter(detailed_formatter)
@@ -272,10 +274,7 @@ class EventGenerator(object):
 
             # Configure eventgen logger
             logger = logging.getLogger('eventgen')
-            if self.args.verbosity >= 1:
-                logger.setLevel(logging.DEBUG)
-            else:
-                logger.setLevel((logging.INFO))
+            logger.setLevel(self.args.verbosity or logging.ERROR)
             logger.propagate = False
             logger.handlers = []
             if args and not args.modinput_mode:
@@ -284,15 +283,13 @@ class EventGenerator(object):
             logger.addHandler(error_file_handler)
 
             # Configure eventgen listener
-            logger = logging.getLogger('eventgen_listener')
-            if self.args.verbosity >= 1:
-                logger.setLevel(logging.DEBUG)
-            else:
-                logger.setLevel((logging.INFO))
+            logger = logging.getLogger('eventgen_controller')
+            logger.setLevel(self.args.verbosity or logging.ERROR)
             logger.propagate = False
             logger.handlers = []
-            logger.addHandler(eventgen_listener_file_handler)
+            logger.addHandler(eventgen_controller_file_handler)
             logger.addHandler(error_file_handler)
+            logger.addHandler(console_handler)
 
             # Configure eventgen mertics logger
             logger = logging.getLogger('eventgen_metrics')
@@ -307,6 +304,7 @@ class EventGenerator(object):
             logger.propagate = False
             logger.handlers = []
             logger.addHandler(server_file_handler)
+            logger.addHandler(console_handler)
         else:
             self.logger_config = config
             logging.config.dictConfig(self.logger_config)
@@ -325,7 +323,11 @@ class EventGenerator(object):
         while not self.stopping:
             try:
                 item = work_queue.get(timeout=10)
+                startTime = time.time()
                 item.run()
+                totalTime = time.time() - startTime
+                if totalTime > self.config.interval:
+                    self.logger.warning("work took longer than current interval, queue/threading throughput limitation")
                 work_queue.task_done()
             except Empty:
                 pass
@@ -455,6 +457,7 @@ class EventGenerator(object):
         self.stopping = False
         self.started = True
         self.config.stopping = False
+        self.completed = False
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
@@ -498,6 +501,7 @@ class EventGenerator(object):
                 time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
+            self.completed = True
         except Exception as e:
             self.logger.exception(e)
             raise e
