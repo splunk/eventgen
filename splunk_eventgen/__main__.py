@@ -275,9 +275,20 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
         shutil.rmtree(directory)
     os.chdir(cwd)
 
+def convert_verbosity_count_to_logging_level(verbosity):
+    if verbosity == 0:
+        return logging.ERROR
+    elif verbosity == 1:
+        return logging.INFO
+    elif verbosity == 2:
+        return logging.DEBUG
+    else:
+        return logging.ERROR
+
 def main():
     cwd = os.getcwd()
     args = parse_args()
+    args.verbosity = convert_verbosity_count_to_logging_level(args.verbosity)
     if args.subcommand == "generate":
         eventgen = eventgen_core.EventGenerator(args=args)
         eventgen.start()

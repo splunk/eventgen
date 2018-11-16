@@ -113,10 +113,19 @@ class TestEventgenOrchestration(object):
 		assert "You are running Eventgen Controller" in r.content
 	
 	def test_controller_status(self):
-		r = requests.get("http://127.0.0.1:{}/status".format(self.controller_eventgen_webport))
-		import pdb; pdb.set_trace()
-		assert r.status_code == 200
-		output = json.loads(r.content)
+		time.sleep(10)
+		max_retry = 5
+		current_retry = 1
+		output = {}
+		while not output and current_retry <= max_retry:
+			response = requests.get("http://127.0.0.1:{}/status".format(self.controller_eventgen_webport))
+			if response.status_code == 200:
+				print response.status_code
+				print response.content
+				output = json.loads(response.content)
+			current_retry += 1
+			time.sleep(2)
+		print output
 		assert output
 	
 	def test_controller_start(self):
@@ -166,7 +175,6 @@ class TestEventgenOrchestration(object):
 
 	def test_controller_get_volume(self):
 		r = requests.get("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
-		import pdb; pdb.set_trace()
 		assert r.status_code == 200
 		output = json.loads(r.content)
 		assert output[TestEventgenOrchestration.server_id[:12]] == {}
@@ -227,7 +235,7 @@ class TestEventgenOrchestration(object):
 		assert json.loads(r.content) == config_json
 
 	def test_server_start(self):
-		r = requests.post("http://127.0.0.1:{}/start".format(self.server_eventgen_webport))
+		r = requests.post("http://127.0.0.1:{}/start".format(self.server_eventgen_webport), timeout=5)
 		assert r.status_code == 200
 		assert json.loads(r.content) == "Eventgen has successfully started."
 
