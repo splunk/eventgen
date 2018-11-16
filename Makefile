@@ -58,7 +58,7 @@ test_collection_cleanup:
 	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/functional_orca_test.log functional_orca_test.log || echo "no functional_orca_test.log"
 
 	@echo 'Stopping test container'
-	docker stop ${EVENTGEN_TEST_IMAGE}
+	docker stop ${EVENTGEN_TEST_IMAGE} || true
 
 clean:
 	rm *.spl || true
@@ -69,6 +69,7 @@ clean:
 	rm -rf docs/_book || true
 	rm -rf node_modules || true
 	rm -rf docs/node_modules || true
+	rm splunk_eventgen/default/eventgen_wsgi.conf || true
 	find . -name "*.pyc" -type f -delete || true
 	find . -name "*.log" -type f -delete || true
 	find . -name "*.pyc" -type f -delete || true

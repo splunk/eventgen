@@ -456,7 +456,7 @@ You are running Eventgen Controller.\n'''
             self.server_confs[data['server_name']] = data['server_conf']
 
     def receive_volume(self, data):
-        if data['server_name'] and data["total_volume"]:
+        if data['server_name'] and "total_volume" in data:
             self.server_volumes[data['server_name']] = data['total_volume']
 
     def process_server_status(self, current_time):

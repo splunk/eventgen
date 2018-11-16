@@ -235,7 +235,7 @@ class EventGenerator(object):
     def _setup_loggers(self, args=None, config=None):
         log_path = getattr(args, "log_path", os.path.join(file_path, 'logs'))
         eventgen_main_logger_path = os.path.join(log_path, 'eventgen-main.log')
-        eventgen_listener_logger_path = os.path.join(log_path, 'eventgen-listener-process.log')
+        eventgen_controller_logger_path = os.path.join(log_path, 'eventgen-controller.log')
         eventgen_metrics_logger_path = os.path.join(log_path, 'eventgen-metrics.log')
         eventgen_error_logger_path = os.path.join(log_path, 'eventgen-errors.log')
         eventgen_server_logger_path = os.path.join(log_path, 'eventgen-server.log')
@@ -256,9 +256,9 @@ class EventGenerator(object):
             file_handler.setFormatter(detailed_formatter)
             file_handler.setLevel(logging.DEBUG)
 
-            eventgen_listener_file_handler = logging.handlers.RotatingFileHandler(eventgen_listener_logger_path, maxBytes=2500000, backupCount=20)
-            eventgen_listener_file_handler.setFormatter(detailed_formatter)
-            eventgen_listener_file_handler.setLevel(logging.DEBUG)
+            eventgen_controller_file_handler = logging.handlers.RotatingFileHandler(eventgen_controller_logger_path, maxBytes=2500000, backupCount=20)
+            eventgen_controller_file_handler.setFormatter(detailed_formatter)
+            eventgen_controller_file_handler.setLevel(logging.DEBUG)
 
             error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000, backupCount=20)
             error_file_handler.setFormatter(detailed_formatter)
@@ -283,12 +283,13 @@ class EventGenerator(object):
             logger.addHandler(error_file_handler)
 
             # Configure eventgen listener
-            logger = logging.getLogger('eventgen_listener')
+            logger = logging.getLogger('eventgen_controller')
             logger.setLevel(self.args.verbosity or logging.ERROR)
             logger.propagate = False
             logger.handlers = []
-            logger.addHandler(eventgen_listener_file_handler)
+            logger.addHandler(eventgen_controller_file_handler)
             logger.addHandler(error_file_handler)
+            logger.addHandler(console_handler)
 
             # Configure eventgen mertics logger
             logger = logging.getLogger('eventgen_metrics')
@@ -303,6 +304,7 @@ class EventGenerator(object):
             logger.propagate = False
             logger.handlers = []
             logger.addHandler(server_file_handler)
+            logger.addHandler(console_handler)
         else:
             self.logger_config = config
             logging.config.dictConfig(self.logger_config)

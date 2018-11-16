@@ -418,7 +418,9 @@ Output Queue Status: {7}\n'''
         try:
             config = json.loads(self.get_conf())
             self.log.info(config)
-            self.total_volume = float(self.get_data_volumes(config))
+            fetched_volume = float(self.get_data_volumes(config))
+            if fetched_volume:
+                self.total_volume = fetched_volume
             self.send_volume_to_controller(total_volume=self.total_volume)
             return str(self.total_volume)
         except Exception as e:
@@ -450,6 +452,8 @@ Output Queue Status: {7}\n'''
                     if "perDayVolume" in config[stanza].keys():
                         divided_value = float(config[stanza]["perDayVolume"]) * ratio
                     else:
+                        if not num_stanzas:
+                            num_stanzas = 1
                         divided_value = float(volume) / float(num_stanzas)
                     update_json[stanza] = {"perDayVolume": divided_value}
             output = self.edit_conf(json.dumps(update_json))
