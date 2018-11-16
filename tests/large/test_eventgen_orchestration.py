@@ -116,6 +116,7 @@ class TestEventgenOrchestration(object):
 	
 	def test_controller_status(self):
 		r = requests.get("http://127.0.0.1:{}/status".format(self.controller_eventgen_webport))
+		import pdb; pdb.set_trace()
 		assert r.status_code == 200
 		output = json.loads(r.content)
 		assert output
@@ -167,6 +168,7 @@ class TestEventgenOrchestration(object):
 
 	def test_controller_get_volume(self):
 		r = requests.get("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
+		import pdb; pdb.set_trace()
 		assert r.status_code == 200
 		output = json.loads(r.content)
 		assert output[TestEventgenOrchestration.server_id[:12]] == {}

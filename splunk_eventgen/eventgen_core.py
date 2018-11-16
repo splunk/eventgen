@@ -275,7 +275,7 @@ class EventGenerator(object):
 
             # Configure eventgen logger
             logger = logging.getLogger('eventgen')
-            logger.setLevel(self.args.VERBOSITY or logging.ERROR)
+            logger.setLevel(self.args.verbosity or logging.ERROR)
             logger.propagate = False
             logger.handlers = []
             if args and not args.modinput_mode:
@@ -285,7 +285,7 @@ class EventGenerator(object):
 
             # Configure eventgen listener
             logger = logging.getLogger('eventgen_listener')
-            logger.setLevel(self.args.VERBOSITY or logging.ERROR)
+            logger.setLevel(self.args.verbosity or logging.ERROR)
             logger.propagate = False
             logger.handlers = []
             logger.addHandler(eventgen_listener_file_handler)
