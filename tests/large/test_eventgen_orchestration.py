@@ -113,9 +113,15 @@ class TestEventgenOrchestration(object):
 		assert "You are running Eventgen Controller" in r.content
 	
 	def test_controller_status(self):
-		r = requests.get("http://127.0.0.1:{}/status".format(self.controller_eventgen_webport))
-		assert r.status_code == 200
-		output = json.loads(r.content)
+		max_retry = 5
+		current_retry = 1
+		output = {}
+		while not output and current_retry <= max_retry:
+			response = requests.get("http://127.0.0.1:{}/status".format(self.controller_eventgen_webport), timeout=10)
+			if response.status_code == 200:
+				output = json.loads(response.content)
+			current_retry += 1
+			time.sleep(10)
 		assert output
 	
 	def test_controller_start(self):
@@ -164,10 +170,16 @@ class TestEventgenOrchestration(object):
 		assert "Bundle event dispatched to {} with url http://server.com/bundle.tgz".format(TestEventgenOrchestration.server_id[:12]) in r.content
 
 	def test_controller_get_volume(self):
-		r = requests.get("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
-		assert r.status_code == 200
-		output = json.loads(r.content)
-		assert output[TestEventgenOrchestration.server_id[:12]] == {}
+		max_retry = 5
+		current_retry = 1
+		output = {}
+		while not output and current_retry <= max_retry:
+			response = requests.get("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport), timeout=10)
+			if response.status_code == 200:
+				output = json.loads(response.content)
+			current_retry += 1
+			time.sleep(10)
+		assert output[TestEventgenOrchestration.server_id[:12]] == 0.0
 
 	def test_controller_set_volume_invalid_request(self):
 		r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
@@ -225,7 +237,7 @@ class TestEventgenOrchestration(object):
 		assert json.loads(r.content) == config_json
 
 	def test_server_start(self):
-		r = requests.post("http://127.0.0.1:{}/start".format(self.server_eventgen_webport))
+		r = requests.post("http://127.0.0.1:{}/start".format(self.server_eventgen_webport), timeout=5)
 		assert r.status_code == 200
 		assert json.loads(r.content) == "Eventgen has successfully started."
 
