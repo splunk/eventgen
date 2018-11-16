@@ -15,7 +15,7 @@
 
 * [Getting Started](SETUP.md)
     * [Install](SETUP.md#install)
-    * [Configure](SETUP.md#configure)
+    * [Configure](CONFIGURE.md)
 * [Tutorial](TUTORIAL.md)
 * [Basics](BASICS.md)
 * [Plugins](PLUGINS.md)
