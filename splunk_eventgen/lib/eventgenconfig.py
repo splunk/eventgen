@@ -105,7 +105,7 @@ class Config(object):
     def __init__(self, configfile=None, sample=None, override_outputter=False, override_count=False,
                  override_interval=False, override_backfill=False, override_end=False,
                  threading="thread", override_generators=None, override_outputqueue=False,
-                 profiler=False, VERBOSITY=40):
+                 profiler=False, verbosity=40):
         """Setup Config object.  Sets up Logging and path related variables."""
         # Rebind the internal datastore of the class to an Instance variable
         self.__dict__ = self.__sharedState
@@ -119,7 +119,7 @@ class Config(object):
         self.override_interval = override_interval
         self.override_backfill = override_backfill
         self.override_end = override_end
-        self.verbosity = VERBOSITY
+        self.verbosity = verbosity
         self._setup_logging()
         if override_generators >= 0:
             self.generatorWorkers = override_generators
