@@ -165,7 +165,7 @@ Output Queue Status: {7}\n'''
                 return "There is not config file known to eventgen. Pass in the config file to /conf before you start."
             if self.eventgen_dependency.eventgen.check_running():
                 return "Eventgen already started."
-            self.eventgen_dependency.eventgen.start(join_after_start=False)
+            self.eventgen_dependency.eventgen.start(join_after_start=True)
             return "Eventgen has successfully started."
         except Exception as e:
             self.log.exception(e)
