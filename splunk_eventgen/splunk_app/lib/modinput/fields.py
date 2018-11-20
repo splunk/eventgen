@@ -431,3 +431,26 @@ class SeverityField(Field):
 
     def get_data_type(self):
         return Field.DATA_TYPE_NUMBER
+
+class VerbosityField(Field):
+
+    def to_python(self, value):
+
+        Field.to_python(self, value)
+
+        if value is not None:
+            if int(value) % 10 == 0:
+                return int(value)
+            else:
+                raise FieldValidationException('Invalid value provided for verbosity')
+        else:
+            return None
+
+    def to_string(self, value):
+
+        if value is not None:
+            return str(value)
+        return ""
+
+    def get_data_type(self):
+        return Field.DATA_TYPE_NUMBER
