@@ -1,2 +1,2 @@
 [modinput_eventgen://<name>]
-VERBOSITY = <value>
+verbosity = <value>
