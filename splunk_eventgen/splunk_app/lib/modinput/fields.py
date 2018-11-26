@@ -439,10 +439,11 @@ class VerbosityField(Field):
         Field.to_python(self, value)
 
         if value is not None:
-            if int(value) % 10 == 0:
+            if 10 <= value <= 50 and int(value) % 10 == 0:
                 return int(value)
             else:
-                raise FieldValidationException('Invalid value provided for verbosity')
+                raise FieldValidationException('Invalid value provided for verbosity, must be one of the following: ' +
+                                               '{10, 20, 30, 40, 50}')
         else:
             return None
 

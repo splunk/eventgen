@@ -311,7 +311,7 @@ class Config(object):
                 # Get the latest token number of the current stanza
                 last_token_number = 0
                 for key, value in settings.items():
-                    if 'token' in key and int(key[6]) > last_token_number:
+                    if 'token' in key and key[6].isdigit() and int(key[6]) > last_token_number:
                         last_token_number = int(key[6])
 
                 # Apply global tokens to the current stanza
