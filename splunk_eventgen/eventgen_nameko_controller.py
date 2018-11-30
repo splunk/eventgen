@@ -13,6 +13,8 @@ import json
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
+NUM_RETRIES = 15
+DELAY_TIME = 0.3
 
 def exit_handler(client, hostname, logger):
     client.delete_vhost(hostname)
@@ -464,10 +466,9 @@ You are running Eventgen Controller.\n'''
         server_time = self.server_status['time'] if 'time' in self.server_status else 0
         server_vhost_len = len(self.server_status) if 'time' not in self.server_status else len(self.server_status)-1
         if current_server_vhosts:
-            # Try for 15 iterations to get results from current server vhosts
-            for i in range(15):
+            for i in range(NUM_RETRIES):
                 if server_vhost_len != len(current_server_vhosts) or server_time < current_time:
-                    time.sleep(0.3)
+                    time.sleep(DELAY_TIME)
                     current_server_vhosts = self.get_current_server_vhosts()
                     server_time = self.server_status['time'] if 'time' in self.server_status else 0
                     server_vhost_len = len(self.server_status) if 'time' not in self.server_status else len(self.server_status)-1
@@ -482,10 +483,9 @@ You are running Eventgen Controller.\n'''
     def process_server_confs(self):
         current_server_vhosts = self.get_current_server_vhosts()
         if current_server_vhosts:
-            # Try for 15 iterations to get results from current server vhosts
-            for i in range(15):
+            for i in range(NUM_RETRIES):
                 if len(self.server_confs) != len(current_server_vhosts):
-                    time.sleep(0.3)
+                    time.sleep(DELAY_TIME)
                     current_server_vhosts = self.get_current_server_vhosts()
             dump_value = self.server_confs
         else:
@@ -496,10 +496,9 @@ You are running Eventgen Controller.\n'''
     def process_server_volumes(self):
         current_server_vhosts = self.get_current_server_vhosts()
         if current_server_vhosts:
-            # Try for 15 iterations to get results from current server vhosts
-            for i in range(15):
+            for i in range(NUM_RETRIES):
                 if len(self.server_volumes) != len(current_server_vhosts):
-                    time.sleep(0.3)
+                    time.sleep(DELAY_TIME)
                     current_server_vhosts = self.get_current_server_vhosts()
             dump_value = self.server_volumes
         else:
