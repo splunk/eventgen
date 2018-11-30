@@ -31,3 +31,4 @@ class TestFileOutputPlugin(object):
                 if not output_line or line_count == 6:
                     break
                 assert "WINDBAG Event {} of 5".format(line_count) in output_line
+                line_count += 1
