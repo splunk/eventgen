@@ -24,8 +24,8 @@ class SplunkStreamOutputPlugin(OutputPlugin):
     _splunkPass = None
     _splunkhttp = None
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
 
         from eventgenconfig import Config
         globals()['c'] = Config()

@@ -14,8 +14,8 @@ class FileOutputPlugin(OutputPlugin):
     validSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
     intSettings = [ 'fileMaxBytes', 'fileBackupFiles' ]
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
 
         if sample.fileName == None:
             self.logger.error('outputMode file but file not specified for sample %s' % self._sample.name)

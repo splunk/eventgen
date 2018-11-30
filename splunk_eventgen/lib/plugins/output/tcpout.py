@@ -7,8 +7,8 @@ class TcpOutputPlugin(OutputPlugin):
     name = 'tcpout'
     MAXQUEUELENGTH = 10
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
 
         self._tcpDestinationHost = sample.tcpDestinationHost if hasattr(sample,'tcpDestinationHost') and sample.tcpDestinationHost else '127.0.0.1'
         self._tcpDestinationPort = sample.tcpDestinationPort if hasattr(sample,'tcpDestinationPort') and sample.tcpDestinationPort else '3333'

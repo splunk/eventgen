@@ -41,8 +41,8 @@ class HTTPEventOutputPlugin(OutputPlugin):
     defaultableSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
     jsonSettings = ['httpeventServers']
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
 
     #TODO: make workers a param that can be set in eventgen.conf
     def _setup_REST_workers(self, session=None, workers=10):
