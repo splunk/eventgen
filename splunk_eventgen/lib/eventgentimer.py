@@ -147,7 +147,7 @@ class Timer(object):
                                 # self.generatorPlugin is only an instance, now we need a real plugin.
                                 # make a copy of the sample so if it's mutated by another process, it won't mess up geeneration
                                 # for this generator.
-                                copy_sample = copy.copy(self.sample)
+                                copy_sample = copy.deepcopy(self.sample)
                                 genPlugin = self.generatorPlugin(sample=copy_sample)
                                 # need to make sure we set the queue right if we're using multiprocessing or thread modes
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
