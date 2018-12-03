@@ -3,7 +3,6 @@ from nameko.events import EventDispatcher, event_handler, BROADCAST
 from nameko.web.handlers import http
 from pyrabbit.api import Client
 import atexit
-import ConfigParser
 import logging
 import os
 import socket
@@ -459,15 +458,14 @@ You are running Eventgen Controller.\n'''
         if data['server_name'] and "total_volume" in data:
             self.server_volumes[data['server_name']] = data['total_volume']
 
-    def process_server_status(self, current_time):
+    def process_server_status(self, current_time, num_retries=15, delay=0.3):
         current_server_vhosts = self.get_current_server_vhosts()
         server_time = self.server_status['time'] if 'time' in self.server_status else 0
         server_vhost_len = len(self.server_status) if 'time' not in self.server_status else len(self.server_status)-1
         if current_server_vhosts:
-            # Try for 15 iterations to get results from current server vhosts
-            for i in range(15):
+            for i in range(num_retries):
                 if server_vhost_len != len(current_server_vhosts) or server_time < current_time:
-                    time.sleep(0.3)
+                    time.sleep(delay)
                     current_server_vhosts = self.get_current_server_vhosts()
                     server_time = self.server_status['time'] if 'time' in self.server_status else 0
                     server_vhost_len = len(self.server_status) if 'time' not in self.server_status else len(self.server_status)-1
@@ -479,13 +477,12 @@ You are running Eventgen Controller.\n'''
         self.server_status = {}
         return dump_value
 
-    def process_server_confs(self):
+    def process_server_confs(self, num_retries=15, delay=0.3):
         current_server_vhosts = self.get_current_server_vhosts()
         if current_server_vhosts:
-            # Try for 15 iterations to get results from current server vhosts
-            for i in range(15):
+            for i in range(num_retries):
                 if len(self.server_confs) != len(current_server_vhosts):
-                    time.sleep(0.3)
+                    time.sleep(delay)
                     current_server_vhosts = self.get_current_server_vhosts()
             dump_value = self.server_confs
         else:
@@ -493,13 +490,12 @@ You are running Eventgen Controller.\n'''
         self.server_confs = {}
         return dump_value
 
-    def process_server_volumes(self):
+    def process_server_volumes(self, num_retries=15, delay=0.3):
         current_server_vhosts = self.get_current_server_vhosts()
         if current_server_vhosts:
-            # Try for 15 iterations to get results from current server vhosts
-            for i in range(15):
+            for i in range(num_retries):
                 if len(self.server_volumes) != len(current_server_vhosts):
-                    time.sleep(0.3)
+                    time.sleep(delay)
                     current_server_vhosts = self.get_current_server_vhosts()
             dump_value = self.server_volumes
         else:
