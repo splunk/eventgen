@@ -396,12 +396,12 @@ class Config(object):
                     t = s.tokens[i]
                     # If the index doesn't exist at all
                     if t == None:
-                        self.logger.info("Token at index %s invalid" % i)
+                        self.logger.error("Token at index %s invalid" % i)
                         # Can't modify list in place while we're looping through it
                         # so create a list to remove later
                         deleteidx.append(i)
                     elif t.token == None or t.replacementType == None or t.replacement == None:
-                        self.logger.info("Token at index %s invalid" % i)
+                        self.logger.error("Token at index %s invalid" % i)
                         deleteidx.append(i)
                 newtokens = [ ]
                 for i in xrange(0, len(s.tokens)):
