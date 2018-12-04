@@ -245,7 +245,7 @@ This revision of Eventgen can be run by itself from a command line for testing. 
 
 The original SA-Eventgen was written as a Splunk app, and this Eventgen release supports that deployment method as well.  In this deployment method, we will read configurations through Splunk's internal REST interface for grabbing config info, and Eventgen will look for configurations in every installed apps default and local directories in eventgen.conf file.  This is how ES is deployed, and it provides a very good example of this deployment method.  If you are writing a complicated Splunk application which will be deployed in multiple Applications, like ES, this is the recommended deployment method as it will simply your needs of building scripted inputs for each of those individual applications.  Installed a separate application, there is also a setup.xml provided which allows for easy disabling of the scripted input in Eventgen application.  **Defaults are defined in the default/eventgen.conf file in App mode**.
 
-In your app's eventgen.conf file, sample files for file and mvfile substitution should be referenced using `$SPLUNK_HOME/etc/apps/<your_app>/samples/<file>`.
+In your app's eventgen.conf file, sample files for file, mvfile and seqfile substitution should be referenced using `$SPLUNK_HOME/etc/apps/<your_app>/samples/<file>`.
 
 ## Scripted Input
 
@@ -260,7 +260,7 @@ If you are writing an Eventgen for one application, like the Operational Intelli
 
 Note, the interval can be set to anything.  Eventgen will stay running as soon as Splunk launches it.  To embed Eventgen into your application, you need to include everything in the bin and lib directories in your application.  In Scripted Input mode, we also read eventgen-standalone.conf in the default and local directories, and again **it will not flatten these configurations, so the local file will completely override the default**.  It is recommended that when deploying standalone, you only write one configuration file in the local directory.  Remember to copy any stock samples you are using into your apps samples directory as well.  **Defaults are defined in the lib/eventgen\_defaults file in the [global] stanza**.
 
-In your app's eventgen.conf file, sample files for file and mvfile substitution should be referenced using `$SPLUNK_HOME/etc/apps/<your_app>/samples/<file>`.
+In your app's eventgen.conf file, sample files for file, mvfile and seqfile substitution should be referenced using `$SPLUNK_HOME/etc/apps/<your_app>/samples/<file>`.
 
 ## Wrapping up
 

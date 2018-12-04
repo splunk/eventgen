@@ -34,6 +34,7 @@ class Token(object):
     _hexMatch = None
     _stringMatch = None
     _listMatch = None
+    _tokenfilecounter = 0
     
     def __init__(self, sample=None):
         
@@ -365,7 +366,7 @@ class Token(object):
             else:
                 self.logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
                 return old
-        elif self.replacementType in ('file', 'mvfile'):
+        elif self.replacementType in ('file', 'mvfile', 'seqfile'):
             if self._replacementFile != None:
                 replacementFile = self._replacementFile
                 replacementColumn = self._replacementColumn
@@ -422,8 +423,13 @@ class Token(object):
                     else:
                         self.logger.error("File '%s' does not exist" % (replacementFile))
                         return old
-
-                replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
+                if self.replacementType == 'seqfile':
+                    # pick value one by one from replacement file
+                    replacement = replacementLines[self._tokenfilecounter % len(replacementLines)].strip()
+                    self._tokenfilecounter += 1
+                else:
+                    # pick value randomly from replacement file
+                    replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
 
                 if replacementColumn > 0:
                     self.mvhash[replacementFile] = replacement.split(',')
