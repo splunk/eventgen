@@ -2,7 +2,6 @@ from __future__ import division
 import logging
 import logging.handlers
 from collections import deque
-from sys import getsizeof
 
 class OutputPlugin(object):
     name = 'OutputPlugin'
