@@ -84,6 +84,7 @@ autotimestamp = false
         * rated -> float[<start.numzerosforprecision>:<end.numzerosforprecision>]
         * file -> <replacment file name>
         * mvfile -> <replacement file name, expects CSV file>:<column number>
+        * seqfile -> <replacment file name> OR <replacement file name, expects CSV file>:<column number>
         
 disabled = true | false
     * Like what it looks like.  Will disable event generation for this sample.
