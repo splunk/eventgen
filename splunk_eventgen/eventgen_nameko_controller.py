@@ -471,7 +471,7 @@ You are running Eventgen Controller.\n'''
                     server_vhost_len = len(self.server_status) if 'time' not in self.server_status else len(self.server_status)-1
                 else:
                     break
-            dump_value = self.server_status
+            dump_value = self.calculate_throughput(self.server_status)
         else:
             dump_value = {}
         self.server_status = {}
@@ -513,3 +513,19 @@ You are running Eventgen Controller.\n'''
             return True
         else:
             return False
+
+    def calculate_throughput(self, data):
+        throughput_summary = {  'TOTAL_VOLUME_MB': 0,
+                                'TOTAL_COUNT': 0,
+                                'THROUGHPUT_VOLUME_KB': 0,
+                                'THROUGHPUT_COUNT': 0}
+        for server_name, server_status in data.items():
+            if server_name != 'time' and 'THROUGHPUT_STATUS' in server_status:
+                server_throughput = server_status['THROUGHPUT_STATUS']
+                throughput_summary['TOTAL_VOLUME_MB'] += server_throughput['TOTAL_VOLUME_MB']
+                throughput_summary['TOTAL_COUNT'] += server_throughput['TOTAL_COUNT']
+                throughput_summary['THROUGHPUT_VOLUME_KB'] += server_throughput['THROUGHPUT_VOLUME_KB']
+                throughput_summary['THROUGHPUT_COUNT'] += server_throughput['THROUGHPUT_COUNT']
+        data['THROUGHTPUT_SUMMARY'] = throughput_summary
+        self.log.debug("throughput summary: {}".format(throughput_summary))
+        return data

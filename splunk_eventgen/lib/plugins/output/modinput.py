@@ -14,8 +14,8 @@ class ModInputOutputPlugin(OutputPlugin):
     MAXQUEUELENGTH = 10
     useOutputQueue = False
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
 
     def flush(self, q):
         out = ""

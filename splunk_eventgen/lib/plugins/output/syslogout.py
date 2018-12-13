@@ -13,8 +13,8 @@ class SyslogOutOutputPlugin(OutputPlugin):
     defaultableSettings = [ 'syslogDestinationHost', 'syslogDestinationPort' ]
     intSettings = [ 'syslogDestinationPort' ]
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
         self._syslogDestinationHost = sample.syslogDestinationHost if hasattr(sample, 'syslogDestinationHost') and sample.syslogDestinationHost else '127.0.0.1'
         self._syslogDestinationPort = sample.syslogDestinationPort if hasattr(sample, 'syslogDestinationPort') and sample.syslogDestinationPort else 1514
 

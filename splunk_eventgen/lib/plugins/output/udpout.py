@@ -7,8 +7,8 @@ class UdpOutputPlugin(OutputPlugin):
     name = 'udpout'
     MAXQUEUELENGTH = 10
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
 
         self._udpDestinationHost = sample.udpDestinationHost if hasattr(sample,'udpDestinationHost') and sample.udpDestinationHost else '127.0.0.1'
         self._udpDestinationPort = sample.udpDestinationPort if hasattr(sample,'udpDestinationPort') and sample.udpDestinationPort else '3333'

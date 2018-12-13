@@ -20,6 +20,7 @@ class Output(object):
         self.MAXQUEUELENGTH = sample.maxQueueLength
         self._queue = []
         self._setup_logging()
+        self.output_counter = None
 
 
     def __str__(self):
@@ -48,6 +49,9 @@ class Output(object):
 
     def _update_outputqueue(self, queue):
         self.outputQueue = queue
+
+    def setOutputCounter(self, output_counter):
+        self.output_counter = output_counter
 
     def updateConfig(self, config):
         self.config = config
@@ -102,7 +106,7 @@ class Output(object):
             q = self._queue
             self.logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue = []
-            outputer = self.outputPlugin(self._sample)
+            outputer = self.outputPlugin(self._sample, self.output_counter)
             outputer.updateConfig(self.config)
             outputer.set_events(q)
             # When an outputQueue is used, it needs to run in a single threaded nature which requires to be put back into the outputqueue so a single thread worker can execute it.

@@ -169,8 +169,8 @@ class S2SOutputPlugin(OutputPlugin):
     s2s = None
     useOutputQueue = True
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
 
     def flush(self, q):
         if len(q) < 1:

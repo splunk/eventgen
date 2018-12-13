@@ -63,6 +63,7 @@ maxIntervalsBeforeFlush = 3
 maxQueueLength = 0
 autotimestamps = [ <jsonlist> ]
 autotimestamp = false
+outputCounter = false
 
 
 [<sample file name>]
@@ -231,7 +232,11 @@ maxQueueLength = <maximum items before flushing the queue>
     * Number of items before flushing the output queue
     * Default is per outputMode specific    
 
-
+outputCounter = true | false
+    * Default is false. Use outputCounter to record your output rate so that you can get the total volume, 
+    * total count and real-time throughput of outputer from "status" api. This setting may 
+    * cause 1.8% performance down. Only work on thread mode.
+    
 ###############################
 ## EVENT GENERATION SETTINGS ##
 ###############################

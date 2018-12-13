@@ -58,6 +58,20 @@ Okay, let's put this to the test and see what real world numbers look like.  All
 
 Using Splunk to track the event generation, we found that a single eventgenx container can generate at a maximum rate of 40-45 GB/day. Higher rates caused output queue backup, requiring more and more time to dump all events in a new interval. While this scenario is limited by the httpevent overhead, however Splunk allows us to track the real-time number of events and data size. More containers can be used in parallel to increase the throughput of generation on a single splunk instance.
 
+## Throughput with OutputCounter
+In eventgenx, we provide a outputCounter to calculate the generaton rate. Turning on it can help you get throughput from eventgen directly. We have run a test on winbag sample with the following .conf file:
+
+    [global]
+    generator = windbag
+    earliest = now
+    latest = now
+    outputMode = httpevent
+    httpeventServers = <Server Mapping>
+    perDayVolume = <GB/day>
+    outputCounter = true
+
+As a result, for a eventgen cluster with one server and one controller, we found that the output rate is about `455 KB/s`, and the output event count rate is `11361 events/s`
+
 # Removing the bottleneck
 
 In this architecture, the primary bottleneck is serializing and deserializing the data between processes.  We added the reduce step of the outputqueue primarily to handle modular input and file outputs where we needed a limited number of things touching a file or outputting to stdout.  Where we can parallelize this work, we can remove the majority of the CPU bottleneck of passing data around between processes.
