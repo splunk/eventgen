@@ -39,7 +39,7 @@ class ModInputOutputPlugin(OutputPlugin):
                 except IndexError:
                     m = False
 
-        print out
+        sys.stdout.write(out)
         sys.stdout.flush()
 
     def _setup_logging(self):
