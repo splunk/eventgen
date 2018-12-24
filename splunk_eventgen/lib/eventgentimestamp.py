@@ -5,7 +5,19 @@ import random
 class EventgenTimestamp(object):
 
     @staticmethod
-    def get_random_timestamp(earliest, latest, sample_earliest, sample_latest):
+    def get_random_timestamp(earliest, latest):
+        if type(earliest) != datetime.datetime or type(latest) != datetime.datetime:
+            raise Exception("Earliest {0} or latest {1} arguments are not datetime objects".format(earliest, latest))
+
+        earliest_in_epoch = time.mktime(earliest.timetuple())
+        latest_in_epoch = time.mktime(latest.timetuple())
+        if earliest_in_epoch > latest_in_epoch:
+            raise Exception("Latest time is earlier than earliest time.")
+
+        return datetime.datetime.fromtimestamp(random.randint(earliest_in_epoch, latest_in_epoch))
+
+    @staticmethod
+    def get_random_timestamp_backfill(earliest, latest, sample_earliest, sample_latest):
         '''
 
         earliest and latest timestamp gets generated with an interval
@@ -15,18 +27,20 @@ class EventgenTimestamp(object):
         '''
         if type(earliest) != datetime.datetime or type(latest) != datetime.datetime:
             raise Exception("Earliest {0} or latest {1} arguments are not datetime objects".format(earliest, latest))
+
         earliest_in_epoch = time.mktime(earliest.timetuple())
         latest_in_epoch = time.mktime(latest.timetuple())
         if earliest_in_epoch > latest_in_epoch:
             raise Exception("Latest time is earlier than earliest time.")
+
         pivot_time = earliest_in_epoch
+
         sample_earliest_in_seconds = EventgenTimestamp._convert_time_difference_to_seconds(sample_earliest)
         sample_latest_in_seconds = EventgenTimestamp._convert_time_difference_to_seconds(sample_latest)
+
         earliest_pivot_time = pivot_time + sample_earliest_in_seconds
         latest_pivot_time = pivot_time + sample_latest_in_seconds
-        pivot_time_range = latest_pivot_time - earliest_pivot_time
-        random_pivot_time = earliest_pivot_time + random.randint(0, pivot_time_range)
-        return datetime.datetime.fromtimestamp(random_pivot_time)
+        return datetime.datetime.fromtimestamp(random.randint(earliest_pivot_time, latest_pivot_time))
 
 
     @staticmethod

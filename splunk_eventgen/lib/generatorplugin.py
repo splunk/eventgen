@@ -49,8 +49,7 @@ class GeneratorPlugin(object):
                 # Maintain state for every token in a given event, Hash contains keys for each file name which is
                 # assigned a list of values picked from a random line in that file
                 mvhash = {}
-                pivot_timestamp = EventgenTimestamp.get_random_timestamp(earliest, latest, self._sample.earliest,
-                                                                         self._sample.latest)
+                pivot_timestamp = EventgenTimestamp.get_random_timestamp(earliest, latest)
                 ## Iterate tokens
                 for token in self._sample.tokens:
                     token.mvhash = mvhash
