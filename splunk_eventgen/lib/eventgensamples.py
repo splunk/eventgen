@@ -247,7 +247,7 @@ class Sample(object):
                 if self.backfill[-2:] == 'ms':
                     time_unit = 'ms'
                     backfill_time = self.backfill[1:-2]
-                return get_time_difference(current_time=current_time, different_time=backfill_time, sign='-', time_unit=time_unit)
+                return self.get_time_difference(current_time=current_time, different_time=backfill_time, sign='-', time_unit=time_unit)
             else:
                 self.logger.error("Backfill time is not in the past.")
         return current_time
