@@ -64,6 +64,15 @@ class Timer(object):
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen')
 
+    def predict_event_size(self):
+        try:
+            self.sample.loadSample()
+            self.logger.debug("File sample loaded successfully.")
+        except TypeError:
+            self.logger.error("Error loading sample file for sample '%s'" % self._sample.name)
+            return
+        return len(self.sample.sampleDict[0]['_raw'])
+
     def run(self):
         """
         Simple wrapper method to determine whether we should be running inside python's profiler or not
@@ -88,6 +97,8 @@ class Timer(object):
 
         self.executions = 0
         end = False
+        previous_count_left = 0
+        raw_event_size = self.predict_event_size()
         while not end:
             # Need to be able to stop threads by the main thread or this thread. self.config will stop all threads
             # referenced in the config object, while, self.stopping will only stop this one.
@@ -131,7 +142,21 @@ class Timer(object):
                     self.sample.backfilldone = True
                 else:
                     # 12/15/13 CS Moving the rating to a separate plugin architecture
-                    count = self.rater.rate()
+                    # Save previous interval count left to avoid perdayvolumegenerator drop small tasks
+                    if self.sample.generator == 'perdayvolumegenerator':
+                        count = self.rater.rate() + previous_count_left
+                        if count < raw_event_size and count > 0:
+                            self.logger.info(
+                                "current interval size is {}, which is smaller than a raw event size {}. wait for the next turn.".format(
+                                    count, raw_event_size))
+                            previous_count_left = count
+                            self.countdown = self.sample.interval
+                            self.executions += 1
+                            continue
+                        else:
+                            previous_count_left = 0
+                    else:
+                        count = self.rater.rate()
 
                     et = self.sample.earliestTime()
                     lt = self.sample.latestTime()
