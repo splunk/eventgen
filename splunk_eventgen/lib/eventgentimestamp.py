@@ -42,6 +42,15 @@ class EventgenTimestamp(object):
         latest_pivot_time = pivot_time + sample_latest_in_seconds
         return datetime.datetime.fromtimestamp(random.randint(earliest_pivot_time, latest_pivot_time))
 
+    @staticmethod
+    def get_sequential_timestamp(earliest, latest, slot, total_slot):
+        if type(earliest) != datetime.datetime or type(latest) != datetime.datetime:
+            raise Exception("Earliest {0} or latest {1} arguments are not datetime objects".format(earliest, latest))
+        earliest_in_epoch = time.mktime(earliest.timetuple())
+        latest_in_epoch = time.mktime(latest.timetuple())
+        if earliest_in_epoch > latest_in_epoch:
+            raise Exception("Latest time is earlier than earliest time.")
+        return datetime.datetime.fromtimestamp(earliest_in_epoch + (latest_in_epoch-earliest_in_epoch)*slot/total_slot)
 
     @staticmethod
     def _convert_time_difference_to_seconds(time_difference):
