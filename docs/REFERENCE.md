@@ -273,6 +273,11 @@ delay = <integer>
     * Primarily this is used so we can stagger sets of samples which similar but slightly different data
     * Defaults to 0 which is disabled.
     
+sequentialTimestamp = <boolean>
+    * Only valid on count mode. (perDayVolume mode is not work)
+    * Timestamp will be set from your "earliest" time to "latest" time sequentiallly. For example, if "earliest=-1d", "latest=now" and 
+      "count=86400", then you can see all events have different timestamp.
+    
 autotimestamp = <boolean>
     * Will enable autotimestamp feature which detects most common forms of timestamps in your samples with no configuration.
 
