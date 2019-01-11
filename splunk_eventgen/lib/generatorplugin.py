@@ -50,7 +50,7 @@ class GeneratorPlugin(object):
                 # Maintain state for every token in a given event, Hash contains keys for each file name which is
                 # assigned a list of values picked from a random line in that file
                 mvhash = {}
-                if hasattr(self._sample, "sequentialTimestamp") and self._sample.sequentialTimestamp:
+                if hasattr(self._sample, "sequentialTimestamp") and self._sample.sequentialTimestamp and self._sample.generator != 'perdayvolumegenerator':
                     pivot_timestamp = EventgenTimestamp.get_sequential_timestamp(earliest,latest, eventcount, total_count)
                 else:
                     pivot_timestamp = EventgenTimestamp.get_random_timestamp(earliest, latest)
