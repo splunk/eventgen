@@ -48,13 +48,11 @@ class TestEventgenOrchestration(object):
 		# Build the image from scratch
 		cls.client = APIClient(base_url="unix://var/run/docker.sock")
 		response = cls.client.build(path=REPO_DIR, dockerfile=os.path.join("dockerfiles", "Dockerfile"), tag=IMAGE_NAME, rm=True, nocache=True, pull=True, stream=False)
-		for line in response:
-			print line,
 		# Create a network for both the controller + server to run in
 		cls.client.create_network(NETWORK_NAME, driver="bridge", attachable=True)
 		networking_config = cls.client.create_networking_config({NETWORK_NAME: cls.client.create_endpoint_config()})
 		# Start the controller
-		print 'creating controller'
+		print 'Creating controller in the LARGE test'
 		host_config = cls.client.create_host_config(auto_remove=True, publish_all_ports=True)
 		container = cls.client.create_container(image=IMAGE_NAME, 
 												command="controller",
@@ -62,12 +60,11 @@ class TestEventgenOrchestration(object):
 												networking_config=networking_config)
 		cls.client.start(container["Id"])
 		TestEventgenOrchestration.controller_id = container["Id"]
-		print container["Id"]
 		cls.controller_container = cls.client.inspect_container(container["Id"])
 		cls.controller_eventgen_webport = cls.controller_container["NetworkSettings"]["Ports"]["9500/tcp"][0]["HostPort"]
 		cls.controller_rabbitmq_webport = cls.controller_container["NetworkSettings"]["Ports"]["15672/tcp"][0]["HostPort"]
 		# Start the server
-		print 'creating server'
+		print 'Creating server in the LARGE test'
 		container = cls.client.create_container(image=IMAGE_NAME, 
 												command="server",
 												environment=["EVENTGEN_AMQP_HOST={}".format(cls.controller_container["Id"][:12])],
@@ -75,7 +72,6 @@ class TestEventgenOrchestration(object):
 												networking_config=networking_config)
 		cls.client.start(container["Id"])
 		TestEventgenOrchestration.server_id = container["Id"]
-		print container["Id"]
 		cls.server_container = cls.client.inspect_container(container["Id"])
 		cls.server_eventgen_webport = cls.server_container["NetworkSettings"]["Ports"]["9500/tcp"][0]["HostPort"]
 		cls.server_rabbitmq_webport = cls.server_container["NetworkSettings"]["Ports"]["15672/tcp"][0]["HostPort"]
@@ -179,6 +175,7 @@ class TestEventgenOrchestration(object):
 				output = json.loads(response.content)
 			current_retry += 1
 			time.sleep(10)
+		print output
 		assert output[TestEventgenOrchestration.server_id[:12]] == 0.0
 
 	def test_controller_set_volume_invalid_request(self):

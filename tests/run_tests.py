@@ -63,16 +63,6 @@ if LARGE:
     os.environ = ENV
     args = [ "-sv", LARGE, "--junitxml=tests_large_results.xml"]
     return_codes.append(pytest.main(args))
-#
-# # Run xlarge tests
-# if XLARGE:
-#     sys.path = PATH
-#     os.environ = ENV
-#     args = [ "-sv", XLARGE, "--junitxml=tests_xlarge_results.xml"]
-#     # Handle any ignored tests
-#     ignored = ['tests/xlarge/fixtures/']
-#     args += ["--ignore={}".format(x) for x in ignored]
-#     return_codes.append(pytest.main(args))
 
 print("What do you call a Boomerang that doesn't come back....")
 # We need to ensure we return a bad exit code if the tests do not completely pass

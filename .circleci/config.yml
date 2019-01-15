@@ -1,0 +1,25 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  test_eventgen:
+    machine:
+      image: circleci/classic:latest
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: |
+            pip install -r tests/requirements.txt
+      - run:
+          name: Run Tests
+          command: |
+            make test
+workflows:
+  version: 2
+  run_tests:
+    jobs: 
+      - test_eventgen
+          
