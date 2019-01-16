@@ -17,6 +17,21 @@ jobs:
           name: Run Tests
           command: |
             make test
+      - run:
+          name: ss
+          command: |
+            ls
+      - run:
+          name: ss
+          command: |
+            pwd
+      - store_test_results:
+          path: /home/circleci/project/tests_out.xml
+      - store_test_results:
+          path: /home/circleci/project/tests_medium_results.xml
+      - store_test_results:
+          path: /home/circleci/project/tests_large_results.xml
+        
       
 workflows:
   version: 2
