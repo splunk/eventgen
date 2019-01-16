@@ -69,7 +69,7 @@ class Timer(object):
             self.sample.loadSample()
             self.logger.debug("File sample loaded successfully.")
         except TypeError:
-            self.logger.error("Error loading sample file for sample '%s'" % self._sample.name)
+            self.logger.error("Error loading sample file for sample '%s'" % self.sample.name)
             return
         return len(self.sample.sampleDict[0]['_raw'])
 
