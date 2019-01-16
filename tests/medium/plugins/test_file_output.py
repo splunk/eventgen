@@ -25,7 +25,6 @@ class TestFileOutputPlugin(object):
         assert os.path.isfile(file_output_path)
         with open(file_output_path, 'r') as outfile:
             line_count = 1
-            assert len(outfile) > 0
             for output_line in outfile:
                 if not output_line or line_count == 6:
                     break

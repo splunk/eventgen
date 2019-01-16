@@ -17,9 +17,14 @@ jobs:
           name: Run Tests
           command: |
             make test
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports
+      
 workflows:
   version: 2
   run_tests:
     jobs: 
       - test_eventgen
+      
           
