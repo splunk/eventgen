@@ -69,7 +69,7 @@ class Timer(object):
             self.sample.loadSample()
             self.logger.debug("File sample loaded successfully.")
         except TypeError:
-            self.logger.error("Error loading sample file for sample '%s'" % self._sample.name)
+            self.logger.error("Error loading sample file for sample '%s'" % self.sample.name)
             return
         return len(self.sample.sampleDict[0]['_raw'])
 
@@ -172,7 +172,9 @@ class Timer(object):
                                 # self.generatorPlugin is only an instance, now we need a real plugin.
                                 # make a copy of the sample so if it's mutated by another process, it won't mess up geeneration
                                 # for this generator.
-                                copy_sample = copy.deepcopy(self.sample)
+                                copy_sample = copy.copy(self.sample)
+                                tokens = copy.deepcopy(self.sample.tokens)
+                                copy_sample.tokens = tokens
                                 genPlugin = self.generatorPlugin(sample=copy_sample)
                                 # need to make sure we set the queue right if we're using multiprocessing or thread modes
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
