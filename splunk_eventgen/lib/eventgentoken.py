@@ -20,7 +20,7 @@ class Token(object):
     replacement = None
     sample = None
     mvhash = { }
-    
+
     _replaytd = None
     _lastts = None
     _tokenfile = None
@@ -35,9 +35,9 @@ class Token(object):
     _stringMatch = None
     _listMatch = None
     _tokenfilecounter = 0
-    
+
     def __init__(self, sample=None):
-        
+
         # Logger already setup by config, just get an instance
         self._setup_logging()
 
@@ -48,7 +48,7 @@ class Token(object):
 
         self._earliestTime = (None, None)
         self._latestTime = (None, None)
-        
+
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this token"""
         # Eliminate recursive going back to parent
@@ -75,11 +75,11 @@ class Token(object):
     def _match(self, event):
         """Executes regular expression match and returns the re.Match object"""
         return re.match(self.token, event)
-        
+
     def _search(self, event):
         """Executes regular expression search and returns the re.Match object"""
         return re.search(self.token, event)
-        
+
     def _finditer(self, event):
         """Executes regular expression finditer and returns the re.Match object"""
         return re.finditer(self.token, event)
@@ -87,7 +87,7 @@ class Token(object):
     def _findall(self, event):
         """Executes regular expression finditer and returns the re.Match object"""
         return re.findall(self.token, event)
-        
+
     def replace(self, event, et=None, lt=None, s=None, pivot_timestamp=None):
         """Replaces all instances of this token in provided event and returns event"""
         if not getattr(self, 'logger', None):
@@ -131,7 +131,7 @@ class Token(object):
                 self._replaytd = None
                 self._lastts = None
         return event
-                    
+
     def  _getReplacement(self, old=None, earliestTime=None, latestTime=None, s=None, pivot_timestamp=None):
         if self.replacementType == 'static':
             return self.replacement
@@ -191,11 +191,11 @@ class Token(object):
                 integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
                 integerMatch = integerRE.match(self.replacement)
                 self._integerMatch = integerMatch
-            
+
             if self._floatMatch != None:
                 floatMatch = self._floatMatch
             else:
-                floatRE = re.compile('float\[(\d+)\.(\d+):(\d+)\.(\d+)\]', re.I)
+                floatRE = re.compile('float\[(-?\d+|\d+\.(\d+)):(-?\d+|\d+\.(\d+))\]', re.I)
                 floatMatch = floatRE.match(self.replacement)
                 self._floatMatch = floatMatch
 
@@ -208,7 +208,7 @@ class Token(object):
 
             if self._hexMatch != None:
                 hexMatch = self._hexMatch
-            else:       
+            else:
                 hexRE = re.compile('hex\((\d+)\)', re.I)
                 hexMatch = hexRE.match(self.replacement)
                 self._hexMatch = hexMatch
@@ -293,11 +293,15 @@ class Token(object):
                     return old
             elif floatMatch:
                 try:
-                    startFloat = float(floatMatch.group(1)+'.'+floatMatch.group(2))
-                    endFloat = float(floatMatch.group(3)+'.'+floatMatch.group(4))
-                    
+                    startFloat = float(floatMatch.group(1))
+                    endFloat = float(floatMatch.group(3))
+
+                    significance = 0
+                    if floatMatch.group(2) is not None:
+                        significance = len(floatMatch.group(2))
+
                     if endFloat >= startFloat:
-                        floatret = round(random.uniform(startFloat,endFloat), len(floatMatch.group(2)))
+                        floatret = round(random.uniform(startFloat,endFloat), significance)
                         if self.replacementType == 'rated':
                             rateFactor = 1.0
                             now = s.now()
@@ -320,15 +324,14 @@ class Token(object):
                                     import traceback
                                     stack =  traceback.format_exc()
                                     self.logger.error("Day of week rate failed.  Stacktrace %s" % stack)
-                            floatret = round(floatret * rateFactor, len(floatMatch.group(2)))
+                            floatret = round(floatret * rateFactor, significance)
                         floatret = str(floatret)
                         return floatret
                     else:
                         self.logger.error("Start float %s greater than end float %s; will not replace" % (startFloat, endFloat))
                         return old
                 except ValueError:
-                    self.logger.error("Could not parse float[%s.%s:%s.%s]" % (floatMatch.group(1), floatMatch.group(2), \
-                                floatMatch.group(3), floatMatch.group(4)))
+                    self.logger.error("Could not parse float[%s:%s]" % (floatMatch.group(1), floatMatch.group(4)))
                     return old
             elif stringMatch:
                 strLength = int(stringMatch.group(1))
@@ -341,7 +344,7 @@ class Token(object):
                         replacement += chr(random.randint(33, 126))
                         ## Practice safe strings
                         replacement = re.sub('%[0-9a-fA-F]+', '', urllib.quote(replacement))
-                    
+
                     return replacement
                 else:
                     self.logger.error("Length specifier %s for string replacement must be greater than 0; will not replace" % (strLength) )
