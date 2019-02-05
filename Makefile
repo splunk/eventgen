@@ -79,7 +79,7 @@ clean:
 	docker network rm eg_network_test || true
 
 setup_eventgen:
-	wget -O splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
+	curl -O splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
 
 eg_network:
 	docker network create --attachable --driver bridge eg_network || true
