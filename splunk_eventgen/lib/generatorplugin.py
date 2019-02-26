@@ -39,57 +39,17 @@ class GeneratorPlugin(object):
         self.__dict__ = d
         self._setup_logging()
 
-    def build_events(self, eventsDict, startTime, earliest, latest):
-        eventcount = 0
-        total_count = len(eventsDict)
-        for targetevent in eventsDict:
+    def build_events(self, eventsDict, startTime, earliest, latest, ignore_tokens=False):
+        """Ready events for output by replacing tokens and updating the output queue"""
+        # Replace tokens first so that perDayVolume evaluates the correct event length
+        send_objects = self.replace_tokens(eventsDict, earliest, latest, ignore_tokens=ignore_tokens)
+        for count in range(len(send_objects)):
             try:
-                event = targetevent['_raw']
-                if event == "\n":
-                    continue
-                # Maintain state for every token in a given event, Hash contains keys for each file name which is
-                # assigned a list of values picked from a random line in that file
-                mvhash = {}
-                if hasattr(self._sample, "sequentialTimestamp") and self._sample.sequentialTimestamp and self._sample.generator != 'perdayvolumegenerator':
-                    pivot_timestamp = EventgenTimestamp.get_sequential_timestamp(earliest,latest, eventcount, total_count)
-                else:
-                    pivot_timestamp = EventgenTimestamp.get_random_timestamp(earliest, latest)
-                ## Iterate tokens
-                for token in self._sample.tokens:
-                    token.mvhash = mvhash
-                    event = token.replace(event, et=earliest, lt=latest, s=self._sample,
-                                          pivot_timestamp=pivot_timestamp)
-                    if token.replacementType == 'timestamp' and self._sample.timeField != '_raw':
-                        self._sample.timestamp = None
-                        token.replace(targetevent[self._sample.timeField], et=self._sample.earliestTime(),
-                                      lt=self._sample.latestTime(), s=self._sample, pivot_timestamp=pivot_timestamp)
-                if (self._sample.hostToken):
-                    # clear the host mvhash every time, because we need to re-randomize it
-                    self._sample.hostToken.mvhash = {}
-
-                host = targetevent['host']
-                if (self._sample.hostToken):
-                    host = self._sample.hostToken.replace(host, s=self._sample)
-
-                try:
-                    time_val = int(time.mktime(pivot_timestamp.timetuple()))
-                except Exception:
-                    time_val = int(time.mktime(self._sample.now().timetuple()))
-
-                l = [{'_raw': event,
-                      'index': targetevent['index'],
-                      'host': host,
-                      'hostRegex': self._sample.hostRegex,
-                      'source': targetevent['source'],
-                      'sourcetype': targetevent['sourcetype'],
-                      '_time': time_val}]
-                eventcount += 1
-                self._out.bulksend(l)
+                self._out.bulksend([send_objects[count]])
                 self._sample.timestamp = None
             except Exception as e:
                 self.logger.exception("Exception {} happened.".format(type(e)))
                 raise e
-
         try:
             # TODO: Change this logic so that we don't lose all events if an exception is hit (try/except/break?)
             endTime = datetime.datetime.now()
@@ -130,9 +90,9 @@ class GeneratorPlugin(object):
     def setOutputMetadata(self, event):
         # self.logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))
         # self.logger.debug("Event Index: %s Host: %s Source: %s Sourcetype: %s" % (sampleDict[x]['index'], sampleDict[x]['host'], sampleDict[x]['source'], sampleDict[x]['sourcetype']))
-        if self._sample.sampletype == 'csv' and (event['index'] != self._sample.index or \
-                                        event['host'] != self._sample.host or \
-                                        event['source'] != self._sample.source or \
+        if self._sample.sampletype == 'csv' and (event['index'] != self._sample.index or
+                                        event['host'] != self._sample.host or
+                                        event['source'] != self._sample.source or
                                         event['sourcetype'] != self._sample.sourcetype):
             self._sample.index = event['index']
             self._sample.host = event['host']
@@ -170,12 +130,12 @@ class GeneratorPlugin(object):
                 if s.backfillSearchUrl != None:
                     self.logger.debug("Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" % (s.backfillSearchUrl, s.backfillSearch, s.sessionKey))
     
-                    results = httplib2.Http(disable_ssl_certificate_validation=True).request(\
-                                s.backfillSearchUrl + '/services/search/jobs',
-                                'POST', headers={'Authorization': 'Splunk %s' % s.sessionKey}, \
-                                body=urllib.urlencode({'search': s.backfillSearch,
-                                                        'earliest_time': s.backfill,
-                                                        'exec_mode': 'oneshot'}))[1]
+                    results = httplib2.Http(disable_ssl_certificate_validation=True).request(
+                                            s.backfillSearchUrl + '/services/search/jobs',
+                                            'POST', headers={'Authorization': 'Splunk %s' % s.sessionKey},
+                                            body=urllib.urlencode({'search': s.backfillSearch,
+                                                                   'earliest_time': s.backfill,
+                                                                   'exec_mode': 'oneshot'}))[1]
                     try:
                         temptime = minidom.parseString(results).getElementsByTagName('text')[0].childNodes[0].nodeValue
                         # self.logger.debug("Time returned from backfill search: %s" % temptime)
@@ -190,7 +150,7 @@ class GeneratorPlugin(object):
                     except (ExpatError, IndexError): 
                         pass
 
-        if s.end != None:
+        if s.end is not None:
             parsed = False
             try:
                 s.end = int(s.end)
@@ -206,16 +166,63 @@ class GeneratorPlugin(object):
                 except Exception as ex:
                     self.logger.error("Failed to parse end '%s' for sample '%s', treating as number of executions" % (s.end, s.name))
                     raise
+
     def run(self, output_counter=None):
         if output_counter is not None and hasattr(self.config, 'outputCounter') and self.config.outputCounter:
             # Use output_counter to calculate throughput
             self._out.setOutputCounter(output_counter)
         self.gen(count=self.count, earliest=self.start_time, latest=self.end_time, samplename=self._sample.name)
-        #TODO: Make this some how handle an output queue and support intervals and a master queue
+        # TODO: Make this some how handle an output queue and support intervals and a master queue
         # Just double check to see if there's something in queue to flush out at the end of run
         if len(self._out._queue) > 0:
             self.logger.debug("Queue is not empty, flush out at the end of each run")
             self._out.flush()
+
+    def replace_tokens(self, eventsDict, earliest, latest, ignore_tokens=False):
+        """Iterate event tokens and replace them. This will help calculations for event size when tokens are used."""
+        eventcount = 0
+        send_events = []
+        total_count = len(eventsDict)
+        for targetevent in eventsDict:
+            event = targetevent["_raw"]
+            # Maintain state for every token in a given event, Hash contains keys for each file name which is
+            # assigned a list of values picked from a random line in that file
+            mvhash = {}
+            host = targetevent['host']
+            if hasattr(self._sample, "sequentialTimestamp") and self._sample.sequentialTimestamp and \
+                       self._sample.generator != 'perdayvolumegenerator':
+                pivot_timestamp = EventgenTimestamp.get_sequential_timestamp(earliest, latest, eventcount, total_count)
+            else:
+                pivot_timestamp = EventgenTimestamp.get_random_timestamp(earliest, latest)
+            # Iterate tokens
+            if not ignore_tokens:
+                for token in self._sample.tokens:
+                    token.mvhash = mvhash
+                    event = token.replace(event, et=earliest, lt=latest, s=self._sample,
+                                          pivot_timestamp=pivot_timestamp)
+                    if token.replacementType == 'timestamp' and self._sample.timeField != '_raw':
+                        self._sample.timestamp = None
+                        token.replace(targetevent[self._sample.timeField], et=self._sample.earliestTime(),
+                                      lt=self._sample.latestTime(), s=self._sample, pivot_timestamp=pivot_timestamp)
+                if self._sample.hostToken:
+                    # clear the host mvhash every time, because we need to re-randomize it
+                    self._sample.hostToken.mvhash = {}
+                if self._sample.hostToken:
+                    host = self._sample.hostToken.replace(host, s=self._sample)
+            try:
+                time_val = int(time.mktime(pivot_timestamp.timetuple()))
+            except Exception:
+                time_val = int(time.mktime(self._sample.now().timetuple()))
+            l = {'_raw': event,
+                 'index': targetevent['index'],
+                 'host': host,
+                 'hostRegex': self._sample.hostRegex,
+                 'source': targetevent['source'],
+                 'sourcetype': targetevent['sourcetype'],
+                 '_time': time_val}
+            send_events.append(l)
+        return send_events
+
 
 def load():
     return GeneratorPlugin

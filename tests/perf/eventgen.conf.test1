@@ -1,0 +1,13 @@
+[windbag-no-token]
+sampleDir = tests/perf/samples
+generator = windbag
+outputMode = httpevent
+httpeventServers = {"servers":[{ "protocol":"https", "address":"<enter-ip-address>", "port":"<enter-port>", "key":"enter-http-key"}]}
+index = eg
+sourcetype = eventgen-6
+source = eg6.log
+host = localhost
+threading = process
+
+# Increase the perDayVolume until the output queue backs up
+perDayVolume = <GB/day>
