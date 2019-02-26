@@ -43,13 +43,12 @@ class GeneratorPlugin(object):
         """Ready events for output by replacing tokens and updating the output queue"""
         # Replace tokens first so that perDayVolume evaluates the correct event length
         send_objects = self.replace_tokens(eventsDict, earliest, latest, ignore_tokens=ignore_tokens)
-        for count in range(len(send_objects)):
-            try:
-                self._out.bulksend([send_objects[count]])
-                self._sample.timestamp = None
-            except Exception as e:
-                self.logger.exception("Exception {} happened.".format(type(e)))
-                raise e
+        try:
+            self._out.bulksend(send_objects)
+            self._sample.timestamp = None
+        except Exception as e:
+            self.logger.exception("Exception {} happened.".format(type(e)))
+            raise e
         try:
             # TODO: Change this logic so that we don't lose all events if an exception is hit (try/except/break?)
             endTime = datetime.datetime.now()
