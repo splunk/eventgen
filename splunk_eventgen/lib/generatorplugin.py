@@ -54,7 +54,7 @@ class GeneratorPlugin(object):
             endTime = datetime.datetime.now()
             timeDiff = endTime - startTime
             timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
-            self.logger.debugv("Interval complete, flushing feed")
+            self.logger.debug("Interval complete, flushing feed")
             self._out.flush(endOfInterval=True)
             self.logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." % (
                 self._sample.name, self._sample.app, timeDiffFrac))

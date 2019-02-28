@@ -27,6 +27,6 @@ token.3.token = @@int3
 token.3.replacementType = random
 token.3.replacement = integer[0:9]
 
-token.4.token = @@int4
-token.4.replacementType = random
-token.4.replacement = integer[0:9]
+token.4.token = \d{2}:\d{2}:\d{2}
+token.4.replacementType = timestamp
+token.4.replacement = %H:%M:%S
