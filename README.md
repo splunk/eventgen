@@ -1,7 +1,7 @@
 # The Splunk Event Generator
 
 ### Status
-[![Build Status](https://circleci.com/gh/splunk/eventgen/tree/develop.svg?style=svg)](https://circleci.com/gh/splunk/eventgen/tree/develop)
+[![CircleCI](https://circleci.com/gh/splunk/eventgen/tree/develop.svg?style=svg)](https://circleci.com/gh/splunk/eventgen/tree/develop)
 
 ### Intro
 
