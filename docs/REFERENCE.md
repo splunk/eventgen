@@ -54,6 +54,7 @@ source = eventgen
 sourcetype = eventgen
 host = 127.0.0.1
 outputWorkers = 1
+generatorWorkers = 1
 generator = default
 rater = config
 timeField = _raw
@@ -116,10 +117,11 @@ outputWorkers = <number of worker threads>
 outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout
     * Specifies how to output log data.  Modinput is default.
     * If setting spool, should set spoolDir
-    * If setting file, should set logFile
+    * If setting file, should set fileName
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser and splunkPassword if not Splunk embedded
     * If setting s2s, should set splunkHost and splunkPort
     * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort
+    * If setting httpevent, should set httpeventServers
 
 syslogDestinationHost = <host>
     * Defaults to 127.0.0.1
@@ -245,6 +247,10 @@ generator = default | <plugin>
     * Specifies the generator plugin to use.  Default generator will give behavior of eventgen pre-3.0
       which exclusively uses settings in eventgen.conf to control behavior.  Generators in 3.0 are now
       pluggable python modules which can be custom code.
+
+generatorWorkers = <number of worker threads>
+    * Specifies how many threads or processes to stand up to handle generation
+    * Defaults to 1
 
 rater = config | <plugin>
     * Specifies which rater plugin to use.  Default rater uses hourOfDayRate, etc, settings to specify
