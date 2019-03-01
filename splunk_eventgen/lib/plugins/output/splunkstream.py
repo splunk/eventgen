@@ -53,11 +53,9 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                 if len(queue) > 0:
                     streamout = ""
                     index = source = sourcetype = host = hostRegex = None
-                    # SHould now be getting a different output thread for each source
-                    # So therefore, look at the first message in the queue, set based on that
-                    # and move on
                     metamsg = queue.popleft()
                     msg = metamsg['_raw']
+                    # Worried about below code
                     try:
                         index = metamsg['index']
                         source = metamsg['source']
@@ -75,7 +73,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                             connmethod = httplib.HTTPConnection
                         splunkhttp = connmethod(self._splunkHost, self._splunkPort)
                         splunkhttp.connect()
-                        urlparms = [ ]
+                        urlparms = []
                         if not index:
                             urlparms.append(('index', index))
                         if not source:
