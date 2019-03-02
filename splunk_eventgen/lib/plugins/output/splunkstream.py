@@ -1,6 +1,7 @@
 from __future__ import division
 from outputplugin import OutputPlugin
 from xml.dom import minidom
+from collections import deque
 import httplib, httplib2
 import urllib
 import logging
@@ -49,13 +50,25 @@ class SplunkStreamOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         if len(q) > 0:
-            for k, queue in q.items():
+            # Store each source/sourcetype combo with its events so we can send them all together
+            queues = {}
+            for row in q:
+                if row['source'] is None:
+                    row['source'] = ''
+                if row['sourcetype'] is None:
+                    row['sourcetype'] = ''
+                if not row['source'] + '_' + row['sourcetype'] in queues:
+                    queues[row['source'] + '_' + row['sourcetype']] = deque([])
+                queues[row['source'] + '_' + row['sourcetype']].append(row)
+
+            # Iterate sub-queues, each holds events for a specific source/sourcetype combo
+            for k, queue in queues.items():
                 if len(queue) > 0:
                     streamout = ""
                     index = source = sourcetype = host = hostRegex = None
                     metamsg = queue.popleft()
+                    # We need the raw string for each event, but other data will stay the same within its own sub-queue
                     msg = metamsg['_raw']
-                    # Worried about below code
                     try:
                         index = metamsg['index']
                         source = metamsg['source']
@@ -73,20 +86,21 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                             connmethod = httplib.HTTPConnection
                         splunkhttp = connmethod(self._splunkHost, self._splunkPort)
                         splunkhttp.connect()
-                        urlparms = []
+                        urlparams = []
                         if not index:
-                            urlparms.append(('index', index))
+                            urlparams.append(('index', index))
                         if not source:
-                            urlparms.append(('source', source))
+                            urlparams.append(('source', source))
                         if not sourcetype:
-                            urlparms.append(('sourcetype', sourcetype))
+                            urlparams.append(('sourcetype', sourcetype))
                         if not hostRegex:
-                            urlparms.append(('host_regex', hostRegex))
+                            urlparams.append(('host_regex', hostRegex))
                         elif not host:
-                            urlparms.append(('host', host))
-                        url = '/services/receivers/simple?%s' % (urllib.urlencode(urlparms))
+                            urlparams.append(('host', host))
+                        url = '/services/receivers/simple?%s' % (urllib.urlencode(urlparams))
                         headers = {'Authorization': "Splunk %s" % self._sample.sessionKey}
 
+                        # Iterate each raw event string in its sub-queue
                         while msg:
                             if msg[-1] != '\n':
                                 msg += '\n'
