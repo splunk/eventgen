@@ -79,7 +79,7 @@ class JinjaTime(Extension):
         time_now = self._time_now_epoch()
         return self._convert_epoch_formatted(time_now, date_format)
 
-    def _time_now_epoch(self):
+    def _time_now_epoch(self, date_format=None):
         time_now = time.mktime(time.localtime())
         return time_now
 
@@ -87,7 +87,7 @@ class JinjaTime(Extension):
         target_time = self._time_slice_epoch(earliest, latest, count, slices)
         return self._convert_epoch_formatted(target_time, date_format)
 
-    def _time_slice_epoch(self, earliest, latest, count, slices):
+    def _time_slice_epoch(self, earliest, latest, count, slices, date_format=None):
         slice_start, slice_end, slice_size, slice_time = \
             self._get_time_slice(earliest=earliest, latest=latest, slices=slices, target_slice=count, slice_type="lower")
         return slice_time
