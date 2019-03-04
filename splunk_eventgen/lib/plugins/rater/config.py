@@ -42,14 +42,18 @@ class ConfigRater(object):
         self.logger = logging.getLogger('eventgen')
 
     def rate(self):
+        if type(self._sample.count) != int:
+            self._sample.count = int(self._sample.count)
+        if type(self._generatorWorkers) != int:
+            self._generatorWorkers = int(self._generatorWorkers)
         count = self._sample.count/self._generatorWorkers
         # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
         # hourOfDay, dayOfWeek and randomizeCount configs
         rateFactor = 1.0
         if self._sample.randomizeCount != 0 and self._sample.randomizeCount != None:
             try:
-                self.logger.debugv("randomizeCount for sample '%s' in app '%s' is %s" \
-                                % (self._sample.name, self._sample.app, self._sample.randomizeCount))
+                self.logger.debug("randomizeCount for sample '%s' in app '%s' is %s"
+                                  % (self._sample.name, self._sample.app, self._sample.randomizeCount))
                 # If we say we're going to be 20% variable, then that means we
                 # can be .1% high or .1% low.  Math below does that.
                 randBound = round(self._sample.randomizeCount * 1000, 0)
@@ -60,16 +64,16 @@ class ConfigRater(object):
                 rateFactor *= randFactor
             except:
                 import traceback
-                stack =  traceback.format_exc()
+                stack = traceback.format_exc()
                 self.logger.error("Randomize count failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.hourOfDayRate) == dict:
             try:
                 rate = self._sample.hourOfDayRate[str(self._sample.now().hour)]
-                self.logger.debugv("hourOfDayRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
+                self.logger.debug("hourOfDayRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
                 rateFactor *= rate
             except KeyError:
                 import traceback
-                stack =  traceback.format_exc()
+                stack = traceback.format_exc()
                 self.logger.error("Hour of day rate failed for sample '%s'.  Stacktrace %s" % (self._sample.name, stack))
         if type(self._sample.dayOfWeekRate) == dict:
             try:
