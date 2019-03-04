@@ -75,10 +75,14 @@ class Output(object):
         """
         Accepts list, msglist, and adds to the output buffer.  If the buffer exceeds MAXQUEUELENGTH, then flush.
         """
-        self._queue.extend(msglist)
-
-        if len(self._queue) >= self.MAXQUEUELENGTH:
-            self.flush()
+        try:
+            self._queue.extend(msglist)
+            if len(self._queue) >= self.MAXQUEUELENGTH:
+                self.flush()
+        except Exception as e:
+            # We don't want to exit if there's a single bad event
+            self.logger.error("Caught Exception {} while appending/flushing output queue. There may be a ".format(e) +
+                              "faulty event or token replacement in your sample.")
 
     def flush(self, endOfInterval=False):
         """

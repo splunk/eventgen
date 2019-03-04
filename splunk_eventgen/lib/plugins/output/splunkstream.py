@@ -1,9 +1,9 @@
 from __future__ import division
 from outputplugin import OutputPlugin
 from xml.dom import minidom
+from collections import deque
 import httplib, httplib2
 import urllib
-from collections import deque
 import logging
 
 
@@ -12,10 +12,9 @@ class SplunkStreamOutputPlugin(OutputPlugin):
     name = 'splunkstream'
     MAXQUEUELENGTH = 100
 
-    validSettings = [ 'splunkMethod', 'splunkUser', 'splunkPass', 'splunkHost', 'splunkPort' ]
-    complexSettings = { 'splunkMethod': ['http', 'https'] }
-    intSettings = [ 'splunkPort' ]
-
+    validSettings = ['splunkMethod', 'splunkUser', 'splunkPass', 'splunkHost', 'splunkPort']
+    complexSettings = {'splunkMethod': ['http', 'https']}
+    intSettings = ['splunkPort']
 
     _splunkHost = None
     _splunkPort = None
@@ -33,13 +32,13 @@ class SplunkStreamOutputPlugin(OutputPlugin):
         self._splunkUrl, self._splunkMethod, self._splunkHost, self._splunkPort = c.getSplunkUrl(self._sample)
         self._splunkUser = self._sample.splunkUser
         self._splunkPass = self._sample.splunkPass
-            
-        if self._sample.sessionKey == None:
+
+        if not self._sample.sessionKey:
             try:
                 myhttp = httplib2.Http(disable_ssl_certificate_validation=True)
-                self.logger.debugv("Getting session key from '%s' with user '%s' and pass '%s'" % (self._splunkUrl + '/services/auth/login', self._splunkUser, self._splunkPass))
+                self.logger.debug("Getting session key from '%s' with user '%s' and pass '%s'" % (self._splunkUrl + '/services/auth/login', self._splunkUser, self._splunkPass))
                 response = myhttp.request(self._splunkUrl + '/services/auth/login', 'POST',
-                                            headers = {}, body=urllib.urlencode({'username': self._splunkUser, 
+                                            headers = {}, body=urllib.urlencode({'username': self._splunkUser,
                                                                                 'password': self._splunkPass}))[1]
                 self._sample.sessionKey = minidom.parseString(response).getElementsByTagName('sessionKey')[0].childNodes[0].nodeValue
                 self.logger.debug("Got new session for splunkstream, sessionKey '%s'" % self._sample.sessionKey)
@@ -51,35 +50,24 @@ class SplunkStreamOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         if len(q) > 0:
-            # For faster processing, we need to break these up by source combos
-            # so they'll each get their own thread.
-            # Fixes a bug where we're losing source and sourcetype with bundlelines type transactions
-            queues = deque(q)
+            # Store each source/sourcetype combo with its events so we can send them all together
+            queues = {}
             for row in q:
                 if row['source'] is None:
                     row['source'] = ''
                 if row['sourcetype'] is None:
                     row['sourcetype'] = ''
-                if not row['source']+'_'+row['sourcetype'] in queues:
-                    queues[row['source']+'_'+row['sourcetype']] = deque([])
+                if not row['source'] + '_' + row['sourcetype'] in queues:
+                    queues[row['source'] + '_' + row['sourcetype']] = deque([])
+                queues[row['source'] + '_' + row['sourcetype']].append(row)
 
-            # self.logger.debug("Queues setup: %s" % pprint.pformat(queues))
-            m = q.popleft()
-            while m:
-                queues[m['source']+'_'+m['sourcetype']].append(m)
-                try:
-                    m = q.popleft()
-                except IndexError:
-                    m = False
-
+            # Iterate sub-queues, each holds events for a specific source/sourcetype combo
             for k, queue in queues.items():
-                splunkhttp = None
                 if len(queue) > 0:
                     streamout = ""
-                    # SHould now be getting a different output thread for each source
-                    # So therefore, look at the first message in the queue, set based on that
-                    # and move on
+                    index = source = sourcetype = host = hostRegex = None
                     metamsg = queue.popleft()
+                    # We need the raw string for each event, but other data will stay the same within its own sub-queue
                     msg = metamsg['_raw']
                     try:
                         index = metamsg['index']
@@ -98,20 +86,21 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                             connmethod = httplib.HTTPConnection
                         splunkhttp = connmethod(self._splunkHost, self._splunkPort)
                         splunkhttp.connect()
-                        urlparms = [ ]
-                        if index != None:
-                            urlparms.append(('index', index))
-                        if source != None:
-                            urlparms.append(('source', source))
-                        if sourcetype != None:
-                            urlparms.append(('sourcetype', sourcetype))
-                        if hostRegex != None:
-                            urlparms.append(('host_regex', hostRegex))
-                        elif host != None:
-                            urlparms.append(('host', host))
-                        url = '/services/receivers/simple?%s' % (urllib.urlencode(urlparms))
-                        headers = {'Authorization': "Splunk %s" % self._sample.sessionKey }
+                        urlparams = []
+                        if not index:
+                            urlparams.append(('index', index))
+                        if not source:
+                            urlparams.append(('source', source))
+                        if not sourcetype:
+                            urlparams.append(('sourcetype', sourcetype))
+                        if not hostRegex:
+                            urlparams.append(('host_regex', hostRegex))
+                        elif not host:
+                            urlparams.append(('host', host))
+                        url = '/services/receivers/simple?%s' % (urllib.urlencode(urlparams))
+                        headers = {'Authorization': "Splunk %s" % self._sample.sessionKey}
 
+                        # Iterate each raw event string in its sub-queue
                         while msg:
                             if msg[-1] != '\n':
                                 msg += '\n'
@@ -136,10 +125,9 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                             self.logger.error("Data not written to Splunk.  Splunk returned %s" % data)
                     except httplib.BadStatusLine:
                         self.logger.error("Received bad status from Splunk for sample '%s'" % self._sample)
-                    self.logger.debugv("Closing splunkhttp connection")
-                    if splunkhttp != None:
+                    self.logger.debug("Closing splunkhttp connection")
+                    if not splunkhttp:
                         splunkhttp.close()
-                        splunkhttp = None
 
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen')
