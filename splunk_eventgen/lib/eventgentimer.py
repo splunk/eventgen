@@ -1,5 +1,5 @@
 import logging
-import datetime, time
+import time
 import copy
 from timeparser import timeParserTimeMath
 from Queue import Full
@@ -39,6 +39,7 @@ class Timer(object):
         self.time = time
         self.stopping = False
         self.countdown = 0
+        self.interval = getattr(self.sample, "interval", config.interval)
         #enable the logger
         self._setup_logging()
         self.logger.debug('Initializing timer for %s' % sample.name if sample is not None else "None")
@@ -48,6 +49,8 @@ class Timer(object):
             self.rater = rater_class(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
             self.outputPlugin = self.config.getPlugin('output.' + self.sample.outputMode, self.sample)
+            if self.sample.timeMultiple != 1:
+                self.interval = self.sample.interval * self.sample.timeMultiple
         self.logger.info("Start '%s' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
 
     # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
@@ -92,7 +95,7 @@ class Timer(object):
         if self.sample.delay > 0:
             self.logger.info("Sample set to delay %s, sleeping." % self.sample.delay)
             time.sleep(self.sample.delay)
-            
+
         self.logger.debug("Timer creating plugin for '%s'" % self.sample.name)
 
         self.executions = 0
@@ -127,7 +130,7 @@ class Timer(object):
                                                           ret=realtime)
                     while backfillearliest < realtime:
                         et = backfillearliest
-                        lt = timeParserTimeMath(plusminus="+", num=self.sample.interval, unit="s", ret=et)
+                        lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
                         genPlugin = self.generatorPlugin(sample=self.sample)
                         # need to make sure we set the queue right if we're using multiprocessing or thread modes
                         genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
@@ -150,7 +153,7 @@ class Timer(object):
                                 "current interval size is {}, which is smaller than a raw event size {}. wait for the next turn.".format(
                                     count, raw_event_size))
                             previous_count_left = count
-                            self.countdown = self.sample.interval
+                            self.countdown = self.interval
                             self.executions += 1
                             continue
                         else:
@@ -193,7 +196,7 @@ class Timer(object):
                         pass
 
                 # Sleep until we're supposed to wake up and generate more events
-                self.countdown = self.sample.interval
+                self.countdown = self.interval
                 self.executions += 1
 
                 # 8/20/15 CS Adding support for ending generation at a certain time
