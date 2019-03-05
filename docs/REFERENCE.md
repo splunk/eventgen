@@ -402,7 +402,19 @@ latest = <time-str>
     * Specifies the latest random time for generated events.
     * If this value is an absolute time, use the dispatch.time_format to format the value.
     * Defaults to now.
-    
+
+#############################
+## JINJA TEMPLATE SETTINGS ##
+#############################
+
+jinja_template_dir = <str>
+    * directory name inside the current eventgen.conf dir where jinja templates can be located.
+    * default template directory is <bundle>/samples/templates if not defined.
+jinja_target_template = <str>
+    * root template to load for all sample generation.
+jinja_variables = <json>
+    * json value that contains a dict of kv pairs to pass as options to load inside of the jinja templating engine.
+
 ################################
 ## TOKEN REPLACEMENT SETTINGS ##
 ################################
