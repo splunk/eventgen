@@ -34,8 +34,7 @@ sampletype = raw
 interval = 60
 delay = 0
 timeMultiple = 1
-## 0 means all lines in sample
-count = 0
+count = -1
 ## earliest/latest = now means timestamp replacements default to current time
 earliest = now
 latest = now
@@ -323,8 +322,8 @@ backfillSearchUrl = <url>
     
 count = <integer>
     * Maximum number of events to generate per sample file
-    * 0 means replay the entire sample.
-    * Defaults to 0.
+    * -1 means replay the entire sample.
+    * Defaults to -1.
 
 perDayVolume = <float>
     * This is used in place of count.  The perDayVolume is a size supplied in GB per Day.  This value will allow
@@ -333,7 +332,7 @@ perDayVolume = <float>
 
 bundlelines = true | false
     * For outside use cases where you need to take all the lines in a sample file and pretend they are
-      one event, but count = 0 will not work because you want to replay all the lines more than once.
+      one event.
       Also, please note you can also use breaker=\r*\n\r*\n to break the sample file into multi-line
       transactions that would work better than this as well.  This is also useful where you want to bring
       in sampletype = csv and bundle that multiple times.
