@@ -42,15 +42,15 @@ class ConfigRater(object):
         self.logger = logging.getLogger('eventgen')
 
     def rate(self):
-        if type(self._sample.count) != int:
-            self._sample.count = int(self._sample.count)
-        if type(self._generatorWorkers) != int:
-            self._generatorWorkers = int(self._generatorWorkers)
+        self._sample.count = int(self._sample.count)
+        if self._sample.count == -1:
+            self._sample.count = len(self._sample.sampleDict)
+        self._generatorWorkers = int(self._generatorWorkers)
         count = self._sample.count/self._generatorWorkers
         # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
         # hourOfDay, dayOfWeek and randomizeCount configs
         rateFactor = 1.0
-        if self._sample.randomizeCount != 0 and self._sample.randomizeCount != None:
+        if self._sample.randomizeCount:
             try:
                 self.logger.debug("randomizeCount for sample '%s' in app '%s' is %s"
                                   % (self._sample.name, self._sample.app, self._sample.randomizeCount))
