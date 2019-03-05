@@ -82,14 +82,14 @@ class Config(object):
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
                     'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
                     'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort',
-                    'verbosity', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse']
+                    'verbosity', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
-    _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
+    _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'seqfile', 'integerid']
     validOutputModes = [ ]
     _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
-    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp', 'httpeventWaitResponse']
+    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp', 'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps']
     _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay',
                             'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate',
@@ -139,8 +139,6 @@ class Config(object):
             c.read([os.path.join(self.grandparentdir, 'default', 'eventgen.conf')])
 
             self._complexSettings['timezone'] = self._validateTimezone
-
-            self._complexSettings['count'] = self._validateCount
 
             self._complexSettings['seed'] = self._validateSeed
 
@@ -251,7 +249,6 @@ class Config(object):
         self.logger.debug("Getting Splunk URL: %s Method: %s Host: %s Port: %s" % (splunkUrl, splunkMethod, splunkHost, splunkPort))
         return (splunkUrl, splunkMethod, splunkHost, splunkPort)
 
-
     def parse(self):
         """Parse configs from Splunk REST Handler or from files.
         We get called manually instead of in __init__ because we need find out if we're Splunk embedded before
@@ -311,7 +308,7 @@ class Config(object):
                 # Get the latest token number of the current stanza
                 last_token_number = 0
                 for key, value in settings.items():
-                    if 'token' in key and int(key[6]) > last_token_number:
+                    if 'token' in key and key[6].isdigit() and int(key[6]) > last_token_number:
                         last_token_number = int(key[6])
 
                 # Apply global tokens to the current stanza
@@ -396,12 +393,12 @@ class Config(object):
                     t = s.tokens[i]
                     # If the index doesn't exist at all
                     if t == None:
-                        self.logger.info("Token at index %s invalid" % i)
+                        self.logger.error("Token at index %s invalid" % i)
                         # Can't modify list in place while we're looping through it
                         # so create a list to remove later
                         deleteidx.append(i)
                     elif t.token == None or t.replacementType == None or t.replacement == None:
-                        self.logger.info("Token at index %s invalid" % i)
+                        self.logger.error("Token at index %s invalid" % i)
                         deleteidx.append(i)
                 newtokens = [ ]
                 for i in xrange(0, len(s.tokens)):
@@ -684,7 +681,7 @@ class Config(object):
                     # Check for _time field, if it exists, add a timestamp to support it
                     if len(s.sampleDict) > 0:
                         if '_time' in s.sampleDict[0]:
-                            self.logger.debugv("Found _time field, checking if default timestamp exists")
+                            self.logger.debug("Found _time field, checking if default timestamp exists")
                             t = Token()
                             t.token = "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}"
                             t.replacementType = "timestamp"
@@ -697,16 +694,16 @@ class Config(object):
                                     found_token = True
                                     break
                             if not found_token:
-                                self.logger.debugv("Found _time adding timestamp to support")
+                                self.logger.debug("Found _time adding timestamp to support")
                                 s.tokens.append(t)
                             else:
-                                self.logger.debugv("_time field exists and timestamp already configured")
+                                self.logger.debug("_time field exists and timestamp already configured")
 
                     for e in s.sampleDict:
                         # Run punct against the line, make sure we haven't seen this same pattern
                         # Not totally exact but good enough for Rock'N'Roll
                         p = self._punct(e['_raw'])
-                        # self.logger.debugv("Got punct of '%s' for event '%s'" % (p, e[s.timeField]))
+                        self.logger.debug("Got punct of '%s' for event '%s'" % (p, e[s.timeField]))
                         if p not in line_puncts:
                             for x in at:
                                 t = Token()
@@ -715,7 +712,7 @@ class Config(object):
                                 t.replacement = x[1]
 
                                 try:
-                                    # self.logger.debugv("Trying regex '%s' for format '%s' on '%s'" % (x[0], x[1], e[s.timeField]))
+                                    self.logger.debug("Trying regex '%s' for format '%s' on '%s'" % (x[0], x[1], e[s.timeField]))
                                     ts = s.getTSFromEvent(e['_raw'], t)
                                     if type(ts) == datetime.datetime:
                                         found_token = False
@@ -725,7 +722,7 @@ class Config(object):
                                                 found_token = True
                                                 break
                                         if not found_token:
-                                            self.logger.debugv("Found timestamp '%s', extending token with format '%s'" % (x[0], x[1]))
+                                            self.logger.debug("Found timestamp '%s', extending token with format '%s'" % (x[0], x[1]))
                                             s.tokens.append(t)
                                             # Drop this pattern from ones we try in the future
                                             at = [ z for z in at if z[0] != x[0] ]
@@ -734,7 +731,6 @@ class Config(object):
                                     pass
                         line_puncts.append(p)
         self.logger.debug("Finished parsing")
-
 
     def _punct(self, string):
         """Quick method of attempting to normalize like events"""
@@ -746,12 +742,11 @@ class Config(object):
         string = re.sub("[^,;\-#\$%&+./:=\?@\\\'|*\n\r\"(){}<>\[\]\^!]", "", string, flags=re.M)
         return string
 
-
     def _validateSetting(self, stanza, key, value):
         """Validates settings to ensure they won't cause errors further down the line.
         Returns a parsed value (if the value is something other than a string).
         If we've read a token, which is a complex config, returns a tuple of parsed values."""
-        self.logger.debugv("Validating setting for '%s' with value '%s' in stanza '%s'" % (key, value, stanza))
+        self.logger.debug("Validating setting for '%s' with value '%s' in stanza '%s'" % (key, value, stanza))
         if key.find('token.') > -1:
             results = re.match('token\.(\d+)\.(\w+)', key)
             if results != None:
@@ -810,10 +805,10 @@ class Config(object):
             # which will parse the value or raise a ValueError if it is unparseable
             elif key in self._complexSettings:
                 complexSetting = self._complexSettings[key]
-                self.logger.debugv("Complex setting for '%s' in stanza '%s'" % (key, stanza))
+                self.logger.debug("Complex setting for '%s' in stanza '%s'" % (key, stanza))
                 # Set value to result of callback, e.g. parsed, or the function should raise an error
                 if isinstance(complexSetting, types.FunctionType) or isinstance(complexSetting, types.MethodType):
-                    self.logger.debugv("Calling function for setting '%s' with value '%s'" % (key, value))
+                    self.logger.debug("Calling function for setting '%s' with value '%s'" % (key, value))
                     value = complexSetting(value)
                 elif isinstance(complexSetting, list):
                     if not value in complexSetting:
@@ -844,23 +839,6 @@ class Config(object):
         self.logger.debug("Parsed timezone {}".format(value))
         return value
 
-    def _validateCount(self, value):
-        """Callback to override count to -1 if set to 0 in the config, otherwise return int"""
-        self.logger.debug("Validating count of {}".format(value))
-        # 5/13/14 CS Hack to take a zero count in the config and set it to a value which signifies
-        # the special condition rather than simply being zero events, setting to -1
-        try:
-            value = int(value)
-        except:
-            self.logger.error("Could not parse int for count {}".format(value))
-            raise ValueError("Could not parse int for count {}".format(value))
-
-        if value == 0:
-            value = -1
-        self.logger.debug("Count set to {}".format(value))
-
-        return value
-
     def _validateSeed(self, value):
         """Callback to set random seed"""
         self.logger.debug("Validating random seed {}".format(value))
@@ -872,8 +850,6 @@ class Config(object):
 
         self.logger.info("Using random seed {}".format(value))
         random.seed(value)
-
-
 
     def _buildConfDict(self):
         """Build configuration dictionary that we will use """

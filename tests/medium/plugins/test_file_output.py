@@ -3,12 +3,12 @@
 
 import os
 import sys
-from mock import MagicMock, patch
-
+from mock import patch
 from splunk_eventgen.__main__ import parse_args
 from splunk_eventgen.eventgen_core import EventGenerator
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 class TestFileOutputPlugin(object):
 
@@ -24,15 +24,10 @@ class TestFileOutputPlugin(object):
 
         file_output_path = os.path.abspath(os.path.join(FILE_DIR, '..', '..', '..', 'test_file_output.result'))
         assert os.path.isfile(file_output_path)
-        f = open(file_output_path, 'r')
-
-        line_count = 1
-        for output_line in f:
-            if not output_line or line_count == 6:
-                break
-            assert "WINDBAG Event {} of 5".format(line_count) in output_line
-            line_count += 1
-
-
-
-
+        with open(file_output_path, 'r') as outfile:
+            line_count = 1
+            for output_line in outfile:
+                if not output_line or line_count == 6:
+                    break
+                assert "WINDBAG Event {} of 5".format(line_count) in output_line
+                line_count += 1

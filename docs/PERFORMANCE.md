@@ -58,6 +58,34 @@ Okay, let's put this to the test and see what real world numbers look like.  All
 
 Using Splunk to track the event generation, we found that a single eventgenx container can generate at a maximum rate of 40-45 GB/day. Higher rates caused output queue backup, requiring more and more time to dump all events in a new interval. While this scenario is limited by the httpevent overhead, however Splunk allows us to track the real-time number of events and data size. More containers can be used in parallel to increase the throughput of generation on a single splunk instance.
 
+We also wanted to compare the performance of the current Eventgen 6, compared to our legacy version 5. We tested 3 scenarios with varying amounts of token replacements on each version. All tests ran locally on a single 4-core, 16-gb memory machine and used the same httpevent output as the previous test. A stripped version of each config scenario and the samples used are located under tests/perf. Here are the results:
+
+    1. Windbag generator with no token replacements
+        Eventgen 5: 1.3 GB/day
+        Eventgen 6: 26 GB/day
+    2. Single timestamp token replacement
+        Eventgen 5: 1.2 GB/day
+        Eventgen 6: 24 GB/day
+    3.  2 timestamp + 3 integer token replacements
+        Eventgen 5: 1 GB/day
+        Eventgen 6: 23 GB/day
+
+Eventgen 6 shows a massive improvement to the overall generation rate. As we expected, using more token replacements in a sample also causes small slowdowns to the scenario's generation.
+
+## Throughput with OutputCounter
+In eventgenx, we provide a outputCounter to calculate the generaton rate. Turning on it can help you get throughput from eventgen directly. We have run a test on winbag sample with the following .conf file:
+
+    [global]
+    generator = windbag
+    earliest = now
+    latest = now
+    outputMode = httpevent
+    httpeventServers = <Server Mapping>
+    perDayVolume = <GB/day>
+    outputCounter = true
+
+As a result, for a eventgen cluster with one server and one controller, we found that the output rate is about `455 KB/s`, and the output event count rate is `11361 events/s`
+
 # Removing the bottleneck
 
 In this architecture, the primary bottleneck is serializing and deserializing the data between processes.  We added the reduce step of the outputqueue primarily to handle modular input and file outputs where we needed a limited number of things touching a file or outputting to stdout.  Where we can parallelize this work, we can remove the majority of the CPU bottleneck of passing data around between processes.

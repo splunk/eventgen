@@ -7,8 +7,8 @@ class DevNullOutputPlugin(OutputPlugin):
     MAXQUEUELENGTH = 1000
     useOutputQueue = True
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
         self.firsttime = True
 
     def flush(self, q):

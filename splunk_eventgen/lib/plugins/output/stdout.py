@@ -7,8 +7,8 @@ class StdOutOutputPlugin(OutputPlugin):
     name = 'stdout'
     MAXQUEUELENGTH = 10000
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
 
     def flush(self, q):
         for x in q:

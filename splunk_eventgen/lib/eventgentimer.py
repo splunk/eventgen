@@ -64,6 +64,15 @@ class Timer(object):
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen')
 
+    def predict_event_size(self):
+        try:
+            self.sample.loadSample()
+            self.logger.debug("File sample loaded successfully.")
+        except TypeError:
+            self.logger.error("Error loading sample file for sample '%s'" % self.sample.name)
+            return
+        return len(self.sample.sampleDict[0]['_raw'])
+
     def run(self):
         """
         Simple wrapper method to determine whether we should be running inside python's profiler or not
@@ -88,6 +97,8 @@ class Timer(object):
 
         self.executions = 0
         end = False
+        previous_count_left = 0
+        raw_event_size = self.predict_event_size()
         while not end:
             # Need to be able to stop threads by the main thread or this thread. self.config will stop all threads
             # referenced in the config object, while, self.stopping will only stop this one.
@@ -131,25 +142,40 @@ class Timer(object):
                     self.sample.backfilldone = True
                 else:
                     # 12/15/13 CS Moving the rating to a separate plugin architecture
-                    count = self.rater.rate()
+                    # Save previous interval count left to avoid perdayvolumegenerator drop small tasks
+                    if self.sample.generator == 'perdayvolumegenerator':
+                        count = self.rater.rate() + previous_count_left
+                        if count < raw_event_size and count > 0:
+                            self.logger.info(
+                                "current interval size is {}, which is smaller than a raw event size {}. wait for the next turn.".format(
+                                    count, raw_event_size))
+                            previous_count_left = count
+                            self.countdown = self.sample.interval
+                            self.executions += 1
+                            continue
+                        else:
+                            previous_count_left = 0
+                    else:
+                        count = self.rater.rate()
 
                     et = self.sample.earliestTime()
                     lt = self.sample.latestTime()
 
                     try:
-                        if count < 1:
+                        if count < 1 and count != -1:
                             self.logger.info("There is no data to be generated in worker {0} because the count is {1}.".format(self.sample.config.generatorWorkers, count))
                         else:
                             # Spawn workers at the beginning of job rather than wait for next interval
                             self.logger.info("Start '%d' generatorWorkers for sample '%s'" % (
                             self.sample.config.generatorWorkers, self.sample.name))
                             for worker_id in range(self.config.generatorWorkers):
-                                # self.generatorPlugin is only an instance, now we need a real plugin.
-                                # make a copy of the sample so if it's mutated by another process, it won't mess up geeneration
-                                # for this generator.
+                                # self.generatorPlugin is only an instance, now we need a real plugin. Make a copy of
+                                # of the sample in case another generator corrupts it.
                                 copy_sample = copy.copy(self.sample)
+                                tokens = copy.deepcopy(self.sample.tokens)
+                                copy_sample.tokens = tokens
                                 genPlugin = self.generatorPlugin(sample=copy_sample)
-                                # need to make sure we set the queue right if we're using multiprocessing or thread modes
+                                # Adjust queue for threading mode
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                                 genPlugin.updateCounts(count=count,
                                                     start_time=et,
@@ -171,11 +197,11 @@ class Timer(object):
                 self.executions += 1
 
                 # 8/20/15 CS Adding support for ending generation at a certain time
-                if self.end != None:
+                if self.end:
                     # 3/16/16 CS Adding support for ending on a number of executions instead of time
                     # Should be fine with storing state in this sample object since each sample has it's own unique
                     # timer thread
-                    if self.endts == None:
+                    if not self.endts:
                         if self.executions >= int(self.end):
                             self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(self.end), self.sample.name))
                             self.stopping = True

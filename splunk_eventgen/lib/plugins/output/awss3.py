@@ -39,7 +39,7 @@ class AwsS3OutputPlugin(OutputPlugin):
                            'awsS3CompressionType', 'awsS3ObjectPrefix',
                            'awsS3ObjectSuffix']
 
-    def __init__(self, sample):
+    def __init__(self, sample, output_counter=None):
 
 
 
@@ -48,7 +48,7 @@ class AwsS3OutputPlugin(OutputPlugin):
         if sample.awsS3EventPerKey:
             sample.maxQueueLength = sample.awsS3EventPerKey
 
-        OutputPlugin.__init__(self, sample)
+        OutputPlugin.__init__(self, sample, output_counter)
 
         if not boto_imported:
             self.logger.error("There is no boto3 or botocore library available")

@@ -34,6 +34,7 @@ class Token(object):
     _hexMatch = None
     _stringMatch = None
     _listMatch = None
+    _tokenfilecounter = 0
     
     def __init__(self, sample=None):
         
@@ -194,7 +195,7 @@ class Token(object):
             if self._floatMatch != None:
                 floatMatch = self._floatMatch
             else:
-                floatRE = re.compile('float\[(\d+)\.(\d+):(\d+)\.(\d+)\]', re.I)
+                floatRE = re.compile('float\[(-?\d+|\d+\.(\d+)):(-?\d+|\d+\.(\d+))\]', re.I)
                 floatMatch = floatRE.match(self.replacement)
                 self._floatMatch = floatMatch
 
@@ -292,11 +293,15 @@ class Token(object):
                     return old
             elif floatMatch:
                 try:
-                    startFloat = float(floatMatch.group(1)+'.'+floatMatch.group(2))
-                    endFloat = float(floatMatch.group(3)+'.'+floatMatch.group(4))
-                    
+                    startFloat = float(floatMatch.group(1))
+                    endFloat = float(floatMatch.group(3))
+
+                    significance = 0
+                    if floatMatch.group(2) is not None:
+                        significance = len(floatMatch.group(2))
+
                     if endFloat >= startFloat:
-                        floatret = round(random.uniform(startFloat,endFloat), len(floatMatch.group(2)))
+                        floatret = round(random.uniform(startFloat,endFloat), significance)
                         if self.replacementType == 'rated':
                             rateFactor = 1.0
                             now = s.now()
@@ -319,15 +324,14 @@ class Token(object):
                                     import traceback
                                     stack =  traceback.format_exc()
                                     self.logger.error("Day of week rate failed.  Stacktrace %s" % stack)
-                            floatret = round(floatret * rateFactor, len(floatMatch.group(2)))
+                            floatret = round(floatret * rateFactor, significance)
                         floatret = str(floatret)
                         return floatret
                     else:
                         self.logger.error("Start float %s greater than end float %s; will not replace" % (startFloat, endFloat))
                         return old
                 except ValueError:
-                    self.logger.error("Could not parse float[%s.%s:%s.%s]" % (floatMatch.group(1), floatMatch.group(2), \
-                                floatMatch.group(3), floatMatch.group(4)))
+                    self.logger.error("Could not parse float[%s:%s]" % (floatMatch.group(1), floatMatch.group(4)))
                     return old
             elif stringMatch:
                 strLength = int(stringMatch.group(1))
@@ -365,7 +369,7 @@ class Token(object):
             else:
                 self.logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" % (self.replacement, self.replacementType) )
                 return old
-        elif self.replacementType in ('file', 'mvfile'):
+        elif self.replacementType in ('file', 'mvfile', 'seqfile'):
             if self._replacementFile != None:
                 replacementFile = self._replacementFile
                 replacementColumn = self._replacementColumn
@@ -422,8 +426,13 @@ class Token(object):
                     else:
                         self.logger.error("File '%s' does not exist" % (replacementFile))
                         return old
-
-                replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
+                if self.replacementType == 'seqfile':
+                    # pick value one by one from replacement file
+                    replacement = replacementLines[self._tokenfilecounter % len(replacementLines)].strip()
+                    self._tokenfilecounter += 1
+                else:
+                    # pick value randomly from replacement file
+                    replacement = replacementLines[random.randint(0, len(replacementLines)-1)].strip()
 
                 if replacementColumn > 0:
                     self.mvhash[replacementFile] = replacement.split(',')

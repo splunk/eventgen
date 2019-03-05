@@ -3,13 +3,13 @@ sampleDir = tests/sample_eventgen_conf/replay
 timeMultiple = 1
 backfill = -5s
 sampletype = raw
-
 outputMode = stdout
 index = main
 sourcetype = windbag
 source = windbag.log
 host = localhost
 end = 1
+mode = replay
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 token.0.replacementType = replaytimestamp
