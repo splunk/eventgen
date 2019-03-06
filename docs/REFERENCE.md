@@ -287,7 +287,6 @@ autotimestamp = <boolean>
     * Will enable autotimestamp feature which detects most common forms of timestamps in your samples with no configuration.
 
 timeMultiple = <float>
-    * Only valid in mode = replay
     * Will slow down the replay of events by <float> factor.  For example, allows a 10 minute sample
       to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6.
       By the converse, make timeMultiple 0.5 will make the events run twice as fast.
