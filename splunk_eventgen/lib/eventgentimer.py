@@ -47,7 +47,10 @@ class Timer(object):
             self.rater = rater_class(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
             self.outputPlugin = self.config.getPlugin('output.' + self.sample.outputMode, self.sample)
-            if self.sample.timeMultiple != 1:
+            if self.sample.timeMultiple < 0:
+                self.logger.error("Invalid setting for timeMultiple: {}, value should be positive".format(
+                                  self.sample.timeMultiple))
+            elif self.sample.timeMultiple != 1:
                 self.interval = self.sample.interval * self.sample.timeMultiple
         self.logger.info("Start '%s' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
 
