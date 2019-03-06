@@ -20,8 +20,6 @@ class Timer(object):
     Non-Queueable plugins, the Timer class calls the generator method of the plugin directly, tracks the amount of time
     the plugin takes to generate and sleeps the remaining interval before calling generate again.
     """
-
-
     time = None
     countdown = None
 
