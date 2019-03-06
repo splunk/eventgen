@@ -52,6 +52,8 @@ class Timer(object):
                                   self.sample.timeMultiple))
             elif self.sample.timeMultiple != 1:
                 self.interval = self.sample.interval * self.sample.timeMultiple
+                self.logger.debug("Adjusting interval {} with timeMultiple {}, new interval: {}".format(
+                                  self.sample.interval, self.sample.timeMultiple, self.interval))
         self.logger.info("Start '%s' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
 
     # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
