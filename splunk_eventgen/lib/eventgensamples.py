@@ -84,7 +84,6 @@ class Sample(object):
     queueable = None
     autotimestamp = None
 
-    
     # Internal fields
     sampleLines = None
     sampleDict = None
@@ -184,7 +183,7 @@ class Sample(object):
                     # self.logger.debug("Testing '%s' as a time string against '%s'" % (timeString, timeFormat))
                     if timeFormat == "%s":
                         ts = float(timeString) if len(timeString) < 10 else float(timeString) / (10**(len(timeString)-10))
-                        # self.logger.debugv("Getting time for timestamp '%s'" % ts)
+                        # self.logger.debug("Getting time for timestamp '%s'" % ts)
                         currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
                         # self.logger.debugv("Getting time for timeFormat '%s' and timeString '%s'" % (timeFormat, timeString))
@@ -198,7 +197,7 @@ class Sample(object):
                                 currentTime = datetime.datetime.strptime(timeString, timeFormat)
                             except AttributeError:
                                 pass
-                    self.logger.debugv("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
+                    self.logger.debug("Match '%s' Format '%s' result: '%s'" % (timeString, timeFormat, currentTime))
                     if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
@@ -272,7 +271,7 @@ class Sample(object):
         # as an offset of now if they're relative times
         if self._earliestParsed != None:
             earliestTime = self.now() - self._earliestParsed
-            self.logger.debugv("Using cached earliest time: %s" % earliestTime)
+            self.logger.debug("Using cached earliest time: %s" % earliestTime)
         else:
             if self.earliest.strip()[0:1] == '+' or \
                     self.earliest.strip()[0:1] == '-' or \
@@ -281,18 +280,16 @@ class Sample(object):
                 temptd = self.now(realnow=True) - tempearliest
                 self._earliestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
                 earliestTime = self.now() - self._earliestParsed
-                self.logger.debugv("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self._earliestParsed, earliestTime, tempearliest))
+                self.logger.debug("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self._earliestParsed, earliestTime, tempearliest))
             else:
                 earliestTime = timeParser(self.earliest, timezone=self.timezone)
-                self.logger.debugv("earliestTime as absolute time '%s'" % earliestTime)
-
+                self.logger.debug("earliestTime as absolute time '%s'" % earliestTime)
         return earliestTime
-
 
     def latestTime(self):
         if self._latestParsed != None:
             latestTime = self.now() - self._latestParsed
-            self.logger.debugv("Using cached latestTime: %s" % latestTime)
+            self.logger.debug("Using cached latestTime: %s" % latestTime)
         else:
             if self.latest.strip()[0:1] == '+' or \
                     self.latest.strip()[0:1] == '-' or \
@@ -301,22 +298,21 @@ class Sample(object):
                 temptd = self.now(realnow=True) - templatest
                 self._latestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
                 latestTime = self.now() - self._latestParsed
-                self.logger.debugv("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self._latestParsed, latestTime, templatest))
+                self.logger.debug("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self._latestParsed, latestTime, templatest))
             else:
                 latestTime = timeParser(self.latest, timezone=self.timezone)
-                self.logger.debugv("latstTime as absolute time '%s'" % latestTime)
-
+                self.logger.debug("latstTime as absolute time '%s'" % latestTime)
         return latestTime
 
     def utcnow(self):
         return self.now(utcnow=True)
 
     def _openSampleFile(self):
-        self.logger.debugv("Opening sample '%s' in app '%s'" % (self.name, self.app))
+        self.logger.debug("Opening sample '%s' in app '%s'" % (self.name, self.app))
         self._sampleFH = open(self.filePath, 'rU')
 
     def _closeSampleFile(self):
-        self.logger.debugv("Closing sample '%s' in app '%s'" % (self.name, self.app))
+        self.logger.debug("Closing sample '%s' in app '%s'" % (self.name, self.app))
         self._sampleFH.close()
 
     def loadSample(self):
@@ -329,11 +325,11 @@ class Sample(object):
             if self.sampleDict == None:
                 self._openSampleFile()
                 if self.breaker == self.config.breaker:
-                    self.logger.debugv("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
+                    self.logger.debug("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
                     self.sampleLines = self._sampleFH.readlines()
                 # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time instead of on every generation
                 else:
-                    self.logger.debugv("Non-default breaker '%s' detected for sample '%s' in app '%s'" \
+                    self.logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'" \
                                     % (self.breaker, self.name, self.app) ) 
 
                     sampleData = self._sampleFH.read()
@@ -355,7 +351,7 @@ class Sample(object):
                     searchpos = 0
                     breakerMatch = breakerRE.search(sampleData, searchpos)
                     while breakerMatch:
-                        self.logger.debugv("Breaker found at: %d, %d" % (breakerMatch.span()[0], breakerMatch.span()[1]))
+                        self.logger.debug("Breaker found at: %d, %d" % (breakerMatch.span()[0], breakerMatch.span()[1]))
                         # Ignore matches at the beginning of the file
                         if breakerMatch.span()[0] != 0:
                             self.sampleLines.append(sampleData[extractpos:breakerMatch.span()[0]])
@@ -374,7 +370,7 @@ class Sample(object):
         elif self.sampletype == 'csv':
             if self.sampleDict == None:
                 self._openSampleFile()
-                self.logger.debugv("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
+                self.logger.debug("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
                 self.sampleDict = [ ]
                 self.sampleLines = [ ]
                 # Fix to load large csv files, work with python 2.5 onwards
@@ -415,7 +411,3 @@ class Sample(object):
         else:
             self.loadSample()
             return self.sampleLines
-
-
-
-
