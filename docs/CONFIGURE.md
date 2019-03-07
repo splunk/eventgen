@@ -334,7 +334,7 @@ Tokens in the default generator can override the sample to allow dynamic content
     * Defaults to None.
 
 ###### Jinja
-The following optinos are only valid with the jinja generator
+The following options are only valid with the jinja generator.
 
     jinja_template_dir = <str> example: templates
     * directory name inside the current eventgen.conf dir where jinja templates can be located
