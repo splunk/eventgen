@@ -23,7 +23,7 @@ class Sample(object):
     name = None
     app = None
     filePath = None
-    
+
     # Options which are all valid for a sample
     disabled = None
     spoolDir = None
@@ -84,7 +84,7 @@ class Sample(object):
     queueable = None
     autotimestamp = None
 
-    
+
     # Internal fields
     sampleLines = None
     sampleDict = None
@@ -94,7 +94,7 @@ class Sample(object):
     _lastts = None
     _earliestParsed = None
     _latestParsed = None
-    
+
     def __init__(self, name):
         self.name = name
         self.tokens = [ ]
@@ -110,7 +110,7 @@ class Sample(object):
         filter_list = [ 'sampleLines', 'sampleDict' ]
         temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key not in filter_list ])
         return pprint.pformat(temp)
-        
+
     def __repr__(self):
         return self.__str__()
 
@@ -159,7 +159,6 @@ class Sample(object):
 
         ## Join path
         path = os.sep.join(path)
-
         return path
 
     # 9/2/15 Adding ability to pass in a token rather than using the tokens from the sample
@@ -217,7 +216,7 @@ class Sample(object):
         # if self.timestamp == None:
         #     self.timestamp = currentTime
         return currentTime
-    
+
     def saveState(self):
         """Saves state of all integer IDs of this sample to a file so when we restart we'll pick them up"""
         for token in self.tokens:
@@ -251,7 +250,7 @@ class Sample(object):
             else:
                 self.logger.error("Backfill time is not in the past.")
         return current_time
-    
+
     def get_time_difference(self, current_time, different_time, sign='-', time_unit='ms'):
         if time_unit == 'ms':
             return current_time + (int(sign + '1') * datetime.timedelta(milliseconds=int(different_time)))
@@ -334,7 +333,7 @@ class Sample(object):
                 # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time instead of on every generation
                 else:
                     self.logger.debugv("Non-default breaker '%s' detected for sample '%s' in app '%s'" \
-                                    % (self.breaker, self.name, self.app) ) 
+                                    % (self.breaker, self.name, self.app) )
 
                     sampleData = self._sampleFH.read()
                     self.sampleLines = [ ]
@@ -415,7 +414,3 @@ class Sample(object):
         else:
             self.loadSample()
             return self.sampleLines
-
-
-
-

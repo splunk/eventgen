@@ -40,8 +40,8 @@ class DefaultGenerator(GeneratorPlugin):
         # Otherwise fill count events into eventsDict or keep making copies of events out of sampleDict until
         # eventsDict is as big as count
         else:
-            # If count is -1, play the whole file, else grab a subset
-            if count == -1:
+            # If count is less than 1, play the whole file, else grab a subset
+            if count < 1:
                 count = len(self._sample.sampleDict)
             eventsDict = self._sample.sampleDict[0:count]
 
@@ -59,6 +59,7 @@ class DefaultGenerator(GeneratorPlugin):
                         eventsDict.append(nextEventToUse)
                 self.logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" % (self._sample.name, self._sample.app, len(eventsDict)))
 
+        self.logger.debug('Ready to build %d events to output queue', len(eventsDict))
         GeneratorPlugin.build_events(self, eventsDict, startTime, earliest, latest)
 
 def load():

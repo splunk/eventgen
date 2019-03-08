@@ -87,7 +87,7 @@ class Config(object):
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'integerid']
     validOutputModes = [ ]
-    _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength']
+    _intSettings = ['count', 'interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp', 'httpeventWaitResponse']
     _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps']
@@ -445,7 +445,8 @@ class Config(object):
                         if os.path.isdir(self.configfile):
                             s.sampleDir = os.path.join(self.configfile, 'samples')
                         else:
-                            s.sampleDir = os.path.join(os.getcwd(), 'samples')
+                            bundle_root_dir = os.path.dirname(os.path.dirname(self.configfile))
+                            s.sampleDir = os.path.join(bundle_root_dir, 'samples')
                     else:
                         s.sampleDir = os.path.join(os.getcwd(), 'samples')
                     if not os.path.exists(s.sampleDir):
