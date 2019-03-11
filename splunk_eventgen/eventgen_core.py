@@ -3,6 +3,7 @@
 from lib.eventgenconfig import Config
 from lib.eventgentimer import Timer
 from lib.eventgenexceptions import PluginNotLoaded, FailedLoadingPlugin
+from lib.outputcounter import OutputCounter
 import logging
 import logging.config
 import os
@@ -214,10 +215,19 @@ class EventGenerator(object):
         else:
             self.workerQueue = Queue(maxsize=500)
             worker_threads = workercount
-            for i in range(worker_threads):
-                worker = Thread(target=self._worker_do_work, args=(self.workerQueue, self.loggingQueue, ))
-                worker.setDaemon(True)
-                worker.start()
+            if hasattr(self.config, 'outputCounter') and self.config.outputCounter:
+                self.output_counters = []
+                for i in range(workercount):
+                    self.output_counters.append(OutputCounter())
+                for i in range(worker_threads):
+                    worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue, self.output_counters[i]))
+                    worker.setDaemon(True)
+                    worker.start()
+            else:
+                for i in range(worker_threads):
+                    worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue, None))
+                    worker.setDaemon(True)
+                    worker.start()
 
     def _create_generator_workers(self, workercount=20):
         if self.args.multiprocess:
@@ -325,6 +335,21 @@ class EventGenerator(object):
                 item = work_queue.get(timeout=10)
                 startTime = time.time()
                 item.run()
+                totalTime = time.time() - startTime
+                if totalTime > self.config.interval:
+                    self.logger.warning("work took longer than current interval, queue/threading throughput limitation")
+                work_queue.task_done()
+            except Empty:
+                pass
+            except Exception as e:
+                self.logger.exception(e)
+                raise e
+    def _generator_do_work(self, work_queue, logging_queue, output_counter=None):
+        while not self.stopping:
+            try:
+                item = work_queue.get(timeout=10)
+                startTime = time.time()
+                item.run(output_counter=output_counter)
                 totalTime = time.time() - startTime
                 if totalTime > self.config.interval:
                     self.logger.warning("work took longer than current interval, queue/threading throughput limitation")

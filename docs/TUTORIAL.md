@@ -167,6 +167,8 @@ Running Eventgen with above conf file and template would result in below output.
 With above template, Eventgen iterates through a loop of 50000 and generate the data according to the template.
 Note that the template is in a JSON format with a key "_raw" which is a raw string of data. It is necessary that you follow this pattern for Eventgen Jinja generator to work.
 
+> If you are using `SA-Eventgen` app rather than PyPi module, put `eventgen.conf` and template files into a directory structure as outlined in the [configuration](CONFIGURE.md).
+Default templates folder is `<bundle/samples/templates>`. You can also config absolute or relative path(relative to `eventgen.conf`) via `jinja_template_dir`.
 
 Let's look at how to extend an existing template.
 

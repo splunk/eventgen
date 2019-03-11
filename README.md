@@ -1,5 +1,10 @@
 # The Splunk Event Generator
 
+### Status
+[![CircleCI](https://circleci.com/gh/splunk/eventgen/tree/develop.svg?style=svg)](https://circleci.com/gh/splunk/eventgen/tree/develop)
+
+### Intro
+
 The Splunk Event Generator is a utility which allows its user to easily build real-time event generators.
 The current maintainers of this project are Brian Bingham (bbingham@splunk.com), Tony Lee (tonyl@splunk.com), and Jack Meixensperger (jackm@splunk.com).
 

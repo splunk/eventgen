@@ -51,11 +51,10 @@ test_helper:
 test_collection_cleanup:
 	@echo 'Collecting results'
 	#TODO: Should be paramaterized or generalized so that we don't need to add this here
-	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests_out.xml tests_out.xml || echo "no tests_out.xml"
-	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests_medium_results.xml tests_medium_results.xml || echo "no tests_medium_results.xml"
-	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests_large_results.xml tests_large_results.xml || echo "no tests_large_results.xml"
-	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests_xlarge_results.xml tests_xlarge_results.xml || echo "no tests_xlarge_results.xml"
-	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/functional_orca_test.log functional_orca_test.log || echo "no functional_orca_test.log"
+	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/test-reports/tests_small_results.xml tests/test-reports/tests_small_results.xml || echo "no tests_small_results.xml"
+	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/test-reports/tests_medium_results.xml tests/test-reports/tests_medium_results.xml || echo "no tests_medium_results.xml"
+	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/test-reports/tests_large_results.xml tests/test-reports/tests_large_results.xml || echo "no tests_large_results.xml"
+	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/test-reports/tests_xlarge_results.xml tests/test-reports/tests_xlarge_results.xml || echo "no tests_xlarge_results.xml"
 
 	@echo 'Stopping test container'
 	docker stop ${EVENTGEN_TEST_IMAGE} || true
@@ -64,6 +63,7 @@ clean:
 	rm *.spl || true
 	rm -rf dist *.egg-info *.log *.xml || true
 	rm splunk_eventgen/logs/*.log || true
+	rm tests/test-reports/*.xml || true
 	rm -rf .idea || true
 	rm -rf _book || true
 	rm -rf docs/_book || true
@@ -79,7 +79,7 @@ clean:
 	docker network rm eg_network_test || true
 
 setup_eventgen:
-	wget -O splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
+	curl -O splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
 
 eg_network:
 	docker network create --attachable --driver bridge eg_network || true

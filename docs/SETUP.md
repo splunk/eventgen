@@ -161,4 +161,12 @@ To start generating data, simply enable the SA-Eventgen modinput by going to Set
 If you wish you add your bundle so that the modinput can detect your package:
 Package your eventgen.conf and sample files into a directory structure as outlined in the [configuration](CONFIGURE.md). After that's done, copy/move the bundle into your `${SPLUNK_HOME}/etc/apps/` directory and restart Splunk. If you have specific samples enabled in your eventgen.conf, you should see data streaming into the specified Splunk index.
 
+Make sure the bundle app permission is global. You can config this in two ways:
+* Log in to Splunk Web and navigate to Apps > Manage Apps. Find the bundle app row and set the permission to 'Global' on the Sharing column.
+* Create a folder `metadata` under the bundle with file `default.meta` and add the following content:
+```
+[]
+export=system
+```
+
 ---

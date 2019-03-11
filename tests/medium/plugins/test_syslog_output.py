@@ -3,8 +3,7 @@
 
 import os
 import sys
-from mock import MagicMock, patch, call
-
+from mock import MagicMock, patch
 from splunk_eventgen.__main__ import parse_args
 from splunk_eventgen.eventgen_core import EventGenerator
 from splunk_eventgen.lib.plugins.output.syslogout import SyslogOutOutputPlugin

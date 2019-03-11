@@ -34,8 +34,7 @@ sampletype = raw
 interval = 60
 delay = 0
 timeMultiple = 1
-## 0 means all lines in sample
-count = 0
+count = -1
 ## earliest/latest = now means timestamp replacements default to current time
 earliest = now
 latest = now
@@ -54,6 +53,7 @@ source = eventgen
 sourcetype = eventgen
 host = 127.0.0.1
 outputWorkers = 1
+generatorWorkers = 1
 generator = default
 rater = config
 timeField = _raw
@@ -63,6 +63,7 @@ maxIntervalsBeforeFlush = 3
 maxQueueLength = 0
 autotimestamps = [ <jsonlist> ]
 autotimestamp = false
+outputCounter = false
 
 
 [<sample file name>]
@@ -84,6 +85,7 @@ autotimestamp = false
         * rated -> float[<start.numzerosforprecision>:<end.numzerosforprecision>]
         * file -> <replacment file name>
         * mvfile -> <replacement file name, expects CSV file>:<column number>
+        * seqfile -> <replacment file name> OR <replacement file name, expects CSV file>:<column number>
         
 disabled = true | false
     * Like what it looks like.  Will disable event generation for this sample.
@@ -114,10 +116,11 @@ outputWorkers = <number of worker threads>
 outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout
     * Specifies how to output log data.  Modinput is default.
     * If setting spool, should set spoolDir
-    * If setting file, should set logFile
+    * If setting file, should set fileName
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser and splunkPassword if not Splunk embedded
     * If setting s2s, should set splunkHost and splunkPort
     * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort
+    * If setting httpevent, should set httpeventServers
 
 syslogDestinationHost = <host>
     * Defaults to 127.0.0.1
@@ -230,7 +233,11 @@ maxQueueLength = <maximum items before flushing the queue>
     * Number of items before flushing the output queue
     * Default is per outputMode specific    
 
-
+outputCounter = true | false
+    * Default is false. Use outputCounter to record your output rate so that you can get the total volume, 
+    * total count and real-time throughput of outputer from "status" api. This setting may 
+    * cause 1.8% performance down. Only work on thread mode.
+    
 ###############################
 ## EVENT GENERATION SETTINGS ##
 ###############################
@@ -239,6 +246,10 @@ generator = default | <plugin>
     * Specifies the generator plugin to use.  Default generator will give behavior of eventgen pre-3.0
       which exclusively uses settings in eventgen.conf to control behavior.  Generators in 3.0 are now
       pluggable python modules which can be custom code.
+
+generatorWorkers = <number of worker threads>
+    * Specifies how many threads or processes to stand up to handle generation
+    * Defaults to 1
 
 rater = config | <plugin>
     * Specifies which rater plugin to use.  Default rater uses hourOfDayRate, etc, settings to specify
@@ -267,11 +278,15 @@ delay = <integer>
     * Primarily this is used so we can stagger sets of samples which similar but slightly different data
     * Defaults to 0 which is disabled.
     
+sequentialTimestamp = <boolean>
+    * Only valid on count mode. (perDayVolume mode is not work)
+    * Timestamp will be set from your "earliest" time to "latest" time sequentiallly. For example, if "earliest=-1d", "latest=now" and 
+      "count=86400", then you can see all events have different timestamp.
+    
 autotimestamp = <boolean>
     * Will enable autotimestamp feature which detects most common forms of timestamps in your samples with no configuration.
 
 timeMultiple = <float>
-    * Only valid in mode = replay
     * Will slow down the replay of events by <float> factor.  For example, allows a 10 minute sample
       to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6.
       By the converse, make timeMultiple 0.5 will make the events run twice as fast.
@@ -306,8 +321,8 @@ backfillSearchUrl = <url>
     
 count = <integer>
     * Maximum number of events to generate per sample file
-    * 0 means replay the entire sample.
-    * Defaults to 0.
+    * -1 means replay the entire sample.
+    * Defaults to -1.
 
 perDayVolume = <float>
     * This is used in place of count.  The perDayVolume is a size supplied in GB per Day.  This value will allow
@@ -316,7 +331,7 @@ perDayVolume = <float>
 
 bundlelines = true | false
     * For outside use cases where you need to take all the lines in a sample file and pretend they are
-      one event, but count = 0 will not work because you want to replay all the lines more than once.
+      one event.
       Also, please note you can also use breaker=\r*\n\r*\n to break the sample file into multi-line
       transactions that would work better than this as well.  This is also useful where you want to bring
       in sampletype = csv and bundle that multiple times.
@@ -386,7 +401,19 @@ latest = <time-str>
     * Specifies the latest random time for generated events.
     * If this value is an absolute time, use the dispatch.time_format to format the value.
     * Defaults to now.
-    
+
+#############################
+## JINJA TEMPLATE SETTINGS ##
+#############################
+
+jinja_template_dir = <str>
+    * directory name inside the current eventgen.conf dir where jinja templates can be located.
+    * default template directory is <bundle>/samples/templates if not defined.
+jinja_target_template = <str>
+    * root template to load for all sample generation.
+jinja_variables = <json>
+    * json value that contains a dict of kv pairs to pass as options to load inside of the jinja templating engine.
+
 ################################
 ## TOKEN REPLACEMENT SETTINGS ##
 ################################

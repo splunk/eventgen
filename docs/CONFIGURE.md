@@ -281,7 +281,7 @@ Tokens in the default generator can override the sample to allow dynamic content
     * If one or more capture groups are present the replacement will be performed on group 1.
     * Defaults to None.
 ---    
-    token.<n>.replacementType = static | timestamp | replaytimestamp | random | rated | file | mvfile | integerid
+    token.<n>.replacementType = static | timestamp | replaytimestamp | random | rated | file | mvfile | seqfile | integerid
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For static, the token will be replaced with the value specified in the replacement setting.
     * For timestamp, the token will be replaced with the strptime specified in the replacement setting
@@ -298,6 +298,7 @@ Tokens in the default generator can override the sample to allow dynamic content
       rated by hourOfDayRate and dayOfWeekRate.
     * For file, the token will be replaced with a random value retrieved from a file specified in the replacement setting.
     * For mvfile, the token will be replaced with a random value of a column retrieved from a file specified in the replacement setting.  Multiple files can reference the same source file and receive different columns from the same random line.
+    * For seqfile, the token will be replaced with a value that retrieved from (a column of) file sequentially.
     * For integerid, will use an incrementing integer as the replacement.
     * Defaults to None.
 ---    
@@ -328,12 +329,12 @@ Tokens in the default generator can override the sample to allow dynamic content
       * Replacement file name should be a fully qualified path (i.e. $SPLUNK_HOME/etc/apps/windows/samples/users.list).
       * Windows separators should contain double forward slashes '\\' (i.e. $SPLUNK_HOME\\etc\\apps\\windows\\samples\\users.list).
       * Unix separators will work on Windows and vice-versa.
-    * Column numbers in mvfile references are indexed at 1, meaning the first column is column 1, not 0.
+    * Column numbers in mvfile or seqfile references are indexed at 1, meaning the first column is column 1, not 0.
     * <integer> used as the seed for integerid.
     * Defaults to None.
 
 ###### Jinja
-The following optinos are only valid with the jinja generator
+The following options are only valid with the jinja generator.
 
     jinja_template_dir = <str> example: templates
     * directory name inside the current eventgen.conf dir where jinja templates can be located
@@ -388,7 +389,7 @@ specifically be supported by all plugins.  Plugins that write to files like spoo
       * Replacement file name should be a fully qualified path (i.e. $SPLUNK_HOME/etc/apps/windows/samples/users.list).
       * Windows separators should contain double forward slashes '\\' (i.e. $SPLUNK_HOME\\etc\\apps\\windows\\samples\\users.list).
       * Unix separators will work on Windows and vice-versa.
-    * Column numbers in mvfile references are indexed at 1, meaning the first column is column 1, not 0.
+    * Column numbers in mvfile or seqfile references are indexed at 1, meaning the first column is column 1, not 0.
     * Defaults to None.
 ---    
     hostRegex = <hostRegex>

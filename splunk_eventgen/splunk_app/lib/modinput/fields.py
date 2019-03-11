@@ -437,12 +437,14 @@ class VerbosityField(Field):
     def to_python(self, value):
 
         Field.to_python(self, value)
+        value = int(value)
 
         if value is not None:
-            if int(value) % 10 == 0:
-                return int(value)
+            if value in [10, 20, 30, 40, 50]:
+                return value
             else:
-                raise FieldValidationException('Invalid value provided for verbosity')
+                raise FieldValidationException('Invalid value provided for verbosity, must be one of the following: ' +
+                                               '{10, 20, 30, 40, 50}')
         else:
             return None
 

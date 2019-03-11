@@ -20,6 +20,7 @@ class Output(object):
         self.MAXQUEUELENGTH = sample.maxQueueLength
         self._queue = []
         self._setup_logging()
+        self.output_counter = None
 
 
     def __str__(self):
@@ -49,6 +50,9 @@ class Output(object):
     def _update_outputqueue(self, queue):
         self.outputQueue = queue
 
+    def setOutputCounter(self, output_counter):
+        self.output_counter = output_counter
+
     def updateConfig(self, config):
         self.config = config
         #TODO: This is where the actual output plugin is loaded, and pushed out.  This should be handled way better...
@@ -71,10 +75,14 @@ class Output(object):
         """
         Accepts list, msglist, and adds to the output buffer.  If the buffer exceeds MAXQUEUELENGTH, then flush.
         """
-        self._queue.extend(msglist)
-
-        if len(self._queue) >= self.MAXQUEUELENGTH:
-            self.flush()
+        try:
+            self._queue.extend(msglist)
+            if len(self._queue) >= self.MAXQUEUELENGTH:
+                self.flush()
+        except Exception as e:
+            # We don't want to exit if there's a single bad event
+            self.logger.error("Caught Exception {} while appending/flushing output queue. There may be a ".format(e) +
+                              "faulty event or token replacement in your sample.")
 
     def flush(self, endOfInterval=False):
         """
@@ -102,7 +110,7 @@ class Output(object):
             q = self._queue
             self.logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue = []
-            outputer = self.outputPlugin(self._sample)
+            outputer = self.outputPlugin(self._sample, self.output_counter)
             outputer.updateConfig(self.config)
             outputer.set_events(q)
             # When an outputQueue is used, it needs to run in a single threaded nature which requires to be put back into the outputqueue so a single thread worker can execute it.

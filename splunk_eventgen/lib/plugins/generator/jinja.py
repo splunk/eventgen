@@ -1,15 +1,17 @@
 from __future__ import division
-from generatorplugin import GeneratorPlugin
-import datetime, time, os
+import datetime
+import time
+import os
+import random
 try:
     import ujson as json
 except:
     import json as json
-
 from jinja2 import nodes
 from jinja2.ext import Extension
 
-import random
+from generatorplugin import GeneratorPlugin
+
 
 class CantFindTemplate(Exception):
 
@@ -21,6 +23,7 @@ class CantFindTemplate(Exception):
         self.msg = msg
         super(CantFindTemplate, self).__init__(msg)
 
+
 class CantProcessTemplate(Exception):
 
     def __init__(self, msg):
@@ -31,6 +34,7 @@ class CantProcessTemplate(Exception):
         self.msg = msg
         super(CantProcessTemplate, self).__init__(msg)
 
+
 class JinjaTime(Extension):
     tags = set(['time_now', 'time_slice', 'time_delta', 'time_backfill'])
 
@@ -38,7 +42,7 @@ class JinjaTime(Extension):
     def _get_time_slice(earliest, latest, slices, target_slice, slice_type="lower"):
         """
         This method will take a time block bounded by "earliest and latest", and a slice.  It'll then divide the time
-        in sections and return a tuple with 3 arugments, the lower bound, the higher bound, and the target in the middle.
+        in sections and return a tuple with 3 arguments, the lower bound, the higher bound, and the target in the middle.
         :param earliest (in epoch):
         :param latest (in epoch):
         :param slices:
@@ -79,15 +83,15 @@ class JinjaTime(Extension):
         time_now = self._time_now_epoch()
         return self._convert_epoch_formatted(time_now, date_format)
 
-    def _time_now_epoch(self):
+    def _time_now_epoch(self, date_format=None):
         time_now = time.mktime(time.localtime())
         return time_now
 
-    def _time_slice_formatted(self,earliest, latest, count, slices, date_format='%Y-%m-%dT%H:%M:%S%z'):
+    def _time_slice_formatted(self, earliest, latest, count, slices, date_format='%Y-%m-%dT%H:%M:%S%z'):
         target_time = self._time_slice_epoch(earliest, latest, count, slices)
         return self._convert_epoch_formatted(target_time, date_format)
 
-    def _time_slice_epoch(self, earliest, latest, count, slices):
+    def _time_slice_epoch(self, earliest, latest, count, slices, date_format=None):
         slice_start, slice_end, slice_size, slice_time = \
             self._get_time_slice(earliest=earliest, latest=latest, slices=slices, target_slice=count, slice_type="lower")
         return slice_time
@@ -173,7 +177,7 @@ class JinjaGenerator(GeneratorPlugin):
             raise Exception("Unable to process target count style: %s".format(self.jinja_count_type))
 
     def gen(self, count, earliest, latest, samplename=None):
-        #TODO: Figure out how to gracefully tell generator plugins to exit when there is an error.
+        # TODO: Figure out how to gracefully tell generator plugins to exit when there is an error.
         try:
             from jinja2 import Environment, FileSystemLoader
             self.target_count = count
@@ -186,20 +190,34 @@ class JinjaGenerator(GeneratorPlugin):
                 if self._sample.jinja_count_type in ["line_count", "cycles", "perDayVolume"]:
                     self.jinja_count_type = self._sample.jinja_count_type
             startTime = datetime.datetime.now()
-            working_dir, working_config_file = os.path.split(self.config.configfile)
+
+            # if eventgen is running as Splunk app the configfile is None
+            if self.config.configfile:
+                working_dir, working_config_file = os.path.split(self.config.configfile)
+            else:
+                splunk_home = os.environ["SPLUNK_HOME"]
+                app_name = getattr(self._sample, 'app', 'SA-Eventgen')
+                working_dir = os.path.join(splunk_home, 'etc', 'apps', app_name, 'default')
+
             if not hasattr(self._sample, "jinja_template_dir"):
-                template_dir = "templates"
+                template_dir = os.path.join(os.path.dirname(working_dir), 'samples', 'templates')
             else:
                 template_dir = self._sample.jinja_template_dir
-            target_template_dir = os.path.join(working_dir, template_dir)
+
+            if not os.path.isabs(template_dir):
+                target_template_dir = os.path.join(working_dir, template_dir)
+            else:
+                target_template_dir = template_dir
+
             if not hasattr(self._sample, "jinja_target_template"):
                 raise CantFindTemplate("Template to load not specified in eventgen conf for stanza.  Skipping Stanza")
             jinja_env = Environment(
-                loader=FileSystemLoader([target_template_dir, working_dir, template_dir], encoding='utf-8',  followlinks=False),
-                extensions=['jinja2.ext.do', 'jinja2.ext.with_','jinja2.ext.loopcontrols', JinjaTime],
+                loader=FileSystemLoader([target_template_dir, working_dir, template_dir], encoding='utf-8', followlinks=False),
+                extensions=['jinja2.ext.do', 'jinja2.ext.with_', 'jinja2.ext.loopcontrols', JinjaTime],
                 line_statement_prefix="#",
                 line_comment_prefix="##"
             )
+
             jinja_loaded_template = jinja_env.get_template(str(self._sample.jinja_target_template))
             if hasattr(self._sample, 'jinja_variables'):
                 jinja_loaded_vars = json.loads(self._sample.jinja_variables)
@@ -268,6 +286,7 @@ class JinjaGenerator(GeneratorPlugin):
         except Exception as e:
             self.logger.exception(e)
             return 1
+
 
 def load():
     return JinjaGenerator

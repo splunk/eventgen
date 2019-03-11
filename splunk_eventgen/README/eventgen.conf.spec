@@ -388,7 +388,19 @@ latest = <time-str>
     * Specifies the latest random time for generated events.
     * If this value is an absolute time, use the dispatch.time_format to format the value.
     * Defaults to now.
-    
+
+#############################
+## JINJA TEMPLATE SETTINGS ##
+#############################
+
+jinja_template_dir = <str>
+    * directory name inside the current eventgen.conf dir where jinja templates can be located.
+    * default template directory is <bundle>/samples/templates if not defined.
+jinja_target_template = <str>
+    * root template to load for all sample generation.
+jinja_variables = <json>
+    * json value that contains a dict of kv pairs to pass as options to load inside of the jinja templating engine.
+
 ################################
 ## TOKEN REPLACEMENT SETTINGS ##
 ################################
@@ -434,8 +446,7 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid 
       and <end> is a number greater than 0 and greater than or equal to <start>.  If rated,
       will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For float[<start>:<end>], the token will be replaced with a random float between
-      start and end values where <start> is a number greater than 0
-      and <end> is a number greater than 0 and greater than or equal to <start>.
+      start and end values where <end> is a number greater than or equal to <start>.
       For floating point numbers, precision will be based off the precision specified
       in <start>.  For example, if we specify 1.0, precision will be one digit, if we specify
       1.0000, precision will be four digits. If rated, will be multiplied times hourOfDayRate and dayOfWeekRate.

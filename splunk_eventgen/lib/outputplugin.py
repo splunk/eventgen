@@ -6,15 +6,15 @@ from collections import deque
 class OutputPlugin(object):
     name = 'OutputPlugin'
 
-    def __init__(self, sample):
+    def __init__(self, sample, output_counter=None):
         self._app = sample.app
         self._sample = sample
         self._outputMode = sample.outputMode
         self.events = None
         self._setup_logging()
         self.logger.debug("Starting OutputPlugin for sample '%s' with output '%s'" % (self._sample.name, self._sample.outputMode))
-
         self._queue = deque([])
+        self.output_counter = output_counter
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
@@ -48,7 +48,9 @@ class OutputPlugin(object):
 
     def run(self):
         if self.events:
-            self.flush(q=self.events)
+            self.flush(self.events)
+        if self.output_counter is not None:
+            self.output_counter.collect(len(self.events), sum([len(e['_raw']) for e in self.events]))
         self.events = None
 
 

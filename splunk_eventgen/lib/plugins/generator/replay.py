@@ -68,7 +68,7 @@ class ReplayGenerator(GeneratorPlugin):
         self.backfill_time = self._sample.get_backfill_time(self.current_time)
 
         if not self._sample.backfill or self._sample.backfilldone:
-            self.backfill_time = EventgenTimestamp.get_random_timestamp(earliest, latest, self._sample.earliest, self._sample.latest)
+            self.backfill_time = EventgenTimestamp.get_random_timestamp_backfill(earliest, latest, self._sample.earliest, self._sample.latest)
 
         for line in self._sample.get_loaded_sample():
             # Add newline to a raw line if necessary

@@ -1,5 +1,5 @@
 import logging
-import datetime, time
+import time
 import copy
 from timeparser import timeParserTimeMath
 from Queue import Full
@@ -20,8 +20,6 @@ class Timer(object):
     Non-Queueable plugins, the Timer class calls the generator method of the plugin directly, tracks the amount of time
     the plugin takes to generate and sleeps the remaining interval before calling generate again.
     """
-
-
     time = None
     countdown = None
 
@@ -39,6 +37,7 @@ class Timer(object):
         self.time = time
         self.stopping = False
         self.countdown = 0
+        self.interval = getattr(self.sample, "interval", config.interval)
         #enable the logger
         self._setup_logging()
         self.logger.debug('Initializing timer for %s' % sample.name if sample is not None else "None")
@@ -48,6 +47,13 @@ class Timer(object):
             self.rater = rater_class(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
             self.outputPlugin = self.config.getPlugin('output.' + self.sample.outputMode, self.sample)
+            if self.sample.timeMultiple < 0:
+                self.logger.error("Invalid setting for timeMultiple: {}, value should be positive".format(
+                                  self.sample.timeMultiple))
+            elif self.sample.timeMultiple != 1:
+                self.interval = self.sample.interval * self.sample.timeMultiple
+                self.logger.debug("Adjusting interval {} with timeMultiple {}, new interval: {}".format(
+                                  self.sample.interval, self.sample.timeMultiple, self.interval))
         self.logger.info("Start '%s' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
 
     # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
@@ -63,6 +69,15 @@ class Timer(object):
 
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen')
+
+    def predict_event_size(self):
+        try:
+            self.sample.loadSample()
+            self.logger.debug("File sample loaded successfully.")
+        except TypeError:
+            self.logger.error("Error loading sample file for sample '%s'" % self.sample.name)
+            return
+        return len(self.sample.sampleDict[0]['_raw'])
 
     def run(self):
         """
@@ -83,11 +98,13 @@ class Timer(object):
         if self.sample.delay > 0:
             self.logger.info("Sample set to delay %s, sleeping." % self.sample.delay)
             time.sleep(self.sample.delay)
-            
+
         self.logger.debug("Timer creating plugin for '%s'" % self.sample.name)
 
         self.executions = 0
         end = False
+        previous_count_left = 0
+        raw_event_size = self.predict_event_size()
         while not end:
             # Need to be able to stop threads by the main thread or this thread. self.config will stop all threads
             # referenced in the config object, while, self.stopping will only stop this one.
@@ -116,7 +133,7 @@ class Timer(object):
                                                           ret=realtime)
                     while backfillearliest < realtime:
                         et = backfillearliest
-                        lt = timeParserTimeMath(plusminus="+", num=self.sample.interval, unit="s", ret=et)
+                        lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
                         genPlugin = self.generatorPlugin(sample=self.sample)
                         # need to make sure we set the queue right if we're using multiprocessing or thread modes
                         genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
@@ -131,7 +148,21 @@ class Timer(object):
                     self.sample.backfilldone = True
                 else:
                     # 12/15/13 CS Moving the rating to a separate plugin architecture
-                    count = self.rater.rate()
+                    # Save previous interval count left to avoid perdayvolumegenerator drop small tasks
+                    if self.sample.generator == 'perdayvolumegenerator':
+                        count = self.rater.rate() + previous_count_left
+                        if count < raw_event_size and count > 0:
+                            self.logger.info(
+                                "current interval size is {}, which is smaller than a raw event size {}. wait for the next turn.".format(
+                                    count, raw_event_size))
+                            previous_count_left = count
+                            self.countdown = self.interval
+                            self.executions += 1
+                            continue
+                        else:
+                            previous_count_left = 0
+                    else:
+                        count = self.rater.rate()
 
                     et = self.sample.earliestTime()
                     lt = self.sample.latestTime()
@@ -166,15 +197,15 @@ class Timer(object):
                         pass
 
                 # Sleep until we're supposed to wake up and generate more events
-                self.countdown = self.sample.interval
+                self.countdown = self.interval
                 self.executions += 1
 
                 # 8/20/15 CS Adding support for ending generation at a certain time
-                if self.end != None:
+                if self.end:
                     # 3/16/16 CS Adding support for ending on a number of executions instead of time
                     # Should be fine with storing state in this sample object since each sample has it's own unique
                     # timer thread
-                    if self.endts == None:
+                    if not self.endts:
                         if self.executions >= int(self.end):
                             self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(self.end), self.sample.name))
                             self.stopping = True
