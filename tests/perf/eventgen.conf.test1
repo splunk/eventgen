@@ -1,16 +1,13 @@
-[blahblah]
+[windbag]
 sampleDir = splunk_eventgen/samples
-interval = 5
 generator = windbag
-outputMode = stdout
-#httpeventServers = {"servers":[{ "protocol":"https", "address":"<enter-ip-address>", "port":"<enter-port>", "key":"<enter-http-key>"}]}
-#index = eg
-#sourcetype = eventgen-6
-#source = eg6.log
+outputMode = httpevent
+httpeventServers = {"servers":[{ "protocol":"https", "address":"<enter-ip-address>", "port":"<enter-port>", "key":"<enter-http-key>"}]}
+index = eg
+sourcetype = eventgen-6
+source = eg6.log
 host = localhost
-#threading = process
-end = 0
-count = 10
+threading = process
 
 # Increase the perDayVolume until the output queue backs up
-#perDayVolume = <GB/day>
+perDayVolume = <GB/day>
