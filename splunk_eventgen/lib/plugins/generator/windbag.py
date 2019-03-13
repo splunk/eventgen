@@ -1,7 +1,6 @@
 from __future__ import division
 from generatorplugin import GeneratorPlugin
-import logging
-import datetime, time
+import datetime
 from datetime import timedelta
 
 class WindbagGenerator(GeneratorPlugin):
