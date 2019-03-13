@@ -323,6 +323,7 @@ count = <integer>
     * Maximum number of events to generate per sample file
     * -1 means replay the entire sample.
     * Defaults to -1.
+    * When used with the windbag generator, the event count is decided by the sample size
 
 perDayVolume = <float>
     * This is used in place of count.  The perDayVolume is a size supplied in GB per Day.  This value will allow
