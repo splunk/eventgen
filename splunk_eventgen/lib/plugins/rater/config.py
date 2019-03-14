@@ -44,12 +44,10 @@ class ConfigRater(object):
 
     def rate(self):
         self._sample.count = int(self._sample.count)
-        if self._sample.count == -1:
-            # Load the windbag sample by default if we don't have any sample events, allows for a valid count
-            if not self._sample.sampleDict and self._sample.generator == 'windbag':
-                self._sample.name = 'windbag'
-                self._sample.filePath = os.path.join(self._sample.sampleDir, self._sample.name)
-                self._sample.loadSample()
+        # Let generators handle infinite count for themselves
+        if self._sample.count == -1 and self._sample.generator == 'default':
+            if not self._sample.sampleDict:
+                self.logger.error('No sample found for default generator, cannot generate events')
             self._sample.count = len(self._sample.sampleDict)
         self._generatorWorkers = int(self._generatorWorkers)
         count = self._sample.count/self._generatorWorkers

@@ -8,7 +8,9 @@ class WindbagGenerator(GeneratorPlugin):
         GeneratorPlugin.__init__(self, sample)
 
     def gen(self, count, earliest, latest, samplename=None):
-        # print type(latest - earliest).total_seconds()
+        if count < 0:
+            self.logger.warn('count=-1 specified for windbag generator, defaulting to 60 events/interval')
+            count = 60
         time_interval = timedelta.total_seconds((latest - earliest)) / count
         for i in xrange(count):
             current_time_object = earliest + datetime.timedelta(0, time_interval*(i+1))
