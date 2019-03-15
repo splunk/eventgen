@@ -1,5 +1,10 @@
 6.3.4:
-- New release notes
+- Documentation cleanup
+- Jinja template bugfix in app
+- Implementation of 'timeMultiple’ option
+- Templates for bugs/feature requests
+- Fixed Jinja test configuration stanzas
+- Default behavior for 'count' edge cases
 
 6.3.3:
 - Added performance metrics compared to Eventgen 5.x
@@ -30,3 +35,13 @@
 - Documentation upgrade
 - Code refactoring for version unification
 - Logging improvements
+
+6.2.1:
+- Fixing SA-Eventgen Dashboard and log searching
+- Improving internal logging and fixing splunkd logging issue
+- Fixing timestamping in default generator
+- Fixing custom plugin integration
+- Fixing SA-Eventgen app settings
+- Supporting Eventgen 5 backward compatibility with additional features
+- Better modinput process management
+- Minor Bugfixes with various customer cases

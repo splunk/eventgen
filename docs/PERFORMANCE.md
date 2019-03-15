@@ -89,5 +89,3 @@ As a result, for a eventgen cluster with one server and one controller, we found
 # Removing the bottleneck
 
 In this architecture, the primary bottleneck is serializing and deserializing the data between processes.  We added the reduce step of the outputqueue primarily to handle modular input and file outputs where we needed a limited number of things touching a file or outputting to stdout.  Where we can parallelize this work, we can remove the majority of the CPU bottleneck of passing data around between processes.
-
-For this reason, in July of 2014, we added a config option to disable using the outputqueue. Setting useOutputQueue to false or using `--disableOutputQueue` on the command line will output data directly from each GeneratorWorker rather than forcing the data back through the output queue.
