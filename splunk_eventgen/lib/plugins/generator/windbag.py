@@ -9,7 +9,7 @@ class WindbagGenerator(GeneratorPlugin):
 
     def gen(self, count, earliest, latest, samplename=None):
         if count < 0:
-            self.logger.warn('count=-1 specified for windbag generator, defaulting to 60 events/interval')
+            self.logger.warn('Sample size not found for count=-1 and generator=windbag, defaulting to count=60')
             count = 60
         time_interval = timedelta.total_seconds((latest - earliest)) / count
         for i in xrange(count):
