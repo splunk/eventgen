@@ -320,9 +320,10 @@ backfillSearchUrl = <url>
       in a cluster.
     
 count = <integer>
-    * Maximum number of events to generate per sample file
+    * Maximum number of events to generate per sample file (only used with sample mode).
     * -1 means replay the entire sample.
     * Defaults to -1.
+    * When count is -1 and the default generator is used, count depends on the size of the sample.
 
 perDayVolume = <float>
     * This is used in place of count.  The perDayVolume is a size supplied in GB per Day.  This value will allow
