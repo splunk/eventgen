@@ -3,7 +3,7 @@
 ```
 # Copyright (C) 2005-2018 Splunk Inc. All Rights Reserved.
 #
-# This file contains all possible options for an eventgen.conf file.  Use this file to configure 
+# This file contains all possible options for an eventgen.conf file. Use this file to configure
 # Splunk's event generation properties.
 #
 # To generate events place an eventgen.conf in $SPLUNK_HOME/etc/apps/<app>/local/. 
@@ -12,7 +12,7 @@
 # To learn more about configuration files (including precedence) please see the documentation 
 # located at http://www.splunk.com/base/Documentation/latest/Admin/Aboutconfigurationfiles
 #
-# CAUTION:  You can drastically affect your Splunk installation by changing these settings.  
+# CAUTION: You can drastically affect your Splunk installation by changing these settings.
 # Consult technical support (http://www.splunk.com/page/submit_issue) if you are not sure how 
 # to configure this file.
 #
@@ -88,13 +88,13 @@ outputCounter = false
         * seqfile -> <replacment file name> OR <replacement file name, expects CSV file>:<column number>
         
 disabled = true | false
-    * Like what it looks like.  Will disable event generation for this sample.
+    * Like what it looks like. Will disable event generation for this sample.
 
 sampleDir = <dir>
     * Set a different directory to look for samples in
 
 threading = thread | process
-    * Configurable threading model.  Process uses multiprocessing.Process in Python to get around issues with the GIL.
+    * Configurable threading model. Process uses multiprocessing.Process in Python to get around issues with the GIL.
     * Defaults to thread
 
 profiler = true | false
@@ -102,7 +102,8 @@ profiler = true | false
     * Defaults to false
 
 useOutputQueue = true | false
-    * Disable the use of the output Queue.  The output queue functions as a reduce step when you need to maintain a single thread or a limited number of threads outputting data, for instance if you're outputting to a file or to stdout/modular input.  Defaults to true.  If you can multithread output, for example with splunkstream or s2s type outputs, setting this to false will give an order of magnitude or better performance improvement.
+    * Disable the use of the output Queue. The output queue functions as a reduce step when you need to maintain a single thread or a limited number of threads outputting data, for instance if you're outputting to a file or to stdout/modular input.
+    * Default value depends on the output plugin being used.
         
 #############################
 ## OUTPUT RELATED SETTINGS ##
@@ -114,7 +115,7 @@ outputWorkers = <number of worker threads>
     * Defaults to 1
 
 outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout
-    * Specifies how to output log data.  Modinput is default.
+    * Specifies how to output log data. Modinput is default.
     * If setting spool, should set spoolDir
     * If setting file, should set fileName
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod, splunkUser and splunkPassword if not Splunk embedded
@@ -154,7 +155,7 @@ httpeventMaxPayloadSize = <int>
     * the max payload size that is currently configured for HTTP event
 
 httpeventWaitResponse = <bool>
-    * wait for all responses on a generator output before returning the outputter.  Defaults to true.
+    * wait for all responses on a generator output before returning the outputter. Defaults to true.
 
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.
@@ -171,7 +172,7 @@ spoolFile = <spool file name>
 fileName = </path/to/file>
     * Should set the full path
     * Uses a rotating file handler which will rotate the file at a certain size, by default 10 megs
-      and will by default only save 5 files.  See fileMaxBytes and fileBackupFiles
+      and will by default only save 5 files. See fileMaxBytes and fileBackupFiles
       
 fileMaxBytes = <size in bytes>
     * Will rotate a file output at this given size
@@ -183,7 +184,7 @@ fileBackupFiles = <number of files>
     
 splunkHost = <host> | <json list of hosts>
     * If you specify just one host, will only POST to that host, if you specify a JSON list,
-      it will POST to multiple hosts in a random distribution.  This allows us from one eventgen to
+      it will POST to multiple hosts in a random distribution. This allows us from one eventgen to
       feed an entire cluster of Splunk indexers without needing forwarders.
     * JSON list should look like [ "host.name", "host2.name" ]
     
@@ -207,11 +208,11 @@ accessToken = <accesstoken>
     
 index = <index>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
-    * Splunk index to write events to.  Defaults to main if none specified.
+    * Splunk index to write events to. Defaults to main if none specified.
     
 source = <source>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
-    * Set event source in Splunk to <source>.  Defaults to 'eventgen' if none specified.
+    * Set event source in Splunk to <source>. Defaults to 'eventgen' if none specified.
     
 sourcetype = <sourcetype>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
@@ -219,11 +220,11 @@ sourcetype = <sourcetype>
     
 host = <host>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
-    * Set event host in Splunk to <host>.  Defaults to 127.0.0.1 if none specified.
+    * Set event host in Splunk to <host>. Defaults to 127.0.0.1 if none specified.
     
 hostRegex = <hostRegex>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
-    * Allows setting the event host via a regex from the actual event itself.  Only used if host not set.
+    * Allows setting the event host via a regex from the actual event itself. Only used if host not set.
     
 maxIntervalsBeforeFlush = <intervals before flushing queue>
     * Number of intervals before flushing the queue if the queue hasn't filled to maxQueueLength
@@ -243,8 +244,8 @@ outputCounter = true | false
 ###############################
 
 generator = default | <plugin>
-    * Specifies the generator plugin to use.  Default generator will give behavior of eventgen pre-3.0
-      which exclusively uses settings in eventgen.conf to control behavior.  Generators in 3.0 are now
+    * Specifies the generator plugin to use. Default generator will give behavior of eventgen pre-3.0
+      which exclusively uses settings in eventgen.conf to control behavior. Generators in 3.0 are now
       pluggable python modules which can be custom code.
 
 generatorWorkers = <number of worker threads>
@@ -252,8 +253,8 @@ generatorWorkers = <number of worker threads>
     * Defaults to 1
 
 rater = config | <plugin>
-    * Specifies which rater plugin to use.  Default rater uses hourOfDayRate, etc, settings to specify
-      how to affect the count of events being generated.  Raters in 3.0 are now pluggable python modules.
+    * Specifies which rater plugin to use. Default rater uses hourOfDayRate, etc, settings to specify
+      how to affect the count of events being generated. Raters in 3.0 are now pluggable python modules.
 
 mode = sample | replay
     * Default is sample, which will generate count (+/- rating) events every configured interval
@@ -263,7 +264,7 @@ sampletype = raw | csv
     * Raw are raw events (default)
     * CSV are from an outputcsv or export from Splunk.
       CSV allows you to override output fields for the sample like host, index, source and sourcetype
-      from the CSV file.  Will read the raw events from a field called _raw.  Assumes the CSV file has
+      from the CSV file. Will read the raw events from a field called _raw. Assumes the CSV file has
       a header row which defines field names.
       OVERRIDES FOR DEFAULT FIELDS WILL ONLY WITH WITH outputMode SPLUNKSTREAM.
 
@@ -287,13 +288,13 @@ autotimestamp = <boolean>
     * Will enable autotimestamp feature which detects most common forms of timestamps in your samples with no configuration.
 
 timeMultiple = <float>
-    * Will slow down the replay of events by <float> factor.  For example, allows a 10 minute sample
+    * Will slow down the replay of events by <float> factor. For example, allows a 10 minute sample
       to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6.
       By the converse, make timeMultiple 0.5 will make the events run twice as fast.
 
 timeField = <field name>
     * Only valid in mode = replay
-    * Will select the field to find the timestamp in.  In many cases, time will come from a different
+    * Will select the field to find the timestamp in. In many cases, time will come from a different
       field in the CSV.
 
 timezone = local | <integer>
@@ -326,7 +327,7 @@ count = <integer>
     * When count is -1 and the default generator is used, count depends on the size of the sample.
 
 perDayVolume = <float>
-    * This is used in place of count.  The perDayVolume is a size supplied in GB per Day.  This value will allow
+    * This is used in place of count. The perDayVolume is a size supplied in GB per Day. This value will allow
     * eventgen to supply a target datavolume instead of a count for event generation.
     * Defaults to Null
 
@@ -334,7 +335,7 @@ bundlelines = true | false
     * For outside use cases where you need to take all the lines in a sample file and pretend they are
       one event.
       Also, please note you can also use breaker=\r*\n\r*\n to break the sample file into multi-line
-      transactions that would work better than this as well.  This is also useful where you want to bring
+      transactions that would work better than this as well. This is also useful where you want to bring
       in sampletype = csv and bundle that multiple times.
     * If bundlelines = true and the token replacementType is replaytimestamp, we will introduce some randomness
       into the times between items in the transaction in microseconds.
@@ -432,16 +433,16 @@ token.<n>.replacementType = static | timestamp | replaytimestamp | random | rate
     * For replaytimestamp, the token will be replaced with the strptime specified in the replacement setting
       but the time will not be based on earliest and latest, but will instead be replaced by looking at the
       offset of the timestamp in the current event versus the first event, and then adding that time difference
-      to the timestamp when we started processing the sample.  This allows for replaying events with a
-      new timestamp but to look much like the original transaction.  Assumes replacement value is the same
-      strptime format as the original token we're replacing, otherwise it will fail.  First timestamp will
-      be the value of earliest.  NOT TO BE CONFUSED WITH REPLAY MODE.  Replay mode replays a whole file
-      with timing to look like the original file.  This will allow a single transaction to be replayed with some randomness.
+      to the timestamp when we started processing the sample. This allows for replaying events with a
+      new timestamp but to look much like the original transaction. Assumes replacement value is the same
+      strptime format as the original token we're replacing, otherwise it will fail. First timestamp will
+      be the value of earliest. NOT TO BE CONFUSED WITH REPLAY MODE. Replay mode replays a whole file
+      with timing to look like the original file. This will allow a single transaction to be replayed with some randomness.
     * For random, the token will be replaced with a type aware value (i.e. valid IPv4 Address).
     * For rated, the token will be replaced with a subset of random types (float, integer), which are
       rated by hourOfDayRate and dayOfWeekRate.
     * For file, the token will be replaced with a random value retrieved from a file specified in the replacement setting.
-    * For mvfile, the token will be replaced with a random value of a column retrieved from a file specified in the replacement setting.  Multiple files can reference the same source file and receive different columns from the same random line.
+    * For mvfile, the token will be replaced with a random value of a column retrieved from a file specified in the replacement setting. Multiple files can reference the same source file and receive different columns from the same random line.
     * For integerid, will use an incrementing integer as the replacement.
     * Defaults to None.
     
@@ -450,20 +451,20 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid 
     * For <string>, the token will be replaced with the value specified.
     * For <strptime>, a strptime formatted string to replace the timestamp with
     * For ["list","of","strptime"], only used with replaytimestamp, a JSON formatted list of strptime
-      formats to try.  Will find the replace with the same format which matches the replayed timestamp.
+      formats to try. Will find the replace with the same format which matches the replayed timestamp.
     * For guid, the token will be replaced with a random GUID value.
     * For ipv4, the token will be replaced with a random valid IPv4 Address (i.e. 10.10.200.1).
     * For ipv6, the token will be replaced with a random valid IPv6 Address (i.e. c436:4a57:5dea:1035:7194:eebb:a210:6361).
     * For mac, the token will be replaced with a random valid MAC Address (i.e. 6e:0c:51:c6:c6:3a).
     * For integer[<start>:<end>], the token will be replaced with a random integer between 
       start and end values where <start> is a number greater than 0 
-      and <end> is a number greater than 0 and greater than or equal to <start>.  If rated,
+      and <end> is a number greater than 0 and greater than or equal to <start>. If rated,
       will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For float[<start>:<end>], the token will be replaced with a random float between
       start and end values where <start> is a number greater than 0
       and <end> is a number greater than 0 and greater than or equal to <start>.
       For floating point numbers, precision will be based off the precision specified
-      in <start>.  For example, if we specify 1.0, precision will be one digit, if we specify
+      in <start>. For example, if we specify 1.0, precision will be one digit, if we specify
       1.0000, precision will be four digits. If rated, will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For string(<i>), the token will be replaced with i number(s) of ASCII characters where 'i' is a number greater than 0.
     * For hex(<i>), the token will be replaced with i number of Hexadecimal characters [0-9A-F] where 'i' is a number greater than 0.
