@@ -10,6 +10,7 @@ import os
 import shutil
 import sys
 import time
+import platform
 
 import requests
 
@@ -19,6 +20,7 @@ sys.path.append(path_prepend)
 import __init__ as splunk_eventgen_init
 import logging
 import eventgen_core
+import eventgen_barrage_engine
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
 logger = logging.getLogger()
@@ -72,11 +74,24 @@ def parse_args():
     help_subparser = subparsers.add_parser('help', help="Display usage on a subcommand")
     helpstr =  "Help on a specific command, valid commands are: " + ", ".join(subparser_dict.keys() + ["help"])
     help_subparser.add_argument("command", nargs='?', default="default", help=helpstr)
+    # Barrage Mode Subparser
+    barrage_subparser = subparsers.add_parser('barrage', help="Run Eventgen as a barrage mode.")
+    barrage_subparser.add_argument("--sample-file", type=str, default='', required=True, help="Local path to a sample file.")
+    barrage_subparser.add_argument("--server-address", type=str, default='', required=True, help="Host address to a target Splunk instance.")
+    barrage_subparser.add_argument("--server-port", type=str, default='', required=True, help="Host port to a target Splunk instance.")
+    barrage_subparser.add_argument("--server-hec-token", type=str, default='', required=True, help="Host Splunk's HEC token.")
+    barrage_subparser.add_argument("--server-protocol", type=str, default='https', choices=["http", "https"], help="Default is https. Choose between http and https.")
+    barrage_subparser.add_argument("--event-index", type=str, default='main', help="Default is main. Specify a Splunk event index.")
+    barrage_subparser.add_argument("--event-source", type=str, default='eventgen', help="Default is eventgen. Specify a Splunk event source.")
+    barrage_subparser.add_argument("--event-sourcetype", type=str, default='eventgen-data', help="Default is eventgen-data. Specify a Splunk event sourcetype.")
+    barrage_subparser.add_argument("--event-host", type=str, default='localhost', help="Default is localhost. Specify a Splunk event host.")
+
     # add subparsers to the subparser dict, this will be used later for usage / help statements.
     subparser_dict['generate'] = generate_subparser
     subparser_dict['build'] = build_subparser
     subparser_dict['wsgi'] = wsgi_subparser
     subparser_dict['help'] = help_subparser
+    subparser_dict['barrage'] = barrage_subparser
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -285,6 +300,11 @@ def convert_verbosity_count_to_logging_level(verbosity):
     else:
         return logging.ERROR
 
+def exit_if_windows():
+    if platform.system().lower() == 'windows':
+        print("Barrage mode is not supported on Windows")
+        sys.exit(0)
+
 def main():
     cwd = os.getcwd()
     args = parse_args()
@@ -298,8 +318,11 @@ def main():
         if not args.destination:
             args.destination = cwd
         build_splunk_app(dest=args.destination, remove=args.remove)
+    elif args.subcommand == "barrage":
+        exit_if_windows()
+        engine = eventgen_barrage_engine.EventgenBarrageEngine(args=args)
+        engine.start()
     sys.exit(0)
-
 
 if __name__ == '__main__':
     main()
