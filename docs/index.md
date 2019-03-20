@@ -20,6 +20,7 @@
 * [Basics](BASICS.md)
 * [Plugins](PLUGINS.md)
 * [Architecture](ARCHITECTURE.md)
+* [Contribute](CONTRIBUTE.md)
 * [Performance](PERFORMANCE.md)
 * [Reference](REFERENCE.md)
     * [eventgen.conf.spec](REFERENCE.md#eventgenconfspec)
