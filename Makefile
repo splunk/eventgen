@@ -10,8 +10,10 @@ SMALL ?= 'tests/small'
 MEDIUM ?= 'tests/medium'
 LARGE ?= 'tests/large'
 XLARGE ?= 'tests/xlarge'
+NEWLY_ADDED_PY_FILES = $(shell git ls-files -o --exclude-standard | grep -E '\.py$$')
+CHANGED_ADDED_PY_FILES = $(shell git ls-files -mo --exclude-standard | grep -E '\.py$$')
 
-.PHONY: tests
+.PHONY: tests, lint, format
 
 all: egg
 
@@ -101,3 +103,24 @@ docs:
 
 build_spl: clean
 	python -m splunk_eventgen build --destination ./
+
+lint:
+ifeq ($(NEWLY_ADDED_PY_FILES), )
+	@echo 'No newly added python files. Skip...'
+else
+	@flake8 $(NEWLY_ADDED_PY_FILES) || true
+endif
+	@git diff -U0 -- '*.py' | flake8 --diff || true
+
+format:
+ifeq ($(CHANGED_ADDED_PY_FILES), )
+	@echo 'No changed python files. Skip...'
+else
+	@isort $(CHANGED_ADDED_PY_FILES)
+endif
+ifeq ($(NEWLY_ADDED_PY_FILES), )
+	@echo 'No newly added python files. Skip...'
+else
+	@yapf -i $(NEWLY_ADDED_PY_FILES)
+endif
+
