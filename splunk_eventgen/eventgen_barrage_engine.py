@@ -63,11 +63,13 @@ class EventgenBarrageEngine(object):
         current_payload = ''
         current_sample_line_index = 0
         ready_to_quit = False
+        all_events_size = 0
         while 1:
             self.request_body['event'] = self.sample_lines[current_sample_line_index]
             payload = json.dumps(self.request_body)
             if len(current_payload) + len(payload) < self.payload_max_size:
                 current_payload += payload
+                all_events_size += len(self.sample_lines[current_sample_line_index])
             else:
                 self.preprocessed_payload_templates.append(current_payload)
                 current_payload = payload
@@ -80,8 +82,11 @@ class EventgenBarrageEngine(object):
 
         for i in self.preprocessed_payload_templates:
             print len(i)
+        
+        self.all_events_size = all_events_size
+        print "All events size is {}".format(self.all_events_size)
 
-    def _setup_REST_workers(self, session=None, max_workers=10):
+    def _setup_REST_workers(self, session=None, max_workers=50):
         requests.packages.urllib3.disable_warnings()
         if not session:
             session = Session()
@@ -94,10 +99,9 @@ class EventgenBarrageEngine(object):
                 for payload_template in preprocessed_payload_templates:
                     try:
                         self.session.post(url=self.server_endpoint_url, headers=self.request_header, data=payload_template, verify=False)
-                        counter.num += 1
                     except Exception as e:
-                        print e
                         continue
+                # counter.num += 1
 
         counter = CounterObject()
         self._setup_REST_workers()
@@ -112,11 +116,9 @@ class EventgenBarrageEngine(object):
         # Count the number of iterations and reset the counter
         while 1:
             time.sleep(10)
-            pass
             # if counter.num > 10000:
             #     self.event_count.value += counter.num
             #     counter.num = 0
-            # time.sleep(4)
     
     def start(self):
         while 1:
@@ -125,12 +127,13 @@ class EventgenBarrageEngine(object):
                 p = multiprocessing.Process(target=self.create_threads)
                 self.processes.append(p)
                 p.start()
-            elif cpu_usage >= 95 and len(self.processes) > 0:
-                last_pid = self.processes[-1].pid
+            elif cpu_usage >= 90 and len(self.processes) > 0:
+                last_pid = self.processes[0].pid
                 os.kill(last_pid, 9)
-                self.processes.pop()
+                self.processes.pop(0)
             print '{0} process in action. CPU usage: {1}%'.format(len(self.processes), cpu_usage)
-            print "Generated {} iterations".format(self.event_count.value)
+            # print "Generated {} iterations".format(self.event_count.value)
+            # print "Generated {}gb data so far".format(round(self.event_count.value * self.all_events_size)/1024/1024/1024.0, 2)
             time.sleep(5)
 
     def load_sample(self, sample_file):
@@ -143,7 +146,7 @@ class EventgenBarrageEngine(object):
             with open(sample_file_path, "r") as f:
                 lines = f.readlines()
                 for line in lines:
-                    self.sample_lines.append(line.strip())
+                    self.sample_lines.append(line.rstrip('\n'))
             if not self.sample_lines:
                 print "Found a sample file, but did not find any lines. Exiting."
                 sys.exit(1)
