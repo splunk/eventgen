@@ -9,7 +9,12 @@ import requests
 import json
 
 import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import requests
+import requests_futures
+from requests import Session
+from lib.requests_futures.sessions import FuturesSession
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 class CounterObject():
     def __init__(self):
@@ -20,77 +25,103 @@ class EventgenBarrageEngine(object):
         if not args:
             print "No arguments supplied. Exiting."
             sys.exit(1)
-
-        self.cpu_threshold = 80
-        self.multiprocessing_manager = multiprocessing.Manager()
-        self.processes = []
-        self.event_count = self.multiprocessing_manager.Value('i', 0)
+        
+        # Load data from a sample file
         self.sample_lines = []
-        self.preprocessed_payload_templates = []
         self.load_sample(args.sample_file)
-        self.server_address = args.server_address
-        self.server_port = args.server_port
-        self.server_hec_token = args.server_hec_token
-        self.server_protocol = args.server_protocol
+
+        # Set default thresholds
+        self.cpu_threshold = 80
+        self.payload_max_size = 10000
+
+        # Set variables needed for data processing and sharing
+        self.multiprocessing_manager = multiprocessing.Manager()
+        self.event_count = self.multiprocessing_manager.Value('i', 0)
+        self.processes = list()
+        self.preprocessed_payload_templates = list()
+
+        # Set Event related variables
         self.event_index = args.event_index
         self.event_source = args.event_source
         self.event_sourcetype = args.event_sourcetype
         self.event_host = args.event_host
+        
+        # Set HTTP End Point variables
+        self.server_address = args.server_address
+        self.server_port = args.server_port
+        self.server_hec_token = args.server_hec_token
+        self.server_protocol = args.server_protocol
+        self.server_endpoint_url = "{protocol}://{server_address}:{server_port}/services/collector/event".format(protocol=self.server_protocol, server_address=self.server_address, server_port=self.server_port)
+        self.request_header = {"Authorization": "Splunk {}".format(self.server_hec_token), "content-type": "application/json"}
+        self.request_body = {"index": self.event_index, "sourcetype": self.event_sourcetype, "source": self.event_source, "host": self.event_host}
+
+        self.preprocess_payloads()
+
         signal.signal(signal.SIGINT, self.handle_signal)
-
-        self.payload_max_size = 9000
-
-        self.url = "{protocol}://{server_address}:{server_port}/services/collector/event".format(protocol=self.server_protocol, server_address=self.server_address, server_port=self.server_port)
-        self.header = {"Authorization": "Splunk {}".format(self.server_hec_token), "content-type": "application/json"}
-        self.body = {"index": self.event_index, "sourcetype": self.event_sourcetype, "source": self.event_source, "host": self.event_host}
-
+    
     def preprocess_payloads(self):
-        current_payload_size = 0
         current_payload = ''
-        while current_payload_size 
-            
+        current_sample_line_index = 0
+        ready_to_quit = False
+        while 1:
+            self.request_body['event'] = self.sample_lines[current_sample_line_index]
+            payload = json.dumps(self.request_body)
+            if len(current_payload) + len(payload) < self.payload_max_size:
+                current_payload += payload
+            else:
+                self.preprocessed_payload_templates.append(current_payload)
+                current_payload = payload
+                if ready_to_quit:
+                    break
+            current_sample_line_index += 1
+            if current_sample_line_index == len(self.sample_lines):
+                current_sample_line_index = 0
+                ready_to_quit = True
 
+        for i in self.preprocessed_payload_templates:
+            print len(i)
+
+    def _setup_REST_workers(self, session=None, max_workers=10):
+        requests.packages.urllib3.disable_warnings()
+        if not session:
+            session = Session()
+        self.session = FuturesSession(session=session, executor=ThreadPoolExecutor(max_workers=max_workers))
 
     def create_threads(self):
-        counter = CounterObject()
         def generate_http_events(counter_object):
-            current_line_index = 0
-            sample_lines_length = len(self.sample_lines)
-            current_time = round(time.time(), 3)
-            while True:
-                counter_object.num += 1
-                if current_line_index >= sample_lines_length - 1:
-                    current_line_index = 0
-                else:
-                    current_line_index += 1
-                body = self.body
-                body['event'] = self.sample_lines[current_line_index]
-                
-                try:
-                    r = requests.post(self.url, headers=self.header, data=json.dumps(body), verify=False)
-                    if r.status_code != 200:
-                        print r.text
-                except Exception as e:
-                    print dir(e)
-                    print e
-                    continue
+            preprocessed_payload_templates = self.preprocessed_payload_templates
+            while 1:
+                for payload_template in preprocessed_payload_templates:
+                    try:
+                        self.session.post(url=self.server_endpoint_url, headers=self.request_header, data=payload_template, verify=False)
+                        counter.num += 1
+                    except Exception as e:
+                        print e
+                        continue
+
+        counter = CounterObject()
+        self._setup_REST_workers()
+
         threads = []
-        for _ in range(20): # each Process creates a number of new Threads
+        for _ in range(20):
             thread = threading.Thread(target=generate_http_events, args=(counter,)) 
             threads.append(thread)
         for thread in threads:
             thread.start()
-        i = 0
-        while True:
-            if i % 10000 == 0:
-                self.event_count.value += counter.num
-                counter.num = 0
-            i += 1
+        
+        # Count the number of iterations and reset the counter
+        while 1:
+            time.sleep(10)
+            pass
+            # if counter.num > 10000:
+            #     self.event_count.value += counter.num
+            #     counter.num = 0
+            # time.sleep(4)
     
     def start(self):
-        while True:
+        while 1:
             cpu_usage = EventgenBarrageEngine._get_current_cpu_usage()
-            if  cpu_usage <= self.cpu_threshold - 5:
+            if  cpu_usage <= self.cpu_threshold:
                 p = multiprocessing.Process(target=self.create_threads)
                 self.processes.append(p)
                 p.start()
@@ -99,16 +130,8 @@ class EventgenBarrageEngine(object):
                 os.kill(last_pid, 9)
                 self.processes.pop()
             print '{0} process in action. CPU usage: {1}%'.format(len(self.processes), cpu_usage)
-            print "Generated {} Events".format(self.event_count.value)
+            print "Generated {} iterations".format(self.event_count.value)
             time.sleep(5)
-    
-    def handle_signal(self, signum, frame):
-        pids = [process.pid for process in self.processes]
-        if os.getpid() not in pids:
-            # Iteratively kill all child processes if the current process is the parent process
-            for p in self.processes:
-                os.kill(p.pid, 9)
-        sys.exit(0)
 
     def load_sample(self, sample_file):
         current_dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -121,7 +144,19 @@ class EventgenBarrageEngine(object):
                 lines = f.readlines()
                 for line in lines:
                     self.sample_lines.append(line.strip())
-                print "Loaded a sample file"
+            if not self.sample_lines:
+                print "Found a sample file, but did not find any lines. Exiting."
+                sys.exit(1)
+            else:
+                print "Loaded {0} lines from {1}".format(len(self.sample_lines), sample_file_path)
+    
+    def handle_signal(self, signum, frame):
+        pids = [process.pid for process in self.processes]
+        if os.getpid() not in pids:
+            # Iteratively kill all child processes if the current process is the parent process
+            for p in self.processes:
+                os.kill(p.pid, 9)
+        sys.exit(0)
 
     @staticmethod
     def _get_current_cpu_usage():
