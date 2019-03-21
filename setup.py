@@ -14,9 +14,11 @@ try:
 except(IOError, ImportError):
     long_description = open('README.md').read()
 
+
 def readme():
     with open('README.md') as f:
         return f.read()
+
 
 setup(
     name='splunk_eventgen',
@@ -38,18 +40,21 @@ setup(
     packages=find_packages(),
     package_data={"splunk_eventgen": ['*.sh', '*.txt', '*.yml'], '': ['*.sh', '*.txt', '*.yml']},
     install_requires=[
-        'pytest>=3.0.0', # Required to test functional tests in eventgen.
+        'pytest>=3.0.0',  # Required to test functional tests in eventgen.
         'boto3',
         'requests>=2.18.4',
         'requests[security]',
         'logutils>=0.3.4.1',
         'futures>=3.0.5',
-        'ujson>=1.35', # way faster implementation of JSON processing
+        'ujson>=1.35',  # way faster implementation of JSON processing
         'pyyaml',
         'httplib2',
         'jinja2',
         'pyrabbit==1.1.0',
         'urllib3==1.23',
-        'pyOpenSSL'
+        'pyOpenSSL',
+        'flake8>=3.7.7',
+        'yapf>=0.26.0',
+        'isort>=4.3.15'
     ]
     )
