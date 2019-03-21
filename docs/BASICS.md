@@ -1,17 +1,15 @@
 # Welcome
 
-Thanks for checking out the tutorial.
-This should hopefully get you through setting up a working event generator.  It's only a tutorial though, so if you want a complete reference of all of the available configuration options, please check out the [eventgen.conf.spec](REFERENCE.md#eventgenconfspec) in the README directory.  With that, feel free to dig right in, and feel free to post to the Issues page if you have any questions.
+Welcome to the basics of Eventgen.
+This should hopefully get you through setting up a working eventgen instance. For a complete reference of all of the available configuration options, please check out the [eventgen.conf.spec](REFERENCE.md#eventgenconfspec) in the docs directory.  With that, feel free to dig right in, and please post to the Issues page if you have any questions.
 
 ## Replay Example
 
-The first example we'll show you should likely cover 90% of the use cases you can imagine.  Eventgen can take an export from another Splunk instance, or just a plain text file, and replay those events while replacing the time stamps. Eventgen will pause the amount of time between each event just like it happened in the original, so the events will appear to be coming out in real time.  When Eventgen reaches the end of the file, it will automatically start over from the beginning.  Since this allows you to use real data as your eventgen, like we said earlier, it'll cover 9 out of 10 of most people's use cases.
+The first example we'll show you should likely cover 90% of the use cases you can imagine.  Eventgen can take an export from another Splunk instance, or just a plain text file, and replay those events while replacing the time stamps. Eventgen will pause the amount of time between each event just like it happened in the original, so the events will appear to be coming out in real time.  When Eventgen reaches the end of the file, it will automatically start over from the beginning.
 
 ### Making a Splunk export
 
 To build a seed for your new Eventgen, I recommend taking an export from an existing Splunk instance.  You could also take a regular log file and use it for replay (in which case, you can omit sampletype=csv).  There are a few considerations.  First, Eventgen assumes its sample files are in chronological order.  Second, it only uses index, host, source, sourcetype and \_raw fields.  To accommodate that, whatever search you write, we recommend appending '| reverse | fields index, host, source, sourcetype, _raw' to your Splunk search and then doing an export to CSV format.  Third, make sure you find all the different time formats inside the log file and set up tokens to replace for them, so limiting your initial search to a few sourcetypes is probably advisable.
-
-This example was pulled from a simple search of \_internal on my Splunk instance.
 
 ### Running the example
 You can easily run these examples by hand.  In fact, for testing purposes, I almost always change outputMode = stdout to visually examine the data. Run the command below from the base directory of Eventgen.
