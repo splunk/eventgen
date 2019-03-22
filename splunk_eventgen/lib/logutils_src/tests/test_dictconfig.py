@@ -2,36 +2,43 @@
 # Copyright 2009-2017 by Vinay Sajip. See LICENSE.txt for details.
 #
 import logging
-from logutils.adapter import LoggerAdapter
-from logutils.dictconfig import dictConfig, named_handlers_supported
-from logutils.testing import TestHandler, Matcher
 import sys
 import unittest
+
+from logutils.adapter import LoggerAdapter
+from logutils.dictconfig import dictConfig, named_handlers_supported
+from logutils.testing import Matcher, TestHandler
 
 try:
     StandardError
 except NameError:
     StandardError = Exception
 
+
 class ExceptionFormatter(logging.Formatter):
     """A special exception formatter."""
+
     def formatException(self, ei):
         return "Got a [%s]" % ei[0].__name__
+
 
 def formatFunc(format, datefmt=None):
     return logging.Formatter(format, datefmt)
 
+
 def testHandler():
     return TestHandler(Matcher())
+
 
 def handlerFunc():
     return logging.StreamHandler()
 
+
 class CustomHandler(logging.StreamHandler):
     pass
 
-class ConfigDictTest(unittest.TestCase):
 
+class ConfigDictTest(unittest.TestCase):
     """Reading logging config from a dictionary."""
 
     def setUp(self):
@@ -54,7 +61,6 @@ class ConfigDictTest(unittest.TestCase):
 
         self.root_logger = logging.getLogger("")
         self.original_logging_level = self.root_logger.getEffectiveLevel()
-
 
     def tearDown(self):
         self.root_logger.setLevel(self.original_logging_level)
@@ -89,19 +95,19 @@ class ConfigDictTest(unittest.TestCase):
     config0 = {
         'version': 1,
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
+        'handlers': {
+            'hand1': {
                 '()': testHandler,
                 'formatter': 'form1',
             }
         },
-        'root' : {
-            'level' : 'WARNING',
-            'handlers' : ['hand1'],
+        'root': {
+            'level': 'WARNING',
+            'handlers': ['hand1'],
         },
     }
 
@@ -109,129 +115,128 @@ class ConfigDictTest(unittest.TestCase):
     config1 = {
         'version': 1,
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
+        'handlers': {
+            'hand1': {
                 '()': testHandler,
                 'formatter': 'form1',
             }
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'DEBUG',
-                'handlers' : ['hand1'],
+        'loggers': {
+            'compiler.parser': {
+                'level': 'DEBUG',
+                'handlers': ['hand1'],
             },
         },
-        'root' : {
-            'level' : 'WARNING',
+        'root': {
+            'level': 'WARNING',
         },
     }
 
     # config2 has a subtle configuration error that should be reported
     config2 = {
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
-                'class' : 'logging.StreamHandler',
-                'formatter' : 'form1',
-                'level' : 'NOTSET',
-                'stream'  : 'ext://sys.stdbout',
+        'handlers': {
+            'hand1': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'form1',
+                'level': 'NOTSET',
+                'stream': 'ext://sys.stdbout',
             },
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'DEBUG',
-                'handlers' : ['hand1'],
+        'loggers': {
+            'compiler.parser': {
+                'level': 'DEBUG',
+                'handlers': ['hand1'],
             },
         },
-        'root' : {
-            'level' : 'WARNING',
+        'root': {
+            'level': 'WARNING',
         },
     }
 
     #As config1 but with a misspelt level on a handler
     config2a = {
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
-                'class' : 'logging.StreamHandler',
-                'formatter' : 'form1',
-                'level' : 'NTOSET',
-                'stream'  : 'ext://sys.stdout',
+        'handlers': {
+            'hand1': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'form1',
+                'level': 'NTOSET',
+                'stream': 'ext://sys.stdout',
             },
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'DEBUG',
-                'handlers' : ['hand1'],
+        'loggers': {
+            'compiler.parser': {
+                'level': 'DEBUG',
+                'handlers': ['hand1'],
             },
         },
-        'root' : {
-            'level' : 'WARNING',
+        'root': {
+            'level': 'WARNING',
         },
     }
-
 
     #As config1 but with a misspelt level on a logger
     config2b = {
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
-                'class' : 'logging.StreamHandler',
-                'formatter' : 'form1',
-                'level' : 'NOTSET',
-                'stream'  : 'ext://sys.stdout',
+        'handlers': {
+            'hand1': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'form1',
+                'level': 'NOTSET',
+                'stream': 'ext://sys.stdout',
             },
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'DEBUG',
-                'handlers' : ['hand1'],
+        'loggers': {
+            'compiler.parser': {
+                'level': 'DEBUG',
+                'handlers': ['hand1'],
             },
         },
-        'root' : {
-            'level' : 'WRANING',
+        'root': {
+            'level': 'WRANING',
         },
     }
 
     # config3 has a less subtle configuration error
     config3 = {
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
-                'class' : 'logging.StreamHandler',
-                'formatter' : 'misspelled_name',
-                'level' : 'NOTSET',
-                'stream'  : 'ext://sys.stdout',
+        'handlers': {
+            'hand1': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'misspelled_name',
+                'level': 'NOTSET',
+                'stream': 'ext://sys.stdout',
             },
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'DEBUG',
-                'handlers' : ['hand1'],
+        'loggers': {
+            'compiler.parser': {
+                'level': 'DEBUG',
+                'handlers': ['hand1'],
             },
         },
-        'root' : {
-            'level' : 'WARNING',
+        'root': {
+            'level': 'WARNING',
         },
     }
 
@@ -239,20 +244,20 @@ class ConfigDictTest(unittest.TestCase):
     config4 = {
         'version': 1,
         'formatters': {
-            'form1' : {
-                '()' : __name__ + '.ExceptionFormatter',
-                'format' : '%(levelname)s:%(name)s:%(message)s',
+            'form1': {
+                '()': __name__ + '.ExceptionFormatter',
+                'format': '%(levelname)s:%(name)s:%(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
+        'handlers': {
+            'hand1': {
                 '()': testHandler,
                 'formatter': 'form1',
             }
         },
-        'root' : {
-            'level' : 'NOTSET',
-                'handlers' : ['hand1'],
+        'root': {
+            'level': 'NOTSET',
+            'handlers': ['hand1'],
         },
     }
 
@@ -260,31 +265,31 @@ class ConfigDictTest(unittest.TestCase):
     config4a = {
         'version': 1,
         'formatters': {
-            'form1' : {
-                '()' : ExceptionFormatter,
-                'format' : '%(levelname)s:%(name)s:%(message)s',
+            'form1': {
+                '()': ExceptionFormatter,
+                'format': '%(levelname)s:%(name)s:%(message)s',
             },
-            'form2' : {
-                '()' : __name__ + '.formatFunc',
-                'format' : '%(levelname)s:%(name)s:%(message)s',
+            'form2': {
+                '()': __name__ + '.formatFunc',
+                'format': '%(levelname)s:%(name)s:%(message)s',
             },
-            'form3' : {
-                '()' : formatFunc,
-                'format' : '%(levelname)s:%(name)s:%(message)s',
+            'form3': {
+                '()': formatFunc,
+                'format': '%(levelname)s:%(name)s:%(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
+        'handlers': {
+            'hand1': {
                 '()': testHandler,
                 'formatter': 'form1',
             },
-            'hand2' : {
-                '()' : handlerFunc,
+            'hand2': {
+                '()': handlerFunc,
             },
         },
-        'root' : {
-            'level' : 'NOTSET',
-                'handlers' : ['hand1'],
+        'root': {
+            'level': 'NOTSET',
+            'handlers': ['hand1'],
         },
     }
 
@@ -292,24 +297,24 @@ class ConfigDictTest(unittest.TestCase):
     config5 = {
         'version': 1,
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
+        'handlers': {
+            'hand1': {
                 '()': testHandler,
                 'formatter': 'form1',
             }
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'DEBUG',
-                'handlers' : ['hand1'],
+        'loggers': {
+            'compiler.parser': {
+                'level': 'DEBUG',
+                'handlers': ['hand1'],
             },
         },
-        'root' : {
-            'level' : 'WARNING',
+        'root': {
+            'level': 'WARNING',
         },
     }
 
@@ -317,27 +322,27 @@ class ConfigDictTest(unittest.TestCase):
     # but has bad arguments
     config6 = {
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
-                'class' : __name__ + '.CustomHandler',
-                'formatter' : 'form1',
-                'level' : 'NOTSET',
-                'stream'  : 'ext://sys.stdout',
-                '9' : 'invalid parameter name',
+        'handlers': {
+            'hand1': {
+                'class': __name__ + '.CustomHandler',
+                'formatter': 'form1',
+                'level': 'NOTSET',
+                'stream': 'ext://sys.stdout',
+                '9': 'invalid parameter name',
             },
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'DEBUG',
-                'handlers' : ['hand1'],
+        'loggers': {
+            'compiler.parser': {
+                'level': 'DEBUG',
+                'handlers': ['hand1'],
             },
         },
-        'root' : {
-            'level' : 'WARNING',
+        'root': {
+            'level': 'WARNING',
         },
     }
 
@@ -346,104 +351,103 @@ class ConfigDictTest(unittest.TestCase):
     config7 = {
         'version': 1,
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
+        'handlers': {
+            'hand1': {
                 '()': testHandler,
                 'formatter': 'form1',
             }
         },
-        'loggers' : {
-            'compiler.lexer' : {
-                'level' : 'DEBUG',
-                'handlers' : ['hand1'],
+        'loggers': {
+            'compiler.lexer': {
+                'level': 'DEBUG',
+                'handlers': ['hand1'],
             },
         },
-        'root' : {
-            'level' : 'WARNING',
+        'root': {
+            'level': 'WARNING',
         },
     }
 
     config8 = {
         'version': 1,
-        'disable_existing_loggers' : False,
+        'disable_existing_loggers': False,
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
+        'handlers': {
+            'hand1': {
                 '()': testHandler,
                 'formatter': 'form1',
             }
         },
-        'loggers' : {
-            'compiler' : {
-                'level' : 'DEBUG',
-                'handlers' : ['hand1'],
+        'loggers': {
+            'compiler': {
+                'level': 'DEBUG',
+                'handlers': ['hand1'],
             },
-            'compiler.lexer' : {
-            },
+            'compiler.lexer': {},
         },
-        'root' : {
-            'level' : 'WARNING',
+        'root': {
+            'level': 'WARNING',
         },
     }
 
     config9 = {
         'version': 1,
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'handlers' : {
-            'hand1' : {
+        'handlers': {
+            'hand1': {
                 '()': testHandler,
                 'formatter': 'form1',
             }
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'WARNING',
-                'handlers' : ['hand1'],
+        'loggers': {
+            'compiler.parser': {
+                'level': 'WARNING',
+                'handlers': ['hand1'],
             },
         },
-        'root' : {
-            'level' : 'NOTSET',
+        'root': {
+            'level': 'NOTSET',
         },
     }
 
     config9a = {
         'version': 1,
-        'incremental' : True,
-        'handlers' : {
-            'hand1' : {
-                'level' : 'WARNING',
+        'incremental': True,
+        'handlers': {
+            'hand1': {
+                'level': 'WARNING',
             },
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'INFO',
+        'loggers': {
+            'compiler.parser': {
+                'level': 'INFO',
             },
         },
     }
 
     config9b = {
         'version': 1,
-        'incremental' : True,
-        'handlers' : {
-            'hand1' : {
-                'level' : 'INFO',
+        'incremental': True,
+        'handlers': {
+            'hand1': {
+                'level': 'INFO',
             },
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'INFO',
+        'loggers': {
+            'compiler.parser': {
+                'level': 'INFO',
             },
         },
     }
@@ -452,31 +456,31 @@ class ConfigDictTest(unittest.TestCase):
     config10 = {
         'version': 1,
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'filters' : {
-            'filt1' : {
-                'name' : 'compiler.parser',
+        'filters': {
+            'filt1': {
+                'name': 'compiler.parser',
             },
         },
-        'handlers' : {
-            'hand1' : {
+        'handlers': {
+            'hand1': {
                 '()': testHandler,
                 'formatter': 'form1',
-                'filters' : ['filt1'],
+                'filters': ['filt1'],
             }
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'DEBUG',
-                'filters' : ['filt1'],
+        'loggers': {
+            'compiler.parser': {
+                'level': 'DEBUG',
+                'filters': ['filt1'],
             },
         },
-        'root' : {
-            'level' : 'WARNING',
-            'handlers' : ['hand1'],
+        'root': {
+            'level': 'WARNING',
+            'handlers': ['hand1'],
         },
     }
 
@@ -485,31 +489,31 @@ class ConfigDictTest(unittest.TestCase):
     config11 = {
         'version': 1,
         'formatters': {
-            'form1' : {
-                'format' : '%(levelname)s ++ %(message)s',
+            'form1': {
+                'format': '%(levelname)s ++ %(message)s',
             },
         },
-        'filters' : {
-            'filt1' : {
-                'name' : 'compiler.parser',
+        'filters': {
+            'filt1': {
+                'name': 'compiler.parser',
             },
         },
-        'handlers' : {
-            'hand1' : {
+        'handlers': {
+            'hand1': {
                 '()': 'mytest.MyTestHandler',
                 'formatter': 'form1',
-                'filters' : ['filt1'],
+                'filters': ['filt1'],
             }
         },
-        'loggers' : {
-            'compiler.parser' : {
-                'level' : 'DEBUG',
-                'filters' : ['filt1'],
+        'loggers': {
+            'compiler.parser': {
+                'level': 'DEBUG',
+                'filters': ['filt1'],
             },
         },
-        'root' : {
-            'level' : 'WARNING',
-            'handlers' : ['hand1'],
+        'root': {
+            'level': 'WARNING',
+            'handlers': ['hand1'],
         },
     }
 
@@ -526,9 +530,7 @@ class ConfigDictTest(unittest.TestCase):
         logger.error(self.next_message())
         h = logger.handlers[0]
         self.assertEqual(1, h.count)
-        self.assertTrue(h.matchall([
-                            dict(levelname='ERROR', message='2')
-                        ]))
+        self.assertTrue(h.matchall([dict(levelname='ERROR', message='2')]))
 
     def test_config1_ok(self, config=config1):
         # A config defining a sub-parser as well.
@@ -539,9 +541,9 @@ class ConfigDictTest(unittest.TestCase):
         logger.error(self.next_message())
         h = logger.handlers[0]
         self.assertTrue(h.matchall([
-                            dict(levelname='INFO', message='1'),
-                            dict(levelname='ERROR', message='2'),
-                        ]))
+            dict(levelname='INFO', message='1'),
+            dict(levelname='ERROR', message='2'),
+        ]))
 
     def test_config2_failure(self):
         # A simple config which overrides the default settings.
@@ -568,8 +570,7 @@ class ConfigDictTest(unittest.TestCase):
             raise RuntimeError()
         except RuntimeError:
             logging.exception("just testing")
-        self.assertEquals(h.formatted[0],
-            "ERROR:root:just testing\nGot a [RuntimeError]")
+        self.assertEquals(h.formatted[0], "ERROR:root:just testing\nGot a [RuntimeError]")
 
     def test_config4a_ok(self):
         # A config specifying a custom formatter class.
@@ -580,8 +581,7 @@ class ConfigDictTest(unittest.TestCase):
             raise RuntimeError()
         except RuntimeError:
             logging.exception("just testing")
-        self.assertEquals(h.formatted[0],
-            "ERROR:root:just testing\nGot a [RuntimeError]")
+        self.assertEquals(h.formatted[0], "ERROR:root:just testing\nGot a [RuntimeError]")
 
     def test_config5_ok(self):
         self.test_config1_ok(config=self.config5)
@@ -597,9 +597,9 @@ class ConfigDictTest(unittest.TestCase):
         logger.error(self.next_message())
         h = logger.handlers[0]
         self.assertTrue(h.matchall([
-                            dict(levelname='INFO', message='1'),
-                            dict(levelname='ERROR', message='2'),
-                        ]))
+            dict(levelname='INFO', message='1'),
+            dict(levelname='ERROR', message='2'),
+        ]))
         self.apply_config(self.config7)
         logger = logging.getLogger("compiler.parser")
         self.assertTrue(logger.disabled)
@@ -609,9 +609,9 @@ class ConfigDictTest(unittest.TestCase):
         logger.info(self.next_message())
         logger.error(self.next_message())
         self.assertTrue(h.matchall([
-                            dict(levelname='INFO', message='3'),
-                            dict(levelname='ERROR', message='4'),
-                        ]))
+            dict(levelname='INFO', message='3'),
+            dict(levelname='ERROR', message='4'),
+        ]))
 
     #Same as test_config_7_ok but don't disable old loggers.
     def test_config_8_ok(self):
@@ -622,9 +622,9 @@ class ConfigDictTest(unittest.TestCase):
         logger.error(self.next_message())
         h = logger.handlers[0]
         self.assertTrue(h.matchall([
-                            dict(levelname='INFO', message='1'),
-                            dict(levelname='ERROR', message='2'),
-                        ]))
+            dict(levelname='INFO', message='1'),
+            dict(levelname='ERROR', message='2'),
+        ]))
         self.apply_config(self.config8)
         logger = logging.getLogger("compiler.parser")
         self.assertFalse(logger.disabled)
@@ -637,12 +637,13 @@ class ConfigDictTest(unittest.TestCase):
         logger.info(self.next_message())
         logger.error(self.next_message())
         h = toplogger.handlers[0]
-        self.assertTrue(h.matchall([
-                            dict(levelname='INFO', message='3'),
-                            dict(levelname='ERROR', message='4'),
-                            dict(levelname='INFO', message='5'),
-                            dict(levelname='ERROR', message='6'),
-                        ]))
+        self.assertTrue(
+            h.matchall([
+                dict(levelname='INFO', message='3'),
+                dict(levelname='ERROR', message='4'),
+                dict(levelname='INFO', message='5'),
+                dict(levelname='ERROR', message='6'),
+            ]))
 
     def test_config_9_ok(self):
         self.apply_config(self.config9)
@@ -666,8 +667,8 @@ class ConfigDictTest(unittest.TestCase):
         if nhs:
             h = logger.handlers[0]
             self.assertTrue(h.matchall([
-                                dict(levelname='INFO', message='3'),
-                            ]))
+                dict(levelname='INFO', message='3'),
+            ]))
         else:
             self.assertEqual(2, h.count)
 
@@ -686,9 +687,9 @@ class ConfigDictTest(unittest.TestCase):
         logger.error(self.next_message())
         h = logging.getLogger().handlers[0]
         self.assertTrue(h.matchall([
-                            dict(levelname='WARNING', message='1'),
-                            dict(levelname='ERROR', message='4'),
-                        ]))
+            dict(levelname='WARNING', message='1'),
+            dict(levelname='ERROR', message='4'),
+        ]))
 
     def test_config_11_ok(self):
         self.apply_config(self.config11)

@@ -3,6 +3,7 @@
 #
 import logging
 
+
 class HTTPHandler(logging.Handler):
     """
     A class which sends records to a Web server, using either GET or
@@ -18,6 +19,7 @@ class HTTPHandler(logging.Handler):
                         to avoid sending usernames and passwords in
                         cleartext over the wire.
     """
+
     def __init__(self, host, url, method="GET", secure=False, credentials=None):
         """
         Initialize an instance.
@@ -73,8 +75,7 @@ class HTTPHandler(logging.Handler):
                 host = host[:i]
             h.putheader("Host", host)
             if self.method == "POST":
-                h.putheader("Content-type",
-                            "application/x-www-form-urlencoded")
+                h.putheader("Content-type", "application/x-www-form-urlencoded")
                 h.putheader("Content-length", str(len(data)))
             if self.credentials:
                 import base64
@@ -82,7 +83,7 @@ class HTTPHandler(logging.Handler):
                 s = 'Basic ' + base64.b64encode(s).strip()
                 h.putheader('Authorization', s)
             h.endheaders(data if self.method == "POST" else None)
-            h.getresponse()    #can't do anything with the result
+            h.getresponse()  #can't do anything with the result
         except (KeyboardInterrupt, SystemExit):
             raise
         except:

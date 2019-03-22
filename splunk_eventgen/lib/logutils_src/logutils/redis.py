@@ -6,10 +6,12 @@ This module contains classes which help you work with Redis queues.
 """
 
 from logutils.queue import QueueHandler, QueueListener
+
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
 
 class RedisQueueHandler(QueueHandler):
     """
@@ -23,6 +25,7 @@ class RedisQueueHandler(QueueHandler):
     :param limit: If specified, the queue is restricted to
                   have only this many elements.
     """
+
     def __init__(self, key='python.logging', redis=None, limit=0):
         if redis is None:
             from redis import Redis
@@ -38,6 +41,7 @@ class RedisQueueHandler(QueueHandler):
         if self.limit:
             self.queue.ltrim(self.key, -self.limit, -1)
 
+
 class RedisQueueListener(QueueListener):
     """
     A QueueListener implementation which fetches pickled
@@ -48,6 +52,7 @@ class RedisQueueListener(QueueListener):
     :param redis: If specified, this instance is used to
                   communicate with a Redis instance.
     """
+
     def __init__(self, *handlers, **kwargs):
         redis = kwargs.get('redis')
         if redis is None:

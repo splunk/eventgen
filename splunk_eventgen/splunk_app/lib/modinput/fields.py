@@ -80,7 +80,6 @@ class Field(object):
 
 
 class BooleanField(Field):
-
     def to_python(self, value):
         Field.to_python(self, value)
 
@@ -93,7 +92,8 @@ class BooleanField(Field):
         elif str(value).strip().lower() in ["false", "f", "0"]:
             return False
 
-        raise FieldValidationException("The value of '%s' for the '%s' parameter is not a valid boolean" % (str(value), self.name))
+        raise FieldValidationException(
+            "The value of '%s' for the '%s' parameter is not a valid boolean" % (str(value), self.name))
 
     def to_string(self, value):
 
@@ -110,7 +110,6 @@ class BooleanField(Field):
 
 
 class DelimitedField(Field):
-
     def __init__(self, name, title, description, delim, required_on_create=True, required_on_edit=False):
         super(DelimitedField, self).__init__(name, title, description, required_on_create, required_on_edit)
         self._delim = delim
@@ -154,17 +153,17 @@ class DurationField(Field):
     WEEK = 604800
 
     UNITS = {
-             'w': WEEK,
-             'week': WEEK,
-             'd': DAY,
-             'day': DAY,
-             'h': HOUR,
-             'hour': HOUR,
-             'm': MINUTE,
-             'min': MINUTE,
-             'minute': MINUTE,
-             's': 1
-             }
+        'w': WEEK,
+        'week': WEEK,
+        'd': DAY,
+        'day': DAY,
+        'h': HOUR,
+        'hour': HOUR,
+        'm': MINUTE,
+        'min': MINUTE,
+        'minute': MINUTE,
+        's': 1
+    }
 
     def to_python(self, value):
         Field.to_python(self, value)
@@ -174,7 +173,8 @@ class DurationField(Field):
 
         # Make sure the duration could be parsed
         if m is None:
-            raise FieldValidationException("The value of '%s' for the '%s' parameter is not a valid duration" % (str(value), self.name))
+            raise FieldValidationException(
+                "The value of '%s' for the '%s' parameter is not a valid duration" % (str(value), self.name))
 
         # Get the units and duration
         d = m.groupdict()
@@ -185,11 +185,13 @@ class DurationField(Field):
         try:
             duration = int(d['duration'])
         except ValueError:
-            raise FieldValidationException("The duration '%s' for the '%s' parameter is not a valid number" % (d['duration'], self.name))
+            raise FieldValidationException(
+                "The duration '%s' for the '%s' parameter is not a valid number" % (d['duration'], self.name))
 
         # Make sure the units are valid
         if len(units) > 0 and units not in DurationField.UNITS:
-            raise FieldValidationException("The unit '%s' for the '%s' parameter is not a valid unit of duration" % (units, self.name))
+            raise FieldValidationException(
+                "The unit '%s' for the '%s' parameter is not a valid unit of duration" % (units, self.name))
 
         # Convert the units to seconds
         if len(units) > 0:
@@ -202,7 +204,6 @@ class DurationField(Field):
 
 
 class FloatField(Field):
-
     def to_python(self, value):
 
         Field.to_python(self, value)
@@ -227,7 +228,6 @@ class FloatField(Field):
 
 
 class IntegerField(Field):
-
     def to_python(self, value):
 
         Field.to_python(self, value)
@@ -270,7 +270,8 @@ class IntervalField(Field):
     # Note that we don't check explicitly for correct numeric values for each
     # cron field.
 
-    cron_rx = re.compile('''
+    cron_rx = re.compile(
+        '''
         (
              \d{1,2}                    # A digit.
             |\d{1,2}-\d{1,2}            # A range.
@@ -279,9 +280,7 @@ class IntervalField(Field):
             |\*                         # The asterisk character.
             |\*/\d{1,2}                 # An asterisk followed by a step.
         )
-        ''',
-        re.VERBOSE
-    )
+        ''', re.VERBOSE)
 
     def to_python(self, value):
 
@@ -294,7 +293,8 @@ class IntervalField(Field):
             if self.parse_cron(value):
                 return value
 
-        raise FieldValidationException("The value of '{}' for the '{}' parameter is not a valid value".format(value, self.name))
+        raise FieldValidationException("The value of '{}' for the '{}' parameter is not a valid value".format(
+            value, self.name))
 
     def get_data_type(self):
         return Field.DATA_TYPE_STRING
@@ -309,14 +309,14 @@ class IntervalField(Field):
 
 
 class JsonField(Field):
-
     def to_python(self, value):
         Field.to_python(self, value)
 
         try:
             return json.loads(value)
         except (TypeError, ValueError):
-            raise FieldValidationException("The value of '%s' for the '%s' parameter is not a valid JSON object" % (str(value), self.name))
+            raise FieldValidationException(
+                "The value of '%s' for the '%s' parameter is not a valid JSON object" % (str(value), self.name))
 
     def to_string(self, value):
         return str(value)
@@ -326,7 +326,6 @@ class JsonField(Field):
 
 
 class ListField(Field):
-
     def to_python(self, value):
 
         Field.to_python(self, value)
@@ -345,7 +344,6 @@ class ListField(Field):
 
 
 class RangeField(Field):
-
     def __init__(self, name, title, description, low, high, required_on_create=True, required_on_edit=False):
         super(RangeField, self).__init__(name, title, description, required_on_create, required_on_edit)
         self.low = low
@@ -379,7 +377,6 @@ class RangeField(Field):
 
 
 class RegexField(Field):
-
     def to_python(self, value):
 
         Field.to_python(self, value)
@@ -404,11 +401,7 @@ class SeverityField(Field):
 
     # Note: We ignore "FATAL" severity since Python's logging assigns it the
     # same value as "CRITICAL".
-    SEVERITIES = {'DEBUG': 10,
-                  'INFO': 20,
-                  'WARN': 30,
-                  'ERROR': 40,
-                  'CRITICAL': 50}
+    SEVERITIES = {'DEBUG': 10, 'INFO': 20, 'WARN': 30, 'ERROR': 40, 'CRITICAL': 50}
 
     SEVERITIES_BY_INT = {v: k for k, v in SEVERITIES.iteritems()}
 
@@ -421,7 +414,8 @@ class SeverityField(Field):
             # Did not receive a string for some reason.
             pass
 
-        raise FieldValidationException("The value of '{}' for the '{}' parameter is not a valid value".format(value, self.name))
+        raise FieldValidationException("The value of '{}' for the '{}' parameter is not a valid value".format(
+            value, self.name))
 
     def to_string(self, value):
         if value in SeverityField.SEVERITIES_BY_INT:
@@ -432,8 +426,8 @@ class SeverityField(Field):
     def get_data_type(self):
         return Field.DATA_TYPE_NUMBER
 
-class VerbosityField(Field):
 
+class VerbosityField(Field):
     def to_python(self, value):
 
         Field.to_python(self, value)

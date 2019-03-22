@@ -10,14 +10,21 @@ import os
 import sys
 import time
 import xml.dom
-from xml.dom.minidom import Document
 import xml.sax.saxutils
+from xml.dom.minidom import Document
 
 import splunk
 import splunk.clilib
 import splunk.version
-from splunk.models.app import App
 from splunk.clilib.bundle_paths import get_slaveapps_base_path
+from splunk.models.app import App
+from xmloutput import XMLOutputManager, setupLogger
+
+from .fields import (BooleanField, DurationField, Field,
+                     FieldValidationException, FloatField, IntegerField,
+                     IntervalField, ListField, RangeField, RegexField,
+                     SeverityField)
+
 try:
     from splunk.clilib.bundle_paths import make_splunkhome_path
 except ImportError:
@@ -28,27 +35,19 @@ if 'slave' in splunk.clilib.cli_common.getMergedConf('server').get('clustering',
 else:
     sys.path.append(make_splunkhome_path(["etc", "apps", "@appname@", "lib"]))
 
-from .fields import BooleanField
-from .fields import DurationField
-from .fields import Field
-from .fields import FieldValidationException
-from .fields import FloatField
-from .fields import IntegerField
-from .fields import IntervalField
-from .fields import ListField
-from .fields import RangeField
-from .fields import RegexField
-from .fields import SeverityField
 
-from xmloutput import setupLogger, XMLOutputManager
 
 # Define logger using the name of the script here, versus in the modular_input class.
 #logger = log.setup_logger(name='python_modular_input', level=logging.INFO)
-logger = setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [ModularInput] %(message)s', level=logging.INFO, log_name="python_modular_input.log", logger_name="modinput")
+logger = setupLogger(
+    logger=None,
+    log_format='%(asctime)s %(levelname)s [ModularInput] %(message)s',
+    level=logging.INFO,
+    log_name="python_modular_input.log",
+    logger_name="modinput")
 
 
 class ModularInputConfig(object):
-
     def __init__(self, server_host, server_uri, session_key, checkpoint_dir, configuration):
         self.server_host = server_host
         self.server_uri = server_uri
@@ -135,14 +134,14 @@ class ModularInput(object):
 
     # These arguments cover the standard fields that are always supplied
     standard_args = [
-                BooleanField("disabled", "Disabled", "Whether the modular input is disabled or not"),
-                Field("host", "Host", "The host that is running the input"),
-                Field("index", "Index", "The index that data should be sent to"),
-                IntervalField("interval", "Interval", "The interval the script will be run on"),
-                Field("name", "Stanza name", "The name of the stanza for this modular input"),
-                Field("source", "Source", "The source for events created by this modular input"),
-                Field("sourcetype", "Stanza name", "The name of the stanza for this modular input")
-                ]
+        BooleanField("disabled", "Disabled", "Whether the modular input is disabled or not"),
+        Field("host", "Host", "The host that is running the input"),
+        Field("index", "Index", "The index that data should be sent to"),
+        IntervalField("interval", "Interval", "The interval the script will be run on"),
+        Field("name", "Stanza name", "The name of the stanza for this modular input"),
+        Field("source", "Source", "The source for events created by this modular input"),
+        Field("sourcetype", "Stanza name", "The name of the stanza for this modular input")
+    ]
 
     checkpoint_dir = None
 
@@ -582,17 +581,21 @@ class ModularInput(object):
             return time_to_next
         except IOError:
             # The file likely doesn't exist
-            logger.warning("Could not read checkpoint file for last time run, likely does not exist, if this persists debug input immediately")
+            logger.warning(
+                "Could not read checkpoint file for last time run, likely does not exist, if this persists debug input immediately"
+            )
             return 1
         except ValueError:
             # The file could not be loaded
-            logger.exception("Could not read checkpoint file for last time run, if this persists debug input immediately")
+            logger.exception(
+                "Could not read checkpoint file for last time run, if this persists debug input immediately")
             return 1
         except Exception as e:
             logger.exception("Unexpected exception caught, enforcing extra run, exception info: " + str(e))
             return 1
         # Default return value
-        logger.info("This really should be impossible, but whatevs if your input is breaking check the duration calculations")
+        logger.info(
+            "This really should be impossible, but whatevs if your input is breaking check the duration calculations")
         return 1
 
     @classmethod
@@ -663,7 +666,9 @@ class ModularInput(object):
             os.unlink(os.path.join(checkpoint_dir, filename))
             return True
         except IOError:
-            logger.exception('msg="IOError exception when deleting checkpoint data" checkpoint_dir="{}" filename="{}"'.format(checkpoint_dir, filename))
+            logger.exception(
+                'msg="IOError exception when deleting checkpoint data" checkpoint_dir="{}" filename="{}"'.format(
+                    checkpoint_dir, filename))
         return False
 
     def set_checkpoint_data(self, filename, data, checkpoint_dir=None):
@@ -693,11 +698,17 @@ class ModularInput(object):
                 json.dump(data, fp)
                 success = True
         except IOError:
-            logger.exception('msg="IOError exception when saving checkpoint data" checkpoint_dir="{}" filename="{}"'.format(checkpoint_dir, filename))
+            logger.exception(
+                'msg="IOError exception when saving checkpoint data" checkpoint_dir="{}" filename="{}"'.format(
+                    checkpoint_dir, filename))
         except ValueError:
-            logger.exception('msg="ValueError when saving checkpoint data (perhaps invalid JSON)" checkpoint_dir="{}" filename="{}"'.format(checkpoint_dir, filename))
+            logger.exception(
+                'msg="ValueError when saving checkpoint data (perhaps invalid JSON)" checkpoint_dir="{}" filename="{}"'.
+                format(checkpoint_dir, filename))
         except Exception:
-            logger.exception('msg="Unknown exception when saving checkpoint data" checkpoint_dir="{}" filename="{}"'.format(checkpoint_dir, filename))
+            logger.exception(
+                'msg="Unknown exception when saving checkpoint data" checkpoint_dir="{}" filename="{}"'.format(
+                    checkpoint_dir, filename))
         return success
 
     def get_checkpoint_data(self, filename, checkpoint_dir=None, raise_known_exceptions=False):
@@ -727,11 +738,15 @@ class ModularInput(object):
                 with open(checkpoint_path, 'r') as fp:
                     data = json.load(fp)
         except (IOError, ValueError) as e:
-            logger.exception('msg="Exception when reading checkpoint data" checkpoint_dir="{}" filename="{}" exception="%s"'.format(checkpoint_dir, filename, e))
+            logger.exception(
+                'msg="Exception when reading checkpoint data" checkpoint_dir="{}" filename="{}" exception="%s"'.format(
+                    checkpoint_dir, filename, e))
             if raise_known_exceptions:
                 raise
         except Exception:
-            logger.exception('msg="Unknown exception when reading checkpoint data" checkpoint_dir="{}" filename="{}"'.format(checkpoint_dir, filename))
+            logger.exception(
+                'msg="Unknown exception when reading checkpoint data" checkpoint_dir="{}" filename="{}"'.format(
+                    checkpoint_dir, filename))
             raise
 
         return data
@@ -795,7 +810,8 @@ class ModularInput(object):
                 except ValueError as e:
                     # This should never happen unless the author of the modular input
                     # fails to specify "duration" as an IntegerField.
-                    logger.exception("Input stanza '%s' specified an invalid duration: %s" % (stanza.get('name', 'unknown'), str(e)))
+                    logger.exception(
+                        "Input stanza '%s' specified an invalid duration: %s" % (stanza.get('name', 'unknown'), str(e)))
                     # Exit with non-zero exit code so services/admin/inputstatus correctly reflects script status.
                     sys.exit(1)
 
@@ -899,15 +915,16 @@ class ModularInput(object):
 
         parser = argparse.ArgumentParser(description='Modular input parameters')
 
-        mode_args= parser.add_mutually_exclusive_group()
+        mode_args = parser.add_mutually_exclusive_group()
         debug_args = parser.add_argument_group()
 
-        debug_args.add_argument('--username', action="store", default=None,
-                                help="Splunk username (%s)" % warning_text)
-        debug_args.add_argument('--password', action="store", default=None,
-                                help="Splunk password (%s)" % warning_text)
-        debug_args.add_argument('--infile', type=argparse.FileType(), default=None,
-                                help="Filename containing XML modular input configuration (%s)" % warning_text)
+        debug_args.add_argument('--username', action="store", default=None, help="Splunk username (%s)" % warning_text)
+        debug_args.add_argument('--password', action="store", default=None, help="Splunk password (%s)" % warning_text)
+        debug_args.add_argument(
+            '--infile',
+            type=argparse.FileType(),
+            default=None,
+            help="Filename containing XML modular input configuration (%s)" % warning_text)
 
         mode_args.add_argument('--scheme', action="store_true")
         mode_args.add_argument('--validate-arguments', dest='validate', action="store_true")
@@ -959,7 +976,8 @@ class ModularInput(object):
                     try:
                         self.do_run(args.infile, log_exception_and_continue=True)
                     except IOError:
-                        logger.exception("Modular input: modinput configuration could not be read from file %s.", args.infile.name)
+                        logger.exception("Modular input: modinput configuration could not be read from file %s.",
+                                         args.infile.name)
                 else:
                     try:
                         self.do_run(in_stream, log_exception_and_continue=True)

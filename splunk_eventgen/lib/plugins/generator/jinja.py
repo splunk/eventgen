@@ -1,20 +1,23 @@
 from __future__ import division
+
 import datetime
-import time
 import os
 import random
-try:
-    import ujson as json
-except:
-    import json as json
+import time
+
 from jinja2 import nodes
 from jinja2.ext import Extension
 
 from generatorplugin import GeneratorPlugin
 
+try:
+    import ujson as json
+except:
+    import json as json
+
+
 
 class CantFindTemplate(Exception):
-
     def __init__(self, msg):
         """Exception raised when we / Jinja can't find the template
 
@@ -25,7 +28,6 @@ class CantFindTemplate(Exception):
 
 
 class CantProcessTemplate(Exception):
-
     def __init__(self, msg):
         """Exception raised when we / Jinja can't find the template
 
@@ -62,12 +64,12 @@ class JinjaTime(Extension):
         if slice_type == "lower":
             slice_time = slice_start
         elif slice_type == "middle":
-            slice_time = slice_start + (slice_size/2)
+            slice_time = slice_start + (slice_size / 2)
         elif slice_type == "upper":
             slice_time = slice_end
         elif slice_type == "random":
-            start = int(slice_start*100)
-            end = int(slice_end*100)
+            start = int(slice_start * 100)
+            end = int(slice_end * 100)
             if start == end:
                 slice_time = end * 0.01
             else:
@@ -106,17 +108,14 @@ class JinjaTime(Extension):
         return nodes.Output([var_value], lineno=lineno)
 
     def parse(self, parser):
-        target_var_name = {
-            "time_now": "time_now",
-            "time_slice": "time_target"
-        }
+        target_var_name = {"time_now": "time_now", "time_slice": "time_target"}
         tag = parser.stream.current.value
         name_base = target_var_name[tag]
         lineno = parser.stream.next().lineno
         args, kwargs = self.parse_args(parser)
         task_list = []
-        epoch_name = name_base+"_epoch"
-        formatted_name = name_base+"_formatted"
+        epoch_name = name_base + "_epoch"
+        formatted_name = name_base + "_formatted"
         target_epoch_method = "_{0}_epoch".format(tag)
         target_formatted_method = "_{0}_formatted".format(tag)
         epoch_call = self.call_method(target_epoch_method, args=args, kwargs=kwargs, lineno=lineno)
@@ -139,8 +138,7 @@ class JinjaTime(Extension):
                 kwargs.append(nodes.Keyword(key, value, lineno=value.lineno))
             else:
                 if kwargs:
-                    parser.fail('Invalid argument syntax for WrapExtension tag',
-                                parser.stream.current.lineno)
+                    parser.fail('Invalid argument syntax for WrapExtension tag', parser.stream.current.lineno)
                 args.append(parser.parse_expression())
             require_comma = True
         return args, kwargs
@@ -212,11 +210,12 @@ class JinjaGenerator(GeneratorPlugin):
             if not hasattr(self._sample, "jinja_target_template"):
                 raise CantFindTemplate("Template to load not specified in eventgen conf for stanza.  Skipping Stanza")
             jinja_env = Environment(
-                loader=FileSystemLoader([target_template_dir, working_dir, template_dir], encoding='utf-8', followlinks=False),
+                loader=FileSystemLoader([target_template_dir, working_dir, template_dir],
+                                        encoding='utf-8',
+                                        followlinks=False),
                 extensions=['jinja2.ext.do', 'jinja2.ext.with_', 'jinja2.ext.loopcontrols', JinjaTime],
                 line_statement_prefix="#",
-                line_comment_prefix="##"
-            )
+                line_comment_prefix="##")
 
             jinja_loaded_template = jinja_env.get_template(str(self._sample.jinja_target_template))
             if hasattr(self._sample, 'jinja_variables'):
@@ -227,11 +226,11 @@ class JinjaGenerator(GeneratorPlugin):
             jinja_loaded_vars["eventgen_count"] = self.current_count
             jinja_loaded_vars["eventgen_maxcount"] = self.target_count
             jinja_loaded_vars["eventgen_earliest"] = self.earliest
-            self.earliest_epoch = (self.earliest - datetime.datetime(1970,1,1)).total_seconds()
+            self.earliest_epoch = (self.earliest - datetime.datetime(1970, 1, 1)).total_seconds()
             jinja_loaded_vars["eventgen_earliest_epoch"] = self.earliest_epoch
             jinja_loaded_vars["eventgen_latest"] = self.latest
-            jinja_loaded_vars["eventgen_latest_epoch"] = (self.latest - datetime.datetime(1970,1,1)).total_seconds()
-            self.latest_epoch = (self.latest - datetime.datetime(1970,1,1)).total_seconds()
+            jinja_loaded_vars["eventgen_latest_epoch"] = (self.latest - datetime.datetime(1970, 1, 1)).total_seconds()
+            self.latest_epoch = (self.latest - datetime.datetime(1970, 1, 1)).total_seconds()
             while self.current_count < self.target_count:
                 self.end_of_cycle = False
                 jinja_loaded_vars["eventgen_count"] = self.current_count
@@ -249,7 +248,9 @@ class JinjaGenerator(GeneratorPlugin):
                             except ValueError as e:
                                 self.logger.error("Unable to parse Jinja's return.  Line: {0}".format(line))
                                 self.logger.error("Parse Failure Reason: {0}".format(e.message))
-                                self.logger.error("Please note, you must meet the requirements for json.loads in python if you have not installed ujson. Native python does not support multi-line events.")
+                                self.logger.error(
+                                    "Please note, you must meet the requirements for json.loads in python if you have not installed ujson. Native python does not support multi-line events."
+                                )
                                 continue
                             current_line_keys = target_line.keys()
                             if "_time" not in current_line_keys:
@@ -281,7 +282,7 @@ class JinjaGenerator(GeneratorPlugin):
             timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
             self.logger.debugv("Interval complete, flushing feed")
             self._out.flush(endOfInterval=True)
-            self.logger.info("Generation of sample '%s' completed in %s seconds." % (self._sample.name, timeDiffFrac) )
+            self.logger.info("Generation of sample '%s' completed in %s seconds." % (self._sample.name, timeDiffFrac))
             return 0
         except Exception as e:
             self.logger.exception(e)

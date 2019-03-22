@@ -1,21 +1,23 @@
-from nameko.rpc import rpc
-from nameko.web.handlers import http
-from nameko.events import EventDispatcher, event_handler, BROADCAST
-from pyrabbit.api import Client
 import atexit
 import ConfigParser
-import yaml
-import json
-import os
-import socket
-import time
-import requests
 import glob
-import tarfile
-import zipfile
-import shutil
-import eventgen_nameko_dependency
+import json
 import logging
+import os
+import shutil
+import socket
+import tarfile
+import time
+import zipfile
+
+import requests
+import yaml
+from pyrabbit.api import Client
+
+import eventgen_nameko_dependency
+from nameko.events import BROADCAST, EventDispatcher, event_handler
+from nameko.rpc import rpc
+from nameko.web.handlers import http
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
@@ -27,7 +29,6 @@ def get_eventgen_name_from_conf():
     with open(os.path.abspath(os.path.join(FILE_PATH, "server_conf.yml"))) as config_yml:
         loaded_yml = yaml.load(config_yml)
         return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else socket.gethostname()
-    return None
 
 
 def exit_handler(client, hostname, logger):
@@ -53,8 +54,7 @@ class EventgenServer(object):
     config["AMQP_PASS"] = osvars.get("EVENTGEN_AMQP_PASS", "guest")
 
     pyrabbit_cl = Client('{0}:{1}'.format(config['AMQP_HOST'], config['AMQP_WEBPORT']),
-                         '{0}'.format(config['AMQP_USER']),
-                         '{0}'.format(config['AMQP_PASS']))
+                         '{0}'.format(config['AMQP_USER']), '{0}'.format(config['AMQP_PASS']))
     pyrabbit_cl.create_vhost(host)
     log.info("Vhost set to {}".format(host))
 
@@ -85,7 +85,7 @@ class EventgenServer(object):
         if self.eventgen_dependency.eventgen.check_running():
             # running
             status = 1
-        elif self.eventgen_dependency.eventgen.completed == True:
+        elif self.eventgen_dependency.eventgen.completed is True:
             # all samples completed and stop
             status = 2
         else:
@@ -96,9 +96,20 @@ class EventgenServer(object):
         res["CONFIGURED"] = self.eventgen_dependency.configured
         res["CONFIG_FILE"] = self.eventgen_dependency.configfile
         res["TOTAL_VOLUME"] = self.total_volume
-        res["QUEUE_STATUS"] = {'SAMPLE_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
-                               'OUTPUT_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
-                               'WORKER_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}}
+        res["QUEUE_STATUS"] = {
+            'SAMPLE_QUEUE': {
+                'UNFINISHED_TASK': 'N/A',
+                'QUEUE_LENGTH': 'N/A'
+            },
+            'OUTPUT_QUEUE': {
+                'UNFINISHED_TASK': 'N/A',
+                'QUEUE_LENGTH': 'N/A'
+            },
+            'WORKER_QUEUE': {
+                'UNFINISHED_TASK': 'N/A',
+                'QUEUE_LENGTH': 'N/A'
+            }
+        }
         res['THROUGHPUT_STATUS'] = self.get_throughput()
         if hasattr(self.eventgen_dependency.eventgen, "sampleQueue"):
             res["QUEUE_STATUS"]['SAMPLE_QUEUE'][
@@ -114,9 +125,7 @@ class EventgenServer(object):
             res["QUEUE_STATUS"]['WORKER_QUEUE']['QUEUE_LENGTH'] = self.eventgen_dependency.eventgen.workerQueue.qsize()
         return res
 
-    ##############################################
-    ############### Real Methods #################
-    ##############################################
+    # Real Methods
 
     def index(self):
         self.log.info("index method called")
@@ -139,14 +148,8 @@ Output Queue Status: {7}\n'''
         sample_queue_status = status["QUEUE_STATUS"]["SAMPLE_QUEUE"]
         output_queue_status = status["QUEUE_STATUS"]["OUTPUT_QUEUE"]
 
-        return home_page.format(host,
-                                eventgen_status,
-                                configured,
-                                config_file,
-                                total_volume,
-                                worker_queue_status,
-                                sample_queue_status,
-                                output_queue_status)
+        return home_page.format(host, eventgen_status, configured, config_file, total_volume, worker_queue_status,
+                                sample_queue_status, output_queue_status)
 
     def status(self):
         self.log.info('Status method called.')
@@ -344,28 +347,28 @@ Output Queue Status: {7}\n'''
             new_key = bool(data.get("new_key", True))
 
             def create_new_hec_key(hostname):
-                requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/http".format(
-                        hostname, mgmt_port),
-                        auth=("admin", password),
-                        data={"disabled": "0"},
-                        verify=False)
-                requests.delete(
-                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}".format(
-                                hostname, mgmt_port,key_name),
-                        verify=False,
-                        auth=("admin", password)
-                    )
                 requests.post(
-                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(
-                                hostname, mgmt_port),
-                        verify=False,
-                        auth=("admin", password),
-                        data={"name": key_name})
+                    "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/http".format(
+                        hostname, mgmt_port),
+                    auth=("admin", password),
+                    data={"disabled": "0"},
+                    verify=False)
+                requests.delete(
+                    "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}".format(
+                        hostname, mgmt_port, key_name),
+                    verify=False,
+                    auth=("admin", password))
+                requests.post(
+                    "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(
+                        hostname, mgmt_port),
+                    verify=False,
+                    auth=("admin", password),
+                    data={"name": key_name})
                 r = requests.post(
-                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(
-                                hostname, mgmt_port, key_name),
-                        verify=False,
-                        auth=("admin", password))
+                    "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(
+                        hostname, mgmt_port, key_name),
+                    verify=False,
+                    auth=("admin", password))
                 return str(json.loads(r.text)["entry"][0]["content"]["token"])
 
             self.discovered_servers = []
@@ -375,10 +378,12 @@ Output Queue Status: {7}\n'''
                     if new_key:
                         key = create_new_hec_key(formatted_hostname)
 
-                    self.discovered_servers.append({"protocol": str(protocol),
-                                                    "address": str(formatted_hostname),
-                                                    "port": str(hec_port),
-                                                    "key": str(key)})
+                    self.discovered_servers.append({
+                        "protocol": str(protocol),
+                        "address": str(formatted_hostname),
+                        "port": str(hec_port),
+                        "key": str(key)
+                    })
                 except socket.gaierror:
                     continue
 
@@ -389,10 +394,12 @@ Output Queue Status: {7}\n'''
                     if new_key:
                         key = create_new_hec_key(formatted_hostname)
 
-                    self.discovered_servers.append({"protocol": str(protocol),
-                                                    "address": str(formatted_hostname),
-                                                    "port": str(hec_port),
-                                                    "key": str(key)})
+                    self.discovered_servers.append({
+                        "protocol": str(protocol),
+                        "address": str(formatted_hostname),
+                        "port": str(hec_port),
+                        "key": str(key)
+                    })
                     counter += 1
                 except socket.gaierror:
                     break
@@ -477,9 +484,7 @@ Output Queue Status: {7}\n'''
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
-    ##############################################
-    ############ Event Handler Methods ###########
-    ##############################################
+    # Event Handler Methods
 
     @event_handler("eventgen_controller", "all_index", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_index(self, payload):
@@ -535,76 +540,74 @@ Output Queue Status: {7}\n'''
     def event_handler_all_reset(self, payload):
         return self.reset()
 
-    @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_index(self, payload):
         return self.index()
 
-    @event_handler("eventgen_controller", "{}_status".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_status".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_status(self, payload):
         return self.status()
 
-    @event_handler("eventgen_controller", "{}_start".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_start".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_start(self, payload):
         return self.start()
 
-    @event_handler("eventgen_controller", "{}_stop".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_stop".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_stop(self, payload):
         return self.stop()
 
-    @event_handler("eventgen_controller", "{}_restart".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_restart".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_restart(self, payload):
         return self.restart()
 
-    @event_handler("eventgen_controller", "{}_get_conf".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_get_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_get_conf(self, payload):
         return self.get_conf()
 
-    @event_handler("eventgen_controller", "{}_set_conf".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_set_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_set_conf(self, payload):
         return self.set_conf(conf=payload)
 
-    @event_handler("eventgen_controller", "{}_edit_conf".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_edit_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_edit_conf(self, payload):
         return self.edit_conf(conf=payload)
 
-    @event_handler("eventgen_controller", "{}_bundle".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_bundle".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_bundle(self, payload):
         if payload['url']:
             return self.bundle(payload['url'])
 
-    @event_handler("eventgen_controller", "{}_setup".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_setup".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_setup(self, payload):
         return self.setup(data=payload)
 
-    @event_handler("eventgen_controller", "{}_get_volume".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_get_volume".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_get_volume(self):
         return self.get_volume()
 
-    @event_handler("eventgen_controller", "{}_set_volume".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_set_volume".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_set_volume(self, payload):
         if payload['perDayVolume']:
             return self.set_volume(payload['perDayVolume'])
 
-    @event_handler("eventgen_controller", "{}_reset".format(eventgen_name), handler_type=BROADCAST,
-                   reliable_delivery=False)
+    @event_handler(
+        "eventgen_controller", "{}_reset".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_reset(self, payload):
         return self.reset()
 
-    ##############################################
-    ################ HTTP Methods ################
-    ##############################################
+    # HTTP Methods
 
     @http('GET', '/')
     def http_root(self, request):
@@ -696,9 +699,7 @@ Output Queue Status: {7}\n'''
     def http_reset(self, request):
         return json.dumps(self.reset())
 
-    ##############################################
-    ################ Helper Methods ##############
-    ##############################################
+    # Helper Methods
 
     def parse_eventgen_conf(self, path):
         config = ConfigParser.ConfigParser()
@@ -759,10 +760,7 @@ Output Queue Status: {7}\n'''
 
     def get_throughput(self):
         self.log.debug("Getting throughput ...")
-        empty_throughput = {'TOTAL_VOLUME_MB': 0,
-                            'TOTAL_COUNT': 0,
-                            'THROUGHPUT_VOLUME_KB': 0,
-                            'THROUGHPUT_COUNT': 0}
+        empty_throughput = {'TOTAL_VOLUME_MB': 0, 'TOTAL_COUNT': 0, 'THROUGHPUT_VOLUME_KB': 0, 'THROUGHPUT_COUNT': 0}
         if hasattr(self.eventgen_dependency.eventgen, 'output_counters'):
             total_volume = 0
             total_count = 0
@@ -773,10 +771,12 @@ Output Queue Status: {7}\n'''
                 total_count += output_counter.total_output_count
                 throughput_volume += output_counter.throughput_volume
                 throughput_count += output_counter.throughput_count
-            return {'TOTAL_VOLUME_MB': total_volume / (1024*1024),
-                    'TOTAL_COUNT': total_count,
-                    'THROUGHPUT_VOLUME_KB': throughput_volume / (1024),
-                    'THROUGHPUT_COUNT': throughput_count}
+            return {
+                'TOTAL_VOLUME_MB': total_volume / (1024 * 1024),
+                'TOTAL_COUNT': total_count,
+                'THROUGHPUT_VOLUME_KB': throughput_volume / (1024),
+                'THROUGHPUT_COUNT': throughput_count
+            }
         else:
             self.log.debug("return empty throughput because of output_counters not found.")
             return empty_throughput

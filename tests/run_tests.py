@@ -1,7 +1,8 @@
-import pytest
-import sys
-import time
 import os
+import sys
+
+import pytest
+
 SMALL = 'tests/small'
 MEDIUM = 'tests/medium'
 LARGE = 'tests/large'
@@ -11,13 +12,12 @@ args = sys.argv[:]
 ENV = os.environ
 PATH = sys.path
 
-# Set to 1 is debugging is a problem.  Normally, it is 8, which should match the cores/hyperthreads of most of our systems.
+# Normally, it is 8, which should match the cores/hyperthreads of most of our systems.
 NUM_TEST_WORKERS_LARGE = '8'
-
 """
 How to run the tests:
 1. python run_tests.py
-2. python run_tests.py {SMALL_TESTS_TO_RUN} {MEDIUM_TESTS_TO_RUN} {LARGE_TESTS_TO_RUN} {XLARGE_TESTS_TO_RUN} {optional RUN_DESTROY}
+2. python run_tests.py {SMALL_TEST_PATH} {MEDIUM_TEST_PATH} {LARGE_TEST_PATH} {XLARGE_TEST_PATH} {optional RUN_DESTROY}
     - You can pass 'None' as a value to either to ignore those tests
     - To run a specific folder, file, pass it in as a value. ex
         * python run_tests.py None None tests/large/test_destroy.py None
@@ -46,7 +46,10 @@ return_codes = []
 if SMALL:
     sys.path = PATH
     os.environ = ENV
-    args = [ "--cov=splunk_eventgen", "--cov-config=tests/.coveragerc", "--cov-report=term", "--cov-report=html", SMALL, "--junitxml=tests/test-reports/tests_small_results.xml"]
+    args = [
+        "--cov=splunk_eventgen", "--cov-config=tests/.coveragerc", "--cov-report=term", "--cov-report=html", SMALL,
+        "--junitxml=tests/test-reports/tests_small_results.xml"
+    ]
     return_codes.append(pytest.main(args))
 
 # Run medium tests

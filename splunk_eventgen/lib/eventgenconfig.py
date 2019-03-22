@@ -1,17 +1,20 @@
 from __future__ import division
-from ConfigParser import ConfigParser
-import os
+
 import datetime
-import re
-import logging, logging.handlers
 import json
+import logging
+import logging.handlers
+import os
 import pprint
+import random
+import re
+import types
+import urllib
+from ConfigParser import ConfigParser
+
+from eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
 from eventgensamples import Sample
 from eventgentoken import Token
-from eventgenexceptions import PluginNotLoaded, FailedLoadingPlugin
-import urllib
-import types
-import random
 
 # 4/21/14 CS  Adding a defined constant whether we're running in standalone mode or not
 #             Standalone mode is when we know we're Splunk embedded but we want to force
@@ -26,6 +29,7 @@ import random
 #             because we interpret all those as config overrides.
 
 STANDALONE = False
+
 
 # 5/10/12 CS Some people consider Singleton to be lazy.  Dunno, I like it for convenience.
 # My general thought on that sort of stuff is if you don't like it, reimplement it.  I'll consider
@@ -50,11 +54,11 @@ class Config(object):
     sessionKey = None
     grandparentdir = None
     greatgrandparentdir = None
-    samples = [ ]
+    samples = []
     sampleDir = None
     outputWorkers = None
     generatorWorkers = None
-    sampleTimers = [ ]
+    sampleTimers = []
 
     # Config file options.  We do not define defaults here, rather we pull them in
     # from eventgen.conf.
@@ -65,47 +69,64 @@ class Config(object):
     disabled = None
     blacklist = ".*\.part"
 
-    __generatorworkers = [ ]
-    __outputworkers = [ ]
-    outputPlugins = { }
-    plugins = { }
+    __generatorworkers = []
+    __outputworkers = []
+    outputPlugins = {}
+    plugins = {}
     outputQueue = None
     generatorQueue = None
     args = None
 
     ## Validations
-    _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
-                    'delay', 'count', 'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate',
-                    'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes',
-                    'fileBackupFiles', 'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken',
-                    'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
-                    'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
-                    'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
-                    'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort',
-                    'verbosity', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp']
+    _validSettings = [
+        'disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 'count',
+        'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount',
+        'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 'fileBackupFiles', 'index', 'source', 'sourcetype',
+        'host', 'hostRegex', 'projectID', 'accessToken', 'mode', 'backfill', 'backfillSearch', 'eai:userName',
+        'eai:appName', 'timeMultiple', 'debug', 'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate',
+        'perDayVolume', 'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir',
+        'threading', 'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort', 'verbosity',
+        'useOutputQueue', 'seed', 'end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse', 'outputCounter',
+        'sequentialTimestamp'
+    ]
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
-    _validReplacementTypes = ['static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'seqfile', 'integerid']
-    validOutputModes = [ ]
+    _validReplacementTypes = [
+        'static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'seqfile', 'integerid'
+    ]
+    validOutputModes = []
     _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
-    _boolSettings = ['disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp', 'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp']
-    _jsonSettings = ['hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps']
-    _defaultableSettings = ['disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay',
-                            'count', 'bundlelines', 'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate',
-                            'randomizeCount', 'randomizeEvents', 'outputMode', 'fileMaxBytes', 'fileBackupFiles',
-                            'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype', 'host', 'hostRegex',
-                            'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
-                            'monthOfYearRate', 'perDayVolume', 'sessionKey', 'generator', 'rater', 'timeField', 'maxQueueLength',
-                            'maxIntervalsBeforeFlush', 'autotimestamp']
-    _complexSettings = { 'sampletype': ['raw', 'csv'],
-                         'mode': ['sample', 'replay'],
-                         'threading': ['thread', 'process']}
+    _boolSettings = [
+        'disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp',
+        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp'
+    ]
+    _jsonSettings = [
+        'hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps'
+    ]
+    _defaultableSettings = [
+        'disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 'count', 'bundlelines',
+        'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode',
+        'fileMaxBytes', 'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype',
+        'host', 'hostRegex', 'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
+        'monthOfYearRate', 'perDayVolume', 'sessionKey', 'generator', 'rater', 'timeField', 'maxQueueLength',
+        'maxIntervalsBeforeFlush', 'autotimestamp'
+    ]
+    _complexSettings = {'sampletype': ['raw', 'csv'], 'mode': ['sample', 'replay'], 'threading': ['thread', 'process']}
 
-    def __init__(self, configfile=None, sample=None, override_outputter=False, override_count=False,
-                 override_interval=False, override_backfill=False, override_end=False,
-                 threading="thread", override_generators=None, override_outputqueue=False,
-                 profiler=False, verbosity=40):
+    def __init__(self,
+                 configfile=None,
+                 sample=None,
+                 override_outputter=False,
+                 override_count=False,
+                 override_interval=False,
+                 override_backfill=False,
+                 override_end=False,
+                 threading="thread",
+                 override_generators=None,
+                 override_outputqueue=False,
+                 profiler=False,
+                 verbosity=40):
         """Setup Config object.  Sets up Logging and path related variables."""
         # Rebind the internal datastore of the class to an Instance variable
         self.__dict__ = self.__sharedState
@@ -151,11 +172,11 @@ class Config(object):
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of our Config"""
         # Filter items from config we don't want to pretty print
-        filter_list = [ 'samples', 'sampleTimers', '__generatorworkers', '__outputworkers' ]
+        filter_list = ['samples', 'sampleTimers', '__generatorworkers', '__outputworkers']
         # Eliminate recursive going back to parent
-        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key not in filter_list ])
+        temp = dict([(key, value) for (key, value) in self.__dict__.items() if key not in filter_list])
 
-        return 'Config:'+pprint.pformat(temp)+'\nSamples:\n'+pprint.pformat(self.samples)
+        return 'Config:' + pprint.pformat(temp) + '\nSamples:\n' + pprint.pformat(self.samples)
 
     # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
     def __getstate__(self):
@@ -173,13 +194,12 @@ class Config(object):
 
     def getPlugin(self, name, s=None):
         """Return a reference to a Python object (not an instance) referenced by passed name"""
-
         '''
         APPPERF-263:
         make sure we look in __outputPlugins as well. For some reason we
         keep 2 separate dicts of plugins.
         '''
-        plugintype=name.split(".")[0]
+        plugintype = name.split(".")[0]
         if not name in self.plugins and not name in self.outputPlugins:
             # 2/1/15 CS If we haven't already seen the plugin, try to load it
             # Note, this will only work for plugins which do not specify config validation
@@ -190,13 +210,13 @@ class Config(object):
                 else:
                     plugin = getattr(s, 'outputMode')
                 if plugin != None:
-                    self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'"
-                                 % (plugintype, plugin, s.name))
+                    self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'" %
+                                      (plugintype, plugin, s.name))
                     bindir = os.path.join(s.sampleDir, os.pardir, 'bin')
                     libdir = os.path.join(s.sampleDir, os.pardir, 'lib')
                     plugindir = os.path.join(libdir, 'plugins', plugintype)
-                    targetplugin = PluginNotLoaded(bindir=bindir, libdir=libdir,
-                                                   plugindir=plugindir, name=plugin, type=plugintype)
+                    targetplugin = PluginNotLoaded(
+                        bindir=bindir, libdir=libdir, plugindir=plugindir, name=plugin, type=plugintype)
                     if targetplugin.name not in self.extraplugins:
                         self.extraplugins.append(targetplugin.name)
                         raise targetplugin
@@ -233,8 +253,11 @@ class Config(object):
             except:
                 import traceback
                 trace = traceback.format_exc()
-                self.logger.error('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s.  Stacktrace: %s' % (s.name, trace))
-                raise ValueError('Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s' % s.name)
+                self.logger.error(
+                    'Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s.  Stacktrace: %s' %
+                    (s.name, trace))
+                raise ValueError(
+                    'Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s' % s.name)
         else:
             # splunkMethod and splunkPort are defaulted so only check for splunkHost
             if s.splunkHost == None:
@@ -246,7 +269,8 @@ class Config(object):
             splunkHost = s.splunkHost
             splunkPort = s.splunkPort
 
-        self.logger.debug("Getting Splunk URL: %s Method: %s Host: %s Port: %s" % (splunkUrl, splunkMethod, splunkHost, splunkPort))
+        self.logger.debug(
+            "Getting Splunk URL: %s Method: %s Host: %s Port: %s" % (splunkUrl, splunkMethod, splunkHost, splunkPort))
         return (splunkUrl, splunkMethod, splunkHost, splunkPort)
 
     def parse(self):
@@ -267,8 +291,8 @@ class Config(object):
             if 'default' in self._confDict:
                 del self._confDict['default']
 
-        tempsamples = [ ]
-        tempsamples2 = [ ]
+        tempsamples = []
+        tempsamples2 = []
 
         stanza_map = {}
         stanza_list = []
@@ -322,7 +346,8 @@ class Config(object):
                             if 'token.{}.token'.format(i) in self._confDict[global_stanza]:
                                 token = self._confDict[global_stanza].get('token.{}.token'.format(i))
                                 replacement = self._confDict[global_stanza].get('token.{}.replacement'.format(i))
-                                replacementType = self._confDict[global_stanza].get('token.{}.replacementType'.format(i))
+                                replacementType = self._confDict[global_stanza].get(
+                                    'token.{}.replacementType'.format(i))
 
                                 last_token_number += 1
                                 if token:
@@ -343,9 +368,9 @@ class Config(object):
                                 break
 
                         keys = settings.keys()
-                        for k,v in self._confDict[global_stanza].items():
+                        for k, v in self._confDict[global_stanza].items():
                             if 'token' not in k and k not in keys:
-                                kv_pair_items.append((k,v))
+                                kv_pair_items.append((k, v))
 
                 for key, value in kv_pair_items:
                     oldvalue = value
@@ -359,7 +384,7 @@ class Config(object):
                         # Token indices could be out of order, so we must check to
                         # see whether we have enough items in the list to update the token
                         # In general this will keep growing the list by whatever length we need
-                        if(key.find("host.") > -1):
+                        if (key.find("host.") > -1):
                             # self.logger.info("hostToken.{} = {}".format(value[1],oldvalue))
                             if not isinstance(s.hostToken, Token):
                                 s.hostToken = Token(s)
@@ -368,7 +393,7 @@ class Config(object):
                             setattr(s.hostToken, value[0], oldvalue)
                         else:
                             if len(s.tokens) <= value[0]:
-                                x = (value[0]+1) - len(s.tokens)
+                                x = (value[0] + 1) - len(s.tokens)
                                 s.tokens.extend([None for i in xrange(0, x)])
                             if not isinstance(s.tokens[value[0]], Token):
                                 s.tokens[value[0]] = Token(s)
@@ -383,12 +408,10 @@ class Config(object):
                         s._lockedSettings.append(key)
                         # self.logger.debug("Appending '%s' to locked settings for sample '%s'" % (key, s.name))
 
-
-
                 # Validate all the tokens are fully setup, can't do this in _validateSettings
                 # because they come over multiple lines
                 # Don't error out at this point, just log it and remove the token and move on
-                deleteidx = [ ]
+                deleteidx = []
                 for i in xrange(0, len(s.tokens)):
                     t = s.tokens[i]
                     # If the index doesn't exist at all
@@ -400,12 +423,11 @@ class Config(object):
                     elif t.token == None or t.replacementType == None or t.replacement == None:
                         self.logger.error("Token at index %s invalid" % i)
                         deleteidx.append(i)
-                newtokens = [ ]
+                newtokens = []
                 for i in xrange(0, len(s.tokens)):
                     if i not in deleteidx:
                         newtokens.append(s.tokens[i])
                 s.tokens = newtokens
-
 
                 # Must have eai:acl key to determine app name which determines where actual files are
                 if s.app == None:
@@ -418,7 +440,7 @@ class Config(object):
 
                 # Append to temporary holding list
                 if not s.disabled:
-                    s._priority = len(tempsamples)+1
+                    s._priority = len(tempsamples) + 1
                     tempsamples.append(s)
 
         # 6/22/12 CS Rewriting the config matching code yet again to handling flattening better.
@@ -427,14 +449,15 @@ class Config(object):
         # every other match to that one.
         for s in tempsamples:
             # Now we need to match this up to real files.  May generate multiple copies of the sample.
-            foundFiles = [ ]
+            foundFiles = []
 
             # 1/5/14 Adding a config setting to override sample directory, primarily so I can put tests in their own
             # directories
             if s.sampleDir == None:
                 self.logger.debug("Sample directory not specified in config, setting based on standard")
                 if self.splunkEmbedded and not STANDALONE:
-                    s.sampleDir = os.path.normpath(os.path.join(self.grandparentdir, '..', '..', '..', s.app, 'samples'))
+                    s.sampleDir = os.path.normpath(
+                        os.path.join(self.grandparentdir, '..', '..', '..', s.app, 'samples'))
                 else:
                     # 2/1/15 CS  Adding support for looking for samples based on the config file specified on
                     # the command line.
@@ -452,7 +475,8 @@ class Config(object):
 
                         if not os.path.exists(s.sampleDir):
                             newSampleDir = os.path.join(self.grandparentdir, 'samples')
-                            self.logger.error("Path not found for samples '%s', trying '%s'" % (s.sampleDir, newSampleDir))
+                            self.logger.error(
+                                "Path not found for samples '%s', trying '%s'" % (s.sampleDir, newSampleDir))
                             s.sampleDir = newSampleDir
             else:
                 self.logger.debug("Sample directory specified in config, checking for relative")
@@ -485,10 +509,12 @@ class Config(object):
                     self.maxIntervalsBeforeFlush = 1
                     s.maxIntervalsBeforeFlush = 1
                     s.maxQueueLength = s.maxQueueLength or 1
-                    self.logger.debug("Sample '%s' setting maxQueueLength to '%s' from command line" % (s.name, s.maxQueueLength))
+                    self.logger.debug(
+                        "Sample '%s' setting maxQueueLength to '%s' from command line" % (s.name, s.maxQueueLength))
 
                     if self.override_outputter:
-                        self.logger.debug("Sample '%s' setting output to '%s' from command line" % (s.name, self.override_outputter))
+                        self.logger.debug(
+                            "Sample '%s' setting output to '%s' from command line" % (s.name, self.override_outputter))
                         s.outputMode = self.override_outputter
 
                     if self.override_count:
@@ -498,11 +524,13 @@ class Config(object):
                         s.backfill = None
 
                     if self.override_interval:
-                        self.logger.debug("Overriding interval to '%d' for sample '%s'" % (self.override_interval, s.name))
+                        self.logger.debug(
+                            "Overriding interval to '%d' for sample '%s'" % (self.override_interval, s.name))
                         s.interval = self.override_interval
 
                     if self.override_backfill:
-                        self.logger.debug("Overriding backfill to '%s' for sample '%s'" % (self.override_backfill, s.name))
+                        self.logger.debug(
+                            "Overriding backfill to '%s' for sample '%s'" % (self.override_backfill, s.name))
                         s.backfill = self.override_backfill.lstrip()
 
                     if self.override_end:
@@ -517,7 +545,7 @@ class Config(object):
             for token in s.tokens:
                 if token.replacementType == 'integerid':
                     try:
-                        stateFile = open(os.path.join(s.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'rU')
+                        stateFile = open(os.path.join(s.sampleDir, 'state.' + urllib.pathname2url(token.token)), 'rU')
                         token.replacement = stateFile.read()
                         stateFile.close()
                     # The file doesn't exist, use the default value in the config
@@ -568,7 +596,7 @@ class Config(object):
                         self.logger.info("Sample '%s' for app '%s' is marked disabled." % (news.name, news.app))
 
         # Clear tempsamples, we're going to reuse it
-        tempsamples = [ ]
+        tempsamples = []
 
         # We're now going go through the samples and attempt to apply any matches from other stanzas
         # This allows us to specify a wildcard at the beginning of the file and get more specific as we go on
@@ -576,14 +604,14 @@ class Config(object):
         # Loop through all samples, create a list of the master samples
         for s in tempsamples2:
             foundHigherPriority = False
-            othermatches = [ ]
+            othermatches = []
             # If we're an exact match, don't go looking for higher priorities
             if not s.name == s._origName:
                 for matchs in tempsamples2:
                     if matchs.filePath == s.filePath and s._origName != matchs._origName:
                         # We have a match, now determine if we're higher priority or not
-                            # If this is a longer pattern or our match is an exact match
-                            # then we're a higher priority match
+                        # If this is a longer pattern or our match is an exact match
+                        # then we're a higher priority match
                         if len(matchs._origName) > len(s._origName) or matchs.name == matchs._origName:
                             # if s._priority < matchs._priority:
                             self.logger.debug("Found higher priority for sample '%s' with priority '%s' from sample '%s' with priority '%s'" \
@@ -649,7 +677,8 @@ class Config(object):
             # We've added replay mode, so lets loop through the samples again and set the earliest and latest
             # settings for any samples that were set to replay mode
             if s.perDayVolume:
-                self.logger.info("Stanza contains per day volume, changing rater and generator to perdayvolume instead of count")
+                self.logger.info(
+                    "Stanza contains per day volume, changing rater and generator to perdayvolume instead of count")
                 s.rater = 'perdayvolume'
                 s.count = 1
                 s.generator = 'perdayvolumegenerator'
@@ -676,7 +705,7 @@ class Config(object):
 
                 if s.autotimestamp:
                     at = self.autotimestamps
-                    line_puncts = [ ]
+                    line_puncts = []
 
                     # Check for _time field, if it exists, add a timestamp to support it
                     if len(s.sampleDict) > 0:
@@ -712,7 +741,8 @@ class Config(object):
                                 t.replacement = x[1]
 
                                 try:
-                                    self.logger.debug("Trying regex '%s' for format '%s' on '%s'" % (x[0], x[1], e[s.timeField]))
+                                    self.logger.debug(
+                                        "Trying regex '%s' for format '%s' on '%s'" % (x[0], x[1], e[s.timeField]))
                                     ts = s.getTSFromEvent(e['_raw'], t)
                                     if type(ts) == datetime.datetime:
                                         found_token = False
@@ -722,10 +752,11 @@ class Config(object):
                                                 found_token = True
                                                 break
                                         if not found_token:
-                                            self.logger.debug("Found timestamp '%s', extending token with format '%s'" % (x[0], x[1]))
+                                            self.logger.debug(
+                                                "Found timestamp '%s', extending token with format '%s'" % (x[0], x[1]))
                                             s.tokens.append(t)
                                             # Drop this pattern from ones we try in the future
-                                            at = [ z for z in at if z[0] != x[0] ]
+                                            at = [z for z in at if z[0] != x[0]]
                                         break
                                 except ValueError:
                                     pass
@@ -812,7 +843,8 @@ class Config(object):
                     value = complexSetting(value)
                 elif isinstance(complexSetting, list):
                     if not value in complexSetting:
-                        self.logger.error("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
+                        self.logger.error(
+                            "Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
                         raise ValueError("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
         else:
             # Notifying only if the setting isn't valid and continuing on
@@ -832,7 +864,7 @@ class Config(object):
                     mod = 100
                 else:
                     mod = -100
-                value = datetime.timedelta(hours=int(int(value) / 100.0), minutes=int(value) % mod )
+                value = datetime.timedelta(hours=int(int(value) / 100.0), minutes=int(value) % mod)
             except:
                 self.logger.error("Could not parse timezone {}".format(value))
                 raise ValueError("Could not parse timezone {}".format(value))
@@ -868,7 +900,7 @@ class Config(object):
             conf.optionxform = str
             currentdir = os.getcwd()
 
-            conffiles = [ ]
+            conffiles = []
             # 2/1/15 CS  Moving to argparse way of grabbing command line parameters
             if self.configfile:
                 if os.path.exists(self.configfile):
@@ -876,26 +908,29 @@ class Config(object):
                     # In which case we'll assume it's a splunk app and look for config files in
                     # default and local
                     if os.path.isdir(self.configfile):
-                        conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
-                                os.path.join(self.configfile, 'default', 'eventgen.conf'),
-                                os.path.join(self.configfile, 'local', 'eventgen.conf')]
+                        conffiles = [
+                            os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
+                            os.path.join(self.configfile, 'default', 'eventgen.conf'),
+                            os.path.join(self.configfile, 'local', 'eventgen.conf')
+                        ]
                     else:
-                        conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
-                                self.configfile]
+                        conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'), self.configfile]
             if len(conffiles) == 0:
-                conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
-                            os.path.join(self.grandparentdir, 'local', 'eventgen.conf')]
+                conffiles = [
+                    os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
+                    os.path.join(self.grandparentdir, 'local', 'eventgen.conf')
+                ]
 
             self.logger.debug('Reading configuration files for non-splunkembedded: %s' % conffiles)
             conf.read(conffiles)
 
             sections = conf.sections()
-            ret = { }
-            orig = { }
+            ret = {}
+            orig = {}
             for section in sections:
                 ret[section] = dict(conf.items(section))
                 # For compatibility with Splunk's configs, need to add the app name to an eai:acl key
-                ret[section]['eai:acl'] = { 'app': self.grandparentdir.split(os.sep)[-1] }
+                ret[section]['eai:acl'] = {'app': self.grandparentdir.split(os.sep)[-1]}
             self._confDict = ret
 
         self.logger.debug("ConfDict returned %s" % pprint.pformat(dict(self._confDict)))

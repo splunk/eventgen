@@ -1,8 +1,10 @@
+import copy
 import logging
 import time
-import copy
-from timeparser import timeParserTimeMath
 from Queue import Full
+
+from timeparser import timeParserTimeMath
+
 
 class Timer(object):
     """
@@ -50,12 +52,13 @@ class Timer(object):
             self.outputPlugin = self.config.getPlugin('output.' + self.sample.outputMode, self.sample)
             if self.sample.timeMultiple < 0:
                 self.logger.error("Invalid setting for timeMultiple: {}, value should be positive".format(
-                                  self.sample.timeMultiple))
+                    self.sample.timeMultiple))
             elif self.sample.timeMultiple != 1:
                 self.interval = self.sample.interval * self.sample.timeMultiple
                 self.logger.debug("Adjusting interval {} with timeMultiple {}, new interval: {}".format(
-                                  self.sample.interval, self.sample.timeMultiple, self.interval))
-        self.logger.info("Start '%s' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
+                    self.sample.interval, self.sample.timeMultiple, self.interval))
+        self.logger.info(
+            "Start '%s' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
 
     # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
     def __getstate__(self):
@@ -116,7 +119,7 @@ class Timer(object):
             count = self.rater.rate()
             #First run of the generator, see if we have any backfill work to do.
             if self.countdown <= 0:
-               
+
                 if self.sample.backfill and not self.sample.backfilldone:
                     realtime = self.sample.now(realnow=True)
                     if "-" in self.sample.backfill[0]:
@@ -130,19 +133,15 @@ class Timer(object):
                             backfillnumber += char
                         elif char != "-":
                             backfillletter += char
-                    backfillearliest = timeParserTimeMath(plusminus=mathsymbol,
-                                                          num=backfillnumber,
-                                                          unit=backfillletter,
-                                                          ret=realtime)
+                    backfillearliest = timeParserTimeMath(
+                        plusminus=mathsymbol, num=backfillnumber, unit=backfillletter, ret=realtime)
                     while backfillearliest < realtime:
                         et = backfillearliest
                         lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
                         genPlugin = self.generatorPlugin(sample=self.sample)
                         # need to make sure we set the queue right if we're using multiprocessing or thread modes
                         genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
-                        genPlugin.updateCounts(count=count,
-                                               start_time=et,
-                                               end_time=lt)
+                        genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
                         try:
                             self.generatorQueue.put(genPlugin)
                         except Full:
@@ -156,8 +155,8 @@ class Timer(object):
                         count = self.rater.rate() + previous_count_left
                         if count < raw_event_size and count > 0:
                             self.logger.info(
-                                "current interval size is {}, which is smaller than a raw event size {}. wait for the next turn.".format(
-                                    count, raw_event_size))
+                                "current interval size is {}, which is smaller than a raw event size {}. wait for the next turn."
+                                .format(count, raw_event_size))
                             previous_count_left = count
                             self.countdown = self.interval
                             self.executions += 1
@@ -172,11 +171,13 @@ class Timer(object):
 
                     try:
                         if count < 1 and count != -1:
-                            self.logger.info("There is no data to be generated in worker {0} because the count is {1}.".format(self.sample.config.generatorWorkers, count))
+                            self.logger.info(
+                                "There is no data to be generated in worker {0} because the count is {1}.".format(
+                                    self.sample.config.generatorWorkers, count))
                         else:
                             # Spawn workers at the beginning of job rather than wait for next interval
-                            self.logger.info("Start '%d' generatorWorkers for sample '%s'" % (
-                            self.sample.config.generatorWorkers, self.sample.name))
+                            self.logger.info("Start '%d' generatorWorkers for sample '%s'" %
+                                             (self.sample.config.generatorWorkers, self.sample.name))
                             for worker_id in range(self.config.generatorWorkers):
                                 # self.generatorPlugin is only an instance, now we need a real plugin. Make a copy of
                                 # of the sample in case another generator corrupts it.
@@ -186,13 +187,13 @@ class Timer(object):
                                 genPlugin = self.generatorPlugin(sample=copy_sample)
                                 # Adjust queue for threading mode
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
-                                genPlugin.updateCounts(count=count,
-                                                    start_time=et,
-                                                    end_time=lt)
+                                genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
 
                                 try:
                                     self.generatorQueue.put(genPlugin)
-                                    self.logger.info("Worker# {0}: Put {1} MB of events in queue for sample '{2}' with et '{3}' and lt '{4}'".format(worker_id, round((count / 1024.0 / 1024), 4), self.sample.name, et, lt))
+                                    self.logger.info(
+                                        "Worker# {0}: Put {1} MB of events in queue for sample '{2}' with et '{3}' and lt '{4}'"
+                                        .format(worker_id, round((count / 1024.0 / 1024), 4), self.sample.name, et, lt))
                                 except Full:
                                     self.logger.warning("Generator Queue Full. Skipping current generation.")
                     except Exception as e:
@@ -212,15 +213,16 @@ class Timer(object):
                     # timer thread
                     if not self.endts:
                         if self.executions >= int(self.end):
-                            self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(self.end), self.sample.name))
+                            self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
+                                self.end), self.sample.name))
                             self.stopping = True
                             end = True
                     elif lt >= self.endts:
-                        self.logger.info("End Time '%s' reached, ending generation of sample '%s'" % (self.sample.endts, self.sample.name))
+                        self.logger.info("End Time '%s' reached, ending generation of sample '%s'" % (self.sample.endts,
+                                                                                                      self.sample.name))
                         self.stopping = True
                         end = True
 
             else:
                 time.sleep(self.time)
                 self.countdown -= self.time
-                

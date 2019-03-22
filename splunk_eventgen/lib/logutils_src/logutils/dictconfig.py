@@ -17,11 +17,13 @@ except NameError:
 
 IDENTIFIER = re.compile('^[a-z_][a-z0-9_]*$', re.I)
 
+
 def valid_ident(s):
     m = IDENTIFIER.match(s)
     if not m:
         raise ValueError('Not a valid Python identifier: %r' % s)
     return True
+
 
 #
 # This function is defined in logging only in recent versions of Python
@@ -29,6 +31,7 @@ def valid_ident(s):
 try:
     from logging import _checkLevel
 except ImportError:
+
     def _checkLevel(level):
         if isinstance(level, int):
             rv = level
@@ -41,9 +44,9 @@ except ImportError:
                 raise ValueError('Unknown level: %r' % level)
             rv = levelnames[level]
         else:
-            raise TypeError('Level not an integer or a '
-                            'valid string: %r' % level)
+            raise TypeError('Level not an integer or a ' 'valid string: %r' % level)
         return rv
+
 
 # The ConvertingXXX classes are wrappers around standard Python containers,
 # and they serve to convert any suitable values in the container. The
@@ -54,6 +57,7 @@ except ImportError:
 # Each wrapper should have a configurator attribute holding the actual
 # configurator to use for conversion.
 
+
 class ConvertingDict(dict):
     """A converting dictionary wrapper."""
 
@@ -63,8 +67,7 @@ class ConvertingDict(dict):
         #If the converted value is different, save for next time
         if value is not result:
             self[key] = result
-            if type(result) in (ConvertingDict, ConvertingList,
-                                ConvertingTuple):
+            if type(result) in (ConvertingDict, ConvertingList, ConvertingTuple):
                 result.parent = self
                 result.key = key
         return result
@@ -75,8 +78,7 @@ class ConvertingDict(dict):
         #If the converted value is different, save for next time
         if value is not result:
             self[key] = result
-            if type(result) in (ConvertingDict, ConvertingList,
-                                ConvertingTuple):
+            if type(result) in (ConvertingDict, ConvertingList, ConvertingTuple):
                 result.parent = self
                 result.key = key
         return result
@@ -85,22 +87,22 @@ class ConvertingDict(dict):
         value = dict.pop(self, key, default)
         result = self.configurator.convert(value)
         if value is not result:
-            if type(result) in (ConvertingDict, ConvertingList,
-                                ConvertingTuple):
+            if type(result) in (ConvertingDict, ConvertingList, ConvertingTuple):
                 result.parent = self
                 result.key = key
         return result
 
+
 class ConvertingList(list):
     """A converting list wrapper."""
+
     def __getitem__(self, key):
         value = list.__getitem__(self, key)
         result = self.configurator.convert(value)
         #If the converted value is different, save for next time
         if value is not result:
             self[key] = result
-            if type(result) in (ConvertingDict, ConvertingList,
-                                ConvertingTuple):
+            if type(result) in (ConvertingDict, ConvertingList, ConvertingTuple):
                 result.parent = self
                 result.key = key
         return result
@@ -109,22 +111,23 @@ class ConvertingList(list):
         value = list.pop(self, idx)
         result = self.configurator.convert(value)
         if value is not result:
-            if type(result) in (ConvertingDict, ConvertingList,
-                                ConvertingTuple):
+            if type(result) in (ConvertingDict, ConvertingList, ConvertingTuple):
                 result.parent = self
         return result
 
+
 class ConvertingTuple(tuple):
     """A converting tuple wrapper."""
+
     def __getitem__(self, key):
         value = tuple.__getitem__(self, key)
         result = self.configurator.convert(value)
         if value is not result:
-            if type(result) in (ConvertingDict, ConvertingList,
-                                ConvertingTuple):
+            if type(result) in (ConvertingDict, ConvertingList, ConvertingTuple):
                 result.parent = self
                 result.key = key
         return result
+
 
 class BaseConfigurator(object):
     """
@@ -139,8 +142,8 @@ class BaseConfigurator(object):
     DIGIT_PATTERN = re.compile(r'^\d+$')
 
     value_converters = {
-        'ext' : 'ext_convert',
-        'cfg' : 'cfg_convert',
+        'ext': 'ext_convert',
+        'cfg': 'cfg_convert',
     }
 
     # We might want to use a different one, e.g. importlib
@@ -204,15 +207,14 @@ class BaseConfigurator(object):
                             d = d[idx]
                         else:
                             try:
-                                n = int(idx) # try as number first (most likely)
+                                n = int(idx)  # try as number first (most likely)
                                 d = d[n]
                             except TypeError:
                                 d = d[idx]
                 if m:
                     rest = rest[m.end():]
                 else:
-                    raise ValueError('Unable to convert '
-                                     '%r at %r' % (value, rest))
+                    raise ValueError('Unable to convert ' '%r at %r' % (value, rest))
         #rest should be empty
         return d
 
@@ -264,6 +266,7 @@ class BaseConfigurator(object):
             value = tuple(value)
         return value
 
+
 def named_handlers_supported():
     major, minor = sys.version_info[:2]
     if major == 2:
@@ -273,6 +276,7 @@ def named_handlers_supported():
     else:
         result = (major > 3)
     return result
+
 
 class DictConfigurator(BaseConfigurator):
     """
@@ -299,8 +303,7 @@ class DictConfigurator(BaseConfigurator):
                 if named_handlers_supported():
                     for name in handlers:
                         if name not in logging._handlers:
-                            raise ValueError('No handler found with '
-                                             'name %r'  % name)
+                            raise ValueError('No handler found with ' 'name %r' % name)
                         else:
                             try:
                                 handler = logging._handlers[name]
@@ -310,24 +313,21 @@ class DictConfigurator(BaseConfigurator):
                                     handler.setLevel(_checkLevel(level))
                             except StandardError:
                                 e = sys.exc_info()[1]
-                                raise ValueError('Unable to configure handler '
-                                                 '%r: %s' % (name, e))
+                                raise ValueError('Unable to configure handler ' '%r: %s' % (name, e))
                 loggers = config.get('loggers', EMPTY_DICT)
                 for name in loggers:
                     try:
                         self.configure_logger(name, loggers[name], True)
                     except StandardError:
                         e = sys.exc_info()[1]
-                        raise ValueError('Unable to configure logger '
-                                         '%r: %s' % (name, e))
+                        raise ValueError('Unable to configure logger ' '%r: %s' % (name, e))
                 root = config.get('root', None)
                 if root:
                     try:
                         self.configure_root(root, True)
                     except StandardError:
                         e = sys.exc_info()[1]
-                        raise ValueError('Unable to configure root '
-                                         'logger: %s' % e)
+                        raise ValueError('Unable to configure root ' 'logger: %s' % e)
             else:
                 disable_existing = config.pop('disable_existing_loggers', True)
 
@@ -338,12 +338,10 @@ class DictConfigurator(BaseConfigurator):
                 formatters = config.get('formatters', EMPTY_DICT)
                 for name in formatters:
                     try:
-                        formatters[name] = self.configure_formatter(
-                                                            formatters[name])
+                        formatters[name] = self.configure_formatter(formatters[name])
                     except StandardError:
                         e = sys.exc_info()[1]
-                        raise ValueError('Unable to configure '
-                                         'formatter %r: %s' % (name, e))
+                        raise ValueError('Unable to configure ' 'formatter %r: %s' % (name, e))
                 # Next, do filters - they don't refer to anything else, either
                 filters = config.get('filters', EMPTY_DICT)
                 for name in filters:
@@ -351,8 +349,7 @@ class DictConfigurator(BaseConfigurator):
                         filters[name] = self.configure_filter(filters[name])
                     except StandardError:
                         e = sys.exc_info()[1]
-                        raise ValueError('Unable to configure '
-                                         'filter %r: %s' % (name, e))
+                        raise ValueError('Unable to configure ' 'filter %r: %s' % (name, e))
 
                 # Next, do handlers - they refer to formatters and filters
                 # As handlers can refer to other handlers, sort the keys
@@ -365,8 +362,7 @@ class DictConfigurator(BaseConfigurator):
                         handlers[name] = handler
                     except StandardError:
                         e = sys.exc_info()[1]
-                        raise ValueError('Unable to configure handler '
-                                         '%r: %s' % (name, e))
+                        raise ValueError('Unable to configure handler ' '%r: %s' % (name, e))
                 # Next, do loggers - they refer to handlers and filters
 
                 #we don't want to lose the existing loggers,
@@ -394,7 +390,7 @@ class DictConfigurator(BaseConfigurator):
                         prefixed = name + "."
                         pflen = len(prefixed)
                         num_existing = len(existing)
-                        i = i + 1 # look at the entry after name
+                        i = i + 1  # look at the entry after name
                         while (i < num_existing) and\
                               (existing[i][:pflen] == prefixed):
                             child_loggers.append(existing[i])
@@ -404,8 +400,7 @@ class DictConfigurator(BaseConfigurator):
                         self.configure_logger(name, loggers[name])
                     except StandardError:
                         e = sys.exc_info()[1]
-                        raise ValueError('Unable to configure logger '
-                                         '%r: %s' % (name, e))
+                        raise ValueError('Unable to configure logger ' '%r: %s' % (name, e))
 
                 #Disable any old loggers. There's no point deleting
                 #them as other threads may continue to hold references
@@ -428,15 +423,14 @@ class DictConfigurator(BaseConfigurator):
                         self.configure_root(root)
                     except StandardError:
                         e = sys.exc_info()[1]
-                        raise ValueError('Unable to configure root '
-                                         'logger: %s' % e)
+                        raise ValueError('Unable to configure root ' 'logger: %s' % e)
         finally:
             logging._releaseLock()
 
     def configure_formatter(self, config):
         """Configure a formatter from a dictionary."""
         if '()' in config:
-            factory = config['()'] # for use in exception handler
+            factory = config['()']  # for use in exception handler
             try:
                 result = self.configure_custom(config)
             except TypeError:
@@ -482,8 +476,7 @@ class DictConfigurator(BaseConfigurator):
                 formatter = self.config['formatters'][formatter]
             except StandardError:
                 e = sys.exc_info()[1]
-                raise ValueError('Unable to set formatter '
-                                 '%r: %s' % (formatter, e))
+                raise ValueError('Unable to set formatter ' '%r: %s' % (formatter, e))
         level = config.pop('level', None)
         filters = config.pop('filters', None)
         if '()' in config:
@@ -500,8 +493,7 @@ class DictConfigurator(BaseConfigurator):
                     config['target'] = self.config['handlers'][config['target']]
                 except StandardError:
                     e = sys.exc_info()[1]
-                    raise ValueError('Unable to set target handler '
-                                     '%r: %s' % (config['target'], e))
+                    raise ValueError('Unable to set target handler ' '%r: %s' % (config['target'], e))
             elif issubclass(klass, logging.handlers.SMTPHandler) and\
                 'mailhost' in config:
                 config['mailhost'] = self.as_tuple(config['mailhost'])
@@ -570,7 +562,9 @@ class DictConfigurator(BaseConfigurator):
         root = logging.getLogger()
         self.common_logger_config(root, config, incremental)
 
+
 dictConfigClass = DictConfigurator
+
 
 def dictConfig(config):
     """Configure logging using a dictionary."""

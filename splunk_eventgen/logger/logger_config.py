@@ -24,4 +24,3 @@ controller_logger_config = {
         'handlers': ['console', 'main']
     },
 }
-

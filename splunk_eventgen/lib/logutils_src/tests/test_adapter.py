@@ -2,9 +2,11 @@
 # Copyright (C) 2008-2017 Vinay Sajip. See LICENSE.txt for details.
 #
 import logging
-from logutils.adapter import LoggerAdapter
-from logutils.testing import TestHandler, Matcher
 import unittest
+
+from logutils.adapter import LoggerAdapter
+from logutils.testing import Matcher, TestHandler
+
 
 class AdapterTest(unittest.TestCase):
     def setUp(self):
@@ -37,8 +39,8 @@ class AdapterTest(unittest.TestCase):
         self.adapter.info("Neither will this.")
         self.adapter.warning("But this will.")
         h = self.handler
-        self.assertTrue(h.matches(msg="ut th")) # from "But this will"
-        self.assertTrue(h.matches(message="ut th")) # from "But this will"
+        self.assertTrue(h.matches(msg="ut th"))  # from "But this will"
+        self.assertTrue(h.matches(message="ut th"))  # from "But this will"
         self.assertFalse(h.matches(message="either"))
         self.assertFalse(h.matches(message="won't"))
 
@@ -51,10 +53,8 @@ class AdapterTest(unittest.TestCase):
         self.adapter.warning("But this will.")
         self.adapter.error("And so will this.")
         h = self.handler
-        self.assertTrue(h.matches(levelno=logging.WARNING,
-                                  message='ut th'))
-        self.assertTrue(h.matches(levelno=logging.ERROR,
-                                  message='nd so w'))
+        self.assertTrue(h.matches(levelno=logging.WARNING, message='ut th'))
+        self.assertTrue(h.matches(levelno=logging.ERROR, message='nd so w'))
         self.assertFalse(h.matches(levelno=logging.INFO))
 
     def test_hashandlers(self):
@@ -64,6 +64,7 @@ class AdapterTest(unittest.TestCase):
         self.assertFalse(self.adapter.hasHandlers())
         self.logger.addHandler(self.handler)
         self.assertTrue(self.adapter.hasHandlers())
+
 
 if __name__ == '__main__':
     unittest.main()

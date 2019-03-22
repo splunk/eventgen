@@ -1,9 +1,9 @@
 import datetime
-import time
 import random
+import time
+
 
 class EventgenTimestamp(object):
-
     @staticmethod
     def get_random_timestamp(earliest, latest):
         if type(earliest) != datetime.datetime or type(latest) != datetime.datetime:
@@ -50,7 +50,8 @@ class EventgenTimestamp(object):
         latest_in_epoch = time.mktime(latest.timetuple())
         if earliest_in_epoch > latest_in_epoch:
             raise Exception("Latest time is earlier than earliest time.")
-        return datetime.datetime.fromtimestamp(earliest_in_epoch + (latest_in_epoch-earliest_in_epoch)*slot/total_slot)
+        return datetime.datetime.fromtimestamp(earliest_in_epoch +
+                                               (latest_in_epoch - earliest_in_epoch) * slot / total_slot)
 
     @staticmethod
     def _convert_time_difference_to_seconds(time_difference):

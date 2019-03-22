@@ -1,12 +1,13 @@
 # TODO Add timestamp detection for common timestamp format
 
 from __future__ import division
-from generatorplugin import GeneratorPlugin
-import datetime, time
+
+import datetime
 import re
+import time
 
 from eventgentimestamp import EventgenTimestamp
-
+from generatorplugin import GeneratorPlugin
 
 
 class ReplayGenerator(GeneratorPlugin):
@@ -22,14 +23,12 @@ class ReplayGenerator(GeneratorPlugin):
 
         self._currentevent = 0
         self._timeSinceSleep = datetime.timedelta()
-        self._times = [ ]
-
-
+        self._times = []
 
     def set_time_and_send(self, rpevent, event_time, earliest, latest):
         # temporary time append
         rpevent['_raw'] = rpevent['_raw'][:-1]
-        rpevent['_time'] = (event_time - datetime.datetime(1970,1,1)).total_seconds()
+        rpevent['_time'] = (event_time - datetime.datetime(1970, 1, 1)).total_seconds()
 
         event = rpevent['_raw']
 
@@ -41,7 +40,7 @@ class ReplayGenerator(GeneratorPlugin):
         ## Iterate tokens
         for token in self._sample.tokens:
             token.mvhash = mvhash
-            if token.replacementType in ['timestamp', 'replaytimestamp'] :
+            if token.replacementType in ['timestamp', 'replaytimestamp']:
                 event = token.replace(event, et=event_time, lt=event_time, s=self._sample)
             else:
                 event = token.replace(event, s=self._sample)
@@ -68,7 +67,8 @@ class ReplayGenerator(GeneratorPlugin):
         self.backfill_time = self._sample.get_backfill_time(self.current_time)
 
         if not self._sample.backfill or self._sample.backfilldone:
-            self.backfill_time = EventgenTimestamp.get_random_timestamp_backfill(earliest, latest, self._sample.earliest, self._sample.latest)
+            self.backfill_time = EventgenTimestamp.get_random_timestamp_backfill(
+                earliest, latest, self._sample.earliest, self._sample.latest)
 
         for line in self._sample.get_loaded_sample():
             # Add newline to a raw line if necessary
@@ -81,15 +81,26 @@ class ReplayGenerator(GeneratorPlugin):
                 hostRegex = line.get('hostRegex', self._sample.hostRegex)
                 source = line.get('source', self._sample.source)
                 sourcetype = line.get('sourcetype', self._sample.sourcetype)
-                rpevent = {'_raw': line['_raw'], 'index': index, 'host': host, 'hostRegex': hostRegex,
-                           'source': source, 'sourcetype': sourcetype}
+                rpevent = {
+                    '_raw': line['_raw'],
+                    'index': index,
+                    'host': host,
+                    'hostRegex': hostRegex,
+                    'source': source,
+                    'sourcetype': sourcetype
+                }
             except:
                 if line[-1] != '\n':
                     line += '\n'
 
-                rpevent = {'_raw': line, 'index': self._sample.index, 'host': self._sample.host,
-                           'hostRegex': self._sample.hostRegex,
-                           'source': self._sample.source, 'sourcetype': self._sample.sourcetype}
+                rpevent = {
+                    '_raw': line,
+                    'index': self._sample.index,
+                    'host': self._sample.host,
+                    'hostRegex': self._sample.hostRegex,
+                    'source': self._sample.source,
+                    'sourcetype': self._sample.sourcetype
+                }
 
             # If timestamp doesn't exist, the sample file should be fixed to include timestamp for every event.
             try:
@@ -99,7 +110,8 @@ class ReplayGenerator(GeneratorPlugin):
                     current_event_timestamp = self._sample.getTSFromEvent(line[self._sample.timeField])
                 except Exception as e:
                     try:
-                        self.logger.debug("Sample timeField {} failed to locate. Trying to locate _time field.".format(self._sample.timeField))
+                        self.logger.debug("Sample timeField {} failed to locate. Trying to locate _time field.".format(
+                            self._sample.timeField))
                         current_event_timestamp = self._sample.getTSFromEvent(line["_time"])
                     except Exception as e:
                         self.logger.exception("Extracting timestamp from an event failed.")
@@ -129,6 +141,7 @@ class ReplayGenerator(GeneratorPlugin):
 
         self._out.flush(endOfInterval=True)
         return
+
 
 def load():
     return ReplayGenerator

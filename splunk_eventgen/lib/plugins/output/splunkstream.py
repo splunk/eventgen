@@ -1,10 +1,14 @@
 from __future__ import division
-from outputplugin import OutputPlugin
-from xml.dom import minidom
-from collections import deque
-import httplib, httplib2
-import urllib
+
+import httplib
 import logging
+import urllib
+from collections import deque
+from xml.dom import minidom
+
+import httplib2
+
+from outputplugin import OutputPlugin
 
 
 class SplunkStreamOutputPlugin(OutputPlugin):
@@ -36,17 +40,29 @@ class SplunkStreamOutputPlugin(OutputPlugin):
         if not self._sample.sessionKey:
             try:
                 myhttp = httplib2.Http(disable_ssl_certificate_validation=True)
-                self.logger.debug("Getting session key from '%s' with user '%s' and pass '%s'" % (self._splunkUrl + '/services/auth/login', self._splunkUser, self._splunkPass))
-                response = myhttp.request(self._splunkUrl + '/services/auth/login', 'POST',
-                                            headers = {}, body=urllib.urlencode({'username': self._splunkUser,
-                                                                                'password': self._splunkPass}))[1]
-                self._sample.sessionKey = minidom.parseString(response).getElementsByTagName('sessionKey')[0].childNodes[0].nodeValue
+                self.logger.debug("Getting session key from '%s' with user '%s' and pass '%s'" %
+                                  (self._splunkUrl + '/services/auth/login', self._splunkUser, self._splunkPass))
+                response = myhttp.request(
+                    self._splunkUrl + '/services/auth/login',
+                    'POST',
+                    headers={},
+                    body=urllib.urlencode({
+                        'username': self._splunkUser,
+                        'password': self._splunkPass
+                    }))[1]
+                self._sample.sessionKey = minidom.parseString(response).getElementsByTagName(
+                    'sessionKey')[0].childNodes[0].nodeValue
                 self.logger.debug("Got new session for splunkstream, sessionKey '%s'" % self._sample.sessionKey)
             except:
-                self.logger.error("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'.  Credentials are missing or wrong" % self._sample.name)
-                raise IOError("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'.  Credentials are missing or wrong" % self._sample.name)
+                self.logger.error(
+                    "Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'.  Credentials are missing or wrong"
+                    % self._sample.name)
+                raise IOError(
+                    "Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'.  Credentials are missing or wrong"
+                    % self._sample.name)
 
-        self.logger.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._sample.sessionKey, self._sample.name))
+        self.logger.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._sample.sessionKey,
+                                                                                            self._sample.name))
 
     def flush(self, q):
         if len(q) > 0:
@@ -78,7 +94,8 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                     except KeyError:
                         pass
 
-                    self.logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample.name, self._app, self._sample.source))
+                    self.logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" %
+                                      (self._sample.name, self._app, self._sample.source))
                     try:
                         if self._splunkMethod == 'https':
                             connmethod = httplib.HTTPSConnection
@@ -115,7 +132,9 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                                     % (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._sample.sessionKey))
 
                     except httplib.HTTPException, e:
-                        self.logger.error('Error connecting to Splunk for logging for sample %s.  Exception "%s" Config: %s' % (self._sample.name, e.args, self))
+                        self.logger.error(
+                            'Error connecting to Splunk for logging for sample %s.  Exception "%s" Config: %s' %
+                            (self._sample.name, e.args, self))
                         raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
 
                     try:

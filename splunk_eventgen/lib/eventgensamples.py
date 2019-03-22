@@ -1,14 +1,17 @@
 # TODO Move config settings to plugins
 
 from __future__ import division, with_statement
-import os, sys
-import logging
-import pprint
-import datetime
-import re
-import csv
+
 import copy
+import csv
+import datetime
+import logging
+import os
+import pprint
+import re
+import sys
 import urllib
+
 from timeparser import timeParser
 
 
@@ -23,7 +26,7 @@ class Sample(object):
     name = None
     app = None
     filePath = None
-    
+
     # Options which are all valid for a sample
     disabled = None
     spoolDir = None
@@ -93,11 +96,11 @@ class Sample(object):
     _lastts = None
     _earliestParsed = None
     _latestParsed = None
-    
+
     def __init__(self, name):
         self.name = name
-        self.tokens = [ ]
-        self._lockedSettings = [ ]
+        self.tokens = []
+        self._lockedSettings = []
         self.backfilldone = False
         self._setup_logging()
 
@@ -106,10 +109,10 @@ class Sample(object):
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this sample"""
-        filter_list = [ 'sampleLines', 'sampleDict' ]
-        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key not in filter_list ])
+        filter_list = ['sampleLines', 'sampleDict']
+        temp = dict([(key, value) for (key, value) in self.__dict__.items() if key not in filter_list])
         return pprint.pformat(temp)
-        
+
     def __repr__(self):
         return self.__str__()
 
@@ -164,11 +167,11 @@ class Sample(object):
     # 9/2/15 Adding ability to pass in a token rather than using the tokens from the sample
     def getTSFromEvent(self, event, passed_token=None):
         currentTime = None
-        formats = [ ]
+        formats = []
         # JB: 2012/11/20 - Can we optimize this by only testing tokens of type = *timestamp?
         # JB: 2012/11/20 - Alternatively, documentation should suggest putting timestamp as token.0.
         if passed_token != None:
-            tokens = [ passed_token ]
+            tokens = [passed_token]
         else:
             tokens = self.tokens
         for token in tokens:
@@ -182,7 +185,8 @@ class Sample(object):
                     timeString = results.group(group)
                     # self.logger.debug("Testing '%s' as a time string against '%s'" % (timeString, timeFormat))
                     if timeFormat == "%s":
-                        ts = float(timeString) if len(timeString) < 10 else float(timeString) / (10**(len(timeString)-10))
+                        ts = float(timeString) if len(timeString) < 10 else float(timeString) / (10**
+                                                                                                 (len(timeString) - 10))
                         # self.logger.debug("Getting time for timestamp '%s'" % ts)
                         currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
@@ -201,11 +205,13 @@ class Sample(object):
                     if type(currentTime) == datetime.datetime:
                         break
             except ValueError:
-                self.logger.warning("Match found ('%s') but time parse failed. Timeformat '%s' Event '%s'" % (timeString, timeFormat, event))
+                self.logger.warning("Match found ('%s') but time parse failed. Timeformat '%s' Event '%s'" %
+                                    (timeString, timeFormat, event))
         if type(currentTime) != datetime.datetime:
             # Total fail
-            if passed_token == None: # If we're running for autotimestamp don't log error
-                self.logger.warning("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
+            if passed_token == None:  # If we're running for autotimestamp don't log error
+                self.logger.warning(
+                    "Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
             raise ValueError("Can't find a timestamp (using patterns '%s') in this event: '%s'." % (formats, event))
         # Check to make sure we parsed a year
         if currentTime.year == 1900:
@@ -216,12 +222,12 @@ class Sample(object):
         # if self.timestamp == None:
         #     self.timestamp = currentTime
         return currentTime
-    
+
     def saveState(self):
         """Saves state of all integer IDs of this sample to a file so when we restart we'll pick them up"""
         for token in self.tokens:
             if token.replacementType == 'integerid':
-                stateFile = open(os.path.join(self.sampleDir, 'state.'+urllib.pathname2url(token.token)), 'w')
+                stateFile = open(os.path.join(self.sampleDir, 'state.' + urllib.pathname2url(token.token)), 'w')
                 stateFile.write(token.replacement)
                 stateFile.close()
 
@@ -246,11 +252,12 @@ class Sample(object):
                 if self.backfill[-2:] == 'ms':
                     time_unit = 'ms'
                     backfill_time = self.backfill[1:-2]
-                return self.get_time_difference(current_time=current_time, different_time=backfill_time, sign='-', time_unit=time_unit)
+                return self.get_time_difference(
+                    current_time=current_time, different_time=backfill_time, sign='-', time_unit=time_unit)
             else:
                 self.logger.error("Backfill time is not in the past.")
         return current_time
-    
+
     def get_time_difference(self, current_time, different_time, sign='-', time_unit='ms'):
         if time_unit == 'ms':
             return current_time + (int(sign + '1') * datetime.timedelta(milliseconds=int(different_time)))
@@ -262,9 +269,6 @@ class Sample(object):
             return current_time + (int(sign + '1') * datetime.timedelta(hours=int(different_time)))
         elif time_unit == 'd':
             return current_time + (int(sign + '1') * datetime.timedelta(days=int(different_time)))
-
-
-
 
     def earliestTime(self):
         # First optimization, we need only store earliest and latest
@@ -280,7 +284,9 @@ class Sample(object):
                 temptd = self.now(realnow=True) - tempearliest
                 self._earliestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
                 earliestTime = self.now() - self._earliestParsed
-                self.logger.debug("Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" % (self._earliestParsed, earliestTime, tempearliest))
+                self.logger.debug(
+                    "Calulating earliestParsed as '%s' with earliestTime as '%s' and self.sample.earliest as '%s'" %
+                    (self._earliestParsed, earliestTime, tempearliest))
             else:
                 earliestTime = timeParser(self.earliest, timezone=self.timezone)
                 self.logger.debug("earliestTime as absolute time '%s'" % earliestTime)
@@ -298,7 +304,9 @@ class Sample(object):
                 temptd = self.now(realnow=True) - templatest
                 self._latestParsed = datetime.timedelta(days=temptd.days, seconds=temptd.seconds)
                 latestTime = self.now() - self._latestParsed
-                self.logger.debug("Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" % (self._latestParsed, latestTime, templatest))
+                self.logger.debug(
+                    "Calulating latestParsed as '%s' with latestTime as '%s' and self.sample.latest as '%s'" %
+                    (self._latestParsed, latestTime, templatest))
             else:
                 latestTime = timeParser(self.latest, timezone=self.timezone)
                 self.logger.debug("latstTime as absolute time '%s'" % latestTime)
@@ -330,10 +338,10 @@ class Sample(object):
                 # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time instead of on every generation
                 else:
                     self.logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'" \
-                                    % (self.breaker, self.name, self.app) ) 
+                                    % (self.breaker, self.name, self.app) )
 
                     sampleData = self._sampleFH.read()
-                    self.sampleLines = [ ]
+                    self.sampleLines = []
 
                     self.logger.debug("Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s" \
                                     % (self.name, self.app, len(sampleData), self.breaker))
@@ -365,14 +373,21 @@ class Sample(object):
                 for line in self.sampleLines:
                     if line and line[-1] != '\n':
                         line = line + '\n'
-                    self.sampleDict.append({ '_raw': line, 'index': self.index, 'host': self.host, 'source': self.source, 'sourcetype': self.sourcetype })
-                self.logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d' % (len(self.sampleLines), len(self.sampleDict)))
+                    self.sampleDict.append({
+                        '_raw': line,
+                        'index': self.index,
+                        'host': self.host,
+                        'source': self.source,
+                        'sourcetype': self.sourcetype
+                    })
+                self.logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d'
+                                  % (len(self.sampleLines), len(self.sampleDict)))
         elif self.sampletype == 'csv':
             if self.sampleDict == None:
                 self._openSampleFile()
                 self.logger.debug("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
-                self.sampleDict = [ ]
-                self.sampleLines = [ ]
+                self.sampleDict = []
+                self.sampleLines = []
                 # Fix to load large csv files, work with python 2.5 onwards
                 csv.field_size_limit(sys.maxint)
                 csvReader = csv.DictReader(self._sampleFH)
@@ -395,14 +410,15 @@ class Sample(object):
                     else:
                         self.logger.error("Missing _raw in line '%s'" % pprint.pformat(line))
                 self._closeSampleFile()
-                self.logger.debug("Finished creating sampleDict & sampleLines for sample '%s'.  Len sampleDict: %d" % (self.name, len(self.sampleDict)))
+                self.logger.debug("Finished creating sampleDict & sampleLines for sample '%s'.  Len sampleDict: %d" %
+                                  (self.name, len(self.sampleDict)))
 
                 for i in xrange(0, len(self.sampleDict)):
                     if len(self.sampleDict[i]['_raw']) < 1 or self.sampleDict[i]['_raw'][-1] != '\n':
                         self.sampleDict[i]['_raw'] += '\n'
 
     def get_loaded_sample(self):
-        if self.sampletype != 'csv' and os.path.getsize(self.filePath) > 10000000 :
+        if self.sampletype != 'csv' and os.path.getsize(self.filePath) > 10000000:
             self._openSampleFile()
             return self._sampleFH
         elif self.sampletype == 'csv':

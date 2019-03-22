@@ -4,6 +4,7 @@
 import logging
 from logging.handlers import BufferingHandler
 
+
 class TestHandler(BufferingHandler):
     """
     This handler collects records in a buffer for later inspection by
@@ -12,6 +13,7 @@ class TestHandler(BufferingHandler):
     :param matcher: The :class:`~logutils.testing.Matcher` instance to
                     use for matching.
     """
+
     def __init__(self, matcher):
         # BufferingHandler takes a "capacity" argument
         # so as to know when to flush. As we're overriding
@@ -95,6 +97,7 @@ class TestHandler(BufferingHandler):
         The number of records in the buffer.
         """
         return len(self.buffer)
+
 
 class Matcher(object):
     """

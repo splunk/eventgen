@@ -2,9 +2,11 @@
 # Copyright (C) 2010-2017 Vinay Sajip. See LICENSE.txt for details.
 #
 import logging
-from logutils.testing import TestHandler, Matcher
-from logutils.queue import QueueHandler, QueueListener, queue
 import unittest
+
+from logutils.queue import QueueHandler, QueueListener, queue
+from logutils.testing import Matcher, TestHandler
+
 
 class QueueTest(unittest.TestCase):
     def setUp(self):
@@ -28,7 +30,7 @@ class QueueTest(unittest.TestCase):
         self.logger.debug("This won't show up.")
         self.logger.info("Neither will this.")
         self.logger.warning("But this will.")
-        self.ql.stop() #ensure all records have come through.
+        self.ql.stop()  #ensure all records have come through.
         h = self.handler
         #import pdb; pdb.set_trace()
         self.assertTrue(h.matches(levelno=logging.WARNING))
@@ -42,10 +44,10 @@ class QueueTest(unittest.TestCase):
         self.logger.debug("This won't show up.")
         self.logger.info("Neither will this.")
         self.logger.warning("But this will.")
-        self.ql.stop() #ensure all records have come through.
+        self.ql.stop()  #ensure all records have come through.
         h = self.handler
-        self.assertTrue(h.matches(msg="ut th")) # from "But this will"
-        self.assertTrue(h.matches(message="ut th")) # from "But this will"
+        self.assertTrue(h.matches(msg="ut th"))  # from "But this will"
+        self.assertTrue(h.matches(message="ut th"))  # from "But this will"
         self.assertFalse(h.matches(message="either"))
         self.assertFalse(h.matches(message="won't"))
 
@@ -57,13 +59,12 @@ class QueueTest(unittest.TestCase):
         self.logger.info("Neither will this.")
         self.logger.warning("But this will.")
         self.logger.error("And so will this.")
-        self.ql.stop() #ensure all records have come through.
+        self.ql.stop()  #ensure all records have come through.
         h = self.handler
-        self.assertTrue(h.matches(levelno=logging.WARNING,
-                                  message='ut thi'))
-        self.assertTrue(h.matches(levelno=logging.ERROR,
-                                  message='nd so wi'))
+        self.assertTrue(h.matches(levelno=logging.WARNING, message='ut thi'))
+        self.assertTrue(h.matches(levelno=logging.ERROR, message='nd so wi'))
         self.assertFalse(h.matches(levelno=logging.INFO))
+
 
 if __name__ == '__main__':
     unittest.main()

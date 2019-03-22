@@ -2,13 +2,16 @@
 # Copyright (C) 2011-2017 Vinay Sajip. See LICENSE.txt for details.
 #
 import logging
-from logutils.testing import TestHandler, Matcher
-from logutils.redis import RedisQueueHandler, RedisQueueListener
-from redis import Redis
 import socket
 import subprocess
 import time
 import unittest
+
+from logutils.redis import RedisQueueHandler, RedisQueueListener
+from logutils.testing import Matcher, TestHandler
+
+from redis import Redis
+
 
 class QueueListener(RedisQueueListener):
     def dequeue(self, block):
@@ -17,13 +20,12 @@ class QueueListener(RedisQueueListener):
             record = logging.makeLogRecord(record)
         return record
 
+
 class RedisQueueTest(unittest.TestCase):
     def setUp(self):
         self.handler = h = TestHandler(Matcher())
         self.logger = l = logging.getLogger()
-        self.server = subprocess.Popen(['redis-server'],
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
+        self.server = subprocess.Popen(['redis-server'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.wait_for_server()
         self.queue = q = Redis()
         self.qh = qh = RedisQueueHandler(redis=q)
@@ -38,7 +40,7 @@ class RedisQueueTest(unittest.TestCase):
         self.server.terminate()
 
     def wait_for_server(self):
-        maxtime = time.time() + 2 # 2 seconds to wait for server
+        maxtime = time.time() + 2  # 2 seconds to wait for server
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while time.time() < maxtime:
             try:
@@ -57,7 +59,7 @@ class RedisQueueTest(unittest.TestCase):
         self.logger.debug("This won't show up.")
         self.logger.info("Neither will this.")
         self.logger.warning("But this will.")
-        self.ql.stop() #ensure all records have come through.
+        self.ql.stop()  #ensure all records have come through.
         h = self.handler
         #import pdb; pdb.set_trace()
         self.assertTrue(h.matches(levelno=logging.WARNING))
@@ -71,10 +73,10 @@ class RedisQueueTest(unittest.TestCase):
         self.logger.debug("This won't show up.")
         self.logger.info("Neither will this.")
         self.logger.warning("But this will.")
-        self.ql.stop() #ensure all records have come through.
+        self.ql.stop()  #ensure all records have come through.
         h = self.handler
-        self.assertTrue(h.matches(msg="ut th")) # from "But this will"
-        self.assertTrue(h.matches(message="ut th")) # from "But this will"
+        self.assertTrue(h.matches(msg="ut th"))  # from "But this will"
+        self.assertTrue(h.matches(message="ut th"))  # from "But this will"
         self.assertFalse(h.matches(message="either"))
         self.assertFalse(h.matches(message="won't"))
 
@@ -86,13 +88,12 @@ class RedisQueueTest(unittest.TestCase):
         self.logger.info("Neither will this.")
         self.logger.warning("But this will.")
         self.logger.error("And so will this.")
-        self.ql.stop() #ensure all records have come through.
+        self.ql.stop()  #ensure all records have come through.
         h = self.handler
-        self.assertTrue(h.matches(levelno=logging.WARNING,
-                                  message='ut thi'))
-        self.assertTrue(h.matches(levelno=logging.ERROR,
-                                  message='nd so wi'))
+        self.assertTrue(h.matches(levelno=logging.WARNING, message='ut thi'))
+        self.assertTrue(h.matches(levelno=logging.ERROR, message='nd so wi'))
         self.assertFalse(h.matches(levelno=logging.INFO))
+
 
 if __name__ == '__main__':
     unittest.main()

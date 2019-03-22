@@ -1,14 +1,18 @@
-import xml.sax.saxutils
+import datetime
 import logging
 import logging.handlers
 import sys
 import time
-import datetime
+import xml.sax.saxutils
+
 from splunk.appserver.mrsparkle.lib.util import make_splunkhome_path
 
 
-def setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [ModInput] %(message)s', level=logging.DEBUG,
-                log_name="modinput.log", logger_name="modinput"):
+def setupLogger(logger=None,
+                log_format='%(asctime)s %(levelname)s [ModInput] %(message)s',
+                level=logging.DEBUG,
+                log_name="modinput.log",
+                logger_name="modinput"):
     """
     Setup a logger suitable for splunkd consumption
     """
@@ -18,8 +22,8 @@ def setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [ModInput] %(
     logger.propagate = False  # Prevent the log messages from being duplicated in the python.log file
     logger.setLevel(level)
 
-    file_handler = logging.handlers.RotatingFileHandler(make_splunkhome_path(['var', 'log', 'splunk', log_name]),
-                                                        maxBytes=2500000, backupCount=5)
+    file_handler = logging.handlers.RotatingFileHandler(
+        make_splunkhome_path(['var', 'log', 'splunk', log_name]), maxBytes=2500000, backupCount=5)
     formatter = logging.Formatter(log_format)
     file_handler.setFormatter(formatter)
 

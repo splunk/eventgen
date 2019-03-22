@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from lib.eventgenconfig import Config
-from lib.eventgentimer import Timer
-from lib.eventgenexceptions import PluginNotLoaded, FailedLoadingPlugin
-from lib.outputcounter import OutputCounter
+import imp
+import json
 import logging
 import logging.config
 import os
 import sys
-import imp
-from Queue import Queue, Empty
-from threading import Thread
 import time
+from Queue import Empty, Queue
+from threading import Thread
+
+from lib.eventgenconfig import Config
+from lib.eventgenexceptions import PluginNotLoaded
+from lib.eventgentimer import Timer
+from lib.outputcounter import OutputCounter
 
 lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.insert(0, lib_path_prepend)
@@ -26,23 +28,24 @@ except ImportError:
     import logutils
     import logutils.queue
 
-file_path=os.path.dirname(os.path.realpath(__file__))
+file_path = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(file_path, ".."))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(file_path, "default", "eventgen_engine.conf"))
 
-import json
+
 class JSONFormatter(logging.Formatter):
     """
     Quick and dirty formatter that turns the log into a quick json format
     """
+
     def format(self, record):
         message = record.msg
         if not isinstance(message, dict):
-            #The record is probably a string
+            # The record is probably a string
             try:
                 message = json.loads(message)
             except ValueError:
-                #Abort, just store the message as an attribute
+                # Abort, just store the message as an attribute
                 message = {"message": message}
 
         if "timestamp" not in message:
@@ -51,8 +54,9 @@ class JSONFormatter(logging.Formatter):
             message["level"] = logging.getLevelName(record.levelno)
         return json.dumps(message)
 
+
 class EventGenerator(object):
-    def __init__(self, args=None ):
+    def __init__(self, args=None):
         '''
         This object will allow you to generate and control eventgen.  It should be handed the parse_args object
         from __main__ and will hand the argument object to the config parser of eventgen5.  This will provide the
@@ -81,12 +85,11 @@ class EventGenerator(object):
         :param configfile:
         :return:
         '''
-        #TODO: The old eventgen had strange cli args, and usage of args.  We should probably update the module args
-        #to match more of what this is doing...
-        new_args={}
+        # TODO: The old eventgen had strange cli args. We should probably update the module args to match this usage.
+        new_args = {}
         if "args" in kwargs:
             args = kwargs["args"]
-            outputer = [key for key in ["keepoutput","devnull","modinput"] if getattr(args, key)]
+            outputer = [key for key in ["keepoutput", "devnull", "modinput"] if getattr(args, key)]
             if len(outputer) > 0:
                 new_args["override_outputter"] = outputer[0]
             if getattr(args, "count"):
@@ -112,7 +115,7 @@ class EventGenerator(object):
         self.config = Config(configfile, **new_args)
         self.config.parse()
         self._reload_plugins()
-        #TODO: Probably should destroy pools better so processes are cleaned.
+        # TODO: Probably should destroy pools better so processes are cleaned.
         self._setup_pools()
 
     def _reload_plugins(self):
@@ -120,11 +123,14 @@ class EventGenerator(object):
         # Plugins must be loaded before objects that do work, otherwise threads and processes generated will not have
         # the modules loaded in active memory.
         try:
-            self.config.outputPlugins = { }
-            plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'output'), self.config.outputPlugins, 'output')
+            self.config.outputPlugins = {}
+            plugins = self._initializePlugins(
+                os.path.join(file_path, 'lib', 'plugins', 'output'), self.config.outputPlugins, 'output')
             self.config.validOutputModes.extend(plugins)
-            self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'generator'), self.config.plugins, 'generator')
-            plugins = self._initializePlugins(os.path.join(file_path, 'lib', 'plugins', 'rater'), self.config.plugins, 'rater')
+            self._initializePlugins(
+                os.path.join(file_path, 'lib', 'plugins', 'generator'), self.config.plugins, 'generator')
+            plugins = self._initializePlugins(
+                os.path.join(file_path, 'lib', 'plugins', 'rater'), self.config.plugins, 'rater')
             self.config._complexSettings['rater'] = plugins
         except Exception as e:
             self.logger.exception(e)
@@ -133,13 +139,12 @@ class EventGenerator(object):
         plugintype = PluginNotLoadedException.type
         plugin = PluginNotLoadedException.name
         bindir = PluginNotLoadedException.bindir
-        libdir = PluginNotLoadedException.libdir
         plugindir = PluginNotLoadedException.plugindir
         pluginsdict = self.config.plugins if plugintype in ('generator', 'rater') else self.config.outputPlugins
-        #APPPERF-263: be picky when loading from an app bindir (only load name)
+        # APPPERF-263: be picky when loading from an app bindir (only load name)
         self._initializePlugins(bindir, pluginsdict, plugintype, name=plugin)
 
-        #APPPERF-263: be greedy when scanning plugin dir (eat all the pys)
+        # APPPERF-263: be greedy when scanning plugin dir (eat all the pys)
         self._initializePlugins(plugindir, pluginsdict, plugintype)
 
     def _setup_pools(self):
@@ -165,31 +170,39 @@ class EventGenerator(object):
         self.sampleQueue = Queue(maxsize=0)
         num_threads = threadcount
         for i in range(num_threads):
-            worker = Thread(target=self._worker_do_work,
-                            args=(self.sampleQueue, self.loggingQueue, ),
-                            name="TimeThread{0}".format(i))
+            worker = Thread(
+                target=self._worker_do_work,
+                args=(
+                    self.sampleQueue,
+                    self.loggingQueue,
+                ),
+                name="TimeThread{0}".format(i))
             worker.setDaemon(True)
             worker.start()
 
     def _create_output_threadpool(self, threadcount=1):
         '''
         the output thread pool is used for output plugins that need to control file locking, or only have 1 set thread
-        to send all the data out of.  this FIFO queue just helps make sure there are file collisions or write collisions.
+        to send all the data out of. This FIFO queue just helps make sure there are file collisions or write collisions.
         There's only 1 active thread for this queue, if you're ever considering upping this, don't.  Just shut off the
         outputQueue and let each generator directly output it's data.
         :param threadcount: is how many active output threads we want to allow inside of eventgen.  Default 1
         :return:
         '''
-        #TODO: Make this take the config param and figure out what we want to do with this.
+        # TODO: Make this take the config param and figure out what we want to do with this.
         if getattr(self, "manager", None):
             self.outputQueue = self.manager.Queue(maxsize=500)
         else:
             self.outputQueue = Queue(maxsize=500)
         num_threads = threadcount
         for i in range(num_threads):
-            worker = Thread(target=self._worker_do_work,
-                            args=(self.outputQueue, self.loggingQueue, ),
-                            name="OutputThread{0}".format(i))
+            worker = Thread(
+                target=self._worker_do_work,
+                args=(
+                    self.outputQueue,
+                    self.loggingQueue,
+                ),
+                name="OutputThread{0}".format(i))
             worker.setDaemon(True)
             worker.start()
 
@@ -206,7 +219,7 @@ class EventGenerator(object):
             import multiprocessing
             self.manager = multiprocessing.Manager()
             self.loggingQueue = self.manager.Queue()
-            self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue,), name="LoggerThread")
+            self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
             self.logging_pool.start()
             # since we're now in multiprocess, we need to use better queues.
             self.workerQueue = multiprocessing.JoinableQueue(maxsize=500)
@@ -220,7 +233,9 @@ class EventGenerator(object):
                 for i in range(workercount):
                     self.output_counters.append(OutputCounter())
                 for i in range(worker_threads):
-                    worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue, self.output_counters[i]))
+                    worker = Thread(
+                        target=self._generator_do_work,
+                        args=(self.workerQueue, self.loggingQueue, self.output_counters[i]))
                     worker.setDaemon(True)
                     worker.start()
             else:
@@ -234,9 +249,13 @@ class EventGenerator(object):
             import multiprocessing
             self.workerPool = []
             for worker in xrange(workercount):
-                #builds a list of tuples to use the map function
-                process = multiprocessing.Process(target=self._proc_worker_do_work,
-                                                  args=(self.workerQueue, self.loggingQueue, self.genconfig, ))
+                # builds a list of tuples to use the map function
+                process = multiprocessing.Process(
+                    target=self._proc_worker_do_work, args=(
+                        self.workerQueue,
+                        self.loggingQueue,
+                        self.genconfig,
+                    ))
                 self.workerPool.append(process)
                 process.start()
         else:
@@ -262,23 +281,28 @@ class EventGenerator(object):
             console_handler.setFormatter(detailed_formatter)
             console_handler.setLevel(logging.DEBUG)
 
-            file_handler = logging.handlers.RotatingFileHandler(eventgen_main_logger_path, maxBytes=2500000, backupCount=20)
+            file_handler = logging.handlers.RotatingFileHandler(
+                eventgen_main_logger_path, maxBytes=2500000, backupCount=20)
             file_handler.setFormatter(detailed_formatter)
             file_handler.setLevel(logging.DEBUG)
 
-            eventgen_controller_file_handler = logging.handlers.RotatingFileHandler(eventgen_controller_logger_path, maxBytes=2500000, backupCount=20)
+            eventgen_controller_file_handler = logging.handlers.RotatingFileHandler(
+                eventgen_controller_logger_path, maxBytes=2500000, backupCount=20)
             eventgen_controller_file_handler.setFormatter(detailed_formatter)
             eventgen_controller_file_handler.setLevel(logging.DEBUG)
 
-            error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000, backupCount=20)
+            error_file_handler = logging.handlers.RotatingFileHandler(
+                eventgen_error_logger_path, maxBytes=2500000, backupCount=20)
             error_file_handler.setFormatter(detailed_formatter)
             error_file_handler.setLevel(logging.ERROR)
 
-            metrics_file_handler = logging.handlers.RotatingFileHandler(eventgen_metrics_logger_path, maxBytes=2500000, backupCount=20)
+            metrics_file_handler = logging.handlers.RotatingFileHandler(
+                eventgen_metrics_logger_path, maxBytes=2500000, backupCount=20)
             metrics_file_handler.setFormatter(json_formatter)
             metrics_file_handler.setLevel(logging.INFO)
 
-            server_file_handler = logging.handlers.RotatingFileHandler(eventgen_server_logger_path, maxBytes=2500000, backupCount=10)
+            server_file_handler = logging.handlers.RotatingFileHandler(
+                eventgen_server_logger_path, maxBytes=2500000, backupCount=10)
             server_file_handler.setFormatter(json_formatter)
             server_file_handler.setLevel(logging.INFO)
 
@@ -321,10 +345,12 @@ class EventGenerator(object):
         # We need to have debugv from the olderversions of eventgen.
         DEBUG_LEVELV_NUM = 9
         logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
+
         def debugv(self, message, *args, **kws):
             # Yes, logger takes its '*args' as 'args'.
             if self.isEnabledFor(DEBUG_LEVELV_NUM):
                 self._log(DEBUG_LEVELV_NUM, message, args, **kws)
+
         logging.Logger.debugv = debugv
         self.logger = logging.getLogger('eventgen')
         self.loggingQueue = None
@@ -344,6 +370,7 @@ class EventGenerator(object):
             except Exception as e:
                 self.logger.exception(e)
                 raise e
+
     def _generator_do_work(self, work_queue, logging_queue, output_counter=None):
         while not self.stopping:
             try:
@@ -408,13 +435,13 @@ class EventGenerator(object):
         syspathset = set(sys.path)
 
         dirname = os.path.abspath(dirname)
-        self.logger.debugv("looking for plugin(s) in {}".format(dirname))
+        self.logger.debug("looking for plugin(s) in {}".format(dirname))
         if not os.path.isdir(dirname):
-            self.logger.debugv("directory {} does not exist ... moving on".format(dirname))
+            self.logger.debug("directory {} does not exist ... moving on".format(dirname))
             return ret
 
         # Include all plugin directories in sys.path for includes
-        if not dirname in sys.path:
+        if dirname not in sys.path:
             syspathset.add(dirname)
             sys.path = list(syspathset)
 
@@ -429,16 +456,16 @@ class EventGenerator(object):
                 base, extension = os.path.splitext(basename)
 
                 # If we're a python file and we don't start with _
-                #if extension == ".py" and not basename.startswith("_"):
+                # if extension == ".py" and not basename.startswith("_"):
                 # APPPERF-263: If name param is supplied, only attempt to load
                 # {name}.py from {app}/bin directory
                 if extension == ".py" and ((name is None and not basename.startswith("_")) or base == name):
-                    self.logger.debugv("Searching for plugin in file '%s'" % filename)
+                    self.logger.debug("Searching for plugin in file '%s'" % filename)
                     try:
                         # Import the module
-                        #module = imp.load_source(base, filename)
+                        # module = imp.load_source(base, filename)
                         mod_name, mod_path, mod_desc = imp.find_module(base, [dirname])
-                        #TODO: Probably need to adjust module.load() to be added later so this can be pickled.
+                        # TODO: Probably need to adjust module.load() to be added later so this can be pickled.
                         module = imp.load_module(base, mod_name, mod_path, mod_desc)
                         plugin = module.load()
 
@@ -487,33 +514,46 @@ class EventGenerator(object):
             self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
             if s.interval > 0 or s.mode == 'replay' or s.end != "0":
-                self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app) )
+                self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app))
                 # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
                 try:
-                    t = Timer(1.0, sample=s, config=self.config,
-                          genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
+                    t = Timer(
+                        1.0,
+                        sample=s,
+                        config=self.config,
+                        genqueue=self.workerQueue,
+                        outputqueue=self.outputQueue,
+                        loggingqueue=self.loggingQueue)
                 except PluginNotLoaded as pnl:
                     self._load_custom_plugins(pnl)
-                    t = Timer(1.0, sample=s, config=self.config,
-                              genqueue=self.workerQueue, outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
+                    t = Timer(
+                        1.0,
+                        sample=s,
+                        config=self.config,
+                        genqueue=self.workerQueue,
+                        outputqueue=self.outputQueue,
+                        loggingqueue=self.loggingQueue)
                 except Exception as e:
                     raise e
                 self.sampleQueue.put(t)
         if join_after_start:
             self.logger.info("All timers started, joining queue until it's empty.")
             self.join_process()
-        ## Only need to start timers once
+        # Only need to start timers once
         # Every 5 seconds, get values and output basic statistics about our operations
-        #TODO: Figure out how to do this better...
-        #generatorsPerSec = (generatorDecrements - generatorQueueCounter) / 5
-        #outputtersPerSec = (outputDecrements - outputQueueCounter) / 5
-        #outputQueueCounter = outputDecrements
-        #generatorQueueCounter = generatorDecrements
-        #self.logger.info('OutputQueueDepth=%d  GeneratorQueueDepth=%d GeneratorsPerSec=%d OutputtersPerSec=%d' % (self.config.outputQueueSize.value(), self.config.generatorQueueSize.value(), generatorsPerSec, outputtersPerSec))
-        #kiloBytesPerSec = self.config.bytesSent.valueAndClear() / 5 / 1024
-        #gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
-        #eventsPerSec = self.config.eventsSent.valueAndClear() / 5
-        #self.logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' % (eventsPerSec, kiloBytesPerSec, gbPerDay))
+        # TODO: Figure out how to do this better...
+        # generatorsPerSec = (generatorDecrements - generatorQueueCounter) / 5
+        # outputtersPerSec = (outputDecrements - outputQueueCounter) / 5
+        # outputQueueCounter = outputDecrements
+        # generatorQueueCounter = generatorDecrements
+        # self.logger.info('OutputQueueDepth=%d GeneratorQueueDepth=%d GeneratorsPerSec=%d OutputtersPerSec=%d' %
+        #                  (self.config.outputQueueSize.value(), self.config.generatorQueueSize.value(),
+        #                   generatorsPerSec, outputtersPerSec))
+        # kiloBytesPerSec = self.config.bytesSent.valueAndClear() / 5 / 1024
+        # gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
+        # eventsPerSec = self.config.eventsSent.valueAndClear() / 5
+        # self.logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' %
+        #                  (eventsPerSec, kiloBytesPerSec, gbPerDay))
 
     def join_process(self):
         '''
@@ -522,7 +562,8 @@ class EventGenerator(object):
         :return:
         '''
         try:
-            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0 or not self.workerQueue.empty() or self.workerQueue.unfinished_tasks > 0:
+            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0 or not self.workerQueue.empty(
+            ) or self.workerQueue.unfinished_tasks > 0:
                 time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
@@ -538,13 +579,13 @@ class EventGenerator(object):
 
         self.logger.info("All timers exited, joining generation queue until it's empty.")
         self.workerQueue.join()
-        # if we're in multiprocess, make sure that since all the timers stopped, we don't let any more generators get added.
+        # if we're in multiprocess, make sure we don't add more generators after the timers stopped.
         if self.args.multiprocess:
             self.genconfig["stopping"] = True
             for worker in self.workerPool:
                 count = 0
                 # We wait for a minute until terminating the worker
-                while worker.exitcode == None and count != 20:
+                while worker.exitcode is None and count != 20:
                     if count == 30:
                         self.logger.info("Terminating worker {0}".format(worker._name))
                         worker.terminate()
@@ -586,4 +627,3 @@ class EventGenerator(object):
             else:
                 return True
         return False
-

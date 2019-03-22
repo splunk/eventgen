@@ -14,7 +14,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import os
+import sys
 
 # If your extensions (or modules documented by autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -87,7 +88,6 @@ exclude_trees = ['_build']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
-
 # Options for HTML output
 # -----------------------
 
@@ -158,7 +158,6 @@ html_theme_path = ['themes']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Logutilsdoc'
 
-
 # Options for LaTeX output
 # ------------------------
 
@@ -171,8 +170,7 @@ htmlhelp_basename = 'Logutilsdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'Logutils.tex', ur'Logutils Documentation',
-   ur'Vinay Sajip', 'manual'),
+    ('index', 'Logutils.tex', ur'Logutils Documentation', ur'Vinay Sajip', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -191,7 +189,6 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_use_modindex = True
-
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
