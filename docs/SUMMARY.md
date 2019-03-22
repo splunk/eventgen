@@ -9,6 +9,7 @@
 * [Plugins](PLUGINS.md)
 * [Architecture](ARCHITECTURE.md)
 * [Performance](PERFORMANCE.md)
+* [Contributing](CONTRIBUTE.md)
 ---
 * [Reference](REFERENCE.md)
     * [eventgen.conf.spec](REFERENCE.md#eventgenconfspec)

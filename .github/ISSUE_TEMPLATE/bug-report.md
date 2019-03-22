@@ -3,7 +3,7 @@ name: Bug report
 about: Provide the details of the bug to us in order to further triage and fix
 title: "[BUG]"
 labels: bug
-assignees: li-wu, GordonWang
+assignees: lephino, arctan5x, jmeixensperger, li-wu, GordonWang
 
 ---
 

@@ -3,7 +3,7 @@ name: Feature request
 about: Suggest an idea or improvement for this project
 title: "[FEATURE/IMPROVEMENT]"
 labels: enhancement
-assignees: li-wu, GordonWang
+assignees: lephino, arctan5x, jmeixensperger, li-wu, GordonWang
 
 ---
 
