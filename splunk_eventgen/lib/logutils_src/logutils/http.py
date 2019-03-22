@@ -53,7 +53,8 @@ class HTTPHandler(logging.Handler):
         :param record: The record to be emitted.
         """
         try:
-            import http.client, urllib.parse
+            import http.client
+            import urllib.parse
             host = self.host
             if self.secure:
                 h = http.client.HTTPSConnection(host)
@@ -83,7 +84,7 @@ class HTTPHandler(logging.Handler):
                 s = 'Basic ' + base64.b64encode(s).strip()
                 h.putheader('Authorization', s)
             h.endheaders(data if self.method == "POST" else None)
-            h.getresponse()  #can't do anything with the result
+            h.getresponse()  # can't do anything with the result
         except (KeyboardInterrupt, SystemExit):
             raise
         except:

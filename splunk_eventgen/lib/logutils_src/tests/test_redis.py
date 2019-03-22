@@ -24,14 +24,14 @@ class QueueListener(RedisQueueListener):
 class RedisQueueTest(unittest.TestCase):
     def setUp(self):
         self.handler = h = TestHandler(Matcher())
-        self.logger = l = logging.getLogger()
+        self.logger = temp_logger = logging.getLogger()
         self.server = subprocess.Popen(['redis-server'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.wait_for_server()
         self.queue = q = Redis()
         self.qh = qh = RedisQueueHandler(redis=q)
         self.ql = ql = QueueListener(h, redis=q)
         ql.start()
-        l.addHandler(qh)
+        temp_logger.addHandler(qh)
 
     def tearDown(self):
         self.logger.removeHandler(self.qh)
@@ -59,9 +59,8 @@ class RedisQueueTest(unittest.TestCase):
         self.logger.debug("This won't show up.")
         self.logger.info("Neither will this.")
         self.logger.warning("But this will.")
-        self.ql.stop()  #ensure all records have come through.
+        self.ql.stop()  # ensure all records have come through.
         h = self.handler
-        #import pdb; pdb.set_trace()
         self.assertTrue(h.matches(levelno=logging.WARNING))
         self.assertFalse(h.matches(levelno=logging.DEBUG))
         self.assertFalse(h.matches(levelno=logging.INFO))
@@ -73,7 +72,7 @@ class RedisQueueTest(unittest.TestCase):
         self.logger.debug("This won't show up.")
         self.logger.info("Neither will this.")
         self.logger.warning("But this will.")
-        self.ql.stop()  #ensure all records have come through.
+        self.ql.stop()  # ensure all records have come through.
         h = self.handler
         self.assertTrue(h.matches(msg="ut th"))  # from "But this will"
         self.assertTrue(h.matches(message="ut th"))  # from "But this will"
@@ -88,7 +87,7 @@ class RedisQueueTest(unittest.TestCase):
         self.logger.info("Neither will this.")
         self.logger.warning("But this will.")
         self.logger.error("And so will this.")
-        self.ql.stop()  #ensure all records have come through.
+        self.ql.stop()  # ensure all records have come through.
         h = self.handler
         self.assertTrue(h.matches(levelno=logging.WARNING, message='ut thi'))
         self.assertTrue(h.matches(levelno=logging.ERROR, message='nd so wi'))

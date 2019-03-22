@@ -19,7 +19,7 @@ class FileOutputPlugin(OutputPlugin):
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-        if sample.fileName == None:
+        if sample.fileName is None:
             self.logger.error('outputMode file but file not specified for sample %s' % self._sample.name)
             raise ValueError('outputMode file but file not specified for sample %s' % self._sample.name)
 
@@ -29,8 +29,8 @@ class FileOutputPlugin(OutputPlugin):
 
         self._fileHandle = open(self._file, 'a')
         self._fileLength = os.stat(self._file).st_size
-        self.logger.debug("Configured to log to '%s' with maxBytes '%s' with backupCount '%s'" % \
-                        (self._file, self._fileMaxBytes, self._fileBackupFiles))
+        self.logger.debug("Configured to log to '%s' with maxBytes '%s' with backupCount '%s'" %
+                          (self._file, self._fileMaxBytes, self._fileBackupFiles))
 
     def flush(self, q):
         if len(q) > 0:

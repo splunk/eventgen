@@ -2,7 +2,6 @@ from __future__ import division
 
 import datetime
 import random
-import time
 
 from generatorplugin import GeneratorPlugin
 
@@ -11,7 +10,7 @@ class PerDayVolumeGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
-    #TODO: Make this work with replay mode.
+    # TODO: Make this work with replay mode.
     def gen(self, count, earliest, latest, samplename=None):
         # count in this plugin is a measurement of byteself._sample.
         size = count
@@ -71,7 +70,7 @@ class PerDayVolumeGenerator(GeneratorPlugin):
                 targetlinesize = len(updated_sample_dict[targetline]['_raw'])
                 if size < targetlinesize:
                     self.logger.error(
-                        "Size is too small for sample {}. For this interval, we need {} bytes but size of one event is {} bytes."
+                        "Size is too small for sample {}. We need {} bytes but size of one event is {} bytes."
                         .format(self._sample.name, size, targetlinesize))
                     break
                 if targetlinesize <= sizeremaining or targetlinesize * .9 <= sizeremaining:

@@ -2,7 +2,7 @@
 
 import distutils.core
 import re
-from os.path import abspath, dirname, join
+from os.path import dirname, join
 
 import logutils
 

@@ -31,7 +31,7 @@ class SyslogOutOutputPlugin(OutputPlugin):
         global loggerInitialized
         # This class is instantiated at least once each interval. Since each logger with a given name is a singleton,
         # only add the syslog handler once instead of every interval.
-        if not loggerName in loggerInitialized:
+        if loggerName not in loggerInitialized:
             syslogHandler = logging.handlers.SysLogHandler(
                 address=(self._syslogDestinationHost, int(self._syslogDestinationPort)))
             self._l.addHandler(syslogHandler)

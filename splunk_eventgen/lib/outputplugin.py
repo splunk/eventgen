@@ -1,5 +1,6 @@
 from __future__ import division
 
+import pprint
 import logging
 import logging.handlers
 from collections import deque
@@ -23,7 +24,7 @@ class OutputPlugin(object):
         """Only used for debugging, outputs a pretty printed representation of this output"""
         # Eliminate recursive going back to parent
         temp = dict([(key, value) for (key, value) in self.__dict__.items() if key != '_c'])
-        # return pprint.pformat(temp)
+        self.logger.debug("Pretty output: " % pprint.pformat(temp))
         return ""
 
     def __repr__(self):

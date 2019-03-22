@@ -82,7 +82,6 @@ class S2S:
         encoded_source = False
         encoded_sourcetype = False
         encoded_host = False
-        encoded_index = False
 
         # Encode source
         if len(source) > 0:
@@ -125,7 +124,7 @@ class S2S:
         msg_size += len(encoded_done)
 
         # Encode _time
-        if _time != None:
+        if _time is not None:
             encoded_time = self._encode_key_value('_time', _time)
             msg_size += len(encoded_time)
             maps += 1

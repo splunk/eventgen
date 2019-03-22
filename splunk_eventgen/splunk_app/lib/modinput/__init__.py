@@ -18,12 +18,9 @@ import splunk.clilib
 import splunk.version
 from splunk.clilib.bundle_paths import get_slaveapps_base_path
 from splunk.models.app import App
-from xmloutput import XMLOutputManager, setupLogger
+from xmloutput import setupLogger
 
-from .fields import (BooleanField, DurationField, Field,
-                     FieldValidationException, FloatField, IntegerField,
-                     IntervalField, ListField, RangeField, RegexField,
-                     SeverityField)
+from .fields import (BooleanField, Field, FieldValidationException, IntervalField)
 
 try:
     from splunk.clilib.bundle_paths import make_splunkhome_path
@@ -36,9 +33,8 @@ else:
     sys.path.append(make_splunkhome_path(["etc", "apps", "@appname@", "lib"]))
 
 
-
 # Define logger using the name of the script here, versus in the modular_input class.
-#logger = log.setup_logger(name='python_modular_input', level=logging.INFO)
+# logger = log.setup_logger(name='python_modular_input', level=logging.INFO)
 logger = setupLogger(
     logger=None,
     log_format='%(asctime)s %(levelname)s [ModularInput] %(message)s',
@@ -400,7 +396,8 @@ class ModularInput(object):
 
     def do_validation(self, in_stream=sys.stdin):
         """
-        Get the validation data from standard input and attempt to validate it. Returns true if the arguments validated, false otherwise.
+        Get the validation data from standard input and attempt to validate it. Returns true if the arguments validated,
+        false otherwise.
 
         Arguments:
         in_stream -- The stream to get the input from (defaults to standard input)
@@ -420,7 +417,7 @@ class ModularInput(object):
         Validate the argument dictionary where each key is a stanza.
 
         Arguments:
-        arguments -- The arguments as an dictionary where the key is the stanza and the value is a dictionary of the values.
+        arguments -- a dictionary where the key is the stanza and the value is a dictionary of the values.
         """
 
         # Check each stanza
@@ -540,23 +537,19 @@ class ModularInput(object):
 
         try:
             last_ran = cls.last_ran(checkpoint_dir, stanza)
-
             return cls.is_expired(last_ran, interval, cur_time)
-
-        except IOError as e:
+        except IOError:
             # The file likely doesn't exist
             logger.exception("The checkpoint file likely doesn't exist")
             return True
-        except ValueError as e:
+        except ValueError:
             # The file could not be loaded
             logger.exception("The checkpoint file could not be loaded")
             return True
         except Exception as e:
-            #Catch all that enforces an extra run
+            # Catch all that enforces an extra run
             logger.exception("Unexpected exception caught, enforcing extra run, exception info: " + str(e))
             return True
-        # Default return value
-        return True
 
     @classmethod
     def time_to_next_run(cls, checkpoint_dir, stanza, duration):
@@ -581,9 +574,8 @@ class ModularInput(object):
             return time_to_next
         except IOError:
             # The file likely doesn't exist
-            logger.warning(
-                "Could not read checkpoint file for last time run, likely does not exist, if this persists debug input immediately"
-            )
+            logger.warning("Could not read checkpoint file for last time run, likely does not exist, if this" +
+                           "persists debug input immediately")
             return 1
         except ValueError:
             # The file could not be loaded
@@ -593,10 +585,6 @@ class ModularInput(object):
         except Exception as e:
             logger.exception("Unexpected exception caught, enforcing extra run, exception info: " + str(e))
             return 1
-        # Default return value
-        logger.info(
-            "This really should be impossible, but whatevs if your input is breaking check the duration calculations")
-        return 1
 
     @classmethod
     def save_checkpoint(cls, checkpoint_dir, stanza, last_run):
@@ -756,7 +744,8 @@ class ModularInput(object):
         Read the config from standard input and return the configuration.
 
         in_stream -- The stream to get the input from (defaults to standard input)
-        log_exception_and_continue -- If true, exceptions will not be thrown for invalid configurations and instead the stanza will be skipped.
+        log_exception_and_continue -- If true, exceptions will not be thrown for invalid configurations and instead the
+        stanza will be skipped.
         """
 
         # Run the modular import
@@ -794,14 +783,12 @@ class ModularInput(object):
         # Note: The "duration" parameter emulates the behavior of the "interval"
         # parameter available on Splunk 6.x and higher, and is mainly used by the
         # VMWare application.
-
-        # TODO: A run() method may pass results back for optional processing
-        results = None
+        # TODO: should we collect/process results from run()?
 
         if stanzas:
             if single_instance:
                 # Run the input across all defined stanzas and exit.
-                results = self.run(stanzas, self._input_config)
+                self.run(stanzas, self._input_config)
             else:
                 # Retrieve the single input stanza.
                 stanza = stanzas[0]
@@ -821,7 +808,7 @@ class ModularInput(object):
                 # If there splunk 6.0 and interval field is defined, then ignore duration fields completely
                 if stanza.get("interval", -1) >= 0 and splunk.version.__version__ >= '6.0':
                     # Run the single stanza and exit.
-                    results = self.run(stanza, self._input_config)
+                    self.run(stanza, self._input_config)
                 else:
                     # Run duration field
                     if duration > 0 and self.checkpoint_dir:
@@ -835,13 +822,13 @@ class ModularInput(object):
                             # use the name of the input itself, unhashed. Name collisions would
                             # be a configuration error.
                             self.save_checkpoint(self.checkpoint_dir, stanza_name, int(time.time()))
-                            results = self.run(stanza, )
+                            self.run(stanza, self._input_config)
                             # Results processing, if any, could occur here.
                             time.sleep(ModularInput.time_to_next_run(self.checkpoint_dir, stanza_name, duration))
                     else:
                         # Duration is not defined
                         # Run the single stanza and exit for Splunk 5.x
-                        results = self.run(stanza, self._input_config)
+                        self.run(stanza, self._input_config)
 
         else:
             logger.info("No input stanzas defined")
@@ -953,7 +940,7 @@ class ModularInput(object):
                 logger.info("Modular input: validate arguments called")
 
                 # Exit with a code of -1 if validation failed
-                if self.do_validation() == False:
+                if self.do_validation() is False:
                     sys.exit(-1)
 
             else:

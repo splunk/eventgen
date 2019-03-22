@@ -91,7 +91,7 @@ class AwsS3OutputPlugin(OutputPlugin):
 
                     self.logger.error("Failed for init boto3 client: %s, you should define correct 'awsKeyId'\
                         and 'awsSecretKey' in eventgen conf %s" % msg)
-                    raise
+                    raise Exception(msg)
             else:
                 self._client = boto3.client('s3', region_name=sample.awsRegion)
         except Exception as e:
@@ -113,11 +113,6 @@ class AwsS3OutputPlugin(OutputPlugin):
         self.logger.debug("Init conn done, conn = %s" % self._client)
 
     def _sendPayloads(self, payload):
-        currentreadsize = 0
-        currentreadevent = 0
-        stringpayload = []
-        totalbytesexpected = 0
-        totalbytessent = 0
         numberevents = len(payload)
         self.logger.debug("Sending %s events to s3 key" % numberevents)
         self._transmitEvents(payload)
@@ -135,7 +130,7 @@ class AwsS3OutputPlugin(OutputPlugin):
         else:
             s3keyname = self.awsS3objectprefix + datetime.datetime.utcnow().isoformat() + str(
                 uuid.uuid1()) + self.awsS3objectsuffix
-        self.logger.debugv("Uploading %d events into s3 key: %s " % (len(records), s3keyname))
+        self.logger.debug("Uploading %d events into s3 key: %s " % (len(records), s3keyname))
         if self.awsS3compressiontype == 'gz':
             import StringIO
             import gzip
@@ -145,10 +140,10 @@ class AwsS3OutputPlugin(OutputPlugin):
             records = out.getvalue()
         try:
             response = self._client.put_object(Bucket=self.awsS3bucketname, Key=s3keyname, Body=records)
-            self.logger.debugv("response = %s" % response)
+            self.logger.debug("response = %s" % response)
         except Exception as e:
             self.logger.error("Failed for exception: %s" % e)
-            self.logger.debugv("Failed sending events to payload: %s" % (payloadstring))
+            self.logger.debug("Failed sending events to payload: %s" % (payloadstring))
             raise e
 
     def flush(self, q):

@@ -10,15 +10,15 @@ from logutils.testing import Matcher, TestHandler
 class LoggingTest(unittest.TestCase):
     def setUp(self):
         self.handler = h = TestHandler(Matcher())
-        self.logger = l = logging.getLogger()
-        l.addHandler(h)
+        self.logger = temp_logger = logging.getLogger()
+        temp_logger.addHandler(h)
 
     def tearDown(self):
         self.logger.removeHandler(self.handler)
         self.handler.close()
 
     def test_simple(self):
-        "Simple test of logging test harness."
+        """Simple test of logging test harness."""
         # Just as a demo, let's log some messages.
         # Only one should show up in the log.
         self.logger.debug("This won't show up.")
@@ -30,7 +30,7 @@ class LoggingTest(unittest.TestCase):
         self.assertFalse(h.matches(levelno=logging.INFO))
 
     def test_partial(self):
-        "Test of partial matching in logging test harness."
+        """Test of partial matching in logging test harness."""
         # Just as a demo, let's log some messages.
         # Only one should show up in the log.
         self.logger.debug("This won't show up.")
@@ -43,7 +43,7 @@ class LoggingTest(unittest.TestCase):
         self.assertFalse(h.matches(message="won't"))
 
     def test_multiple(self):
-        "Test of matching multiple values in logging test harness."
+        """Test of matching multiple values in logging test harness."""
         # Just as a demo, let's log some messages.
         # Only one should show up in the log.
         self.logger.debug("This won't show up.")

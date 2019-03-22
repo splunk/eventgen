@@ -1,7 +1,6 @@
 #
 # Copyright (C) 2010-2017 Vinay Sajip. See LICENSE.txt for details.
 #
-import logging
 from logging.handlers import BufferingHandler
 
 
@@ -66,8 +65,8 @@ class TestHandler(BufferingHandler):
             if self.matcher.matches(d, **kwargs):
                 result = True
                 break
-        #if not result:
-        #    print('*** matcher failed completely on %d records' % len(self.buffer))
+        # if not result:
+        #   print('*** matcher failed completely on %d records' % len(self.buffer))
         return result
 
     def matchall(self, kwarglist):
@@ -132,7 +131,7 @@ class Matcher(object):
             v = kwargs[k]
             dv = d.get(k)
             if not self.match_value(k, dv, v):
-                #print('*** matcher failed: %s, %r, %r' % (k, dv, v))
+                # print('*** matcher failed: %s, %r, %r' % (k, dv, v))
                 result = False
                 break
         return result
@@ -153,6 +152,6 @@ class Matcher(object):
             result = (v == dv)
         else:
             result = dv.find(v) >= 0
-        #if not result:
+        # if not result:
         #    print('*** matcher failed on %s: %r vs. %r' % (k, dv, v))
         return result

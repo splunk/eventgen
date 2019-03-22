@@ -2,7 +2,6 @@
 # Copyright (C) 2012-2017 Vinay Sajip. See LICENSE.txt for details.
 #
 import logging
-import os
 import sys
 import unittest
 

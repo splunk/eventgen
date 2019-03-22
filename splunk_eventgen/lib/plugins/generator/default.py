@@ -1,13 +1,11 @@
-# TODO Sample object now incredibly overloaded and not threadsafe.  Need to make it threadsafe and make it simpler to get a
-#       copy of whats needed without the whole object.
+# TODO: Sample object is incredibly overloaded and not threadsafe. Need to make it simpler to get a copy without the
+# whole object get a copy of whats needed without the whole object.
 
 from __future__ import division
 
 import datetime
 import random
-import time
 
-from eventgentimestamp import EventgenTimestamp
 from generatorplugin import GeneratorPlugin
 
 
@@ -16,8 +14,6 @@ class DefaultGenerator(GeneratorPlugin):
         GeneratorPlugin.__init__(self, sample)
 
     def gen(self, count, earliest, latest, samplename=None):
-        s = self._sample
-
         self.logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" %
                           (self._sample.name, self._sample.app, count, earliest, latest))
         startTime = datetime.datetime.now()
@@ -52,7 +48,7 @@ class DefaultGenerator(GeneratorPlugin):
                 count = len(self._sample.sampleDict)
             eventsDict = self._sample.sampleDict[0:count]
 
-            ## Continue to fill events array until len(events) == count
+            # Continue to fill events array until len(events) == count
             if len(eventsDict) < count:
                 self.logger.debugv(
                     "Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" %

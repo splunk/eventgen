@@ -23,7 +23,8 @@ class EventgenTimestamp(object):
         earliest and latest timestamp gets generated with an interval
         sample_earliest and sample_latest are the user config key values from eventgen.conf
         we are using earliest as a pivot time and creating a random variance using sample_earliest and sample_latest.
-        in this way, we respect an interval passed in by a user and use user input earliest and latest to create a random variance
+        in this way, we respect an interval passed in by a user and use user input earliest and latest to create a
+        random variance.
         '''
         if type(earliest) != datetime.datetime or type(latest) != datetime.datetime:
             raise Exception("Earliest {0} or latest {1} arguments are not datetime objects".format(earliest, latest))

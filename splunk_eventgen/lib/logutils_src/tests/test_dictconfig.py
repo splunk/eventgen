@@ -2,7 +2,6 @@
 # Copyright 2009-2017 by Vinay Sajip. See LICENSE.txt for details.
 #
 import logging
-import sys
 import unittest
 
 from logutils.adapter import LoggerAdapter
@@ -42,8 +41,8 @@ class ConfigDictTest(unittest.TestCase):
     """Reading logging config from a dictionary."""
 
     def setUp(self):
-        self.logger = l = logging.getLogger()
-        self.adapter = LoggerAdapter(l, {})
+        self.logger = temp_logger = logging.getLogger()
+        self.adapter = LoggerAdapter(temp_logger, {})
 
         logger_dict = logging.getLogger().manager.loggerDict
         logging._acquireLock()
@@ -162,7 +161,7 @@ class ConfigDictTest(unittest.TestCase):
         },
     }
 
-    #As config1 but with a misspelt level on a handler
+    # As config1 but with a misspelt level on a handler
     config2a = {
         'formatters': {
             'form1': {
@@ -188,7 +187,7 @@ class ConfigDictTest(unittest.TestCase):
         },
     }
 
-    #As config1 but with a misspelt level on a logger
+    # As config1 but with a misspelt level on a logger
     config2b = {
         'formatters': {
             'form1': {
@@ -346,8 +345,8 @@ class ConfigDictTest(unittest.TestCase):
         },
     }
 
-    #config 7 does not define compiler.parser but defines compiler.lexer
-    #so compiler.parser should be disabled after applying it
+    # config 7 does not define compiler.parser but defines compiler.lexer
+    # so compiler.parser should be disabled after applying it
     config7 = {
         'version': 1,
         'formatters': {
@@ -452,7 +451,7 @@ class ConfigDictTest(unittest.TestCase):
         },
     }
 
-    #As config1 but with a filter added
+    # As config1 but with a filter added
     config10 = {
         'version': 1,
         'formatters': {
@@ -613,7 +612,7 @@ class ConfigDictTest(unittest.TestCase):
             dict(levelname='ERROR', message='4'),
         ]))
 
-    #Same as test_config_7_ok but don't disable old loggers.
+    # Same as test_config_7_ok but don't disable old loggers.
     def test_config_8_ok(self):
         self.apply_config(self.config1)
         logger = logging.getLogger("compiler.parser")
@@ -648,12 +647,12 @@ class ConfigDictTest(unittest.TestCase):
     def test_config_9_ok(self):
         self.apply_config(self.config9)
         logger = logging.getLogger("compiler.parser")
-        #Nothing will be output since both handler and logger are set to WARNING
+        # Nothing will be output since both handler and logger are set to WARNING
         logger.info(self.next_message())
         h = logger.handlers[0]
         self.assertEqual(0, h.count)
         self.apply_config(self.config9a)
-        #Nothing will be output since both handler is still set to WARNING
+        # Nothing will be output since both handler is still set to WARNING
         logger.info(self.next_message())
         h = logger.handlers[0]
         nhs = named_handlers_supported()
@@ -662,7 +661,7 @@ class ConfigDictTest(unittest.TestCase):
         else:
             self.assertEqual(1, h.count)
         self.apply_config(self.config9b)
-        #Message should now be output
+        # Message should now be output
         logger.info(self.next_message())
         if nhs:
             h = logger.handlers[0]
@@ -677,13 +676,13 @@ class ConfigDictTest(unittest.TestCase):
         logger = logging.getLogger("compiler.parser")
         logger.warning(self.next_message())
         logger = logging.getLogger('compiler')
-        #Not output, because filtered
+        # Not output, because filtered
         logger.warning(self.next_message())
         logger = logging.getLogger('compiler.lexer')
-        #Not output, because filtered
+        # Not output, because filtered
         logger.warning(self.next_message())
         logger = logging.getLogger("compiler.parser.codegen")
-        #Output, as not filtered
+        # Output, as not filtered
         logger.error(self.next_message())
         h = logging.getLogger().handlers[0]
         self.assertTrue(h.matchall([

@@ -11,7 +11,8 @@ class FieldValidationException(Exception):
 
 class Field(object):
     """
-    This is the base class that should be used to create field validators. Sub-class this and override to_python if you need custom validation.
+    This is the base class that should be used to create field validators. Sub-class this and override to_python if you
+    need custom validation.
     """
 
     DATA_TYPE_STRING = 'string'
@@ -32,7 +33,8 @@ class Field(object):
         Arguments:
         name -- Set the name of the field (e.g. "database_server")
         title -- Set the human readable title (e.g. "Database server")
-        description -- Set the human readable description of the field (e.g. "The IP or domain name of the database server")
+        description -- Set the human-readable description of the field
+                       (e.g. "The IP or domain name of the database server")
         required_on_create -- If "true", the parameter is required on input stanza creation.
         required_on_edit -- If "true", the parameter is required on input stanza modification.
 
@@ -70,7 +72,8 @@ class Field(object):
 
     def to_string(self, value):
         """
-        Convert the field to a string value that can be returned. Should throw a FieldValidationException if the data is invalid.
+        Convert the field to a string value that can be returned. Should throw a FieldValidationException if the data is
+        invalid.
 
         Arguments:
         value -- The value to convert
@@ -97,10 +100,10 @@ class BooleanField(Field):
 
     def to_string(self, value):
 
-        if value == True:
+        if value is True:
             return "1"
 
-        elif value == False:
+        elif value is False:
             return "0"
 
         return str(value)
@@ -145,7 +148,7 @@ class DurationField(Field):
     The string is converted to an integer indicating the number of seconds.
     """
 
-    DURATION_RE = re.compile("(?P<duration>[0-9]+)\s*(?P<units>[a-z]*)", re.IGNORECASE)
+    DURATION_RE = re.compile(r"(?P<duration>[0-9]+)\s*(?P<units>[a-z]*)", re.IGNORECASE)
 
     MINUTE = 60
     HOUR = 3600
@@ -271,7 +274,7 @@ class IntervalField(Field):
     # cron field.
 
     cron_rx = re.compile(
-        '''
+        r'''
         (
              \d{1,2}                    # A digit.
             |\d{1,2}-\d{1,2}            # A range.
@@ -286,8 +289,7 @@ class IntervalField(Field):
 
         try:
             # Try parsing the string as an integer.
-            tmp = int(value)
-            return value
+            return int(value)
         except ValueError:
             # Try parsing the string as a cron schedule.
             if self.parse_cron(value):
