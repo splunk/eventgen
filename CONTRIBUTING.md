@@ -9,6 +9,8 @@ Please note we have a [code of conduct](http://splunk.github.io/eventgen/CONTRIB
 bbingham*
 arctan5x*
 jmeixensperger*
+li-wu*
+GordonWang*
 coccyx
 Jaykul
 allanwsplk
