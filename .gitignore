@@ -26,3 +26,4 @@ _book
 *.result
 venv/*
 *.log.*
+splunk_eventgen-*/

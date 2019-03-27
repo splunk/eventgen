@@ -40,7 +40,7 @@ test_helper:
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install -r $(shell pwd)/tests/requirements.txt" || true
 
 run_tests:
-    @echo 'Running the super awesome tests'
+	@echo 'Running the super awesome tests'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python tests/run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}" || true
 
 test_collection_cleanup:
