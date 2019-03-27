@@ -8,7 +8,6 @@ from outputplugin import OutputPlugin
 
 try:
     import requests
-    import requests_futures
     from requests import Session
     from requests_futures.sessions import FuturesSession
     from concurrent.futures import ThreadPoolExecutor
@@ -36,9 +35,9 @@ class HTTPEventOutputPlugin(OutputPlugin):
     to splunk through the HTTP event input.  In order to use this output plugin,
     you will need to supply an attribute 'httpeventServers' as a valid json object.
     this json object should look like the following:
-    
+
     {servers:[{ protocol:http/https, address:127.0.0.1, port:8088, key:12345-12345-123123123123123123}]}
-    
+
     '''
     name = 'httpevent'
     MAXQUEUELENGTH = 1000
@@ -50,11 +49,11 @@ class HTTPEventOutputPlugin(OutputPlugin):
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-    #TODO: make workers a param that can be set in eventgen.conf
+    # TODO: make workers a param that can be set in eventgen.conf
     def _setup_REST_workers(self, session=None, workers=10):
-        #disable any "requests" warnings
+        # disable any "requests" warnings
         requests.packages.urllib3.disable_warnings()
-        #Bind passed in samples to the outputter.
+        # Bind passed in samples to the outputter.
         self.lastsourcetype = None
         if not session:
             session = Session()
@@ -73,8 +72,8 @@ class HTTPEventOutputPlugin(OutputPlugin):
     @staticmethod
     def _bg_convert_json(sess, resp):
         '''
-        Takes a futures session object, and will set the data to a parsed json output.  Use this as a background task
-        for the sesssion queue.  Example: future = session.get('http://httpbin.org/get', background_callback=_bg_convert_json)
+        Takes a futures session object, and sets the data to a parsed json output. Use this as a background task for the
+        session queue. Example: future = session.get('http://httpbin.org/get', background_callback=_bg_convert_json)
         :param sess: futures session object. Automatically called on a background_callback as aruguments.
         :param resp: futures resp object.  Automatically called on a background_callback as aruguments.
         :return:
@@ -89,7 +88,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
     def updateConfig(self, config):
         OutputPlugin.updateConfig(self, config)
         try:
-            if hasattr(self.config, 'httpeventServers') == False:
+            if hasattr(self.config, 'httpeventServers') is False:
                 if hasattr(self._sample, 'httpeventServers'):
                     self.config.httpeventServers = self._sample.httpeventServers
                 else:
@@ -172,15 +171,15 @@ class HTTPEventOutputPlugin(OutputPlugin):
         numberevents = len(payload)
         self.logger.debug("Sending %s events to splunk" % numberevents)
         for line in payload:
-            self.logger.debugv("line: %s " % line)
+            self.logger.debug("line: %s " % line)
             targetline = json.dumps(line)
-            self.logger.debugv("targetline: %s " % targetline)
+            self.logger.debug("targetline: %s " % targetline)
             targetlinesize = len(targetline)
             totalbytesexpected += targetlinesize
             if (int(currentreadsize) + int(targetlinesize)) <= int(self.httpeventmaxsize):
                 stringpayload = stringpayload + targetline
                 currentreadsize = currentreadsize + targetlinesize
-                self.logger.debugv("stringpayload: %s " % stringpayload)
+                self.logger.debug("stringpayload: %s " % stringpayload)
             else:
                 self.logger.debug("Max size for payload hit, sending to splunk then continuing.")
                 try:
@@ -204,7 +203,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
 
     def _transmitEvents(self, payloadstring):
         targetServer = []
-        self.logger.debugv("Transmission called with payloadstring: %s " % payloadstring)
+        self.logger.debug("Transmission called with payloadstring: %s " % payloadstring)
         if self.httpeventoutputmode == "mirror":
             targetServer = self.serverPool
         else:
@@ -217,14 +216,14 @@ class HTTPEventOutputPlugin(OutputPlugin):
             headers['content-type'] = 'application/json'
             try:
                 payloadsize = len(payloadstring)
-                #response = requests.post(url, data=payloadstring, headers=headers, verify=False)
+                # response = requests.post(url, data=payloadstring, headers=headers, verify=False)
                 self.active_sessions.append(
                     self.session.post(url=url, data=payloadstring, headers=headers, verify=False))
             except Exception as e:
                 self.logger.error("Failed for exception: %s" % e)
                 self.logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" %
                                   (url, self.lastsourcetype, payloadsize))
-                self.logger.debugv(
+                self.logger.debug(
                     "Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payloadstring))
                 raise e
 
@@ -234,39 +233,37 @@ class HTTPEventOutputPlugin(OutputPlugin):
         if len(q) > 0:
             try:
                 payload = []
-                lastsourcetype = ""
-                payloadsize = 0
                 self.logger.debug("Currently being called with %d events" % len(q))
                 for event in q:
-                    self.logger.debugv("HTTPEvent proccessing event: %s" % event)
+                    self.logger.debug("HTTPEvent proccessing event: %s" % event)
                     payloadFragment = {}
-                    if event.get('_raw') == None or event['_raw'] == "\n":
+                    if event.get('_raw') is None or event['_raw'] == "\n":
                         self.logger.error('failure outputting event, does not contain _raw')
                     else:
-                        self.logger.debugv("Event contains _raw, attempting to process...")
+                        self.logger.debug("Event contains _raw, attempting to process...")
                         payloadFragment['event'] = event['_raw']
                         if event.get('source'):
-                            self.logger.debugv("Event contains source, adding to httpevent event")
+                            self.logger.debug("Event contains source, adding to httpevent event")
                             payloadFragment['source'] = event['source']
                         if event.get('sourcetype'):
-                            self.logger.debugv("Event contains sourcetype, adding to httpevent event")
+                            self.logger.debug("Event contains sourcetype, adding to httpevent event")
                             payloadFragment['sourcetype'] = event['sourcetype']
                             self.lastsourcetype = event['sourcetype']
                         if event.get('host'):
-                            self.logger.debugv("Event contains host, adding to httpevent event")
+                            self.logger.debug("Event contains host, adding to httpevent event")
                             payloadFragment['host'] = event['host']
                         if event.get('_time'):
                             # make sure _time can be an epoch timestamp
                             try:
                                 float(event.get("_time"))
-                                self.logger.debugv("Event contains _time, adding to httpevent event")
+                                self.logger.debug("Event contains _time, adding to httpevent event")
                                 payloadFragment['time'] = event['_time']
                             except:
                                 self.logger.error("Timestamp not in epoch format, ignoring event: {0}".format(event))
                         if event.get('index'):
-                            self.logger.debugv("Event contains index, adding to httpevent event")
+                            self.logger.debug("Event contains index, adding to httpevent event")
                             payloadFragment['index'] = event['index']
-                    self.logger.debugv("Full payloadFragment: %s" % json.dumps(payloadFragment))
+                    self.logger.debug("Full payloadFragment: %s" % json.dumps(payloadFragment))
                     payload.append(payloadFragment)
                 self.logger.debug("Finished processing events, sending all to splunk")
                 self._sendHTTPEvents(payload)

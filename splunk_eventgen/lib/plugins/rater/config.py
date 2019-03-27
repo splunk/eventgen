@@ -3,7 +3,6 @@ from __future__ import division
 import datetime
 import logging
 import logging.handlers
-import os
 import random
 
 
@@ -22,7 +21,7 @@ class ConfigRater(object):
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
         # Eliminate recursive going back to parent
-        temp = dict([(key, value) for (key, value) in self.__dict__.items() if key != '_c'])
+        # temp = dict([(key, value) for (key, value) in self.__dict__.items() if key != '_c'])
         # return pprint.pformat(temp)
         return ""
 
@@ -64,8 +63,8 @@ class ConfigRater(object):
                 randBound = round(self._sample.randomizeCount * 1000, 0)
                 rand = random.randint(0, randBound)
                 randFactor = 1 + ((-((randBound / 2) - rand)) / 1000)
-                self.logger.debug("randFactor for sample '%s' in app '%s' is %s" \
-                                % (self._sample.name, self._sample.app, randFactor))
+                self.logger.debug("randFactor for sample '%s' in app '%s' is %s"
+                                  % (self._sample.name, self._sample.app, randFactor))
                 rateFactor *= randFactor
             except:
                 import traceback
@@ -90,7 +89,7 @@ class ConfigRater(object):
                 else:
                     weekday += 1
                 rate = self._sample.dayOfWeekRate[str(weekday)]
-                self.logger.debugv(
+                self.logger.debug(
                     "dayOfWeekRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
                 rateFactor *= rate
             except KeyError:
@@ -101,7 +100,7 @@ class ConfigRater(object):
         if type(self._sample.minuteOfHourRate) == dict:
             try:
                 rate = self._sample.minuteOfHourRate[str(self._sample.now().minute)]
-                self.logger.debugv(
+                self.logger.debug(
                     "minuteOfHourRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
                 rateFactor *= rate
             except KeyError:
@@ -112,7 +111,7 @@ class ConfigRater(object):
         if type(self._sample.dayOfMonthRate) == dict:
             try:
                 rate = self._sample.dayOfMonthRate[str(self._sample.now().day)]
-                self.logger.debugv(
+                self.logger.debug(
                     "dayOfMonthRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
                 rateFactor *= rate
             except KeyError:
@@ -123,7 +122,7 @@ class ConfigRater(object):
         if type(self._sample.monthOfYearRate) == dict:
             try:
                 rate = self._sample.monthOfYearRate[str(self._sample.now().month)]
-                self.logger.debugv(
+                self.logger.debug(
                     "monthOfYearRate for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, rate))
                 rateFactor *= rate
             except KeyError:

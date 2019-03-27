@@ -8,19 +8,19 @@ from timeparser import timeParserTimeMath
 
 class Timer(object):
     """
-    Overall governor in Eventgen.  A timer is created for every sample in Eventgen.  The Timer has the responsibility
-    for executing each sample.  There are two ways the timer can execute:
+    Overall governor in Eventgen. A timer is created for every sample in Eventgen. The Timer has the responsibility
+    for executing each sample. There are two ways the timer can execute:
         * Queueable
         * Non-Queueable
 
-    For Queueable plugins, we place a work item in the generator queue.  Generator workers pick up the item from the generator
-    queue and do work.  This queueing architecture allows for parallel execution of workers.  Workers then place items in the 
-    output queue for Output workers to pick up and output.
+    For Queueable plugins, we place a work item in the generator queue.  Generator workers pick up the item from the
+    generator queue and do work. This queueing architecture allows for parallel execution of workers. Workers then place
+    items in the output queue for Output workers to pick up and output.
 
-    However, for some generators, like the replay generator, we need to keep a single view of state of where we are in the replay.
-    This means we cannot generate items in parallel.  This is why we also offer Non-Queueable plugins.  In the case of 
-    Non-Queueable plugins, the Timer class calls the generator method of the plugin directly, tracks the amount of time
-    the plugin takes to generate and sleeps the remaining interval before calling generate again.
+    However, for some generators, like the replay generator, we need to keep a single view of state of where we are in
+    the replay. This means we cannot generate items in parallel.  This is why we also offer Non-Queueable plugins. In
+    the case of Non-Queueable plugins, the Timer class calls the generator method of the plugin directly, tracks the
+    amount of time the plugin takes to generate and sleeps the remaining interval before calling generate again.
     """
     time = None
     countdown = None
@@ -41,11 +41,11 @@ class Timer(object):
         self.countdown = 0
         self.executions = 0
         self.interval = getattr(self.sample, "interval", config.interval)
-        #enable the logger
+        # enable the logger
         self._setup_logging()
         self.logger.debug('Initializing timer for %s' % sample.name if sample is not None else "None")
         # load plugins
-        if self.sample != None:
+        if self.sample is not None:
             rater_class = self.config.getPlugin('rater.' + self.sample.rater, self.sample)
             self.rater = rater_class(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
@@ -117,7 +117,7 @@ class Timer(object):
             if self.config.stopping or self.stopping:
                 end = True
             count = self.rater.rate()
-            #First run of the generator, see if we have any backfill work to do.
+            # First run of the generator, see if we have any backfill work to do.
             if self.countdown <= 0:
 
                 if self.sample.backfill and not self.sample.backfilldone:
@@ -153,10 +153,9 @@ class Timer(object):
                     # Save previous interval count left to avoid perdayvolumegenerator drop small tasks
                     if self.sample.generator == 'perdayvolumegenerator':
                         count = self.rater.rate() + previous_count_left
-                        if count < raw_event_size and count > 0:
-                            self.logger.info(
-                                "current interval size is {}, which is smaller than a raw event size {}. wait for the next turn."
-                                .format(count, raw_event_size))
+                        if 0 < count < raw_event_size:
+                            self.logger.info("current interval size is {}, which is smaller than a raw event size {}."
+                                             .format(count, raw_event_size) + "Wait for the next turn.")
                             previous_count_left = count
                             self.countdown = self.interval
                             self.executions += 1
@@ -191,9 +190,10 @@ class Timer(object):
 
                                 try:
                                     self.generatorQueue.put(genPlugin)
-                                    self.logger.info(
-                                        "Worker# {0}: Put {1} MB of events in queue for sample '{2}' with et '{3}' and lt '{4}'"
-                                        .format(worker_id, round((count / 1024.0 / 1024), 4), self.sample.name, et, lt))
+                                    self.logger.info(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
+                                                      "with et '{3}' and lt '{4}'")
+                                                     .format(worker_id, round((count / 1024.0 / 1024), 4),
+                                                             self.sample.name, et, lt))
                                 except Full:
                                     self.logger.warning("Generator Queue Full. Skipping current generation.")
                     except Exception as e:

@@ -148,7 +148,7 @@ class DurationField(Field):
     The string is converted to an integer indicating the number of seconds.
     """
 
-    DURATION_RE = re.compile(r"(?P<duration>[0-9]+)\s*(?P<units>[a-z]*)", re.IGNORECASE)
+    DURATION_RE = re.compile("(?P<duration>[0-9]+)\s*(?P<units>[a-z]*)", re.IGNORECASE)
 
     MINUTE = 60
     HOUR = 3600
@@ -273,8 +273,7 @@ class IntervalField(Field):
     # Note that we don't check explicitly for correct numeric values for each
     # cron field.
 
-    cron_rx = re.compile(
-        r'''
+    cron_rx = re.compile('''
         (
              \d{1,2}                    # A digit.
             |\d{1,2}-\d{1,2}            # A range.

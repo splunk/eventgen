@@ -27,7 +27,7 @@ class GeneratorPlugin(object):
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
         # Eliminate recursive going back to parent
-        temp = dict([(key, value) for (key, value) in self.__dict__.items() if key != '_c'])
+        # temp = dict([(key, value) for (key, value) in self.__dict__.items() if key != '_c'])
         # return pprint.pformat(temp)
         return ""
 
@@ -92,8 +92,11 @@ class GeneratorPlugin(object):
         self.end_time = end_time
 
     def setOutputMetadata(self, event):
-        # self.logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" % (self.index, self.host, self.source, self.sourcetype))
-        # self.logger.debug("Event Index: %s Host: %s Source: %s Sourcetype: %s" % (sampleDict[x]['index'], sampleDict[x]['host'], sampleDict[x]['source'], sampleDict[x]['sourcetype']))
+        # self.logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" %
+        #                   (self.index, self.host, self.source, self.sourcetype))
+        # self.logger.debug("Event Index: %s Host: %s Source: %s Sourcetype: %s" %
+        #                   (sampleDict[x]['index'], sampleDict[x]['host'], sampleDict[x]['source'],
+        #                    sampleDict[x]['sourcetype']))
         if self._sample.sampletype == 'csv' and (event['index'] != self._sample.index
                                                  or event['host'] != self._sample.host
                                                  or event['source'] != self._sample.source
@@ -101,19 +104,21 @@ class GeneratorPlugin(object):
             self._sample.index = event['index']
             self._sample.host = event['host']
             # Allow randomizing the host:
-            if (self._sample.hostToken):
+            if self._sample.hostToken:
                 self.host = self._sample.hostToken.replace(self.host)
 
             self._sample.source = event['source']
             self._sample.sourcetype = event['sourcetype']
-            self.logger.debugv("Sampletype CSV.  Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" \
-                        % (self._sample.index, self._sample.host, self._sample.source, self._sample.sourcetype))
+            self.logger.debug("Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'"
+                              % (self._sample.index, self._sample.host, self._sample.source, self._sample.sourcetype))
 
     def setupBackfill(self):
-        """Called by non-queueable plugins or by the timer to setup backfill times per config or based on a Splunk Search"""
+        """
+        Called by non-queueable plugins or by the timer to setup backfill times per config or based on a Splunk Search
+        """
         s = self._sample
 
-        if s.backfill != None:
+        if s.backfill is not None:
             try:
                 s.backfillts = timeParser(s.backfill, timezone=s.timezone)
                 self.logger.info("Setting up backfill of %s (%s)" % (s.backfill, s.backfillts))
@@ -121,10 +126,10 @@ class GeneratorPlugin(object):
                 self.logger.error("Failed to parse backfill '%s': %s" % (s.backfill, ex))
                 raise
 
-            if s.backfillSearch != None:
-                if s.backfillSearchUrl == None:
+            if s.backfillSearch is not None:
+                if s.backfillSearchUrl is None:
                     try:
-                        s.backfillSearchUrl = c.getSplunkUrl(s)[0]
+                        s.backfillSearchUrl = c.getSplunkUrl(s)[0]  # noqa, we update c in the globals() dict
                     except ValueError:
                         self.logger.error(
                             "Backfill Search URL not specified for sample '%s', not running backfill search" % s.name)
@@ -132,7 +137,7 @@ class GeneratorPlugin(object):
                     s.backfillSearch = 'search ' + s.backfillSearch
                 s.backfillSearch += '| head 1 | table _time'
 
-                if s.backfillSearchUrl != None:
+                if s.backfillSearchUrl is not None:
                     self.logger.debug(
                         "Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" %
                         (s.backfillSearchUrl, s.backfillSearch, s.sessionKey))
@@ -202,7 +207,7 @@ class GeneratorPlugin(object):
             mvhash = {}
             host = targetevent['host']
             if hasattr(self._sample, "sequentialTimestamp") and self._sample.sequentialTimestamp and \
-                       self._sample.generator != 'perdayvolumegenerator':
+                    self._sample.generator != 'perdayvolumegenerator':
                 pivot_timestamp = EventgenTimestamp.get_sequential_timestamp(earliest, latest, eventcount, total_count)
             else:
                 pivot_timestamp = EventgenTimestamp.get_random_timestamp(earliest, latest)
@@ -229,7 +234,7 @@ class GeneratorPlugin(object):
                 time_val = int(time.mktime(pivot_timestamp.timetuple()))
             except Exception:
                 time_val = int(time.mktime(self._sample.now().timetuple()))
-            l = {
+            temp_event = {
                 '_raw': event,
                 'index': targetevent['index'],
                 'host': host,
@@ -238,7 +243,7 @@ class GeneratorPlugin(object):
                 'sourcetype': targetevent['sourcetype'],
                 '_time': time_val
             }
-            send_events.append(l)
+            send_events.append(temp_event)
         return send_events
 
 

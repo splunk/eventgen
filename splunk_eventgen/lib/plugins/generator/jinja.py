@@ -16,7 +16,6 @@ except:
     import json as json
 
 
-
 class CantFindTemplate(Exception):
     def __init__(self, msg):
         """Exception raised when we / Jinja can't find the template
@@ -43,8 +42,8 @@ class JinjaTime(Extension):
     @staticmethod
     def _get_time_slice(earliest, latest, slices, target_slice, slice_type="lower"):
         """
-        This method will take a time block bounded by "earliest and latest", and a slice.  It'll then divide the time
-        in sections and return a tuple with 3 arguments, the lower bound, the higher bound, and the target in the middle.
+        This method will take a time block bounded by "earliest and latest", and a slice. It'll then divide the time in
+        sections and return a tuple with 3 arguments, the lower bound, the higher bound, and the target in the middle.
         :param earliest (in epoch):
         :param latest (in epoch):
         :param slices:
@@ -95,7 +94,8 @@ class JinjaTime(Extension):
 
     def _time_slice_epoch(self, earliest, latest, count, slices, date_format=None):
         slice_start, slice_end, slice_size, slice_time = \
-            self._get_time_slice(earliest=earliest, latest=latest, slices=slices, target_slice=count, slice_type="lower")
+            self._get_time_slice(earliest=earliest, latest=latest, slices=slices, target_slice=count,
+                                 slice_type="lower")
         return slice_time
 
     @staticmethod
@@ -235,29 +235,31 @@ class JinjaGenerator(GeneratorPlugin):
                 self.end_of_cycle = False
                 jinja_loaded_vars["eventgen_count"] = self.current_count
                 jinja_loaded_vars["eventgen_target_time_earliest"], jinja_loaded_vars["eventgen_target_time_latest"], \
-                jinja_loaded_vars["eventgen_target_time_slice_size"], jinja_loaded_vars["eventgen_target_time_epoch"] = \
-                    JinjaTime._get_time_slice(self.earliest_epoch, self.latest_epoch, self.target_count, self.current_count, slice_type="random")
+                    jinja_loaded_vars["eventgen_target_time_slice_size"], \
+                    jinja_loaded_vars["eventgen_target_time_epoch"] = \
+                    JinjaTime._get_time_slice(self.earliest_epoch, self.latest_epoch, self.target_count,
+                                              self.current_count, slice_type="random")
                 self.jinja_stream = jinja_loaded_template.stream(jinja_loaded_vars)
                 lines_out = []
                 try:
                     for line in self.jinja_stream:
                         if line != "\n":
-                            #TODO: Time can be supported by self._sample.timestamp, should probably set that up in this logic.
+                            # TODO: Time can be supported by self._sample.timestamp, should probably set that up here.
                             try:
                                 target_line = json.loads(line)
                             except ValueError as e:
                                 self.logger.error("Unable to parse Jinja's return.  Line: {0}".format(line))
                                 self.logger.error("Parse Failure Reason: {0}".format(e.message))
                                 self.logger.error(
-                                    "Please note, you must meet the requirements for json.loads in python if you have not installed ujson. Native python does not support multi-line events."
-                                )
+                                    "Please note, you must meet the requirements for json.loads in python if you have" +
+                                    "not installed ujson. Native python does not support multi-line events.")
                                 continue
                             current_line_keys = target_line.keys()
                             if "_time" not in current_line_keys:
-                                #TODO: Add a custom exception here
+                                # TODO: Add a custom exception here
                                 raise Exception("No _time field supplied, please add time to your jinja template.")
                             if "_raw" not in current_line_keys:
-                                #TODO: Add a custom exception here
+                                # TODO: Add a custom exception here
                                 raise Exception("No _raw field supplied, please add time to your jinja template.")
                             if "host" not in current_line_keys:
                                 target_line["host"] = self._sample.host

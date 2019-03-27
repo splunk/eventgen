@@ -21,57 +21,58 @@ logging.getLogger('eventgen')
 
 
 # 5-5-2012 CS  Replacing TimeParser with our own code to remove Splunk dependency
-# Based off spec for relative time identifiers at http://docs.splunk.com/Documentation/Splunk/latest/SearchReference/SearchTimeModifiers#How_to_specify_relative_time_modifiers
+# Based off spec for relative time identifiers at http://docs.splunk.com/Documentation/Splunk/latest/SearchReference/SearchTimeModifiers#How_to_specify_relative_time_modifiers # noqa
 # If we're not relative, we'll try to parse it as an ISO compliant time
 def timeParser(ts='now', timezone=datetime.timedelta(days=1), now=None, utcnow=None):
     if ts == 'now':
         if timezone.days > 0:
-            if now == None:
+            if now is None:
                 return datetime.datetime.now()
             else:
                 return now()
         else:
-            if utcnow == None:
+            if utcnow is None:
                 return datetime.datetime.now()
             else:
                 return utcnow() + timezone
     else:
         if ts[:1] == '+' or ts[:1] == '-':
             if timezone.days > 0:
-                if now == None:
+                if now is None:
                     ret = datetime.datetime.now()
                 else:
                     ret = now()
             else:
-                if utcnow == None:
+                if utcnow is None:
                     ret = datetime.datetime.utcnow() + timezone
                 else:
                     ret = utcnow() + timezone
 
-            unitsre = "(seconds|second|secs|sec|minutes|minute|min|hours|hour|hrs|hr|days|day|weeks|week|w[0-6]|months|month|mon|quarters|quarter|qtrs|qtr|years|year|yrs|yr|s|h|m|d|w|y|w|q)"
-            reltimere = "(?i)(?P<plusminus>[+-]*)(?P<num>\d{1,})(?P<unit>" + unitsre + "{1})(([\@](?P<snapunit>" + unitsre + "{1})((?P<snapplusminus>[+-])(?P<snaprelnum>\d+)(?P<snaprelunit>" + unitsre + "{1}))*)*)"
+            unitsre = "(seconds|second|secs|sec|minutes|minute|min|hours|hour|hrs|hr|days|day|weeks|week|w[0-6]|" + \
+                      "months|month|mon|quarters|quarter|qtrs|qtr|years|year|yrs|yr|s|h|m|d|w|y|w|q)"
+            reltimere = "(?i)(?P<plusminus>[+-]*)(?P<num>\d{1,})(?P<unit>" + unitsre + "{1})(([\@](?P<snapunit>" + \
+                        unitsre + "{1})((?P<snapplusminus>[+-])(?P<snaprelnum>\d+)(?P<snaprelunit>" + unitsre + \
+                        "{1}))*)*)"
 
             results = re.match(reltimere, ts)
             resultsdict = results.groupdict()
 
             # Handle first part of the time string
-            if resultsdict['plusminus'] != None and resultsdict['num'] != None \
-                    and resultsdict['unit'] != None:
+            if resultsdict['plusminus'] is not None and resultsdict['num'] is not None \
+                    and resultsdict['unit'] is not None:
                 ret = timeParserTimeMath(resultsdict['plusminus'], resultsdict['num'], resultsdict['unit'], ret)
 
                 # Now handle snap-to
-                if resultsdict['snapunit'] != None:
+                if resultsdict['snapunit'] is not None:
                     if resultsdict['snapunit'] in ('s', 'sec', 'secs', 'second', 'seconds'):
-                        ret = datetime.datetime(ret.year, ret.month, ret.day, ret.hour, \
-                                                ret.minute, ret.second, 0)
+                        ret = datetime.datetime(ret.year, ret.month, ret.day, ret.hour, ret.minute, ret.second, 0)
                     elif resultsdict['snapunit'] in ('m', 'min', 'minute', 'minutes'):
-                        ret = datetime.datetime(ret.year, ret.month, ret.day, ret.hour, \
-                                                ret.minute, 0, 0)
+                        ret = datetime.datetime(ret.year, ret.month, ret.day, ret.hour, ret.minute, 0, 0)
                     elif resultsdict['snapunit'] in ('h', 'hr', 'hrs', 'hour', 'hours'):
                         ret = datetime.datetime(ret.year, ret.month, ret.day, ret.hour, 0, 0, 0)
                     elif resultsdict['snapunit'] in ('d', 'day', 'days'):
                         ret = datetime.datetime(ret.year, ret.month, ret.day, 0, 0, 0, 0)
-                    elif re.match('w[0-6]', resultsdict['snapunit']) != None or \
+                    elif re.match('w[0-6]', resultsdict['snapunit']) is not None or \
                             resultsdict['snapunit'] in ('w', 'week', 'weeks'):
                         if resultsdict['snapunit'] in ('w', 'week', 'weeks'):
                             resultsdict['snapunit'] = 'w0'
@@ -100,8 +101,8 @@ def timeParser(ts='now', timezone=datetime.timedelta(days=1), now=None, utcnow=N
                     elif resultsdict['snapunit'] in ('y', 'yr', 'yrs', 'year', 'years'):
                         ret = datetime.datetime(ret.year, 1, 1, 0, 0, 0, 0)
 
-                    if resultsdict['snapplusminus'] != None and resultsdict['snaprelnum'] != None \
-                            and resultsdict['snaprelunit'] != None:
+                    if resultsdict['snapplusminus'] is not None and resultsdict['snaprelnum'] is not None \
+                            and resultsdict['snaprelunit'] is not None:
                         ret = timeParserTimeMath(resultsdict['snapplusminus'], resultsdict['snaprelnum'],
                                                  resultsdict['snaprelunit'], ret)
                 return ret
@@ -113,7 +114,7 @@ def timeParser(ts='now', timezone=datetime.timedelta(days=1), now=None, utcnow=N
             # more date formats though, so we can be liberal in what we accept
 
             return dateutil_parser.parse(ts)
-            #except ValueError:
+            # except ValueError:
             #    raise ValueError("Cannot parse date/time for %s" % (ts))
 
 
@@ -131,13 +132,12 @@ def timeParserTimeMath(plusminus, num, unit, ret):
             td = datetime.timedelta(days=int(num))
         elif unit in ('w', 'week', 'weeks'):
             td = datetime.timedelta(days=(int(num) * 7))
-        elif re.match('w[0-6]', unit) != None:
-            logger.error('Day of week is only available in snap-to.  Time string: %s' % (ts))
+        elif re.match('w[0-6]', unit) is not None:
+            logging.error('Day of week is only available in snap-to.  Time string: %s' % td)
             return False
         # Normalize out all year/quarter/months to months and do the math on that
-        elif unit in ('mon', 'month', 'months') or \
-                    unit in ('q', 'qtr', 'qtrs', 'quarter', 'quarters') or \
-                    unit in ('y', 'yr', 'yrs', 'year', 'years'):
+        elif unit in ('mon', 'month', 'months') or unit in ('q', 'qtr', 'qtrs', 'quarter', 'quarters') or \
+                unit in ('y', 'yr', 'yrs', 'year', 'years'):
             if unit in ('q', 'qtr', 'qtrs', 'quarter', 'quarters'):
                 num *= 3
             elif unit in ('y', 'yr', 'yrs', 'year', 'years'):
@@ -166,13 +166,13 @@ def timeParserTimeMath(plusminus, num, unit, ret):
                                             ret.microsecond)
 
     except ValueError:
-        logger.error('Cannot parse relative time string')
+        logging.error('Cannot parse relative time string')
         import traceback
         stack = traceback.format_exc()
-        logger.debug('%s', stack)
+        logging.debug('%s', stack)
         return False
 
-    if td != None:
+    if td is not None:
         if plusminus == '-':
             td = td * -1
         ret = ret + td
@@ -183,7 +183,7 @@ def timeParserTimeMath(plusminus, num, unit, ret):
     return ret
 
 
-## Converts Time Delta object to number of seconds in delta
+# Converts Time Delta object to number of seconds in delta
 def timeDelta2secs(timeDiff):
     deltaSecs = (timeDiff.microseconds + (timeDiff.seconds + timeDiff.days * 24 * 3600) * 10**6) / 10**6
     return int(deltaSecs)

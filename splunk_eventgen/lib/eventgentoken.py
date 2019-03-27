@@ -1,8 +1,7 @@
-# TODO Handle timestamp generation for modular input output where we set sample.timestamp properly when we do a timestamp replacement
+# TODO: Handle timestamp generation for modinput and set sample.timestamp properly for timestamp replacement
 
 from __future__ import division, with_statement
 
-import copy
 import datetime
 import json
 import logging
@@ -14,7 +13,7 @@ import time
 import urllib
 import uuid
 
-from timeparser import timeDelta2secs, timeParser
+from timeparser import timeDelta2secs
 
 
 class Token(object):
@@ -44,12 +43,6 @@ class Token(object):
 
         # Logger already setup by config, just get an instance
         self._setup_logging()
-
-        if sample == None:
-            name = "None"
-        else:
-            name = sample.name
-
         self._earliestTime = (None, None)
         self._latestTime = (None, None)
 
@@ -104,7 +97,7 @@ class Token(object):
                 event[tokenMatch[0].start(0):tokenMatch[0].end(0)], et, lt, s, pivot_timestamp=pivot_timestamp)
             if replacement is not None or self.replacementType == 'replaytimestamp':
                 # logger.debug("Replacement: '%s'" % replacement)
-                ## Iterate matches
+                # Iterate matches
                 for match in tokenMatch:
                     # logger.debug("Match: %s" % (match))
                     try:
@@ -149,88 +142,87 @@ class Token(object):
                     if latestTime >= earliestTime:
                         if pivot_timestamp:
                             replacementTime = pivot_timestamp
-                        elif s.timestamp == None:
+                        elif s.timestamp is None:
                             minDelta = 0
 
-                            ## Compute timeDelta as total_seconds
+                            # Compute timeDelta as total_seconds
                             td = latestTime - earliestTime
                             if not type(td) == float:
                                 maxDelta = timeDelta2secs(td)
                             else:
                                 maxDelta = td
 
-                            ## Get random timeDelta
+                            # Get random timeDelta
                             randomDelta = datetime.timedelta(
                                 seconds=random.randint(minDelta, maxDelta),
                                 microseconds=random.randint(
                                     0, latestTime.microsecond if latestTime.microsecond > 0 else 999999))
 
-                            ## Compute replacmentTime
+                            # Compute replacmentTime
                             replacementTime = latestTime - randomDelta
                             s.timestamp = replacementTime
                         else:
                             replacementTime = s.timestamp
 
-                        # logger.debug("Generating timestamp for sample '%s' with randomDelta %s, minDelta %s, maxDelta %s, earliestTime %s, latestTime %s, earliest: %s, latest: %s" % (s.name, randomDelta, minDelta, maxDelta, earliestTime, latestTime, s.earliest, s.latest))
-
                         replacement = self.replacement.replace(
                             '%s',
                             str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
                         replacementTime = replacementTime.strftime(replacement)
-                        ## replacementTime == replacement for invalid strptime specifiers
+                        # replacementTime == replacement for invalid strptime specifiers
                         if replacementTime != self.replacement.replace('%', ''):
                             return replacementTime
                         else:
-                            self.logger.error("Invalid strptime specifier '%s' detected; will not replace" \
-                                        % (self.replacement) )
+                            self.logger.error("Invalid strptime specifier '%s' detected; will not replace"
+                                              % (self.replacement))
                             return old
-                    ## earliestTime/latestTime not proper
+                    # earliestTime/latestTime not proper
                     else:
-                        self.logger.error("Earliest specifier '%s', value '%s' is greater than latest specifier '%s', value '%s' for sample '%s'; will not replace" \
-                                    % (s.earliest, earliestTime, s.latest, latestTime, s.name) )
+                        self.logger.error(("Earliest specifier '%s', value '%s' is greater than latest specifier '%s'" +
+                                          "value '%s' for sample '%s'; will not replace")
+                                          % (s.earliest, earliestTime, s.latest, latestTime, s.name))
                         return old
-            ## earliest/latest not proper
+            # earliest/latest not proper
             else:
                 self.logger.error('Earliest or latest specifier were not set; will not replace')
                 return old
         elif self.replacementType in ('random', 'rated'):
-            ## Validations:
-            if self._integerMatch != None:
+            # Validations:
+            if self._integerMatch is not None:
                 integerMatch = self._integerMatch
             else:
                 integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
                 integerMatch = integerRE.match(self.replacement)
                 self._integerMatch = integerMatch
 
-            if self._floatMatch != None:
+            if self._floatMatch is not None:
                 floatMatch = self._floatMatch
             else:
                 floatRE = re.compile('float\[(-?\d+|\d+\.(\d+)):(-?\d+|\d+\.(\d+))\]', re.I)
                 floatMatch = floatRE.match(self.replacement)
                 self._floatMatch = floatMatch
 
-            if self._stringMatch != None:
+            if self._stringMatch is not None:
                 stringMatch = self._stringMatch
             else:
                 stringRE = re.compile('string\((\d+)\)', re.I)
                 stringMatch = stringRE.match(self.replacement)
                 self._stringMatch = stringMatch
 
-            if self._hexMatch != None:
+            if self._hexMatch is not None:
                 hexMatch = self._hexMatch
             else:
                 hexRE = re.compile('hex\((\d+)\)', re.I)
                 hexMatch = hexRE.match(self.replacement)
                 self._hexMatch = hexMatch
 
-            if self._listMatch != None:
+            if self._listMatch is not None:
                 listMatch = self._listMatch
             else:
                 listRE = re.compile('list(\[[^\]]+\])', re.I)
                 listMatch = listRE.match(self.replacement)
                 self._listMatch = listMatch
 
-            ## Valid replacements: ipv4 | ipv6 | integer[<start>:<end>] | string(<i>)
+            # Valid replacements: ipv4 | ipv6 | integer[<start>:<end>] | string(<i>)
             if self.replacement.lower() == 'ipv4':
                 x = 0
                 replacement = ''
@@ -255,7 +247,7 @@ class Token(object):
                 x = 0
                 replacement = ''
 
-                ## Give me 6 blocks of 2 hex
+                # Give me 6 blocks of 2 hex
                 while x < 6:
                     y = 0
                     while y < 2:
@@ -352,9 +344,9 @@ class Token(object):
                 elif strLength > 0:
                     replacement = ''
                     while len(replacement) < strLength:
-                        ## Generate a random ASCII between dec 33->126
+                        # Generate a random ASCII between dec 33->126
                         replacement += chr(random.randint(33, 126))
-                        ## Practice safe strings
+                        # Practice safe strings
                         replacement = re.sub('%[0-9a-fA-F]+', '', urllib.quote(replacement))
 
                     return replacement
@@ -385,7 +377,7 @@ class Token(object):
                                   (self.replacement, self.replacementType))
                 return old
         elif self.replacementType in ('file', 'mvfile', 'seqfile'):
-            if self._replacementFile != None:
+            if self._replacementFile is not None:
                 replacementFile = self._replacementFile
                 replacementColumn = self._replacementColumn
             else:
@@ -403,10 +395,10 @@ class Token(object):
                         replacementFile = s.pathParser(":".join(paths[0:-1]))
                     else:
                         replacementFile = s.pathParser(self.replacement)
-                except ValueError, e:
+                except ValueError:
                     self.logger.error(
-                        "Replacement string '%s' improperly formatted.  Should be /path/to/file or /path/to/file:column"
-                        % (self.replacement))
+                        "Replacement string '%s' improperly formatted. Should be /path/to/file or /path/to/file:column"
+                        % self.replacement)
                     return old
                 self._replacementFile = replacementFile
                 self._replacementColumn = replacementColumn
@@ -424,11 +416,12 @@ class Token(object):
                     return self.mvhash[replacementFile][replacementColumn - 1]
             else:
                 # Adding caching of the token file to avoid reading it every iteration
-                if self._tokenfile != None:
+                if self._tokenfile is not None:
                     replacementLines = self._tokenfile
-                ## Otherwise, lets read the file and build our cached results, pick a result and return it
+                # Otherwise, lets read the file and build our cached results, pick a result and return it
                 else:
-                    # self.logger.debug("replacementFile: %s replacementColumn: %s" % (replacementFile, replacementColumn))
+                    # self.logger.debug("replacementFile: %s replacementColumn: %s" %
+                    #                   (replacementFile, replacementColumn))
                     replacementFile = os.path.abspath(replacementFile)
                     self.logger.debug("Normalized replacement file %s" % replacementFile)
                     if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
@@ -469,5 +462,5 @@ class Token(object):
             return temp
 
         else:
-            self.logger.error("Unknown replacementType '%s'; will not replace" % (self.replacementType))
+            self.logger.error("Unknown replacementType '%s'; will not replace" % self.replacementType)
             return old

@@ -33,7 +33,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
         from eventgenconfig import Config
         globals()['c'] = Config()
 
-        self._splunkUrl, self._splunkMethod, self._splunkHost, self._splunkPort = c.getSplunkUrl(self._sample)
+        self._splunkUrl, self._splunkMethod, self._splunkHost, self._splunkPort = c.getSplunkUrl(self._sample)  # noqa
         self._splunkUser = self._sample.splunkUser
         self._splunkPass = self._sample.splunkPass
 
@@ -54,12 +54,10 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                     'sessionKey')[0].childNodes[0].nodeValue
                 self.logger.debug("Got new session for splunkstream, sessionKey '%s'" % self._sample.sessionKey)
             except:
-                self.logger.error(
-                    "Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'.  Credentials are missing or wrong"
-                    % self._sample.name)
-                raise IOError(
-                    "Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'.  Credentials are missing or wrong"
-                    % self._sample.name)
+                self.logger.error("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'."
+                                  % self._sample.name + " Credentials are missing or wrong")
+                raise IOError("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'."
+                              % self._sample.name + "Credentials are missing or wrong")
 
         self.logger.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._sample.sessionKey,
                                                                                             self._sample.name))
@@ -128,8 +126,9 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                                 msg = False
 
                         splunkhttp.request("POST", url, streamout, headers)
-                        self.logger.debug("POSTing to url %s on %s://%s:%s with sessionKey %s" \
-                                    % (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._sample.sessionKey))
+                        self.logger.debug("POSTing to url %s on %s://%s:%s with sessionKey %s"
+                                          % (url, self._splunkMethod, self._splunkHost, self._splunkPort,
+                                             self._sample.sessionKey))
 
                     except httplib.HTTPException, e:
                         self.logger.error(

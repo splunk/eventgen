@@ -77,7 +77,7 @@ class Config(object):
     generatorQueue = None
     args = None
 
-    ## Validations
+    # Validations
     _validSettings = [
         'disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 'count',
         'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount',
@@ -165,7 +165,7 @@ class Config(object):
 
             self.stopping = False
 
-            #self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
+            # self.copyLock = threading.Lock() if self.threading == 'thread' else multiprocessing.Lock()
 
             self._firsttime = False
 
@@ -200,7 +200,7 @@ class Config(object):
         keep 2 separate dicts of plugins.
         '''
         plugintype = name.split(".")[0]
-        if not name in self.plugins and not name in self.outputPlugins:
+        if name not in self.plugins and name not in self.outputPlugins:
             # 2/1/15 CS If we haven't already seen the plugin, try to load it
             # Note, this will only work for plugins which do not specify config validation
             # parameters.  If they do, configs may not validate for user provided plugins.
@@ -209,7 +209,7 @@ class Config(object):
                     plugin = getattr(s, plugintype)
                 else:
                     plugin = getattr(s, 'outputMode')
-                if plugin != None:
+                if plugin is not None:
                     self.logger.debug("Attempting to dynamically load plugintype '%s' named '%s' for sample '%s'" %
                                       (plugintype, plugin, s.name))
                     bindir = os.path.join(s.sampleDir, os.pardir, 'bin')
@@ -224,7 +224,7 @@ class Config(object):
                         raise FailedLoadingPlugin(name=plugin)
 
         # APPPERF-263: consult both __outputPlugins and __plugins
-        if not name in self.plugins and not name in self.outputPlugins:
+        if name not in self.plugins and name not in self.outputPlugins:
             raise KeyError('Plugin ' + name + ' not found')
 
         # return in order of precedence:  __plugins, __outputPlugins, None
@@ -238,7 +238,7 @@ class Config(object):
 
     def getSplunkUrl(self, s):
         """
-        Get Splunk URL.  If we're embedded in Splunk, get it from Splunk's Python libraries, otherwise get it from config.
+        If we're embedded in Splunk, get it from Splunk's Python libraries, otherwise get it from config.
 
         Returns a tuple of ( splunkUrl, splunkMethod, splunkHost, splunkPort )
         """
@@ -260,7 +260,7 @@ class Config(object):
                     'Error parsing host from splunk.auth.splunk.getLocalServerInfo() for sample %s' % s.name)
         else:
             # splunkMethod and splunkPort are defaulted so only check for splunkHost
-            if s.splunkHost == None:
+            if s.splunkHost is None:
                 self.logger.error("Splunk URL Requested but splunkHost not set for sample '%s'" % s.name)
                 raise ValueError("Splunk URL Requested but splunkHost not set for sample '%s'" % s.name)
 
@@ -394,7 +394,7 @@ class Config(object):
                         else:
                             if len(s.tokens) <= value[0]:
                                 x = (value[0] + 1) - len(s.tokens)
-                                s.tokens.extend([None for i in xrange(0, x)])
+                                s.tokens.extend([None for num in xrange(0, x)])
                             if not isinstance(s.tokens[value[0]], Token):
                                 s.tokens[value[0]] = Token(s)
                             # logger.info("token[{}].{} = {}".format(value[0],value[1],oldvalue))
@@ -415,12 +415,12 @@ class Config(object):
                 for i in xrange(0, len(s.tokens)):
                     t = s.tokens[i]
                     # If the index doesn't exist at all
-                    if t == None:
+                    if t is None:
                         self.logger.error("Token at index %s invalid" % i)
                         # Can't modify list in place while we're looping through it
                         # so create a list to remove later
                         deleteidx.append(i)
-                    elif t.token == None or t.replacementType == None or t.replacement == None:
+                    elif t.token is None or t.replacementType is None or t.replacement is None:
                         self.logger.error("Token at index %s invalid" % i)
                         deleteidx.append(i)
                 newtokens = []
@@ -430,12 +430,12 @@ class Config(object):
                 s.tokens = newtokens
 
                 # Must have eai:acl key to determine app name which determines where actual files are
-                if s.app == None:
+                if s.app is None:
                     self.logger.error("App not set for sample '%s' in stanza '%s'" % (s.name, stanza))
                     raise ValueError("App not set for sample '%s' in stanza '%s'" % (s.name, stanza))
                 # Set defaults for items not included in the config file
                 for setting in self._defaultableSettings:
-                    if not hasattr(s, setting) or getattr(s, setting) == None:
+                    if not hasattr(s, setting) or getattr(s, setting) is None:
                         setattr(s, setting, getattr(self, setting, None))
 
                 # Append to temporary holding list
@@ -453,7 +453,7 @@ class Config(object):
 
             # 1/5/14 Adding a config setting to override sample directory, primarily so I can put tests in their own
             # directories
-            if s.sampleDir == None:
+            if s.sampleDir is None:
                 self.logger.debug("Sample directory not specified in config, setting based on standard")
                 if self.splunkEmbedded and not STANDALONE:
                     s.sampleDir = os.path.normpath(
@@ -560,8 +560,8 @@ class Config(object):
                         self.logger.debug("Matched file {0} with sample name {1}".format(results.group(0), s.name))
                         samplePath = os.path.join(s.sampleDir, sample)
                         if os.path.isfile(samplePath):
-                            self.logger.debug("Found sample file '%s' for app '%s' using config '%s' with priority '%s'; adding to list" \
-                                % (sample, s.app, s.name, s._priority) )
+                            self.logger.debug("Found sample file '%s' for app '%s' using config '%s' with priority '%s'"
+                                              % (sample, s.app, s.name, s._priority) + "; adding to list")
                             foundFiles.append(samplePath)
 
             # If we didn't find any files, log about it
@@ -582,9 +582,9 @@ class Config(object):
                     # Override <SAMPLE> with real name
                     if s.outputMode == 'spool' and s.spoolFile == self.spoolFile:
                         news.spoolFile = f.split(os.sep)[-1]
-                    if s.outputMode == 'file' and s.fileName == None and s.spoolFile == self.spoolFile:
+                    if s.outputMode == 'file' and s.fileName is None and s.spoolFile == self.spoolFile:
                         news.fileName = os.path.join(s.spoolDir, f.split(os.sep)[-1])
-                    elif s.outputMode == 'file' and s.fileName == None and s.spoolFile != None:
+                    elif s.outputMode == 'file' and s.fileName is None and s.spoolFile is not None:
                         news.fileName = os.path.join(s.spoolDir, s.spoolFile)
                     # Override s.name with file name.  Usually they'll match unless we've been a regex
                     # 6/22/12 CS Save original name for later matching
@@ -614,15 +614,16 @@ class Config(object):
                         # then we're a higher priority match
                         if len(matchs._origName) > len(s._origName) or matchs.name == matchs._origName:
                             # if s._priority < matchs._priority:
-                            self.logger.debug("Found higher priority for sample '%s' with priority '%s' from sample '%s' with priority '%s'" \
-                                        % (s._origName, s._priority, matchs._origName, matchs._priority))
+                            self.logger.debug("Found higher priority for sample '%s' with priority '%s' from sample "
+                                              % (s._origName, s._priority) + "'%s' with priority '%s'"
+                                              % (matchs._origName, matchs._priority))
                             foundHigherPriority = True
                             break
                         else:
                             othermatches.append(matchs._origName)
             if not foundHigherPriority:
-                self.logger.debug("Chose sample '%s' from samples '%s' for file '%s'" \
-                            % (s._origName, othermatches, s.name))
+                self.logger.debug("Chose sample '%s' from samples '%s' for file '%s'"
+                                  % (s._origName, othermatches, s.name))
                 tempsamples.append(s)
 
         # Now we have two lists, tempsamples which contains only the highest priority matches, and
@@ -653,13 +654,14 @@ class Config(object):
                                 # 6/22/12 CS Added support for non-overrideable (locked) settings
                                 # logger.debug("Locked settings: %s" % pprint.pformat(matchs._lockedSettings))
                                 # if settingname in matchs._lockedSettings:
-                                #     logger.debug("Matched setting '%s' in sample '%s' lockedSettings" \
+                                #     logger.debug("Matched setting '%s' in sample '%s' lockedSettings"
                                 #         % (settingname, matchs.name))
-                                if (destsetting == None or destsetting == getattr(self, settingname)) \
-                                        and sourcesetting != None and sourcesetting != getattr(self, settingname) \
-                                        and not settingname in s._lockedSettings:
-                                    self.logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to sample '%s' in app '%s'" \
-                                                    % (settingname, sourcesetting, overridesample._origName, s.name, s.app))
+                                if (destsetting is None or destsetting == getattr(self, settingname)) \
+                                        and sourcesetting is not None and sourcesetting != getattr(self, settingname) \
+                                        and settingname not in s._lockedSettings:
+                                    self.logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to "
+                                                      % (settingname, sourcesetting, overridesample._origName)
+                                                      + "sample '%s' in app '%s'" % (s.name, s.app))
                                     setattr(s, settingname, sourcesetting)
                             except AttributeError:
                                 pass
@@ -780,23 +782,23 @@ class Config(object):
         self.logger.debug("Validating setting for '%s' with value '%s' in stanza '%s'" % (key, value, stanza))
         if key.find('token.') > -1:
             results = re.match('token\.(\d+)\.(\w+)', key)
-            if results != None:
+            if results is not None:
                 groups = results.groups()
                 if groups[1] not in self._validTokenTypes:
-                    self.logger.error("Could not parse token index '%s' token type '%s' in stanza '%s'" % \
-                                    (groups[0], groups[1], stanza))
-                    raise ValueError("Could not parse token index '%s' token type '%s' in stanza '%s'" % \
-                                    (groups[0], groups[1], stanza))
+                    self.logger.error("Could not parse token index '%s' token type '%s' in stanza '%s'" %
+                                      (groups[0], groups[1], stanza))
+                    raise ValueError("Could not parse token index '%s' token type '%s' in stanza '%s'" %
+                                     (groups[0], groups[1], stanza))
                 if groups[1] == 'replacementType':
                     if value not in self._validReplacementTypes:
-                        self.logger.error("Invalid replacementType '%s' for token index '%s' in stanza '%s'" % \
-                                    (value, groups[0], stanza))
-                        raise ValueError("Could not parse token index '%s' token type '%s' in stanza '%s'" % \
-                                    (groups[0], groups[1], stanza))
+                        self.logger.error("Invalid replacementType '%s' for token index '%s' in stanza '%s'" %
+                                          (value, groups[0], stanza))
+                        raise ValueError("Could not parse token index '%s' token type '%s' in stanza '%s'" %
+                                         (groups[0], groups[1], stanza))
                 return (int(groups[0]), groups[1])
         elif key.find('host.') > -1:
             results = re.match('host\.(\w+)', key)
-            if results != None:
+            if results is not None:
                 groups = results.groups()
                 if groups[0] not in self._validHostTokens:
                     self.logger.error("Could not parse host token type '%s' in stanza '%s'" % (groups[0], stanza))
@@ -842,7 +844,7 @@ class Config(object):
                     self.logger.debug("Calling function for setting '%s' with value '%s'" % (key, value))
                     value = complexSetting(value)
                 elif isinstance(complexSetting, list):
-                    if not value in complexSetting:
+                    if value not in complexSetting:
                         self.logger.error(
                             "Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
                         raise ValueError("Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))
@@ -887,7 +889,6 @@ class Config(object):
         """Build configuration dictionary that we will use """
 
         # Abstracts grabbing configuration from Splunk or directly from Configuration Files
-
         if self.splunkEmbedded and not STANDALONE:
             self.logger.info('Retrieving eventgen configurations from /configs/eventgen')
             import splunk.entity as entity
@@ -898,8 +899,6 @@ class Config(object):
             conf = ConfigParser()
             # Make case sensitive
             conf.optionxform = str
-            currentdir = os.getcwd()
-
             conffiles = []
             # 2/1/15 CS  Moving to argparse way of grabbing command line parameters
             if self.configfile:
@@ -926,7 +925,6 @@ class Config(object):
 
             sections = conf.sections()
             ret = {}
-            orig = {}
             for section in sections:
                 ret[section] = dict(conf.items(section))
                 # For compatibility with Splunk's configs, need to add the app name to an eai:acl key
