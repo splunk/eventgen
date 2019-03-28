@@ -1,4 +1,4 @@
-## Install ##
+## Install
 
 There are multiple ways to use Eventgen, and you should choose the method that best fits your use case.
 Below are the two major ways to use Eventgen - as a PyPI module and as a Splunk App. Follow the instructions below depending on your ideal use:
@@ -36,7 +36,7 @@ Below are the two major ways to use Eventgen - as a PyPI module and as a Splunk 
 
 ---
 
-## PyPI Installation / First Run #####
+## PyPI Installation / First Run
 
 To use Eventgen as a PyPI module, you need to either download/clone the source code or install direct from github. 
 
@@ -116,7 +116,7 @@ A quick preface on this mode of operation: due to its complexity, this is only r
 
 ---
 
-## Splunk App Installation / First Run #####
+## Splunk App Installation / First Run
 
 To use Eventgen as a Splunk app, you need a SPL file. This SPL file can be obtained in one of two ways:
 1. Through running the "build" process of the splunk_eventgen pypi module
