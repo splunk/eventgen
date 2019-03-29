@@ -58,10 +58,8 @@ distutils.core.setup(
         'Programming Language :: Python',
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 3",
-        'Topic :: Software Development',
-    ],
+        'Topic :: Software Development', ],
     packages=['logutils'],
     cmdclass={
-        'test': TestCommand,
-    },
+        'test': TestCommand, },
 )

@@ -33,22 +33,19 @@ class WeblogGenerator(GeneratorPlugin):
     def gen(self, count, earliest, latest, **kwargs):
         # logger.debug("weblog: external_ips_len: %s webhosts_len: %s useragents_len: %s webserverstatus_len: %s" % \
         # (self.external_ips_len, self.webhosts_len, self.useragents_len, self.webserverstatus_len))
-        payload = [{'_raw': ('%s %s - - [%s] ' +
-                             '"GET /product.screen?product_id=HolyGouda&JSESSIONID=SD3SL1FF7ADFF8 HTTP 1.1" ' +
-                             '%s %s "http://shop.buttercupgames.com/cart.do?action=view&itemId=HolyGouda" ' +
-                             '"%s" %s') %
-                    (self.external_ips[random.randint(0, self.external_ips_len - 1)],
-                    self.webhosts[random.randint(0, self.webhosts_len - 1)],
-                    latest.strftime('%d/%b/%Y %H:%M:%S:%f'),
-                    self.webserverstatus[random.randint(0, self.webserverstatus_len - 1)],
-                    random.randint(100, 1000),
-                    self.useragents[random.randint(0, self.useragents_len - 1)],
-                    random.randint(200, 2000)),
-                    'index': self._sample.index,
-                    'sourcetype': self._sample.sourcetype,
-                    'host': self._sample.host,
-                    'source': self._sample.source,
-                    '_time': int(time.mktime(latest.timetuple()))} for i in xrange(count)]
+        payload = [{
+            '_raw':
+            ('%s %s - - [%s] ' + '"GET /product.screen?product_id=HolyGouda&JSESSIONID=SD3SL1FF7ADFF8 HTTP 1.1" ' +
+             '%s %s "http://shop.buttercupgames.com/cart.do?action=view&itemId=HolyGouda" ' + '"%s" %s') %
+            (self.external_ips[random.randint(0, self.external_ips_len - 1)], self.webhosts[random.randint(
+                0, self.webhosts_len - 1)], latest.strftime('%d/%b/%Y %H:%M:%S:%f'),
+             self.webserverstatus[random.randint(0, self.webserverstatus_len - 1)], random.randint(100, 1000),
+             self.useragents[random.randint(0, self.useragents_len - 1)], random.randint(200, 2000)), 'index':
+            self._sample.index, 'sourcetype':
+            self._sample.sourcetype, 'host':
+            self._sample.host, 'source':
+            self._sample.source, '_time':
+            int(time.mktime(latest.timetuple()))} for i in xrange(count)]
 
         self._out.bulksend(payload)
         return 0

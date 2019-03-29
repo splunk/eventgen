@@ -51,14 +51,8 @@ class TestEventgenOrchestration(object):
     def setup_class(cls):
         # Build the image from scratch
         cls.client = APIClient(base_url="unix://var/run/docker.sock")
-        response = cls.client.build(
-            path=REPO_DIR,
-            dockerfile=os.path.join("dockerfiles", "Dockerfile"),
-            tag=IMAGE_NAME,
-            rm=True,
-            nocache=True,
-            pull=True,
-            stream=False)
+        response = cls.client.build(path=REPO_DIR, dockerfile=os.path.join("dockerfiles", "Dockerfile"), tag=IMAGE_NAME,
+                                    rm=True, nocache=True, pull=True, stream=False)
         for line in response:
             print line,
         # Create a network for both the controller + server to run in
@@ -67,8 +61,8 @@ class TestEventgenOrchestration(object):
         # Start the controller
         print 'creating controller'
         host_config = cls.client.create_host_config(auto_remove=True, publish_all_ports=True)
-        container = cls.client.create_container(
-            image=IMAGE_NAME, command="controller", host_config=host_config, networking_config=networking_config)
+        container = cls.client.create_container(image=IMAGE_NAME, command="controller", host_config=host_config,
+                                                networking_config=networking_config)
         cls.client.start(container["Id"])
         TestEventgenOrchestration.controller_id = container["Id"]
         print container["Id"]
@@ -80,10 +74,8 @@ class TestEventgenOrchestration(object):
         # Start the server
         print 'creating server'
         container = cls.client.create_container(
-            image=IMAGE_NAME,
-            command="server",
-            environment=["EVENTGEN_AMQP_HOST={}".format(cls.controller_container["Id"][:12])],
-            host_config=host_config,
+            image=IMAGE_NAME, command="server", environment=[
+                "EVENTGEN_AMQP_HOST={}".format(cls.controller_container["Id"][:12])], host_config=host_config,
             networking_config=networking_config)
         cls.client.start(container["Id"])
         TestEventgenOrchestration.server_id = container["Id"]
@@ -180,17 +172,16 @@ class TestEventgenOrchestration(object):
         assert "Please pass in a valid object with bundle URL" in r.content
 
     def test_controller_bundle_with_url(self):
-        r = requests.post(
-            "http://127.0.0.1:{}/bundle".format(self.controller_eventgen_webport),
-            json={"url": "http://server.com/bundle.tgz"})
+        r = requests.post("http://127.0.0.1:{}/bundle".format(self.controller_eventgen_webport), json={
+            "url": "http://server.com/bundle.tgz"})
         assert r.status_code == 200
         assert "Bundle event dispatched to all with url http://server.com/bundle.tgz" in r.content
 
     def test_controller_bundle_with_url_and_target(self):
         r = requests.post(
             "http://127.0.0.1:{}/bundle/{}".format(self.controller_eventgen_webport,
-                                                   TestEventgenOrchestration.server_id[:12]),
-            json={"url": "http://server.com/bundle.tgz"})
+                                                   TestEventgenOrchestration.server_id[:12]), json={
+                                                       "url": "http://server.com/bundle.tgz"})
         assert r.status_code == 200
         assert "Bundle event dispatched to {} with url http://server.com/bundle.tgz".format(
             TestEventgenOrchestration.server_id[:12]) in r.content
@@ -214,16 +205,15 @@ class TestEventgenOrchestration(object):
         assert "Please pass in a valid object with volume" in r.content
 
     def test_controller_set_volume_with_volume(self):
-        r = requests.post(
-            "http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport), json={"perDayVolume": 10})
+        r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport), json={
+            "perDayVolume": 10})
         assert r.status_code == 200
         assert "set_volume event dispatched to all" in r.content
 
     def test_controller_set_volume_with_volume_and_target(self):
         r = requests.post(
             "http://127.0.0.1:{}/volume/{}".format(self.controller_eventgen_webport,
-                                                   TestEventgenOrchestration.server_id[:12]),
-            json={"perDayVolume": 10})
+                                                   TestEventgenOrchestration.server_id[:12]), json={"perDayVolume": 10})
         assert r.status_code == 200
         assert "set_volume event dispatched to {}".format(TestEventgenOrchestration.server_id[:12]) in r.content
 

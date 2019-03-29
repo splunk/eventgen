@@ -34,15 +34,15 @@ class PerDayVolume(ConfigRater):
         rateFactor = 1.0
         if self._sample.randomizeCount != 0 and self._sample.randomizeCount is not None:
             try:
-                self.logger.debugv("randomizeCount for sample '%s' in app '%s' is %s"
-                                   % (self._sample.name, self._sample.app, self._sample.randomizeCount))
+                self.logger.debugv("randomizeCount for sample '%s' in app '%s' is %s" %
+                                   (self._sample.name, self._sample.app, self._sample.randomizeCount))
                 # If we say we're going to be 20% variable, then that means we
                 # can be .1% high or .1% low.  Math below does that.
                 randBound = round(self._sample.randomizeCount * 1000, 0)
                 rand = random.randint(0, randBound)
                 randFactor = 1 + ((-((randBound / 2) - rand)) / 1000)
-                self.logger.debug("randFactor for sample '%s' in app '%s' is %s"
-                                  % (self._sample.name, self._sample.app, randFactor))
+                self.logger.debug(
+                    "randFactor for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, randFactor))
                 rateFactor *= randFactor
             except:
                 import traceback

@@ -14,12 +14,13 @@ import time
 
 import requests
 
-import __init__ as splunk_eventgen_init
 import eventgen_core
 
 FILE_LOCATION = os.path.dirname(os.path.abspath(__file__))
 path_prepend = os.path.join(FILE_LOCATION, 'lib')
 sys.path.append(path_prepend)
+
+import __init__ as splunk_eventgen_init  # noqa isort:skip
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
 logger = logging.getLogger()
@@ -40,8 +41,8 @@ def parse_args():
     generate_subparser.add_argument("-s", "--sample", help="Run specified sample only, disabling all other samples")
     generate_subparser.add_argument("--keepoutput", action="store_true", help="Keep original outputMode for the sample")
     generate_subparser.add_argument("--devnull", action="store_true", help="Set outputMode to devnull")
-    generate_subparser.add_argument(
-        "--modinput", action="store_true", help="Set outputMode to modinput, to see metadata")
+    generate_subparser.add_argument("--modinput", action="store_true",
+                                    help="Set outputMode to modinput, to see metadata")
     generate_subparser.add_argument("-c", "--count", type=int, help="Set sample count")
     generate_subparser.add_argument("-i", "--interval", type=int, help="Set sample interval")
     generate_subparser.add_argument("-b", "--backfill", help="Set time to backfill from")
@@ -49,81 +50,57 @@ def parse_args():
     generate_subparser.add_argument("--generators", type=int, help="Number of GeneratorWorkers (mappers)")
     generate_subparser.add_argument("--outputters", type=int, help="Number of OutputWorkers (reducers)")
     generate_subparser.add_argument("--disableOutputQueue", action="store_true", help="Disable reducer step")
-    generate_subparser.add_argument(
-        "--multiprocess", action="store_true", help="Use multiprocesing instead of threading")
+    generate_subparser.add_argument("--multiprocess", action="store_true",
+                                    help="Use multiprocesing instead of threading")
     generate_subparser.add_argument("--profiler", action="store_true", help="Turn on cProfiler")
     generate_subparser.add_argument("--log-path", type=str, default="{0}/logs".format(FILE_LOCATION))
     # Build subparser
     build_subparser = subparsers.add_parser('build', help="Will build different forms of sa-eventgen")
-    build_subparser.add_argument(
-        "--mode",
-        type=str,
-        default="splunk-app",
-        help="Specify what type of package to build, defaults to splunk-app mode.")
+    build_subparser.add_argument("--mode", type=str, default="splunk-app",
+                                 help="Specify what type of package to build, defaults to splunk-app mode.")
     build_subparser.add_argument("--destination", help="Specify where to store the output of the build command.")
-    build_subparser.add_argument(
-        "--remove", default=True, help="Remove the build directory after completion.  Defaults to True")
+    build_subparser.add_argument("--remove", default=True,
+                                 help="Remove the build directory after completion. Defaults to True")
     # WSGI subparser
     wsgi_subparser = subparsers.add_parser('wsgi', help="start a wsgi server to interact with eventgen.")
     wsgi_subparser.add_argument(
-        "--daemon",
-        action="store_true",
+        "--daemon", action="store_true",
         help="Daemon will tell the wsgi server to start in a daemon mode and will release the cli.")
     # Service subparser
     service_subparser = subparsers.add_parser(
         'service',
-        help="Run Eventgen as a Nameko service. Parameters for starting this service can be defined as either env" +
-             "variables or CLI arguments, where env variables takes precedence. See help for more info.")
+        help=("Run Eventgen as a Nameko service. Parameters for starting this service can be defined as either env"
+              "variables or CLI arguments, where env variables takes precedence. See help for more info."))
+    service_subparser.add_argument("--role", "-r", type=str, default=None, required=True, choices=[
+        "controller", "server"], help="Define the role for this Eventgen node. Options: master, slave")
     service_subparser.add_argument(
-        "--role",
-        "-r",
-        type=str,
-        default=None,
-        required=True,
-        choices=["controller", "server"],
-        help="Define the role for this Eventgen node. Options: master, slave")
+        "--amqp-uri", type=str, default=None,
+        help=("Full URI to AMQP endpoint in the format pyamqp://<user>:<password>@<host>:<port>."
+              "This can also be set using the environment variable EVENTGEN_AMQP_URI"))
     service_subparser.add_argument(
-        "--amqp-uri",
-        type=str,
-        default=None,
-        help="Full URI to AMQP endpoint in the format pyamqp://<user>:<password>@<host>:<port>." +
-             "This can also be set using the environment variable EVENTGEN_AMQP_URI")
+        "--amqp-host", type=str, default=None,
+        help=("Specify AMQP hostname. This can also be set using the environment variable EVENTGEN_AMQP_HOST." +
+              "Default is localhost"))
     service_subparser.add_argument(
-        "--amqp-host",
-        type=str,
-        default=None,
-        help="Specify AMQP hostname. This can also be set using the environment variable EVENTGEN_AMQP_HOST." +
-             "Default is localhost")
+        "--amqp-port", type=int, default=None,
+        help=("Specify AMQP port. This can also be set using the environment variable EVENTGEN_AMQP_PORT." +
+              "Default is 5672"))
     service_subparser.add_argument(
-        "--amqp-port",
-        type=int,
-        default=None,
-        help="Specify AMQP port. This can also be set using the environment variable EVENTGEN_AMQP_PORT." +
-             "Default is 5672")
+        "--amqp-webport", type=int, default=None,
+        help=("Specify AMQP web port. This can also be set using the environment variable EVENTGEN_AMQP_WEBPORT." +
+              "Default is 15672"))
     service_subparser.add_argument(
-        "--amqp-webport",
-        type=int,
-        default=None,
-        help="Specify AMQP web port. This can also be set using the environment variable EVENTGEN_AMQP_WEBPORT." +
-             "Default is 15672")
+        "--amqp-user", type=str, default=None,
+        help=("Specify AMQP user. This can also be set using the environment variable EVENTGEN_AMQP_USER." +
+              "Default is 'guest'"))
     service_subparser.add_argument(
-        "--amqp-user",
-        type=str,
-        default=None,
-        help="Specify AMQP user. This can also be set using the environment variable EVENTGEN_AMQP_USER." +
-             "Default is 'guest'")
+        "--amqp-pass", type=str, default=None,
+        help=("Specify AMQP password. This can also be set using the environment variable EVENTGEN_AMQP_PASS." +
+              "Default is 'guest'"))
     service_subparser.add_argument(
-        "--amqp-pass",
-        type=str,
-        default=None,
-        help="Specify AMQP password. This can also be set using the environment variable EVENTGEN_AMQP_PASS." +
-             "Default is 'guest'")
-    service_subparser.add_argument(
-        "--web-server-address",
-        type=str,
-        default=None,
-        help="Specify nameko webserver address. This can also be set using the environment variable" +
-             "EVENTGEN_WEB_SERVER_ADDR. Default is 0.0.0.0:9500")
+        "--web-server-address", type=str, default=None,
+        help=("Specify nameko webserver address. This can also be set using the environment variable" +
+              "EVENTGEN_WEB_SERVER_ADDR. Default is 0.0.0.0:9500"))
     # Help subparser
     # NOTE: Keep this at the end so we can use the subparser_dict.keys() to display valid commands
     help_subparser = subparsers.add_parser('help', help="Display usage on a subcommand")

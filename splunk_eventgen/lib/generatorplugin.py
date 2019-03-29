@@ -109,8 +109,8 @@ class GeneratorPlugin(object):
 
             self._sample.source = event['source']
             self._sample.sourcetype = event['sourcetype']
-            self.logger.debug("Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'"
-                              % (self._sample.index, self._sample.host, self._sample.source, self._sample.sourcetype))
+            self.logger.debug("Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" %
+                              (self._sample.index, self._sample.host, self._sample.source, self._sample.sourcetype))
 
     def setupBackfill(self):
         """
@@ -143,14 +143,9 @@ class GeneratorPlugin(object):
                         (s.backfillSearchUrl, s.backfillSearch, s.sessionKey))
 
                     results = httplib2.Http(disable_ssl_certificate_validation=True).request(
-                        s.backfillSearchUrl + '/services/search/jobs',
-                        'POST',
-                        headers={'Authorization': 'Splunk %s' % s.sessionKey},
-                        body=urllib.urlencode({
-                            'search': s.backfillSearch,
-                            'earliest_time': s.backfill,
-                            'exec_mode': 'oneshot'
-                        }))[1]
+                        s.backfillSearchUrl + '/services/search/jobs', 'POST', headers={
+                            'Authorization': 'Splunk %s' % s.sessionKey}, body=urllib.urlencode({
+                                'search': s.backfillSearch, 'earliest_time': s.backfill, 'exec_mode': 'oneshot'}))[1]
                     try:
                         temptime = minidom.parseString(results).getElementsByTagName('text')[0].childNodes[0].nodeValue
                         # self.logger.debug("Time returned from backfill search: %s" % temptime)
@@ -215,16 +210,12 @@ class GeneratorPlugin(object):
             if not ignore_tokens:
                 for token in self._sample.tokens:
                     token.mvhash = mvhash
-                    event = token.replace(
-                        event, et=earliest, lt=latest, s=self._sample, pivot_timestamp=pivot_timestamp)
+                    event = token.replace(event, et=earliest, lt=latest, s=self._sample,
+                                          pivot_timestamp=pivot_timestamp)
                     if token.replacementType == 'timestamp' and self._sample.timeField != '_raw':
                         self._sample.timestamp = None
-                        token.replace(
-                            targetevent[self._sample.timeField],
-                            et=self._sample.earliestTime(),
-                            lt=self._sample.latestTime(),
-                            s=self._sample,
-                            pivot_timestamp=pivot_timestamp)
+                        token.replace(targetevent[self._sample.timeField], et=self._sample.earliestTime(),
+                                      lt=self._sample.latestTime(), s=self._sample, pivot_timestamp=pivot_timestamp)
                 if self._sample.hostToken:
                     # clear the host mvhash every time, because we need to re-randomize it
                     self._sample.hostToken.mvhash = {}
@@ -235,14 +226,8 @@ class GeneratorPlugin(object):
             except Exception:
                 time_val = int(time.mktime(self._sample.now().timetuple()))
             temp_event = {
-                '_raw': event,
-                'index': targetevent['index'],
-                'host': host,
-                'hostRegex': self._sample.hostRegex,
-                'source': targetevent['source'],
-                'sourcetype': targetevent['sourcetype'],
-                '_time': time_val
-            }
+                '_raw': event, 'index': targetevent['index'], 'host': host, 'hostRegex': self._sample.hostRegex,
+                'source': targetevent['source'], 'sourcetype': targetevent['sourcetype'], '_time': time_val}
             send_events.append(temp_event)
         return send_events
 

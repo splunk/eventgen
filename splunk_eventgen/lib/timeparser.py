@@ -11,10 +11,9 @@ import re
 # python-dateutil acquired from http://labix.org/python-dateutil.  BSD Licensed
 import sys
 
-import dateutil.parser as dateutil_parser
-
 path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
 sys.path.append(path_prepend + '/python_dateutil-1.4.1-py2.7.egg')
+import dateutil.parser as dateutil_parser  # noqa isort:skip
 
 # If we're inside eventgen, we'll have a global logger, if not set one up
 logging.getLogger('eventgen')

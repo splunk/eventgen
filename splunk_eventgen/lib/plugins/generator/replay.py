@@ -81,25 +81,15 @@ class ReplayGenerator(GeneratorPlugin):
                 source = line.get('source', self._sample.source)
                 sourcetype = line.get('sourcetype', self._sample.sourcetype)
                 rpevent = {
-                    '_raw': line['_raw'],
-                    'index': index,
-                    'host': host,
-                    'hostRegex': hostRegex,
-                    'source': source,
-                    'sourcetype': sourcetype
-                }
+                    '_raw': line['_raw'], 'index': index, 'host': host, 'hostRegex': hostRegex, 'source': source,
+                    'sourcetype': sourcetype}
             except:
                 if line[-1] != '\n':
                     line += '\n'
 
                 rpevent = {
-                    '_raw': line,
-                    'index': self._sample.index,
-                    'host': self._sample.host,
-                    'hostRegex': self._sample.hostRegex,
-                    'source': self._sample.source,
-                    'sourcetype': self._sample.sourcetype
-                }
+                    '_raw': line, 'index': self._sample.index, 'host': self._sample.host, 'hostRegex':
+                    self._sample.hostRegex, 'source': self._sample.source, 'sourcetype': self._sample.sourcetype}
 
             # If timestamp doesn't exist, the sample file should be fixed to include timestamp for every event.
             try:

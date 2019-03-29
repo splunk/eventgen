@@ -29,8 +29,7 @@ class ColorizingStreamHandler(logging.StreamHandler):
         'blue': 4,
         'magenta': 5,
         'cyan': 6,
-        'white': 7,
-    }
+        'white': 7, }
 
     # levels to (background, foreground, bold/intense)
     if os.name == 'nt':
@@ -39,8 +38,7 @@ class ColorizingStreamHandler(logging.StreamHandler):
             logging.INFO: (None, 'white', False),
             logging.WARNING: (None, 'yellow', True),
             logging.ERROR: (None, 'red', True),
-            logging.CRITICAL: ('red', 'white', True),
-        }
+            logging.CRITICAL: ('red', 'white', True), }
     else:
         "Maps levels to colour/intensity settings."
         level_map = {
@@ -48,8 +46,7 @@ class ColorizingStreamHandler(logging.StreamHandler):
             logging.INFO: (None, 'black', False),
             logging.WARNING: (None, 'yellow', False),
             logging.ERROR: (None, 'red', False),
-            logging.CRITICAL: ('red', 'white', True),
-        }
+            logging.CRITICAL: ('red', 'white', True), }
 
     csi = '\x1b['
     reset = '\x1b[0m'

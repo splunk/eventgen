@@ -93,8 +93,8 @@ class Token(object):
         tokenMatch = list(self._finditer(event))
 
         if len(tokenMatch) > 0:
-            replacement = self._getReplacement(
-                event[tokenMatch[0].start(0):tokenMatch[0].end(0)], et, lt, s, pivot_timestamp=pivot_timestamp)
+            replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)], et, lt, s,
+                                               pivot_timestamp=pivot_timestamp)
             if replacement is not None or self.replacementType == 'replaytimestamp':
                 # logger.debug("Replacement: '%s'" % replacement)
                 # Iterate matches
@@ -154,8 +154,7 @@ class Token(object):
 
                             # Get random timeDelta
                             randomDelta = datetime.timedelta(
-                                seconds=random.randint(minDelta, maxDelta),
-                                microseconds=random.randint(
+                                seconds=random.randint(minDelta, maxDelta), microseconds=random.randint(
                                     0, latestTime.microsecond if latestTime.microsecond > 0 else 999999))
 
                             # Compute replacmentTime
@@ -172,14 +171,14 @@ class Token(object):
                         if replacementTime != self.replacement.replace('%', ''):
                             return replacementTime
                         else:
-                            self.logger.error("Invalid strptime specifier '%s' detected; will not replace"
-                                              % (self.replacement))
+                            self.logger.error(
+                                "Invalid strptime specifier '%s' detected; will not replace" % (self.replacement))
                             return old
                     # earliestTime/latestTime not proper
                     else:
                         self.logger.error(("Earliest specifier '%s', value '%s' is greater than latest specifier '%s'" +
-                                          "value '%s' for sample '%s'; will not replace")
-                                          % (s.earliest, earliestTime, s.latest, latestTime, s.name))
+                                           "value '%s' for sample '%s'; will not replace") %
+                                          (s.earliest, earliestTime, s.latest, latestTime, s.name))
                         return old
             # earliest/latest not proper
             else:

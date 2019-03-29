@@ -142,8 +142,7 @@ class BaseConfigurator(object):
 
     value_converters = {
         'ext': 'ext_convert',
-        'cfg': 'cfg_convert',
-    }
+        'cfg': 'cfg_convert', }
 
     # We might want to use a different one, e.g. importlib
     importer = __import__

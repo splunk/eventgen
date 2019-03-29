@@ -43,21 +43,18 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                 self.logger.debug("Getting session key from '%s' with user '%s' and pass '%s'" %
                                   (self._splunkUrl + '/services/auth/login', self._splunkUser, self._splunkPass))
                 response = myhttp.request(
-                    self._splunkUrl + '/services/auth/login',
-                    'POST',
-                    headers={},
-                    body=urllib.urlencode({
-                        'username': self._splunkUser,
-                        'password': self._splunkPass
-                    }))[1]
+                    self._splunkUrl + '/services/auth/login', 'POST', headers={}, body=urllib.urlencode({
+                        'username':
+                        self._splunkUser, 'password':
+                        self._splunkPass}))[1]
                 self._sample.sessionKey = minidom.parseString(response).getElementsByTagName(
                     'sessionKey')[0].childNodes[0].nodeValue
                 self.logger.debug("Got new session for splunkstream, sessionKey '%s'" % self._sample.sessionKey)
             except:
-                self.logger.error("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'."
-                                  % self._sample.name + " Credentials are missing or wrong")
-                raise IOError("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'."
-                              % self._sample.name + "Credentials are missing or wrong")
+                self.logger.error("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'." %
+                                  self._sample.name + " Credentials are missing or wrong")
+                raise IOError("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'." % self._sample.name +
+                              "Credentials are missing or wrong")
 
         self.logger.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._sample.sessionKey,
                                                                                             self._sample.name))
@@ -126,9 +123,9 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                                 msg = False
 
                         splunkhttp.request("POST", url, streamout, headers)
-                        self.logger.debug("POSTing to url %s on %s://%s:%s with sessionKey %s"
-                                          % (url, self._splunkMethod, self._splunkHost, self._splunkPort,
-                                             self._sample.sessionKey))
+                        self.logger.debug(
+                            "POSTing to url %s on %s://%s:%s with sessionKey %s" %
+                            (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._sample.sessionKey))
 
                     except httplib.HTTPException, e:
                         self.logger.error(

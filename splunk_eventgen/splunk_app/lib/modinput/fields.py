@@ -156,17 +156,8 @@ class DurationField(Field):
     WEEK = 604800
 
     UNITS = {
-        'w': WEEK,
-        'week': WEEK,
-        'd': DAY,
-        'day': DAY,
-        'h': HOUR,
-        'hour': HOUR,
-        'm': MINUTE,
-        'min': MINUTE,
-        'minute': MINUTE,
-        's': 1
-    }
+        'w': WEEK, 'week': WEEK, 'd': DAY, 'day': DAY, 'h': HOUR, 'hour': HOUR, 'm': MINUTE, 'min': MINUTE, 'minute':
+        MINUTE, 's': 1}
 
     def to_python(self, value):
         Field.to_python(self, value)
@@ -273,7 +264,8 @@ class IntervalField(Field):
     # Note that we don't check explicitly for correct numeric values for each
     # cron field.
 
-    cron_rx = re.compile('''
+    cron_rx = re.compile(
+        '''
         (
              \d{1,2}                    # A digit.
             |\d{1,2}-\d{1,2}            # A range.

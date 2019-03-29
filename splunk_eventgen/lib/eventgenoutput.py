@@ -64,14 +64,9 @@ class Output(object):
         """
         ts = self._sample.timestamp if self._sample.timestamp is not None else self._sample.now()
         self._queue.append({
-            '_raw': msg,
-            'index': self._sample.index,
-            'source': self._sample.source,
-            'sourcetype': self._sample.sourcetype,
-            'host': self._sample.host,
-            'hostRegex': self._sample.hostRegex,
-            '_time': int(time.mktime(ts.timetuple()))
-        })
+            '_raw': msg, 'index': self._sample.index, 'source': self._sample.source, 'sourcetype':
+            self._sample.sourcetype, 'host': self._sample.host, 'hostRegex': self._sample.hostRegex, '_time': int(
+                time.mktime(ts.timetuple()))})
 
         if len(self._queue) >= self.MAXQUEUELENGTH:
             self.flush()
@@ -136,10 +131,7 @@ class Output(object):
                 if self.config.splunkEmbedded and len(tmp) > 0:
                     metrics = logging.getLogger('eventgen_metrics')
                     metrics.info({
-                        'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'),
-                        'sample': self._sample.name,
-                        'events': len(tmp),
-                        'bytes': sum(tmp)
-                    })
+                        'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 'sample':
+                        self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)})
                 tmp = None
                 outputer.run()

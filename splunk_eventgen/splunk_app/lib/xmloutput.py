@@ -7,11 +7,8 @@ import xml.sax.saxutils
 from splunk.appserver.mrsparkle.lib.util import make_splunkhome_path
 
 
-def setupLogger(logger=None,
-                log_format='%(asctime)s %(levelname)s [ModInput] %(message)s',
-                level=logging.DEBUG,
-                log_name="modinput.log",
-                logger_name="modinput"):
+def setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [ModInput] %(message)s', level=logging.DEBUG,
+                log_name="modinput.log", logger_name="modinput"):
     """
     Setup a logger suitable for splunkd consumption
     """

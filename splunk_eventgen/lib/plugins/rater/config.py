@@ -63,8 +63,8 @@ class ConfigRater(object):
                 randBound = round(self._sample.randomizeCount * 1000, 0)
                 rand = random.randint(0, randBound)
                 randFactor = 1 + ((-((randBound / 2) - rand)) / 1000)
-                self.logger.debug("randFactor for sample '%s' in app '%s' is %s"
-                                  % (self._sample.name, self._sample.app, randFactor))
+                self.logger.debug(
+                    "randFactor for sample '%s' in app '%s' is %s" % (self._sample.name, self._sample.app, randFactor))
                 rateFactor *= randFactor
             except:
                 import traceback

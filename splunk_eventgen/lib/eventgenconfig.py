@@ -87,46 +87,31 @@ class Config(object):
         'perDayVolume', 'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir',
         'threading', 'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort', 'verbosity',
         'useOutputQueue', 'seed', 'end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse', 'outputCounter',
-        'sequentialTimestamp'
-    ]
+        'sequentialTimestamp']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = [
-        'static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'seqfile', 'integerid'
-    ]
+        'static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'seqfile', 'integerid']
     validOutputModes = []
     _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = [
         'disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp',
-        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp'
-    ]
+        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp']
     _jsonSettings = [
-        'hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps'
-    ]
+        'hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps']
     _defaultableSettings = [
         'disabled', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 'count', 'bundlelines',
         'earliest', 'latest', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode',
         'fileMaxBytes', 'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype',
         'host', 'hostRegex', 'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
         'monthOfYearRate', 'perDayVolume', 'sessionKey', 'generator', 'rater', 'timeField', 'maxQueueLength',
-        'maxIntervalsBeforeFlush', 'autotimestamp'
-    ]
+        'maxIntervalsBeforeFlush', 'autotimestamp']
     _complexSettings = {'sampletype': ['raw', 'csv'], 'mode': ['sample', 'replay'], 'threading': ['thread', 'process']}
 
-    def __init__(self,
-                 configfile=None,
-                 sample=None,
-                 override_outputter=False,
-                 override_count=False,
-                 override_interval=False,
-                 override_backfill=False,
-                 override_end=False,
-                 threading="thread",
-                 override_generators=None,
-                 override_outputqueue=False,
-                 profiler=False,
-                 verbosity=40):
+    def __init__(self, configfile=None, sample=None, override_outputter=False, override_count=False,
+                 override_interval=False, override_backfill=False, override_end=False, threading="thread",
+                 override_generators=None, override_outputqueue=False, profiler=False, verbosity=40):
         """Setup Config object.  Sets up Logging and path related variables."""
         # Rebind the internal datastore of the class to an Instance variable
         self.__dict__ = self.__sharedState
@@ -215,8 +200,8 @@ class Config(object):
                     bindir = os.path.join(s.sampleDir, os.pardir, 'bin')
                     libdir = os.path.join(s.sampleDir, os.pardir, 'lib')
                     plugindir = os.path.join(libdir, 'plugins', plugintype)
-                    targetplugin = PluginNotLoaded(
-                        bindir=bindir, libdir=libdir, plugindir=plugindir, name=plugin, type=plugintype)
+                    targetplugin = PluginNotLoaded(bindir=bindir, libdir=libdir, plugindir=plugindir, name=plugin,
+                                                   type=plugintype)
                     if targetplugin.name not in self.extraplugins:
                         self.extraplugins.append(targetplugin.name)
                         raise targetplugin
@@ -560,8 +545,9 @@ class Config(object):
                         self.logger.debug("Matched file {0} with sample name {1}".format(results.group(0), s.name))
                         samplePath = os.path.join(s.sampleDir, sample)
                         if os.path.isfile(samplePath):
-                            self.logger.debug("Found sample file '%s' for app '%s' using config '%s' with priority '%s'"
-                                              % (sample, s.app, s.name, s._priority) + "; adding to list")
+                            self.logger.debug(
+                                "Found sample file '%s' for app '%s' using config '%s' with priority '%s'" %
+                                (sample, s.app, s.name, s._priority) + "; adding to list")
                             foundFiles.append(samplePath)
 
             # If we didn't find any files, log about it
@@ -614,16 +600,16 @@ class Config(object):
                         # then we're a higher priority match
                         if len(matchs._origName) > len(s._origName) or matchs.name == matchs._origName:
                             # if s._priority < matchs._priority:
-                            self.logger.debug("Found higher priority for sample '%s' with priority '%s' from sample "
-                                              % (s._origName, s._priority) + "'%s' with priority '%s'"
-                                              % (matchs._origName, matchs._priority))
+                            self.logger.debug("Found higher priority for sample '%s' with priority '%s' from sample " %
+                                              (s._origName, s._priority) +
+                                              "'%s' with priority '%s'" % (matchs._origName, matchs._priority))
                             foundHigherPriority = True
                             break
                         else:
                             othermatches.append(matchs._origName)
             if not foundHigherPriority:
-                self.logger.debug("Chose sample '%s' from samples '%s' for file '%s'"
-                                  % (s._origName, othermatches, s.name))
+                self.logger.debug(
+                    "Chose sample '%s' from samples '%s' for file '%s'" % (s._origName, othermatches, s.name))
                 tempsamples.append(s)
 
         # Now we have two lists, tempsamples which contains only the highest priority matches, and
@@ -659,9 +645,9 @@ class Config(object):
                                 if (destsetting is None or destsetting == getattr(self, settingname)) \
                                         and sourcesetting is not None and sourcesetting != getattr(self, settingname) \
                                         and settingname not in s._lockedSettings:
-                                    self.logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to "
-                                                      % (settingname, sourcesetting, overridesample._origName)
-                                                      + "sample '%s' in app '%s'" % (s.name, s.app))
+                                    self.logger.debug("Overriding setting '%s' with value '%s' from sample '%s' to " %
+                                                      (settingname, sourcesetting, overridesample._origName) +
+                                                      "sample '%s' in app '%s'" % (s.name, s.app))
                                     setattr(s, settingname, sourcesetting)
                             except AttributeError:
                                 pass
@@ -910,15 +896,13 @@ class Config(object):
                         conffiles = [
                             os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
                             os.path.join(self.configfile, 'default', 'eventgen.conf'),
-                            os.path.join(self.configfile, 'local', 'eventgen.conf')
-                        ]
+                            os.path.join(self.configfile, 'local', 'eventgen.conf')]
                     else:
                         conffiles = [os.path.join(self.grandparentdir, 'default', 'eventgen.conf'), self.configfile]
             if len(conffiles) == 0:
                 conffiles = [
                     os.path.join(self.grandparentdir, 'default', 'eventgen.conf'),
-                    os.path.join(self.grandparentdir, 'local', 'eventgen.conf')
-                ]
+                    os.path.join(self.grandparentdir, 'local', 'eventgen.conf')]
 
             self.logger.debug('Reading configuration files for non-splunkembedded: %s' % conffiles)
             conf.read(conffiles)

@@ -133,8 +133,8 @@ class Timer(object):
                             backfillnumber += char
                         elif char != "-":
                             backfillletter += char
-                    backfillearliest = timeParserTimeMath(
-                        plusminus=mathsymbol, num=backfillnumber, unit=backfillletter, ret=realtime)
+                    backfillearliest = timeParserTimeMath(plusminus=mathsymbol, num=backfillnumber, unit=backfillletter,
+                                                          ret=realtime)
                     while backfillearliest < realtime:
                         et = backfillearliest
                         lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
@@ -154,8 +154,8 @@ class Timer(object):
                     if self.sample.generator == 'perdayvolumegenerator':
                         count = self.rater.rate() + previous_count_left
                         if 0 < count < raw_event_size:
-                            self.logger.info("current interval size is {}, which is smaller than a raw event size {}."
-                                             .format(count, raw_event_size) + "Wait for the next turn.")
+                            self.logger.info("current interval size is {}, which is smaller than a raw event size {}.".
+                                             format(count, raw_event_size) + "Wait for the next turn.")
                             previous_count_left = count
                             self.countdown = self.interval
                             self.executions += 1
@@ -191,9 +191,9 @@ class Timer(object):
                                 try:
                                     self.generatorQueue.put(genPlugin)
                                     self.logger.info(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
-                                                      "with et '{3}' and lt '{4}'")
-                                                     .format(worker_id, round((count / 1024.0 / 1024), 4),
-                                                             self.sample.name, et, lt))
+                                                      "with et '{3}' and lt '{4}'").format(
+                                                          worker_id, round((count / 1024.0 / 1024), 4),
+                                                          self.sample.name, et, lt))
                                 except Full:
                                     self.logger.warning("Generator Queue Full. Skipping current generation.")
                     except Exception as e:

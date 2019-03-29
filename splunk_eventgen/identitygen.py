@@ -13,8 +13,7 @@ class identityGenerator(object):
     """
     CATEGORIES = [
         "cardholder", "cardholder|pci", "officer|pci", "intern", "default", "default", "default", "default", "sox",
-        "pci", "officer", "", "", "", "", "", "", "", "", "", ""
-    ]
+        "pci", "officer", "", "", "", "", "", "", "", "", "", ""]
     LOCATION = [["San Francisco", "USA", "americas", "37.3382N", "121.6663W"],
                 ["San Jose", "USA", "americas", "37.78N", "122.41W"]]
     EMAIL_DOMAIN = "@splunk.com"
@@ -24,20 +23,19 @@ class identityGenerator(object):
         try:
             self.last = [i.split()[0] for i in open("%s/samples/dist.all.last" % BASE_PATH, "rb").readlines()]
         except IOError:
-            self.last = [(''.join(random.choice(ascii_uppercase) for i in xrange(random.randint(4, 12))))
-                         for i in xrange(100)]
+            self.last = [
+                (''.join(random.choice(ascii_uppercase) for i in xrange(random.randint(4, 12)))) for i in xrange(100)]
         try:
             self.female_first = [
-                i.split()[0] for i in open("%s/samples/dist.female.first" % BASE_PATH, "rb").readlines()
-            ]
+                i.split()[0] for i in open("%s/samples/dist.female.first" % BASE_PATH, "rb").readlines()]
         except IOError:
-            self.female_first = [(''.join(random.choice(ascii_uppercase) for i in xrange(random.randint(4, 12))))
-                                 for i in xrange(100)]
+            self.female_first = [
+                (''.join(random.choice(ascii_uppercase) for i in xrange(random.randint(4, 12)))) for i in xrange(100)]
         try:
             self.male_first = [i.split()[0] for i in open("%s/samples/dist.male.first" % BASE_PATH, "rb").readlines()]
         except IOError:
-            self.male_first = [(''.join(random.choice(ascii_uppercase) for i in xrange(random.randint(4, 12))))
-                               for i in xrange(100)]
+            self.male_first = [
+                (''.join(random.choice(ascii_uppercase) for i in xrange(random.randint(4, 12)))) for i in xrange(100)]
 
     def generate(self, count):
         self.identities = []
@@ -59,17 +57,9 @@ class identityGenerator(object):
                                       )  # random start date between 30 days ago to 900 days ago
             (work_city, work_country, bunit, work_lat, work_long) = random.choice(self.LOCATION)
             identity = {
-                "first_name": first_name,
-                "last_name": last_name,
-                "work_city": work_city,
-                "work_country": work_country,
-                "bunit": bunit,
-                "work_lat": work_lat,
-                "work_long": work_long,
-                "priority": priority,
-                "category": category,
-                "startDate": startDate
-            }
+                "first_name": first_name, "last_name": last_name, "work_city": work_city, "work_country": work_country,
+                "bunit": bunit, "work_lat": work_lat, "work_long": work_long, "priority": priority, "category":
+                category, "startDate": startDate}
             base_username = identity["first_name"] + identity["last_name"]
             if base_username in usernames:
                 tmp_val = 0
@@ -102,8 +92,8 @@ class identityGenerator(object):
         else:
             raise ValueError
 
-    def getFile(self, count=0, filename="../default", fields=["username", "first_name", "last_name"],
-                fieldnames=["username", "first_name", "last_name"]):
+    def getFile(self, count=0, filename="../default", fields=["username", "first_name", "last_name"], fieldnames=[
+            "username", "first_name", "last_name"]):
         """
         Returns a rest endpoint to download a csv file
         """
@@ -139,14 +129,10 @@ if __name__ == "__main__":
     identityGenerator = identityGenerator()
     identityGenerator.generate(300000)
     identityGenerator.getFile(
-        filename="identities.csv",
-        fields=[
+        filename="identities.csv", fields=[
             "username", "prefix", "username", "first_name", "last_name", "suffix", "email", "phone", "phone2",
             "managedBy", "priority", "bunit", "category", "watchlist", "startDate", "endDate", "work_city",
-            "work_country", "work_lat", "work_long"
-        ],
-        fieldnames=[
-            "identity", "prefix", "nick", "first", "last", "suffix", "email", "phone", "phone2", "managedBy",
-            "priority", "bunit", "category", "watchlist", "startDate", "endDate", "work_city", "work_country",
-            "work_lat", "work_long"
-        ])
+            "work_country", "work_lat", "work_long"], fieldnames=[
+                "identity", "prefix", "nick", "first", "last", "suffix", "email", "phone", "phone2", "managedBy",
+                "priority", "bunit", "category", "watchlist", "startDate", "endDate", "work_city", "work_country",
+                "work_lat", "work_long"])

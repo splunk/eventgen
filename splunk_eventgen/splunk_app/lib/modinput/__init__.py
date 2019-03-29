@@ -20,7 +20,8 @@ from splunk.clilib.bundle_paths import get_slaveapps_base_path
 from splunk.models.app import App
 from xmloutput import setupLogger
 
-from .fields import (BooleanField, Field, FieldValidationException, IntervalField)
+from .fields import (BooleanField, Field, FieldValidationException,
+                     IntervalField)
 
 try:
     from splunk.clilib.bundle_paths import make_splunkhome_path
@@ -32,15 +33,10 @@ if 'slave' in splunk.clilib.cli_common.getMergedConf('server').get('clustering',
 else:
     sys.path.append(make_splunkhome_path(["etc", "apps", "@appname@", "lib"]))
 
-
 # Define logger using the name of the script here, versus in the modular_input class.
 # logger = log.setup_logger(name='python_modular_input', level=logging.INFO)
-logger = setupLogger(
-    logger=None,
-    log_format='%(asctime)s %(levelname)s [ModularInput] %(message)s',
-    level=logging.INFO,
-    log_name="python_modular_input.log",
-    logger_name="modinput")
+logger = setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [ModularInput] %(message)s', level=logging.INFO,
+                     log_name="python_modular_input.log", logger_name="modinput")
 
 
 class ModularInputConfig(object):
@@ -136,8 +132,7 @@ class ModularInput(object):
         IntervalField("interval", "Interval", "The interval the script will be run on"),
         Field("name", "Stanza name", "The name of the stanza for this modular input"),
         Field("source", "Source", "The source for events created by this modular input"),
-        Field("sourcetype", "Stanza name", "The name of the stanza for this modular input")
-    ]
+        Field("sourcetype", "Stanza name", "The name of the stanza for this modular input")]
 
     checkpoint_dir = None
 
@@ -907,11 +902,8 @@ class ModularInput(object):
 
         debug_args.add_argument('--username', action="store", default=None, help="Splunk username (%s)" % warning_text)
         debug_args.add_argument('--password', action="store", default=None, help="Splunk password (%s)" % warning_text)
-        debug_args.add_argument(
-            '--infile',
-            type=argparse.FileType(),
-            default=None,
-            help="Filename containing XML modular input configuration (%s)" % warning_text)
+        debug_args.add_argument('--infile', type=argparse.FileType(), default=None,
+                                help="Filename containing XML modular input configuration (%s)" % warning_text)
 
         mode_args.add_argument('--scheme', action="store_true")
         mode_args.add_argument('--validate-arguments', dest='validate', action="store_true")

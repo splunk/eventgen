@@ -97,19 +97,9 @@ class EventgenServer(object):
         res["CONFIG_FILE"] = self.eventgen_dependency.configfile
         res["TOTAL_VOLUME"] = self.total_volume
         res["QUEUE_STATUS"] = {
-            'SAMPLE_QUEUE': {
-                'UNFINISHED_TASK': 'N/A',
-                'QUEUE_LENGTH': 'N/A'
-            },
-            'OUTPUT_QUEUE': {
-                'UNFINISHED_TASK': 'N/A',
-                'QUEUE_LENGTH': 'N/A'
-            },
-            'WORKER_QUEUE': {
-                'UNFINISHED_TASK': 'N/A',
-                'QUEUE_LENGTH': 'N/A'
-            }
-        }
+            'SAMPLE_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}, 'OUTPUT_QUEUE': {
+                'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}, 'WORKER_QUEUE': {
+                    'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}}
         res['THROUGHPUT_STATUS'] = self.get_throughput()
         if hasattr(self.eventgen_dependency.eventgen, "sampleQueue"):
             res["QUEUE_STATUS"]['SAMPLE_QUEUE'][
@@ -349,26 +339,16 @@ Output Queue Status: {7}\n'''
             def create_new_hec_key(hostname):
                 requests.post(
                     "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/http".format(
-                        hostname, mgmt_port),
-                    auth=("admin", password),
-                    data={"disabled": "0"},
-                    verify=False)
+                        hostname, mgmt_port), auth=("admin", password), data={"disabled": "0"}, verify=False)
                 requests.delete(
                     "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}".format(
-                        hostname, mgmt_port, key_name),
-                    verify=False,
-                    auth=("admin", password))
+                        hostname, mgmt_port, key_name), verify=False, auth=("admin", password))
                 requests.post(
                     "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(
-                        hostname, mgmt_port),
-                    verify=False,
-                    auth=("admin", password),
-                    data={"name": key_name})
+                        hostname, mgmt_port), verify=False, auth=("admin", password), data={"name": key_name})
                 r = requests.post(
                     "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(
-                        hostname, mgmt_port, key_name),
-                    verify=False,
-                    auth=("admin", password))
+                        hostname, mgmt_port, key_name), verify=False, auth=("admin", password))
                 return str(json.loads(r.text)["entry"][0]["content"]["token"])
 
             self.discovered_servers = []
@@ -379,11 +359,8 @@ Output Queue Status: {7}\n'''
                         key = create_new_hec_key(formatted_hostname)
 
                     self.discovered_servers.append({
-                        "protocol": str(protocol),
-                        "address": str(formatted_hostname),
-                        "port": str(hec_port),
-                        "key": str(key)
-                    })
+                        "protocol": str(protocol), "address": str(formatted_hostname), "port": str(hec_port), "key":
+                        str(key)})
                 except socket.gaierror:
                     continue
 
@@ -395,11 +372,8 @@ Output Queue Status: {7}\n'''
                         key = create_new_hec_key(formatted_hostname)
 
                     self.discovered_servers.append({
-                        "protocol": str(protocol),
-                        "address": str(formatted_hostname),
-                        "port": str(hec_port),
-                        "key": str(key)
-                    })
+                        "protocol": str(protocol), "address": str(formatted_hostname), "port": str(hec_port), "key":
+                        str(key)})
                     counter += 1
                 except socket.gaierror:
                     break
@@ -540,70 +514,70 @@ Output Queue Status: {7}\n'''
     def event_handler_all_reset(self, payload):
         return self.reset()
 
-    @event_handler(
-        "eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_index".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_index(self, payload):
         return self.index()
 
-    @event_handler(
-        "eventgen_controller", "{}_status".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_status".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_status(self, payload):
         return self.status()
 
-    @event_handler(
-        "eventgen_controller", "{}_start".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_start".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_start(self, payload):
         return self.start()
 
-    @event_handler(
-        "eventgen_controller", "{}_stop".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_stop".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_stop(self, payload):
         return self.stop()
 
-    @event_handler(
-        "eventgen_controller", "{}_restart".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_restart".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_restart(self, payload):
         return self.restart()
 
-    @event_handler(
-        "eventgen_controller", "{}_get_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_get_conf".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_get_conf(self, payload):
         return self.get_conf()
 
-    @event_handler(
-        "eventgen_controller", "{}_set_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_set_conf".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_set_conf(self, payload):
         return self.set_conf(conf=payload)
 
-    @event_handler(
-        "eventgen_controller", "{}_edit_conf".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_edit_conf".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_edit_conf(self, payload):
         return self.edit_conf(conf=payload)
 
-    @event_handler(
-        "eventgen_controller", "{}_bundle".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_bundle".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_bundle(self, payload):
         if payload['url']:
             return self.bundle(payload['url'])
 
-    @event_handler(
-        "eventgen_controller", "{}_setup".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_setup".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_setup(self, payload):
         return self.setup(data=payload)
 
-    @event_handler(
-        "eventgen_controller", "{}_get_volume".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_get_volume".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_get_volume(self):
         return self.get_volume()
 
-    @event_handler(
-        "eventgen_controller", "{}_set_volume".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_set_volume".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_set_volume(self, payload):
         if payload['perDayVolume']:
             return self.set_volume(payload['perDayVolume'])
 
-    @event_handler(
-        "eventgen_controller", "{}_reset".format(eventgen_name), handler_type=BROADCAST, reliable_delivery=False)
+    @event_handler("eventgen_controller", "{}_reset".format(eventgen_name), handler_type=BROADCAST,
+                   reliable_delivery=False)
     def event_handler_reset(self, payload):
         return self.reset()
 
@@ -772,11 +746,8 @@ Output Queue Status: {7}\n'''
                 throughput_volume += output_counter.throughput_volume
                 throughput_count += output_counter.throughput_count
             return {
-                'TOTAL_VOLUME_MB': total_volume / (1024 * 1024),
-                'TOTAL_COUNT': total_count,
-                'THROUGHPUT_VOLUME_KB': throughput_volume / (1024),
-                'THROUGHPUT_COUNT': throughput_count
-            }
+                'TOTAL_VOLUME_MB': total_volume / (1024 * 1024), 'TOTAL_COUNT': total_count, 'THROUGHPUT_VOLUME_KB':
+                throughput_volume / (1024), 'THROUGHPUT_COUNT': throughput_count}
         else:
             self.log.debug("return empty throughput because of output_counters not found.")
             return empty_throughput

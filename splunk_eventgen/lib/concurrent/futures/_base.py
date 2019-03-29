@@ -26,12 +26,8 @@ FINISHED = 'FINISHED'
 _FUTURE_STATES = [PENDING, RUNNING, CANCELLED, CANCELLED_AND_NOTIFIED, FINISHED]
 
 _STATE_TO_DESCRIPTION_MAP = {
-    PENDING: "pending",
-    RUNNING: "running",
-    CANCELLED: "cancelled",
-    CANCELLED_AND_NOTIFIED: "cancelled",
-    FINISHED: "finished"
-}
+    PENDING: "pending", RUNNING: "running", CANCELLED: "cancelled", CANCELLED_AND_NOTIFIED: "cancelled", FINISHED:
+    "finished"}
 
 # Logger for internal use by the futures package.
 LOGGER = logging.getLogger("concurrent.futures")

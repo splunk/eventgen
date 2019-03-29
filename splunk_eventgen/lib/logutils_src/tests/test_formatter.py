@@ -19,8 +19,7 @@ class FormatterTest(unittest.TestCase):
             'exc_info': None,
             'func': None,
             'msg': 'Message with %d %s',
-            'args': (2, 'placeholders'),
-        }
+            'args': (2, 'placeholders'), }
         self.variants = {}
 
     def get_record(self, name=None):

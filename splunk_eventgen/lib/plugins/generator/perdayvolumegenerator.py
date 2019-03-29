@@ -70,8 +70,8 @@ class PerDayVolumeGenerator(GeneratorPlugin):
                 targetlinesize = len(updated_sample_dict[targetline]['_raw'])
                 if size < targetlinesize:
                     self.logger.error(
-                        "Size is too small for sample {}. We need {} bytes but size of one event is {} bytes."
-                        .format(self._sample.name, size, targetlinesize))
+                        "Size is too small for sample {}. We need {} bytes but size of one event is {} bytes.".format(
+                            self._sample.name, size, targetlinesize))
                     break
                 if targetlinesize <= sizeremaining or targetlinesize * .9 <= sizeremaining:
                     currentreadsize += targetlinesize

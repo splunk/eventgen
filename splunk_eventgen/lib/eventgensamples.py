@@ -185,8 +185,8 @@ class Sample(object):
                     timeString = results.group(group)
                     # self.logger.debug("Testing '%s' as a time string against '%s'" % (timeString, timeFormat))
                     if timeFormat == "%s":
-                        ts = float(timeString) if len(timeString) < 10 else float(timeString) / (10 **
-                                                                                                 (len(timeString) - 10))
+                        ts = float(timeString) if len(timeString) < 10 else float(timeString) \
+                             / (10**(len(timeString) - 10))
                         # self.logger.debug("Getting time for timestamp '%s'" % ts)
                         currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
@@ -253,8 +253,8 @@ class Sample(object):
                 if self.backfill[-2:] == 'ms':
                     time_unit = 'ms'
                     backfill_time = self.backfill[1:-2]
-                return self.get_time_difference(
-                    current_time=current_time, different_time=backfill_time, sign='-', time_unit=time_unit)
+                return self.get_time_difference(current_time=current_time, different_time=backfill_time, sign='-',
+                                                time_unit=time_unit)
             else:
                 self.logger.error("Backfill time is not in the past.")
         return current_time
@@ -340,14 +340,14 @@ class Sample(object):
                 # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time instead
                 # of on every generation
                 else:
-                    self.logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'"
-                                      % (self.breaker, self.name, self.app))
+                    self.logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'" %
+                                      (self.breaker, self.name, self.app))
 
                     sampleData = self._sampleFH.read()
                     self.sampleLines = []
 
-                    self.logger.debug("Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s"
-                                      % (self.name, self.app, len(sampleData), self.breaker))
+                    self.logger.debug("Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s" %
+                                      (self.name, self.app, len(sampleData), self.breaker))
 
                     try:
                         breakerRE = re.compile(self.breaker, re.M)
@@ -378,12 +378,8 @@ class Sample(object):
                     if line and line[-1] != '\n':
                         line = line + '\n'
                     self.sampleDict.append({
-                        '_raw': line,
-                        'index': self.index,
-                        'host': self.host,
-                        'source': self.source,
-                        'sourcetype': self.sourcetype
-                    })
+                        '_raw': line, 'index': self.index, 'host': self.host, 'source': self.source, 'sourcetype':
+                        self.sourcetype})
                 self.logger.debug('Finished creating sampleDict & sampleLines.  Len samplesLines: %d Len sampleDict: %d'
                                   % (len(self.sampleLines), len(self.sampleDict)))
         elif self.sampletype == 'csv':

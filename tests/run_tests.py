@@ -48,8 +48,7 @@ if SMALL:
     os.environ = ENV
     args = [
         "--cov=splunk_eventgen", "--cov-config=tests/.coveragerc", "--cov-report=term", "--cov-report=html", SMALL,
-        "--junitxml=tests/test-reports/tests_small_results.xml"
-    ]
+        "--junitxml=tests/test-reports/tests_small_results.xml"]
     return_codes.append(pytest.main(args))
 
 # Run medium tests

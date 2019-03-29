@@ -170,13 +170,10 @@ class EventGenerator(object):
         self.sampleQueue = Queue(maxsize=0)
         num_threads = threadcount
         for i in range(num_threads):
-            worker = Thread(
-                target=self._worker_do_work,
-                args=(
-                    self.sampleQueue,
-                    self.loggingQueue,
-                ),
-                name="TimeThread{0}".format(i))
+            worker = Thread(target=self._worker_do_work, args=(
+                self.sampleQueue,
+                self.loggingQueue,
+            ), name="TimeThread{0}".format(i))
             worker.setDaemon(True)
             worker.start()
 
@@ -196,13 +193,10 @@ class EventGenerator(object):
             self.outputQueue = Queue(maxsize=500)
         num_threads = threadcount
         for i in range(num_threads):
-            worker = Thread(
-                target=self._worker_do_work,
-                args=(
-                    self.outputQueue,
-                    self.loggingQueue,
-                ),
-                name="OutputThread{0}".format(i))
+            worker = Thread(target=self._worker_do_work, args=(
+                self.outputQueue,
+                self.loggingQueue,
+            ), name="OutputThread{0}".format(i))
             worker.setDaemon(True)
             worker.start()
 
@@ -233,9 +227,8 @@ class EventGenerator(object):
                 for i in range(workercount):
                     self.output_counters.append(OutputCounter())
                 for i in range(worker_threads):
-                    worker = Thread(
-                        target=self._generator_do_work,
-                        args=(self.workerQueue, self.loggingQueue, self.output_counters[i]))
+                    worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue,
+                                                                          self.output_counters[i]))
                     worker.setDaemon(True)
                     worker.start()
             else:
@@ -250,12 +243,11 @@ class EventGenerator(object):
             self.workerPool = []
             for worker in xrange(workercount):
                 # builds a list of tuples to use the map function
-                process = multiprocessing.Process(
-                    target=self._proc_worker_do_work, args=(
-                        self.workerQueue,
-                        self.loggingQueue,
-                        self.genconfig,
-                    ))
+                process = multiprocessing.Process(target=self._proc_worker_do_work, args=(
+                    self.workerQueue,
+                    self.loggingQueue,
+                    self.genconfig,
+                ))
                 self.workerPool.append(process)
                 process.start()
         else:
@@ -281,28 +273,28 @@ class EventGenerator(object):
             console_handler.setFormatter(detailed_formatter)
             console_handler.setLevel(logging.DEBUG)
 
-            file_handler = logging.handlers.RotatingFileHandler(
-                eventgen_main_logger_path, maxBytes=2500000, backupCount=20)
+            file_handler = logging.handlers.RotatingFileHandler(eventgen_main_logger_path, maxBytes=2500000,
+                                                                backupCount=20)
             file_handler.setFormatter(detailed_formatter)
             file_handler.setLevel(logging.DEBUG)
 
-            eventgen_controller_file_handler = logging.handlers.RotatingFileHandler(
-                eventgen_controller_logger_path, maxBytes=2500000, backupCount=20)
+            eventgen_controller_file_handler = logging.handlers.RotatingFileHandler(eventgen_controller_logger_path,
+                                                                                    maxBytes=2500000, backupCount=20)
             eventgen_controller_file_handler.setFormatter(detailed_formatter)
             eventgen_controller_file_handler.setLevel(logging.DEBUG)
 
-            error_file_handler = logging.handlers.RotatingFileHandler(
-                eventgen_error_logger_path, maxBytes=2500000, backupCount=20)
+            error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000,
+                                                                      backupCount=20)
             error_file_handler.setFormatter(detailed_formatter)
             error_file_handler.setLevel(logging.ERROR)
 
-            metrics_file_handler = logging.handlers.RotatingFileHandler(
-                eventgen_metrics_logger_path, maxBytes=2500000, backupCount=20)
+            metrics_file_handler = logging.handlers.RotatingFileHandler(eventgen_metrics_logger_path, maxBytes=2500000,
+                                                                        backupCount=20)
             metrics_file_handler.setFormatter(json_formatter)
             metrics_file_handler.setLevel(logging.INFO)
 
-            server_file_handler = logging.handlers.RotatingFileHandler(
-                eventgen_server_logger_path, maxBytes=2500000, backupCount=10)
+            server_file_handler = logging.handlers.RotatingFileHandler(eventgen_server_logger_path, maxBytes=2500000,
+                                                                       backupCount=10)
             server_file_handler.setFormatter(json_formatter)
             server_file_handler.setLevel(logging.INFO)
 
@@ -517,22 +509,12 @@ class EventGenerator(object):
                 self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app))
                 # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
                 try:
-                    t = Timer(
-                        1.0,
-                        sample=s,
-                        config=self.config,
-                        genqueue=self.workerQueue,
-                        outputqueue=self.outputQueue,
-                        loggingqueue=self.loggingQueue)
+                    t = Timer(1.0, sample=s, config=self.config, genqueue=self.workerQueue,
+                              outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
                 except PluginNotLoaded as pnl:
                     self._load_custom_plugins(pnl)
-                    t = Timer(
-                        1.0,
-                        sample=s,
-                        config=self.config,
-                        genqueue=self.workerQueue,
-                        outputqueue=self.outputQueue,
-                        loggingqueue=self.loggingQueue)
+                    t = Timer(1.0, sample=s, config=self.config, genqueue=self.workerQueue,
+                              outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
                 except Exception as e:
                     raise e
                 self.sampleQueue.put(t)

@@ -29,16 +29,12 @@ setup(
         'Development Status :: 5 - Production/Stable', 'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries :: Python Modules', 'Topic :: Software Development :: Build Tools',
         'Topic :: Software Development :: Testing', 'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7'
-    ],
+        'Programming Language :: Python :: 2.7'],
     keywords='splunk eventgen container containers docker automation',
     entry_points={'console_scripts': ["splunk_eventgen = splunk_eventgen.__main__:main"]},
     include_package_data=True,
     packages=find_packages(),
-    package_data={
-        "splunk_eventgen": ['*.sh', '*.txt', '*.yml'],
-        '': ['*.sh', '*.txt', '*.yml']
-    },
+    package_data={"splunk_eventgen": ['*.sh', '*.txt', '*.yml'], '': ['*.sh', '*.txt', '*.yml']},
     install_requires=[
         'pytest>=3.0.0',  # Required to test functional tests in eventgen.
         'boto3',
@@ -52,5 +48,4 @@ setup(
         'jinja2',
         'pyrabbit==1.1.0',
         'urllib3==1.23',
-        'pyOpenSSL'
-    ])
+        'pyOpenSSL'])

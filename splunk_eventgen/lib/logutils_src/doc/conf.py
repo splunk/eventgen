@@ -170,8 +170,7 @@ htmlhelp_basename = 'Logutilsdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-    ('index', 'Logutils.tex', ur'Logutils Documentation', ur'Vinay Sajip', 'manual'),
-]
+    ('index', 'Logutils.tex', ur'Logutils Documentation', ur'Vinay Sajip', 'manual'), ]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -192,5 +191,4 @@ latex_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'http://docs.python.org/dev': None,
-}
+    'http://docs.python.org/dev': None, }

@@ -21,8 +21,6 @@ class TcpOutputPlugin(OutputPlugin):
         import socket  # Import socket module
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# Bind to the port
-
     def flush(self, q):
         self.s.connect((self._tcpDestinationHost, int(self._tcpDestinationPort)))
         self.logger.info("Socket connected to {0}:{1}".format(self._tcpDestinationHost, self._tcpDestinationPort))

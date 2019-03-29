@@ -37,11 +37,9 @@ class AwsS3OutputPlugin(OutputPlugin):
     # MAXQUEUELENGTH = 100
     validSettings = [
         'awsS3BucketName', 'awsS3CompressionType', 'awsS3EventType', 'awsS3ObjectPrefix', 'awsS3ObjectSuffix',
-        'awsRegion', 'awsKeyId', 'awsSecretKey', 'awsS3EventPerKey'
-    ]
+        'awsRegion', 'awsKeyId', 'awsSecretKey', 'awsS3EventPerKey']
     defaultableSettings = [
-        'awsKeyId', 'awsSecretKey', 'awsS3EventType', 'awsS3CompressionType', 'awsS3ObjectPrefix', 'awsS3ObjectSuffix'
-    ]
+        'awsKeyId', 'awsSecretKey', 'awsS3EventType', 'awsS3CompressionType', 'awsS3ObjectPrefix', 'awsS3ObjectSuffix']
 
     def __init__(self, sample, output_counter=None):
 
@@ -77,11 +75,8 @@ class AwsS3OutputPlugin(OutputPlugin):
     def _createConnections(self, sample):
         try:
             if hasattr(sample, 'awsKeyId') and hasattr(sample, 'awsSecretKey'):
-                self._client = boto3.client(
-                    "s3",
-                    region_name=sample.awsRegion,
-                    aws_access_key_id=sample.awsKeyId,
-                    aws_secret_access_key=sample.awsSecretKey)
+                self._client = boto3.client("s3", region_name=sample.awsRegion, aws_access_key_id=sample.awsKeyId,
+                                            aws_secret_access_key=sample.awsSecretKey)
                 if self._client is None:
                     msg = '''
                     [your_eventgen_stanza]
