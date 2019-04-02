@@ -13,7 +13,7 @@ XLARGE ?= 'tests/xlarge'
 NEWLY_ADDED_PY_FILES = $(shell git ls-files -o --exclude-standard | grep -E '\.py$$')
 CHANGED_ADDED_PY_FILES = $(shell git ls-files -mo --exclude-standard | grep -E '\.py$$')
 
-.PHONY: tests, lint, format
+.PHONY: tests, lint, format, docs
 
 all: egg
 
@@ -97,9 +97,7 @@ run_controller: eg_network
 	docker run --name eg_controller --network eg_network -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
 
 docs:
-	npm install -g gitbook-serve
-	cd docs/
-	gitbookserve
+	cd docs/; bundle install; bundle exec jekyll serve
 
 build_spl: clean
 	python -m splunk_eventgen build --destination ./
