@@ -33,4 +33,4 @@ The Splunk Event Generator is licensed under the Apache License 2.0. Details can
 ### Support
 
 This software is released as-is. Splunk provides no warranty and no support on this software.
-If you have any issues with the software, please file an issue (https://github.com/splunk/eventgen/issues/new)
+If you have any issues with the software, please read over the [guidelines](http://splunk.github.io/eventgen/FILE_ISSUES.md) and file an issue.
