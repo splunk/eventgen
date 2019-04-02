@@ -10,8 +10,10 @@ SMALL ?= 'tests/small'
 MEDIUM ?= 'tests/medium'
 LARGE ?= 'tests/large'
 XLARGE ?= 'tests/xlarge'
+NEWLY_ADDED_PY_FILES = $(shell git ls-files -o --exclude-standard | grep -E '\.py$$')
+CHANGED_ADDED_PY_FILES = $(shell git ls-files -mo --exclude-standard | grep -E '\.py$$')
 
-.PHONY: tests
+.PHONY: tests, lint, format, docs
 
 all: egg
 
@@ -90,9 +92,28 @@ run_controller: eg_network
 	docker run --name eg_controller --network eg_network -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
 
 docs:
-	npm install -g gitbook-serve
-	cd docs/
-	gitbookserve
+	cd docs/; bundle install; bundle exec jekyll serve
 
 build_spl: clean
 	python -m splunk_eventgen build --destination ./
+
+lint:
+ifeq ($(NEWLY_ADDED_PY_FILES), )
+	@echo 'No newly added python files. Skip...'
+else
+	@flake8 $(NEWLY_ADDED_PY_FILES) || true
+endif
+	@git diff -U0 -- '*.py' | flake8 --diff || true
+
+format:
+ifeq ($(CHANGED_ADDED_PY_FILES), )
+	@echo 'No changed python files. Skip...'
+else
+	@isort $(CHANGED_ADDED_PY_FILES)
+endif
+ifeq ($(NEWLY_ADDED_PY_FILES), )
+	@echo 'No newly added python files. Skip...'
+else
+	@yapf -i $(NEWLY_ADDED_PY_FILES)
+endif
+
