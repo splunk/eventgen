@@ -2,9 +2,9 @@
 # Licensed to PSF under a Contributor Agreement.
 
 import collections
-import itertools
 import logging
 import threading
+import itertools
 import time
 
 __author__ = 'Brian Quinlan (brian@sweetapp.com)'
@@ -23,34 +23,39 @@ CANCELLED = 'CANCELLED'
 CANCELLED_AND_NOTIFIED = 'CANCELLED_AND_NOTIFIED'
 FINISHED = 'FINISHED'
 
-_FUTURE_STATES = [PENDING, RUNNING, CANCELLED, CANCELLED_AND_NOTIFIED, FINISHED]
+_FUTURE_STATES = [
+    PENDING,
+    RUNNING,
+    CANCELLED,
+    CANCELLED_AND_NOTIFIED,
+    FINISHED
+]
 
 _STATE_TO_DESCRIPTION_MAP = {
-    PENDING: "pending", RUNNING: "running", CANCELLED: "cancelled", CANCELLED_AND_NOTIFIED: "cancelled", FINISHED:
-    "finished"}
+    PENDING: "pending",
+    RUNNING: "running",
+    CANCELLED: "cancelled",
+    CANCELLED_AND_NOTIFIED: "cancelled",
+    FINISHED: "finished"
+}
 
 # Logger for internal use by the futures package.
 LOGGER = logging.getLogger("concurrent.futures")
-
 
 class Error(Exception):
     """Base class for all future-related exceptions."""
     pass
 
-
 class CancelledError(Error):
     """The Future was cancelled."""
     pass
-
 
 class TimeoutError(Error):
     """The operation exceeded the given deadline."""
     pass
 
-
 class _Waiter(object):
     """Provides the event that wait() and as_completed() block on."""
-
     def __init__(self):
         self.event = threading.Event()
         self.finished_futures = []
@@ -63,7 +68,6 @@ class _Waiter(object):
 
     def add_cancelled(self, future):
         self.finished_futures.append(future)
-
 
 class _AsCompletedWaiter(_Waiter):
     """Used by as_completed()."""
@@ -87,7 +91,6 @@ class _AsCompletedWaiter(_Waiter):
             super(_AsCompletedWaiter, self).add_cancelled(future)
             self.event.set()
 
-
 class _FirstCompletedWaiter(_Waiter):
     """Used by wait(return_when=FIRST_COMPLETED)."""
 
@@ -102,7 +105,6 @@ class _FirstCompletedWaiter(_Waiter):
     def add_cancelled(self, future):
         super(_FirstCompletedWaiter, self).add_cancelled(future)
         self.event.set()
-
 
 class _AllCompletedWaiter(_Waiter):
     """Used by wait(return_when=FIRST_EXCEPTION and ALL_COMPLETED)."""
@@ -134,7 +136,6 @@ class _AllCompletedWaiter(_Waiter):
         super(_AllCompletedWaiter, self).add_cancelled(future)
         self._decrement_pending_calls()
 
-
 class _AcquireFutures(object):
     """A context manager that does an ordered acquire of Future conditions."""
 
@@ -149,14 +150,14 @@ class _AcquireFutures(object):
         for future in self.futures:
             future._condition.release()
 
-
 def _create_and_install_waiters(fs, return_when):
     if return_when == _AS_COMPLETED:
         waiter = _AsCompletedWaiter()
     elif return_when == FIRST_COMPLETED:
         waiter = _FirstCompletedWaiter()
     else:
-        pending_count = sum(f._state not in [CANCELLED_AND_NOTIFIED, FINISHED] for f in fs)
+        pending_count = sum(
+                f._state not in [CANCELLED_AND_NOTIFIED, FINISHED] for f in fs)
 
         if return_when == FIRST_EXCEPTION:
             waiter = _AllCompletedWaiter(pending_count, stop_on_exception=True)
@@ -169,7 +170,6 @@ def _create_and_install_waiters(fs, return_when):
         f._waiters.append(waiter)
 
     return waiter
-
 
 def as_completed(fs, timeout=None):
     """An iterator over the given futures that yields each as it completes.
@@ -194,7 +194,9 @@ def as_completed(fs, timeout=None):
 
     fs = set(fs)
     with _AcquireFutures(fs):
-        finished = set(f for f in fs if f._state in [CANCELLED_AND_NOTIFIED, FINISHED])
+        finished = set(
+                f for f in fs
+                if f._state in [CANCELLED_AND_NOTIFIED, FINISHED])
         pending = fs - finished
         waiter = _create_and_install_waiters(fs, _AS_COMPLETED)
 
@@ -208,7 +210,9 @@ def as_completed(fs, timeout=None):
             else:
                 wait_timeout = end_time - time.time()
                 if wait_timeout < 0:
-                    raise TimeoutError('%d (of %d) futures unfinished' % (len(pending), len(fs)))
+                    raise TimeoutError(
+                            '%d (of %d) futures unfinished' % (
+                            len(pending), len(fs)))
 
             waiter.event.wait(wait_timeout)
 
@@ -226,10 +230,8 @@ def as_completed(fs, timeout=None):
             with f._condition:
                 f._waiters.remove(waiter)
 
-
-DoneAndNotDoneFutures = collections.namedtuple('DoneAndNotDoneFutures', 'done not_done')
-
-
+DoneAndNotDoneFutures = collections.namedtuple(
+        'DoneAndNotDoneFutures', 'done not_done')
 def wait(fs, timeout=None, return_when=ALL_COMPLETED):
     """Wait for the futures in the given sequence to complete.
 
@@ -255,13 +257,15 @@ def wait(fs, timeout=None, return_when=ALL_COMPLETED):
         futures.
     """
     with _AcquireFutures(fs):
-        done = set(f for f in fs if f._state in [CANCELLED_AND_NOTIFIED, FINISHED])
+        done = set(f for f in fs
+                   if f._state in [CANCELLED_AND_NOTIFIED, FINISHED])
         not_done = set(fs) - done
 
         if (return_when == FIRST_COMPLETED) and done:
             return DoneAndNotDoneFutures(done, not_done)
         elif (return_when == FIRST_EXCEPTION) and done:
-            if any(f for f in done if not f.cancelled() and f.exception() is not None):
+            if any(f for f in done
+                   if not f.cancelled() and f.exception() is not None):
                 return DoneAndNotDoneFutures(done, not_done)
 
         if len(done) == len(fs):
@@ -276,7 +280,6 @@ def wait(fs, timeout=None, return_when=ALL_COMPLETED):
 
     done.update(waiter.finished_futures)
     return DoneAndNotDoneFutures(done, set(fs) - done)
-
 
 class Future(object):
     """Represents the result of an asynchronous computation."""
@@ -302,12 +305,18 @@ class Future(object):
         with self._condition:
             if self._state == FINISHED:
                 if self._exception:
-                    return '<Future at %s state=%s raised %s>' % (hex(id(self)), _STATE_TO_DESCRIPTION_MAP[self._state],
-                                                                  self._exception.__class__.__name__)
+                    return '<Future at %s state=%s raised %s>' % (
+                        hex(id(self)),
+                        _STATE_TO_DESCRIPTION_MAP[self._state],
+                        self._exception.__class__.__name__)
                 else:
-                    return '<Future at %s state=%s returned %s>' % (hex(
-                        id(self)), _STATE_TO_DESCRIPTION_MAP[self._state], self._result.__class__.__name__)
-            return '<Future at %s state=%s>' % (hex(id(self)), _STATE_TO_DESCRIPTION_MAP[self._state])
+                    return '<Future at %s state=%s returned %s>' % (
+                        hex(id(self)),
+                        _STATE_TO_DESCRIPTION_MAP[self._state],
+                        self._result.__class__.__name__)
+            return '<Future at %s state=%s>' % (
+                    hex(id(self)),
+                   _STATE_TO_DESCRIPTION_MAP[self._state])
 
     def cancel(self):
         """Cancel the future if possible.
@@ -485,7 +494,9 @@ class Future(object):
                 self._state = RUNNING
                 return True
             else:
-                LOGGER.critical('Future %s in unexpected state: %s', id(self), self._state)
+                LOGGER.critical('Future %s in unexpected state: %s',
+                                id(self),
+                                self._state)
                 raise RuntimeError('Future in unexpected state')
 
     def set_result(self, result):
@@ -522,7 +533,6 @@ class Future(object):
         Should only be used by Executor implementations and unit tests.
         """
         self.set_exception_info(exception, None)
-
 
 class Executor(object):
     """This is an abstract base class for concrete asynchronous executors."""
@@ -574,7 +584,6 @@ class Executor(object):
             finally:
                 for future in fs:
                     future.cancel()
-
         return result_iterator()
 
     def shutdown(self, wait=True):

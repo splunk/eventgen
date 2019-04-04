@@ -19,9 +19,9 @@ releases of python.
     print(response.content)
 
 """
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from functools import partial
-from pickle import PickleError, dumps
+from pickle import dumps, PickleError
 
 from requests import Session
 from requests.adapters import DEFAULT_POOLSIZE, HTTPAdapter
@@ -38,7 +38,9 @@ PICKLE_ERROR = ('Cannot pickle function. Refer to documentation: https://'
 
 
 class FuturesSession(Session):
-    def __init__(self, executor=None, max_workers=2, session=None, *args, **kwargs):
+
+    def __init__(self, executor=None, max_workers=2, session=None, *args,
+                 **kwargs):
         """Creates a FuturesSession
 
         Notes
@@ -54,7 +56,8 @@ class FuturesSession(Session):
             executor = ThreadPoolExecutor(max_workers=max_workers)
             # set connection pool size equal to max_workers if needed
             if max_workers > DEFAULT_POOLSIZE:
-                adapter_kwargs = dict(pool_connections=max_workers, pool_maxsize=max_workers)
+                adapter_kwargs = dict(pool_connections=max_workers,
+                                      pool_maxsize=max_workers)
                 self.mount('https://', HTTPAdapter(**adapter_kwargs))
                 self.mount('http://', HTTPAdapter(**adapter_kwargs))
 

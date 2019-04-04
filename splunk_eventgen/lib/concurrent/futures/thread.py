@@ -1,13 +1,14 @@
 # Copyright 2009 Brian Quinlan. All Rights Reserved.
 # Licensed to PSF under a Contributor Agreement.
+
 """Implements ThreadPoolExecutor."""
 
 import atexit
+from concurrent.futures import _base
 import Queue as queue
-import sys
 import threading
 import weakref
-from concurrent.futures import _base
+import sys
 
 __author__ = 'Brian Quinlan (brian@sweetapp.com)'
 
@@ -28,7 +29,6 @@ __author__ = 'Brian Quinlan (brian@sweetapp.com)'
 _threads_queues = weakref.WeakKeyDictionary()
 _shutdown = False
 
-
 def _python_exit():
     global _shutdown
     _shutdown = True
@@ -38,9 +38,7 @@ def _python_exit():
     for t, q in items:
         t.join(sys.maxint)
 
-
 atexit.register(_python_exit)
-
 
 class _WorkItem(object):
     def __init__(self, future, fn, args, kwargs):
@@ -60,7 +58,6 @@ class _WorkItem(object):
             self.future.set_exception_info(e, tb)
         else:
             self.future.set_result(result)
-
 
 def _worker(executor_reference, work_queue):
     try:
@@ -83,7 +80,6 @@ def _worker(executor_reference, work_queue):
             del executor
     except BaseException:
         _base.LOGGER.critical('Exception in worker', exc_info=True)
-
 
 class ThreadPoolExecutor(_base.Executor):
     def __init__(self, max_workers):
@@ -110,7 +106,6 @@ class ThreadPoolExecutor(_base.Executor):
             self._work_queue.put(w)
             self._adjust_thread_count()
             return f
-
     submit.__doc__ = _base.Executor.submit.__doc__
 
     def _adjust_thread_count(self):
@@ -118,11 +113,12 @@ class ThreadPoolExecutor(_base.Executor):
         # the worker threads.
         def weakref_cb(_, q=self._work_queue):
             q.put(None)
-
         # TODO(bquinlan): Should avoid creating new threads if there are more
         # idle threads than items in the work queue.
         if len(self._threads) < self._max_workers:
-            t = threading.Thread(target=_worker, args=(weakref.ref(self, weakref_cb), self._work_queue))
+            t = threading.Thread(target=_worker,
+                                 args=(weakref.ref(self, weakref_cb),
+                                       self._work_queue))
             t.daemon = True
             t.start()
             self._threads.add(t)
@@ -135,5 +131,4 @@ class ThreadPoolExecutor(_base.Executor):
         if wait:
             for t in self._threads:
                 t.join(sys.maxint)
-
     shutdown.__doc__ = _base.Executor.shutdown.__doc__
