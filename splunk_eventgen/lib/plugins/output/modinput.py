@@ -4,10 +4,13 @@
 # from eventgenoutputtemplates import OutputTemplate
 
 from __future__ import division
-from outputplugin import OutputPlugin
+
+import logging
 import sys
 from xml.sax.saxutils import escape
-import logging
+
+from outputplugin import OutputPlugin
+
 
 class ModInputOutputPlugin(OutputPlugin):
     name = 'modinput'
@@ -44,6 +47,7 @@ class ModInputOutputPlugin(OutputPlugin):
 
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen')
+
 
 def load():
     """Returns an instance of the plugin"""

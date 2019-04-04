@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from setuptools import setup
-from setuptools import find_packages
-import splunk_eventgen
+from setuptools import find_packages, setup
 
+import splunk_eventgen
 
 VERSION = splunk_eventgen.__version__
 
 try:
     import pypandoc
     long_description = pypandoc.convert('README.md', 'rst')
-except(IOError, ImportError):
+except (IOError, ImportError):
     long_description = open('README.md').read()
 
 
@@ -27,12 +26,9 @@ setup(
     long_description=long_description,
     author='Splunk, Inc.',
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'Topic :: Software Development :: Build Tools',
-        'Topic :: Software Development :: Testing',
-        'Programming Language :: Python',
+        'Development Status :: 5 - Production/Stable', 'Intended Audience :: Developers',
+        'Topic :: Software Development :: Libraries :: Python Modules', 'Topic :: Software Development :: Build Tools',
+        'Topic :: Software Development :: Testing', 'Programming Language :: Python',
         'Programming Language :: Python :: 2.7'],
     keywords='splunk eventgen container containers docker automation',
     entry_points={'console_scripts': ["splunk_eventgen = splunk_eventgen.__main__:main"]},
@@ -56,5 +52,4 @@ setup(
         'flake8>=3.7.7',
         'yapf>=0.26.0',
         'isort>=4.3.15'
-    ]
-    )
+    ])

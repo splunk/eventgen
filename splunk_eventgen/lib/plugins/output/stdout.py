@@ -1,6 +1,9 @@
 from __future__ import division
-from outputplugin import OutputPlugin
+
 import logging
+
+from outputplugin import OutputPlugin
+
 
 class StdOutOutputPlugin(OutputPlugin):
     useOutputQueue = False
@@ -16,6 +19,7 @@ class StdOutOutputPlugin(OutputPlugin):
 
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen_stdout')
+
 
 def load():
     """Returns an instance of the plugin"""

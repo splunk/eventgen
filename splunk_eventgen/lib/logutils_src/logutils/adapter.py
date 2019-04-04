@@ -2,7 +2,9 @@
 # Copyright (C) 2010-2017 Vinay Sajip. See LICENSE.txt for details.
 #
 import logging
+
 import logutils
+
 
 class LoggerAdapter(object):
     """

@@ -1,9 +1,12 @@
-import logutils
 import sys
 import unittest
 
+import logutils
+
+
 class MessageTest(unittest.TestCase):
     if sys.version_info[:2] >= (2, 6):
+
         def test_braces(self):
             "Test whether brace-formatting works."
             __ = logutils.BraceMessage
@@ -19,8 +22,7 @@ class MessageTest(unittest.TestCase):
 
             dummy = Dummy()
             dummy.x, dummy.y = 0.0, 1.0
-            m = __('Message with coordinates: ({point.x:.2f}, {point.y:.2f})',
-                    point=dummy)
+            m = __('Message with coordinates: ({point.x:.2f}, {point.y:.2f})', point=dummy)
             self.assertEqual(str(m), 'Message with coordinates: (0.00, 1.00)')
 
     def test_dollars(self):
@@ -29,5 +31,4 @@ class MessageTest(unittest.TestCase):
         m = __('Message with $num ${what}', num=2, what='placeholders')
         self.assertEqual(str(m), 'Message with 2 placeholders')
         ignored = object()
-        self.assertRaises(TypeError, __, 'Message with $num ${what}',
-                          ignored, num=2, what='placeholders')
+        self.assertRaises(TypeError, __, 'Message with $num ${what}', ignored, num=2, what='placeholders')

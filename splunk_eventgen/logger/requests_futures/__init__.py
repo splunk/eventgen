@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 # Requests Futures
-
 """
 async requests HTTP library
 ~~~~~~~~~~~~~~~~~~~~~
@@ -22,8 +21,10 @@ __copyright__ = 'Copyright 2013 Ross McFarland'
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:
+
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
+
 
 logging.getLogger(__name__).addHandler(NullHandler())

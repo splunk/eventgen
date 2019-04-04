@@ -1,21 +1,25 @@
-from nameko.rpc import rpc
-from nameko.events import EventDispatcher, event_handler, BROADCAST
-from nameko.web.handlers import http
-from pyrabbit.api import Client
 import atexit
+import json
 import logging
 import os
 import socket
-from logger.logger_config import controller_logger_config
 import time
-import json
+
+from pyrabbit.api import Client
+
+from logger.logger_config import controller_logger_config
+from nameko.events import BROADCAST, EventDispatcher, event_handler
+from nameko.rpc import rpc
+from nameko.web.handlers import http
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
 
+
 def exit_handler(client, hostname, logger):
     client.delete_vhost(hostname)
     logger.info("Deleted vhost {}. Shutting down.".format(hostname))
+
 
 class EventgenController(object):
     name = "eventgen_controller"
@@ -38,17 +42,14 @@ class EventgenController(object):
     config["AMQP_PASS"] = osvars.get("EVENTGEN_AMQP_PASS", "guest")
 
     pyrabbit_cl = Client('{0}:{1}'.format(config['AMQP_HOST'], config['AMQP_WEBPORT']),
-                         '{0}'.format(config['AMQP_USER']),
-                         '{0}'.format(config['AMQP_PASS']))
+                         '{0}'.format(config['AMQP_USER']), '{0}'.format(config['AMQP_PASS']))
     pyrabbit_cl.create_vhost(host)
     log.info("Vhost set to {}".format(host))
     log.info("Current Vhosts are {}".format(pyrabbit_cl.get_vhost_names()))
 
     atexit.register(exit_handler, client=pyrabbit_cl, hostname=host, logger=log)
 
-    ##############################################
-    ################ RPC Methods #################
-    ##############################################
+    # RPC Methods
 
     @event_handler("eventgen_server", "server_status", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_server_status(self, payload):
@@ -188,7 +189,7 @@ class EventgenController(object):
         except Exception as e:
             self.log.exception(e)
             return "500", "Exception: {}".format(e.message)
-    
+
     @rpc
     def setup(self, target, data):
         try:
@@ -210,7 +211,7 @@ class EventgenController(object):
         except Exception as e:
             self.log.exception(e)
             return "500", "Exception: {}".format(e.message)
-    
+
     @rpc
     def set_volume(self, target, data):
         try:
@@ -238,10 +239,7 @@ class EventgenController(object):
             self.log.exception(e)
             return '500', "Exception: {}".format(e.message)
 
-
-    ##############################################
-    ################ HTTP Methods ################
-    ##############################################
+    # HTTP Methods
 
     @http('GET', '/')
     def root_page(self, request):
@@ -439,15 +437,13 @@ You are running Eventgen Controller.\n'''
     def http_reset(self, request):
         return self.reset(target="all")
 
-    ##############################################
-    ############### Helper Methods ###############
-    ##############################################
+    # Helper Methods
 
     def receive_status(self, data):
         if data['server_name'] and data['server_status']:
             self.server_status[data['server_name']] = data['server_status']
             rec_time = time.time()
-            self.log.info("receive {}'s status, update the status at time:{}".format(data['server_name'],rec_time))
+            self.log.info("receive {}'s status, update the status at time:{}".format(data['server_name'], rec_time))
             self.server_status['time'] = rec_time
 
     def receive_conf(self, data):
@@ -461,14 +457,15 @@ You are running Eventgen Controller.\n'''
     def process_server_status(self, current_time, num_retries=15, delay=0.3):
         current_server_vhosts = self.get_current_server_vhosts()
         server_time = self.server_status['time'] if 'time' in self.server_status else 0
-        server_vhost_len = len(self.server_status) if 'time' not in self.server_status else len(self.server_status)-1
+        server_vhost_len = len(self.server_status) if 'time' not in self.server_status else len(self.server_status) - 1
         if current_server_vhosts:
             for i in range(num_retries):
                 if server_vhost_len != len(current_server_vhosts) or server_time < current_time:
                     time.sleep(delay)
                     current_server_vhosts = self.get_current_server_vhosts()
                     server_time = self.server_status['time'] if 'time' in self.server_status else 0
-                    server_vhost_len = len(self.server_status) if 'time' not in self.server_status else len(self.server_status)-1
+                    server_vhost_len = len(
+                        self.server_status) if 'time' not in self.server_status else len(self.server_status) - 1
                 else:
                     break
             dump_value = self.calculate_throughput(self.server_status)
@@ -515,10 +512,7 @@ You are running Eventgen Controller.\n'''
             return False
 
     def calculate_throughput(self, data):
-        throughput_summary = {  'TOTAL_VOLUME_MB': 0,
-                                'TOTAL_COUNT': 0,
-                                'THROUGHPUT_VOLUME_KB': 0,
-                                'THROUGHPUT_COUNT': 0}
+        throughput_summary = {'TOTAL_VOLUME_MB': 0, 'TOTAL_COUNT': 0, 'THROUGHPUT_VOLUME_KB': 0, 'THROUGHPUT_COUNT': 0}
         for server_name, server_status in data.items():
             if server_name != 'time' and 'THROUGHPUT_STATUS' in server_status:
                 server_throughput = server_status['THROUGHPUT_STATUS']

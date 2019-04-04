@@ -1,24 +1,25 @@
 #!/usr/bin/env python
 # encoding: utf-8
-import sys
-import logging
 import argparse
+import logging
 import signal
+import sys
 
+from modinput import ModularInput
+from modinput.fields import VerbosityField
 # Set path so libraries will load
 from splunk.clilib.bundle_paths import make_splunkhome_path
-sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib']))
-sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib', 'splunk_eventgen', 'lib']))
-
-from modinput.fields import BooleanField, Field, VerbosityField
-from xmloutput import setupLogger, XMLOutputManager
-from modinput import ModularInput
 from splunk_eventgen import eventgen_core
 from splunk_eventgen.lib import eventgenconfig
+from xmloutput import XMLOutputManager, setupLogger
+
+sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib']))
+sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib', 'splunk_eventgen', 'lib']))
 
 # Initialize logging
 logger = setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [Eventgen] %(message)s', level=logging.DEBUG,
                      log_name="modinput_eventgen.log", logger_name="eventgen_app")
+
 
 class SimpleNamespace(dict):
     """dot.notation access to dictionary attributes"""
@@ -29,12 +30,8 @@ class SimpleNamespace(dict):
 
 class Eventgen(ModularInput):
     scheme_args = {
-                    'title': "SA-Eventgen",
-                    'description': "This modular input generates data for Splunk.",
-                    'use_external_validation': "true",
-                    'streaming_mode': "xml",
-                    'use_single_instance': "False"
-    }
+        'title': "SA-Eventgen", 'description': "This modular input generates data for Splunk.",
+        'use_external_validation': "true", 'streaming_mode': "xml", 'use_single_instance': "False"}
 
     def __init__(self):
         logger.debug("Setting up SA-Eventgen Modular Input")
@@ -42,9 +39,8 @@ class Eventgen(ModularInput):
 
         self.args = [
             VerbosityField("verbosity", "Verbosity",
-                          "Logging Level (DEBUG(10), INFO(20), WARN(30), ERROR(40), CRITICAL(50))",
-                          required_on_create=True, required_on_edit=True)
-        ]
+                           "Logging Level (DEBUG(10), INFO(20), WARN(30), ERROR(40), CRITICAL(50))",
+                           required_on_create=True, required_on_edit=True)]
         ModularInput.__init__(self, self.scheme_args, self.args)
 
     def create_args(self):
@@ -138,13 +134,16 @@ class Eventgen(ModularInput):
             logger.error("Main code exit, Exception caught: %s" % e)
             raise e
 
+
 def handler(signum, frame):
     logger.info("Eventgen Modinput takes signal {0}. Exiting".format(signum))
     sys.exit(0)
 
+
 def handle_signal():
     if not sys.platform.startswith('win') and sys.platform != "cygwin":
         signal.signal(signal.SIGPIPE, handler)
+
 
 if __name__ == '__main__':
     handle_signal()
