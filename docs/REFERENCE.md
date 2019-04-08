@@ -210,6 +210,12 @@ index = <index>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Splunk index to write events to. Defaults to main if none specified.
     
+extendIndexes = <index>:<num>
+    * Sample level setting. Use this setting enable eventgen to generate multi indexes for one sample. 
+    * <index> is the prefix of actual index, and <num> is the count of index you want to extend for this sample.
+    * eg: events from a sample with "extendIndexes = test_:5" setting will be added with indexes "test_0, test_1, 
+    * test_2, test_3, test_4" randomly.
+    
 source = <source>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
     * Set event source in Splunk to <source>. Defaults to 'eventgen' if none specified.

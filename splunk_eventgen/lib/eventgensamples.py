@@ -86,6 +86,8 @@ class Sample(object):
     end = None
     queueable = None
     autotimestamp = None
+    extendIndexes = None
+    index_list = []
 
     # Internal fields
     sampleLines = None
@@ -416,6 +418,15 @@ class Sample(object):
                 for i in xrange(0, len(self.sampleDict)):
                     if len(self.sampleDict[i]['_raw']) < 1 or self.sampleDict[i]['_raw'][-1] != '\n':
                         self.sampleDict[i]['_raw'] += '\n'
+        if self.extendIndexes:
+            try:
+                extend_indexes_count = int(self.extendIndexes.split(':')[-1])
+                extend_indexes_prefix = self.extendIndexes.split(':')[0] + "{}"
+                self.index_list = [ extend_indexes_prefix.format(_i)  for _i in range(extend_indexes_count)]
+            except Exception:
+                self.logger.error("Failed to parse extendIndexes, using index={} now.".format(self.index))
+                self.index_list = []
+                self.extendIndexes = None
 
     def get_loaded_sample(self):
         if self.sampletype != 'csv' and os.path.getsize(self.filePath) > 10000000:

@@ -5,6 +5,7 @@ import logging
 import logging.handlers
 import pprint
 import time
+import random
 import urllib
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
@@ -226,7 +227,7 @@ class GeneratorPlugin(object):
             except Exception:
                 time_val = int(time.mktime(self._sample.now().timetuple()))
             temp_event = {
-                '_raw': event, 'index': targetevent['index'], 'host': host, 'hostRegex': self._sample.hostRegex,
+                '_raw': event, 'index': random.choice(self._sample.index_list)if len(self._sample.index_list) else targetevent['index'], 'host': host, 'hostRegex': self._sample.hostRegex,
                 'source': targetevent['source'], 'sourcetype': targetevent['sourcetype'], '_time': time_val}
             send_events.append(temp_event)
         return send_events
