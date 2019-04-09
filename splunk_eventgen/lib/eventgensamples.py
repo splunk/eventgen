@@ -420,9 +420,14 @@ class Sample(object):
                         self.sampleDict[i]['_raw'] += '\n'
         if self.extendIndexes:
             try:
-                extend_indexes_count = int(self.extendIndexes.split(':')[-1])
-                extend_indexes_prefix = self.extendIndexes.split(':')[0] + "{}"
-                self.index_list = [ extend_indexes_prefix.format(_i)  for _i in range(extend_indexes_count)]
+                for index_item in self.extendIndexes.split(','):
+                    index_item = index_item.strip()
+                    if ':' in index_item:
+                        extend_indexes_count = int(index_item.split(':')[-1])
+                        extend_indexes_prefix = index_item.split(':')[0] + "{}"
+                        self.index_list.extend([extend_indexes_prefix.format(_i) for _i in range(extend_indexes_count)])
+                    elif len(index_item):
+                        self.index_list.append(index_item)
             except Exception:
                 self.logger.error("Failed to parse extendIndexes, using index={} now.".format(self.index))
                 self.index_list = []
