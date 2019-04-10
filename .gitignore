@@ -27,3 +27,5 @@ _book
 venv/*
 *.log.*
 splunk_eventgen-*/
+splunk_eventgen/lib/concurrent
+splunk_eventgen/lib/requests_futures

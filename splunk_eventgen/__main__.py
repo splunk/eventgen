@@ -14,13 +14,12 @@ import time
 
 import requests
 
-import eventgen_core
-
 FILE_LOCATION = os.path.dirname(os.path.abspath(__file__))
 path_prepend = os.path.join(FILE_LOCATION, 'lib')
 sys.path.append(path_prepend)
 
 import __init__ as splunk_eventgen_init  # noqa isort:skip
+import eventgen_core  # noqa isort:skip
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
 logger = logging.getLogger()
