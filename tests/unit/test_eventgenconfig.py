@@ -1,6 +1,7 @@
 import json
 import os
 from ConfigParser import ConfigParser
+
 import pytest
 
 from splunk_eventgen.lib.eventgensamples import Sample

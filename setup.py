@@ -51,5 +51,4 @@ setup(
         'pyOpenSSL',
         'flake8>=3.7.7',
         'yapf>=0.26.0',
-        'isort>=4.3.15'
-    ])
+        'isort>=4.3.15'])

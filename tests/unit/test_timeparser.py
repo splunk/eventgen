@@ -5,10 +5,9 @@ import pytest
 from splunk_eventgen.lib import timeparser
 
 time_delta_test_params = [(datetime.timedelta(days=1), 86400),
-                          (datetime.timedelta(
-                              days=1, hours=3, minutes=15, seconds=32), 98132),
-                          (datetime.timedelta(hours=1, minutes=10), 4200),
-                          (datetime.timedelta(hours=-1), -3600), (None, 0)]
+                          (datetime.timedelta(days=1, hours=3, minutes=15, seconds=32), 98132),
+                          (datetime.timedelta(hours=1, minutes=10), 4200), (datetime.timedelta(hours=-1), -3600),
+                          (None, 0)]
 
 
 @pytest.mark.parametrize('delta,expect', time_delta_test_params)
@@ -35,25 +34,19 @@ def check_datetime_equal(d1, d2):
     assert d1.second == d2.second
 
 
-parse_time_math_params = [('+', '100', 's',
-                           datetime.datetime(2019, 3, 8, 4, 10, 20),
+parse_time_math_params = [('+', '100', 's', datetime.datetime(2019, 3, 8, 4, 10, 20),
                            datetime.datetime(2019, 3, 8, 4, 12, 0)),
-                          ('-', '20', 'm',
-                           datetime.datetime(2019, 3, 8, 4, 10, 20),
+                          ('-', '20', 'm', datetime.datetime(2019, 3, 8, 4, 10, 20),
                            datetime.datetime(2017, 7, 8, 4, 10, 20)),
-                          ('', '3', 'w',
-                           datetime.datetime(2019, 3, 8, 4, 10, 20),
+                          ('', '3', 'w', datetime.datetime(2019, 3, 8, 4, 10, 20),
                            datetime.datetime(2019, 3, 29, 4, 10, 20)),
-                          ('', '0', 's',
-                           datetime.datetime(2019, 3, 8, 4, 10, 20),
+                          ('', '0', 's', datetime.datetime(2019, 3, 8, 4, 10, 20),
                            datetime.datetime(2019, 3, 8, 4, 10, 20)),
-                          ('', '123', '',
-                           datetime.datetime(2019, 3, 8, 4, 10, 20),
+                          ('', '123', '', datetime.datetime(2019, 3, 8, 4, 10, 20),
                            datetime.datetime(2019, 3, 8, 4, 10, 20))]
 
 
-@pytest.mark.parametrize('plusminus,num,unit,ret,expect',
-                         parse_time_math_params)
+@pytest.mark.parametrize('plusminus,num,unit,ret,expect', parse_time_math_params)
 def test_time_parser_time_math(plusminus, num, unit, ret, expect):
     '''
     test timeParserTimeMath function, parse the time modifier
@@ -78,27 +71,16 @@ def mock_utc_now():
 
 
 timeparser_params = [
-    ('now', datetime.timedelta(days=1),
-     datetime.datetime(2019, 3, 10, 13, 20, 15)),
-    ('now', datetime.timedelta(days=0),
-     datetime.datetime(2019, 3, 10, 5, 20, 15)),
-    ('now', datetime.timedelta(hours=2),
-     datetime.datetime(2019, 3, 10, 7, 20, 15)),
-    ('now', datetime.timedelta(hours=-3),
-     datetime.datetime(2019, 3, 10, 2, 20, 15)),
-    ('-7d', datetime.timedelta(days=1),
-     datetime.datetime(2019, 3, 3, 13, 20, 15)),
-    ('-0mon@mon', datetime.timedelta(days=1),
-     datetime.datetime(2019, 3, 1, 0, 0, 0)),
-    ('-1mon@mon', datetime.timedelta(days=1),
-     datetime.datetime(2019, 2, 1, 0, 0, 0)),
-    ('-3d@d', datetime.timedelta(days=1), datetime.datetime(
-        2019, 3, 7, 0, 0, 0)),
-    ('+5d', datetime.timedelta(days=1),
-     datetime.datetime(2019, 3, 15, 13, 20, 15)),
-    ('', datetime.timedelta(days=1),
-     datetime.datetime(2019, 3, 10, 13, 20, 15)),
-]
+    ('now', datetime.timedelta(days=1), datetime.datetime(2019, 3, 10, 13, 20, 15)),
+    ('now', datetime.timedelta(days=0), datetime.datetime(2019, 3, 10, 5, 20, 15)),
+    ('now', datetime.timedelta(hours=2), datetime.datetime(2019, 3, 10, 7, 20, 15)),
+    ('now', datetime.timedelta(hours=-3), datetime.datetime(2019, 3, 10, 2, 20, 15)),
+    ('-7d', datetime.timedelta(days=1), datetime.datetime(2019, 3, 3, 13, 20, 15)),
+    ('-0mon@mon', datetime.timedelta(days=1), datetime.datetime(2019, 3, 1, 0, 0, 0)),
+    ('-1mon@mon', datetime.timedelta(days=1), datetime.datetime(2019, 2, 1, 0, 0, 0)),
+    ('-3d@d', datetime.timedelta(days=1), datetime.datetime(2019, 3, 7, 0, 0, 0)),
+    ('+5d', datetime.timedelta(days=1), datetime.datetime(2019, 3, 15, 13, 20, 15)),
+    ('', datetime.timedelta(days=1), datetime.datetime(2019, 3, 10, 13, 20, 15)), ]
 
 
 @pytest.mark.parametrize('ts,tz,expect', timeparser_params)
