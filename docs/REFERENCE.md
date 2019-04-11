@@ -217,10 +217,10 @@ extendIndexes = <index_prefix>:<weight>,<index2>,<index3>
     * eg: events from a sample with "extendIndexes = test_:5, main, web" setting will be added with indexes "test_0, test_1, 
     * test_2, test_3, test_4, main, web" randomly.
     
-extendIndexes = <index_prefix>:<num>,<index2>,<index3>
+extendIndexes = <index_prefix>:<weight>,<index2>,<index3>
     * Sample level setting. Use this setting enable eventgen to generate multi indexes for one sample. 
-    * if you set the value with pattern like "<index_prefix>:<num>", it will treat <index_prefix> as a prefix of an actual index, 
-    * and <num> is the count of index you want to extend for this sample.
+    * if you set the value with pattern like "<index_prefix>:<weight>", it will treat <index_prefix> as a prefix of an actual index, 
+    * and <weight> is an integer that indicate the count of index you want to extend for this sample.
     * eg: events from a sample with "extendIndexes = test_:5, main, web" setting will be added with indexes "test_0, test_1, 
     * test_2, test_3, test_4, main, web" randomly.
     
