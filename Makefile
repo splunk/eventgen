@@ -117,3 +117,9 @@ else
 	@yapf -i $(NEWLY_ADDED_PY_FILES)
 endif
 
+lint-all:
+	@flake8 .
+
+format-all:
+	@isort -rc .
+	@yapf -r -i .

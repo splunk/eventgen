@@ -20,8 +20,7 @@ from splunk.clilib.bundle_paths import get_slaveapps_base_path
 from splunk.models.app import App
 from xmloutput import setupLogger
 
-from .fields import (BooleanField, Field, FieldValidationException,
-                     IntervalField)
+from .fields import (BooleanField, Field, FieldValidationException, IntervalField)
 
 try:
     from splunk.clilib.bundle_paths import make_splunkhome_path
