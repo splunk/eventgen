@@ -46,6 +46,9 @@ class Token(object):
         self._earliestTime = (None, None)
         self._latestTime = (None, None)
 
+        if sample:
+            self.sample = sample
+
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this token"""
         # Eliminate recursive going back to parent
@@ -65,10 +68,18 @@ class Token(object):
     def __setstate__(self, d):
         self.__dict__ = d
         self._setup_logging()
+    
+    def deepcopy(self, sample=None):
+        # temp = dict([(key, value) for (key, value) in token_object.items() if key != 'sample' and key != 'logger'])
+        cp = Token()
+        cp.__setstate__(self.__getstate__())
+        if sample:
+            cp.sample = sample
+        return cp
 
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen')
-
+    
     def _match(self, event):
         """Executes regular expression match and returns the re.Match object"""
         return re.match(self.token, event)
