@@ -111,6 +111,8 @@ class Timer(object):
         if self.end and int(self.end) == 0:
             self.logger.info("End = 0, no events will be generated for sample '%s'" % self.sample.name)
             end = True
+        elif int(self.end) == -1:
+            self.logger.info("End is set to -1. Will be running without stopping for sample %s" % self.sample.name)
         while not end:
             # Need to be able to stop threads by the main thread or this thread. self.config will stop all threads
             # referenced in the config object, while, self.stopping will only stop this one.
@@ -119,7 +121,6 @@ class Timer(object):
             count = self.rater.rate()
             # First run of the generator, see if we have any backfill work to do.
             if self.countdown <= 0:
-
                 if self.sample.backfill and not self.sample.backfilldone:
                     realtime = self.sample.now(realnow=True)
                     if "-" in self.sample.backfill[0]:
@@ -207,7 +208,12 @@ class Timer(object):
                 self.executions += 1
 
                 # 8/20/15 CS Adding support for ending generation at a certain time
+
                 if self.end:
+                    if int(self.end) == -1:
+                        time.sleep(self.time)
+                        self.countdown -= self.time
+                        continue
                     # 3/16/16 CS Adding support for ending on a number of executions instead of time
                     # Should be fine with storing state in this sample object since each sample has it's own unique
                     # timer thread
