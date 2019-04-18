@@ -209,7 +209,7 @@ accessToken = <accesstoken>
 index = <index>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Splunk index to write events to. Defaults to main if none specified.
-    
+
 extendIndexes = <index_prefix>:<weight>,<index2>,<index3>
     * Sample level setting. Use this setting enable eventgen to generate multi indexes for one sample. 
     * if you set the value with pattern like "<index_prefix>:<weight>", it will treat <index_prefix> as a prefix of an actual index, 

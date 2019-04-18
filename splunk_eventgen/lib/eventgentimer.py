@@ -41,7 +41,6 @@ class Timer(object):
         self.countdown = 0
         self.executions = 0
         self.interval = getattr(self.sample, "interval", config.interval)
-        # enable the logger
         self._setup_logging()
         self.logger.debug('Initializing timer for %s' % sample.name if sample is not None else "None")
         # load plugins
