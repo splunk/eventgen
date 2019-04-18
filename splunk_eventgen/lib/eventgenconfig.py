@@ -30,7 +30,6 @@ from eventgentoken import Token
 
 STANDALONE = False
 
-
 # 5/10/12 CS Some people consider Singleton to be lazy.  Dunno, I like it for convenience.
 # My general thought on that sort of stuff is if you don't like it, reimplement it.  I'll consider
 # your patch.
@@ -77,17 +76,17 @@ class Config(object):
     generatorQueue = None
     args = None
 
-    # Validations
-    _validSettings = [
-        'disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype', 'interval', 'delay', 'count',
-        'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate', 'dayOfWeekRate', 'randomizeCount',
-        'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes', 'fileBackupFiles', 'index', 'source', 'sourcetype',
-        'host', 'hostRegex', 'projectID', 'accessToken', 'mode', 'backfill', 'backfillSearch', 'eai:userName',
-        'eai:appName', 'timeMultiple', 'debug', 'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate',
-        'perDayVolume', 'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir',
-        'threading', 'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort', 'verbosity',
-        'useOutputQueue', 'seed', 'end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse', 'outputCounter',
-        'sequentialTimestamp']
+    ## Validations
+    _validSettings = ['disabled', 'blacklist', 'spoolDir', 'spoolFile', 'breaker', 'sampletype' , 'interval',
+                    'delay', 'count', 'bundlelines', 'earliest', 'latest', 'eai:acl', 'hourOfDayRate',
+                    'dayOfWeekRate', 'randomizeCount', 'randomizeEvents', 'outputMode', 'fileName', 'fileMaxBytes',
+                    'fileBackupFiles', 'index', 'source', 'sourcetype', 'host', 'hostRegex', 'projectID', 'accessToken',
+                    'mode', 'backfill', 'backfillSearch', 'eai:userName', 'eai:appName', 'timeMultiple', 'debug',
+                    'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
+                    'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
+                    'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort',
+                    'verbosity', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse',
+                    'outputCounter', 'sequentialTimestamp', 'extendIndexes']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = [
