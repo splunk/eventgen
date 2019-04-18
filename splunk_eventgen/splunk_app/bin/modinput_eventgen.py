@@ -5,6 +5,8 @@ import logging
 import signal
 import sys
 
+from modinput import ModularInput
+from modinput.fields import VerbosityField
 # Set path so libraries will load
 from splunk.clilib.bundle_paths import make_splunkhome_path
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib']))
