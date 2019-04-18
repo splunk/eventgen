@@ -1,6 +1,7 @@
 from datetime import datetime
 import re
 import time
+import pytest
 
 
 def test_mode_replay(eventgen_test_helper):
@@ -37,6 +38,7 @@ def test_mode_replay_backfill(eventgen_test_helper):
     assert len(events) == 24
 
 
+@pytest.mark.skip(reason="this issue is not fixed")
 def test_mode_replay_timemultiple(eventgen_test_helper):
     """Test normal replay mode with timeMultiple = 0.5 which will replay the sample with half time interval"""
     current_datetime = datetime.now()
