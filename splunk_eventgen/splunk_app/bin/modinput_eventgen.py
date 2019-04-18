@@ -5,16 +5,16 @@ import logging
 import signal
 import sys
 
-from modinput import ModularInput
-from modinput.fields import VerbosityField
 # Set path so libraries will load
 from splunk.clilib.bundle_paths import make_splunkhome_path
-from splunk_eventgen import eventgen_core
-from splunk_eventgen.lib import eventgenconfig
-from xmloutput import XMLOutputManager, setupLogger
-
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib']))
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib', 'splunk_eventgen', 'lib']))
+
+from modinput import ModularInput  # noqa isort:skip
+from modinput.fields import VerbosityField  # noqa isort:skip
+from splunk_eventgen import eventgen_core  # noqa isort:skip
+from splunk_eventgen.lib import eventgenconfig  # noqa isort:skip
+from xmloutput import XMLOutputManager, setupLogger  # noqa isort:skip
 
 # Initialize logging
 logger = setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [Eventgen] %(message)s', level=logging.DEBUG,
