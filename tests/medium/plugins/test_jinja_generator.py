@@ -2,7 +2,6 @@ import os
 import sys
 
 from mock import patch
-
 from splunk_eventgen.__main__ import parse_args
 from splunk_eventgen.eventgen_core import EventGenerator
 
@@ -11,6 +10,7 @@ OUTPUT_FILE = 'test_jinja_generator_file_output.result'
 
 
 class TestJinjaGenerator(object):
+  
     def test_jinja_generator_to_file(self):
         configfile = "tests/sample_eventgen_conf/jinja/eventgen.conf.jinja_basic"
         testargs = ["eventgen", "generate", configfile]

@@ -41,7 +41,6 @@ class Timer(object):
         self.countdown = 0
         self.executions = 0
         self.interval = getattr(self.sample, "interval", config.interval)
-        # enable the logger
         self._setup_logging()
         self.logger.debug('Initializing timer for %s' % sample.name if sample is not None else "None")
         # load plugins
@@ -108,12 +107,12 @@ class Timer(object):
         end = False
         previous_count_left = 0
         raw_event_size = self.predict_event_size()
-
-        if self.end and int(self.end) == 0:
-            self.logger.info("End = 0, no events will be generated for sample '%s'" % self.sample.name)
-            end = True
-        elif int(self.end) == -1:
-            self.logger.info("End is set to -1. Will be running without stopping for sample %s" % self.sample.name)
+        if self.end:
+            if int(self.end) == 0:
+                self.logger.info("End = 0, no events will be generated for sample '%s'" % self.sample.name)
+                end = True
+            elif int(self.end) == -1:
+                self.logger.info("End is set to -1. Will be running without stopping for sample %s" % self.sample.name)
         while not end:
             # Need to be able to stop threads by the main thread or this thread. self.config will stop all threads
             # referenced in the config object, while, self.stopping will only stop this one.

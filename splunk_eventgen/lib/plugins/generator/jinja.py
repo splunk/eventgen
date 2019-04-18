@@ -9,7 +9,6 @@ from jinja2 import nodes
 from jinja2.ext import Extension
 
 from generatorplugin import GeneratorPlugin
-
 try:
     import ujson as json
 except:
@@ -24,7 +23,6 @@ class CantFindTemplate(Exception):
         """
         self.msg = msg
         super(CantFindTemplate, self).__init__(msg)
-
 
 class CantProcessTemplate(Exception):
     def __init__(self, msg):

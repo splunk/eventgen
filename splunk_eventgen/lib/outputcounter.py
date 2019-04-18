@@ -26,7 +26,7 @@ class OutputCounter(object):
         self.current_time = timestamp
         self.event_count_1_min = 0
         self.event_size_1_min = 0
-        self.logger.error("Current throughput is {} B/s, {} count/s".format(self.throughput_volume,
+        self.logger.debug("Current throughput is {} B/s, {} count/s".format(self.throughput_volume,
                                                                             self.throughput_count))
 
     def collect(self, event_count, event_size):
