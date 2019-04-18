@@ -54,7 +54,7 @@ class Timer(object):
                 self.logger.error("Invalid setting for timeMultiple: {}, value should be positive".format(
                     self.sample.timeMultiple))
             elif self.sample.timeMultiple != 1:
-                self.interval = self.sample.interval * self.sample.timeMultiple
+                self.interval = self.sample.interval
                 self.logger.debug("Adjusting interval {} with timeMultiple {}, new interval: {}".format(
                     self.sample.interval, self.sample.timeMultiple, self.interval))
         self.logger.info(
@@ -108,6 +108,7 @@ class Timer(object):
         end = False
         previous_count_left = 0
         raw_event_size = self.predict_event_size()
+
         if self.end and int(self.end) == 0:
             self.logger.info("End = 0, no events will be generated for sample '%s'" % self.sample.name)
             end = True
