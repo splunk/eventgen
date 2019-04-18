@@ -1,9 +1,9 @@
 import datetime
-import time
 import random
+import time
+
 
 class EventgenTimestamp(object):
-
     @staticmethod
     def get_random_timestamp(earliest, latest):
         if type(earliest) != datetime.datetime or type(latest) != datetime.datetime:
@@ -23,7 +23,8 @@ class EventgenTimestamp(object):
         earliest and latest timestamp gets generated with an interval
         sample_earliest and sample_latest are the user config key values from eventgen.conf
         we are using earliest as a pivot time and creating a random variance using sample_earliest and sample_latest.
-        in this way, we respect an interval passed in by a user and use user input earliest and latest to create a random variance
+        in this way, we respect an interval passed in by a user and use user input earliest and latest to create a
+        random variance.
         '''
         if type(earliest) != datetime.datetime or type(latest) != datetime.datetime:
             raise Exception("Earliest {0} or latest {1} arguments are not datetime objects".format(earliest, latest))
@@ -50,7 +51,8 @@ class EventgenTimestamp(object):
         latest_in_epoch = time.mktime(latest.timetuple())
         if earliest_in_epoch > latest_in_epoch:
             raise Exception("Latest time is earlier than earliest time.")
-        return datetime.datetime.fromtimestamp(earliest_in_epoch + (latest_in_epoch-earliest_in_epoch)*slot/total_slot)
+        return datetime.datetime.fromtimestamp(earliest_in_epoch +
+                                               (latest_in_epoch - earliest_in_epoch) * slot / total_slot)
 
     @staticmethod
     def _convert_time_difference_to_seconds(time_difference):

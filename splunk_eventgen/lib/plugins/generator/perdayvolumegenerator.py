@@ -1,18 +1,21 @@
 from __future__ import division
-from generatorplugin import GeneratorPlugin
-import datetime, time
+
+import datetime
 import random
+
+from generatorplugin import GeneratorPlugin
 
 
 class PerDayVolumeGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
-    #TODO: Make this work with replay mode.
+    # TODO: Make this work with replay mode.
     def gen(self, count, earliest, latest, samplename=None):
         # count in this plugin is a measurement of byteself._sample.
         size = count
-        self.logger.debug("PerDayVolumeGenerator Called with a Size of: %s with Earliest: %s and Latest: %s" % (size, earliest, latest))
+        self.logger.debug("PerDayVolumeGenerator Called with a Size of: %s with Earliest: %s and Latest: %s" %
+                          (size, earliest, latest))
         # very similar to the default generator.  only difference is we go by size instead of count.
         try:
             self._sample.loadSample()
@@ -21,7 +24,8 @@ class PerDayVolumeGenerator(GeneratorPlugin):
             self.logger.error("Error loading sample file for sample '%s'" % self._sample.name)
             return
 
-        self.logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" % (self._sample.name, self._sample.app, size, earliest, latest))
+        self.logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" %
+                          (self._sample.name, self._sample.app, size, earliest, latest))
         startTime = datetime.datetime.now()
 
         # Create a counter for the current byte size of the read in samples
@@ -33,15 +37,18 @@ class PerDayVolumeGenerator(GeneratorPlugin):
         eventsDict = []
         if self._sample.randomizeEvents:
             sdlen = len(updated_sample_dict)
-            self.logger.debugv("Random filling eventsDict for sample '%s' in app '%s' with %d bytes" % (self._sample.name, self._sample.app, size))
+            self.logger.debugv("Random filling eventsDict for sample '%s' in app '%s' with %d bytes" %
+                               (self._sample.name, self._sample.app, size))
             while currentSize < size:
-                currentevent = updated_sample_dict[random.randint(0, sdlen-1)]
+                currentevent = updated_sample_dict[random.randint(0, sdlen - 1)]
                 eventsDict.append(currentevent)
                 currentSize += len(currentevent['_raw'])
 
         # If we're bundlelines, create count copies of the sampleDict
         elif self._sample.bundlelines:
-            self.logger.debugv("Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" % (self._sample.name, self._sample.app, size))
+            self.logger.debugv(
+                "Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" %
+                (self._sample.name, self._sample.app, size))
             while currentSize <= size:
                 sizeofsample = sum(len(sample['_raw']) for sample in updated_sample_dict)
                 eventsDict.extend(updated_sample_dict)
@@ -62,15 +69,18 @@ class PerDayVolumeGenerator(GeneratorPlugin):
                 sizeremaining = size - currentreadsize
                 targetlinesize = len(updated_sample_dict[targetline]['_raw'])
                 if size < targetlinesize:
-                    self.logger.error("Size is too small for sample {}. For this interval, we need {} bytes but size of one event is {} bytes.".format(self._sample.name, size, targetlinesize))
+                    self.logger.error(
+                        "Size is too small for sample {}. We need {} bytes but size of one event is {} bytes.".format(
+                            self._sample.name, size, targetlinesize))
                     break
-                if targetlinesize <= sizeremaining or targetlinesize*.9 <= sizeremaining:
+                if targetlinesize <= sizeremaining or targetlinesize * .9 <= sizeremaining:
                     currentreadsize += targetlinesize
                     eventsDict.append(updated_sample_dict[targetline])
                 else:
                     break
                 linecount += 1
-            self.logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" % (self._sample.name, self._sample.app, len(eventsDict)))
+            self.logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" %
+                               (self._sample.name, self._sample.app, len(eventsDict)))
 
         # Ignore token replacement here because we completed it at the beginning of event generation
         GeneratorPlugin.build_events(self, eventsDict, startTime, earliest, latest, ignore_tokens=True)

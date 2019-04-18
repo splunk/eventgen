@@ -13,7 +13,7 @@ XLARGE ?= 'tests/xlarge'
 NEWLY_ADDED_PY_FILES = $(shell git ls-files -o --exclude-standard | grep -E '\.py$$')
 CHANGED_ADDED_PY_FILES = $(shell git ls-files -mo --exclude-standard | grep -E '\.py$$')
 
-.PHONY: tests, lint, format
+.PHONY: tests, lint, format, docs
 
 all: egg
 
@@ -24,7 +24,7 @@ image: setup_eventgen egg
 	rm splunk_eventgen/default/eventgen_engine.conf || true
 	docker build -f dockerfiles/Dockerfile . -t eventgen
 
-test: egg image test_helper test_collection_cleanup
+test: egg image test_helper run_tests test_collection_cleanup
 
 test_helper:
 	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} eventgen:latest cat
@@ -41,14 +41,9 @@ test_helper:
 	@echo 'Installing test requirements'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install -r $(shell pwd)/tests/requirements.txt" || true
 
+run_tests:
 	@echo 'Running the super awesome tests'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python tests/run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}" || true
-
-	echo 'Collecting results'
-	#TODO: Should be paramaterized or generalized so that we don't need to add this here
-	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests_results.xml tests_results.xml || echo "no tests_results.xml" || true
-
-	docker stop ${EVENTGEN_TEST_IMAGE} || true
 
 test_collection_cleanup:
 	@echo 'Collecting results'
@@ -97,9 +92,7 @@ run_controller: eg_network
 	docker run --name eg_controller --network eg_network -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
 
 docs:
-	npm install -g gitbook-serve
-	cd docs/
-	gitbookserve
+	cd docs/; bundle install; bundle exec jekyll serve
 
 build_spl: clean
 	python -m splunk_eventgen build --destination ./
@@ -124,3 +117,9 @@ else
 	@yapf -i $(NEWLY_ADDED_PY_FILES)
 endif
 
+lint-all:
+	@flake8 .
+
+format-all:
+	@isort -rc .
+	@yapf -r -i .

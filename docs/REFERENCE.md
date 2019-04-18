@@ -209,6 +209,13 @@ accessToken = <accesstoken>
 index = <index>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Splunk index to write events to. Defaults to main if none specified.
+
+extendIndexes = <index_prefix>:<weight>,<index2>,<index3>
+    * Sample level setting. Use this setting enable eventgen to generate multi indexes for one sample. 
+    * if you set the value with pattern like "<index_prefix>:<weight>", it will treat <index_prefix> as a prefix of an actual index, 
+    * and <weight> is an integer that indicate the count of index you want to extend for this sample.
+    * eg: events from a sample with "extendIndexes = test_:5, main, web" setting will be added with indexes "test_0, test_1, 
+    * test_2, test_3, test_4, main, web" randomly.
     
 source = <source>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
@@ -266,7 +273,7 @@ sampletype = raw | csv
       CSV allows you to override output fields for the sample like host, index, source and sourcetype
       from the CSV file. Will read the raw events from a field called _raw. Assumes the CSV file has
       a header row which defines field names.
-      OVERRIDES FOR DEFAULT FIELDS WILL ONLY WITH WITH outputMode SPLUNKSTREAM.
+      OVERRIDES FOR DEFAULT FIELDS WILL ONLY WORK WITH outputMode SPLUNKSTREAM.
 
 interval = <integer>
     * Only valid in mode = sample
@@ -359,21 +366,21 @@ dayOfWeekRate = <json>
 minuteOfHourRate = <json>
     * Takes a JSON hash of 60 minutes of an hour, starting with 0
     * Sample JSON:
-      { "0": 1, "2": 1...}
+      { "0": 1, "1": 1...}
     * If a match is not found, will default to count events
     * Also multiplied times dayOfWeekRate, hourOfDateRate, dayOfMonthRate, monthOfYearRate
 
 dayOfMonthRate = <json>
     * Takes a JSON hash of 31 days of the month, starting with 1
     * Sample JSON:
-      { "1": 1, "2": 1...}
+      { "1": 1, "1": 1...}
     * If a match is not found, will default to count events
     * Also multiplied times dayOfWeekRate, hourOfDateRate, minuteOfHourRate, monthOfYearRate
 
 monthOfYearRate = <json>
-    * Takes a JSON hash of 60 minutes of an hour, starting with 0
+    * Takes a JSON hash of 12 months of a year, starting with 1
     * Sample JSON:
-      { "0": 1, "2": 1...}
+      { "1": 1, "2": 1...}
     * If a match is not found, will default to count events
     * Also multiplied times dayOfWeekRate, hourOfDateRate, minuteOfHourRate, dayOfMonthRate
     

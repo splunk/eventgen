@@ -3,7 +3,9 @@
 
 import os
 import sys
+
 from mock import patch
+
 from splunk_eventgen.__main__ import parse_args
 from splunk_eventgen.eventgen_core import EventGenerator
 
@@ -11,7 +13,6 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestFileOutputPlugin(object):
-
     def test_output_data_to_file(self):
         configfile = "tests/sample_eventgen_conf/medium_test/eventgen.conf.fileoutput"
         testargs = ["eventgen", "generate", configfile]

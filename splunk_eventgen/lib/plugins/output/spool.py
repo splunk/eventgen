@@ -4,18 +4,21 @@
 # from eventgenoutputtemplates import OutputTemplate
 
 from __future__ import division
-from outputplugin import OutputPlugin
-import time
-import os
+
 import logging
+import os
+import time
+
+from outputplugin import OutputPlugin
+
 
 class SpoolOutputPlugin(OutputPlugin):
     useOutputQueue = True
     name = 'spool'
     MAXQUEUELENGTH = 10
 
-    validSettings = [ 'spoolDir', 'spoolFile' ]
-    defaultableSettings = [ 'spoolDir', 'spoolFile' ]
+    validSettings = ['spoolDir', 'spoolFile']
+    defaultableSettings = ['spoolDir', 'spoolFile']
 
     _spoolDir = None
     _spoolFile = None
@@ -28,7 +31,8 @@ class SpoolOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         if len(q) > 0:
-            self.logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" % (self._sample.name, self._app, self._sample.source))
+            self.logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" %
+                              (self._sample.name, self._app, self._sample.source))
             # Keep trying to open destination file as it might be touched by other processes
             data = ''.join(event['_raw'] for event in q if event.get('_raw'))
             while True:

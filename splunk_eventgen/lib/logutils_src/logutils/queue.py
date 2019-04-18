@@ -20,11 +20,13 @@ from the :mod:`multiprocessing` module.
 version here is for use with earlier Python versions.
 """
 import logging
+import threading
+
 try:
     import Queue as queue
 except ImportError:
     import queue
-import threading
+
 
 class QueueHandler(logging.Handler):
     """
@@ -97,6 +99,7 @@ class QueueHandler(logging.Handler):
         except:
             self.handleError(record)
 
+
 class QueueListener(object):
     """
     This class implements an internal threaded listener which watches for
@@ -144,7 +147,7 @@ class QueueListener(object):
         t.setDaemon(True)
         t.start()
 
-    def prepare(self , record):
+    def prepare(self, record):
         """
         Prepare a record for handling.
 

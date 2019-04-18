@@ -2,10 +2,12 @@
 # Copyright (C) 2009-2017 Vinay Sajip. See LICENSE.txt for details.
 #
 import logging
-import logutils
 import os
 import sys
 import unittest
+
+import logutils
+
 
 class FormatterTest(unittest.TestCase):
     def setUp(self):
@@ -17,10 +19,8 @@ class FormatterTest(unittest.TestCase):
             'exc_info': None,
             'func': None,
             'msg': 'Message with %d %s',
-            'args': (2, 'placeholders'),
-        }
-        self.variants = {
-        }
+            'args': (2, 'placeholders'), }
+        self.variants = {}
 
     def get_record(self, name=None):
         result = dict(self.common)
@@ -42,6 +42,7 @@ class FormatterTest(unittest.TestCase):
         self.assertFalse(f.usesTime())
 
     if sys.version_info[:2] >= (2, 6):
+
         def test_braces(self):
             "Test {}-formatting"
             r = self.get_record()

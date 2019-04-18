@@ -1,9 +1,10 @@
 from __future__ import division
-from outputplugin import OutputPlugin
 
-import struct
-import socket
 import logging
+import socket
+import struct
+
+from outputplugin import OutputPlugin
 
 
 class S2S:
@@ -60,7 +61,7 @@ class S2S:
         by a null terminated string.
         """
         tosend = str(tosend)
-        return struct.pack('!I%ds' % (len(tosend)+1), len(tosend)+1, tosend)
+        return struct.pack('!I%ds' % (len(tosend) + 1), len(tosend) + 1, tosend)
 
     def _encode_key_value(self, key='', value=''):
         """
@@ -74,30 +75,29 @@ class S2S:
         # Create signature
         sig = self._encode_sig()
 
-        msg_size = len(struct.pack('!I', 0)) # size of unsigned 32 bit integer, which is the count of map entries
+        msg_size = len(struct.pack('!I', 0))  # size of unsigned 32 bit integer, which is the count of map entries
         maps = 1
 
         # May not have these, so set them first
         encoded_source = False
         encoded_sourcetype = False
         encoded_host = False
-        encoded_index = False
 
         # Encode source
         if len(source) > 0:
-            encoded_source = self._encode_key_value('MetaData:Source', 'source::'+source)
+            encoded_source = self._encode_key_value('MetaData:Source', 'source::' + source)
             maps += 1
             msg_size += len(encoded_source)
 
         # Encode sourcetype
         if len(sourcetype) > 0:
-            encoded_sourcetype = self._encode_key_value('MetaData:Sourcetype', 'sourcetype::'+sourcetype)
+            encoded_sourcetype = self._encode_key_value('MetaData:Sourcetype', 'sourcetype::' + sourcetype)
             maps += 1
             msg_size += len(encoded_sourcetype)
-        
+
         # Encode host
         if len(host) > 0:
-            encoded_host = self._encode_key_value('MetaData:Host', 'host::'+host)
+            encoded_host = self._encode_key_value('MetaData:Host', 'host::' + host)
             maps += 1
             msg_size += len(encoded_host)
 
@@ -105,7 +105,7 @@ class S2S:
         encoded_index = self._encode_key_value('_MetaData:Index', index)
         maps += 1
         msg_size += len(encoded_index)
-        
+
         # Encode _raw
         encoded_raw = self._encode_key_value('_raw', _raw)
         msg_size += len(encoded_raw)
@@ -124,7 +124,7 @@ class S2S:
         msg_size += len(encoded_done)
 
         # Encode _time
-        if _time != None:
+        if _time is not None:
             encoded_time = self._encode_key_value('_time', _time)
             msg_size += len(encoded_time)
             maps += 1
@@ -162,6 +162,7 @@ class S2S:
         Close connection and send final done event
         """
         self.s.close()
+
 
 class S2SOutputPlugin(OutputPlugin):
     name = 's2s'

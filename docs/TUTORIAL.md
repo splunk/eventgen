@@ -2,10 +2,10 @@
 
 The primary source of configuration done in Eventgen is governed by the `eventgen.conf` file. 
 
-* If deployed using containers, Eventgen will look for eventgen.conf in bundles under the `default` directory. For instance, if your bundle is named "datamix-app", you should archive your eventgen.conf in "datamix-app/default/eventgen.conf".
-* If deployed as a Splunk App, Eventgen will look for eventgen.conf files for every app installed in Splunk, and will generate events for every eventgen.conf file it finds. This is convenient if you want to design event generation into a Technology Addon (TA) or other type of Splunk app. You can ship Eventgen configurations with your app and distribute the Eventgen app separately.
+* If deployed using containers, Eventgen will look for `eventgen.conf` in bundles under the `default` directory. For instance, if your bundle is named `datamix-app`, you should archive your `eventgen.conf` in `datamix-app/default/eventgen.conf`.
+* If deployed as a Splunk App, Eventgen will look for `eventgen.conf` files for every app installed in Splunk, and will generate events for every `eventgen.conf` file it finds. This is convenient if you want to design event generation into a Technology Addon (TA) or other type of Splunk app. You can ship Eventgen configurations with your app and distribute the Eventgen app separately.
 
-The INI format of eventgen.conf can have one or more stanzas. Each stanza name is a sample file it will be reading from. There a number of options available in each stanza. For instance, breaking down this tutorial file option-by-option, we can see how this file will be used to set up Eventgen:
+The INI format of `eventgen.conf` can have one or more stanzas. Each stanza name is a sample file it will be reading from. There a number of options available in each stanza. For instance, breaking down this tutorial file option-by-option, we can see how this file will be used to set up Eventgen:
 
 ```
     [sample.tutorial1]
@@ -66,6 +66,8 @@ There are various outputModes available (see the [spec](REFERENCE.md#eventgencon
     splunkPass = changeme
 ```
 Parameters for setting up outputMode = splunkstream. This is only required if we want to run Eventgen outside of Splunk. As a Splunk App and running as a scripted input, eventgen will gather this information from Splunk itself. Since we'll be running this from the command line for the tutorial, please customize your username and password in the tutorial.
+Note:
+>When using outputMode=splunkstream for running Eventgen outside of Splunk, use parameter `PYTHONHTTPSVERIFY=0` to ignore the SSL error: `SSLError: [SSL: CERTIFICATE_VERIFY_FAILED]`
 
 ```
     token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}

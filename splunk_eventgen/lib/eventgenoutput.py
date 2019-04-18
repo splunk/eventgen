@@ -1,12 +1,13 @@
 from __future__ import division
+
+import datetime
 import logging
 import logging.handlers
-from Queue import Full
-import json
 import time
-import datetime
+from Queue import Full
 
-#TODO: Figure out why we load plugins from here instead of the base plugin class.
+
+# TODO: Figure out why we load plugins from here instead of the base plugin class.
 class Output(object):
     """
     Base class which loads output plugins in BASE_DIR/lib/plugins/output and handles queueing
@@ -22,11 +23,10 @@ class Output(object):
         self._setup_logging()
         self.output_counter = None
 
-
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
         # Eliminate recursive going back to parent
-        temp = dict([ (key, value) for (key, value) in self.__dict__.items() if key != '_c'])
+        # temp = dict([(key, value) for (key, value) in self.__dict__.items() if key != '_c'])
         # return pprint.pformat(temp)
         return ""
 
@@ -55,18 +55,18 @@ class Output(object):
 
     def updateConfig(self, config):
         self.config = config
-        #TODO: This is where the actual output plugin is loaded, and pushed out.  This should be handled way better...
+        # TODO: This is where the actual output plugin is loaded, and pushed out.  This should be handled way better...
         self.outputPlugin = self.config.getPlugin('output.' + self._sample.outputMode, self._sample)
 
     def send(self, msg):
         """
         Adds msg to the output buffer, flushes if buffer is more than MAXQUEUELENGTH
         """
-        ts = self._sample.timestamp if self._sample.timestamp != None else self._sample.now()
-        self._queue.append({'_raw': msg, 'index': self._sample.index,
-                        'source': self._sample.source, 'sourcetype': self._sample.sourcetype,
-                        'host': self._sample.host, 'hostRegex': self._sample.hostRegex,
-                        '_time': int(time.mktime(ts.timetuple()))})
+        ts = self._sample.timestamp if self._sample.timestamp is not None else self._sample.now()
+        self._queue.append({
+            '_raw': msg, 'index': self._sample.index, 'source': self._sample.source, 'sourcetype':
+            self._sample.sourcetype, 'host': self._sample.host, 'hostRegex': self._sample.hostRegex, '_time': int(
+                time.mktime(ts.timetuple()))})
 
         if len(self._queue) >= self.MAXQUEUELENGTH:
             self.flush()
@@ -90,7 +90,7 @@ class Output(object):
         more than maxIntervalsBeforeFlush tunable.
         """
         flushing = False
-        #TODO: Fix interval flushing somehow with a queue, not sure I even want to support this feature anymore.
+        # TODO: Fix interval flushing somehow with a queue, not sure I even want to support this feature anymore.
         '''if endOfInterval:
             logger.debugv("Sample calling flush, checking increment against maxIntervalsBeforeFlush")
             c.intervalsSinceFlush[self._sample.name].increment()
@@ -104,7 +104,7 @@ class Output(object):
             logger.debugv("maxQueueLength exceeded, flushing")
             flushing = True'''
 
-        #TODO: This is set this way just for the time being while I decide if we want this feature.
+        # TODO: This is set this way just for the time being while I decide if we want this feature.
         flushing = True
         if flushing:
             q = self._queue
@@ -113,8 +113,10 @@ class Output(object):
             outputer = self.outputPlugin(self._sample, self.output_counter)
             outputer.updateConfig(self.config)
             outputer.set_events(q)
-            # When an outputQueue is used, it needs to run in a single threaded nature which requires to be put back into the outputqueue so a single thread worker can execute it.
-            # When an outputQueue is not used, it can be ran by multiple processes or threads. Therefore, no need to put the outputer back into the Queue. Just execute it.
+            # When an outputQueue is used, it needs to run in a single threaded nature which requires to be put back
+            # into the outputqueue so a single thread worker can execute it. When an outputQueue is not used, it can be
+            # ran by multiple processes or threads. Therefore, no need to put the outputer back into the Queue. Just
+            # execute it.
             # if outputPlugin must be used for useOutputQueue, use outputQueue regardless of user config useOutputQueue:
             if self.outputPlugin.useOutputQueue or self.config.useOutputQueue:
                 try:
@@ -126,9 +128,10 @@ class Output(object):
                 # TODO: clean out eventsSend and bytesSent if they are not being used in config
                 # self.config.eventsSent.add(len(tmp))
                 # self.config.bytesSent.add(sum(tmp))
-                if self.config.splunkEmbedded and len(tmp)>0:
+                if self.config.splunkEmbedded and len(tmp) > 0:
                     metrics = logging.getLogger('eventgen_metrics')
-                    metrics.info({'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'),
-                            'sample': self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)})
+                    metrics.info({
+                        'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 'sample':
+                        self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)})
                 tmp = None
                 outputer.run()
