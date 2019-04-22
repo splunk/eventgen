@@ -195,8 +195,12 @@ class JinjaGenerator(GeneratorPlugin):
                 app_name = getattr(self._sample, 'app', 'SA-Eventgen')
                 working_dir = os.path.join(splunk_home, 'etc', 'apps', app_name, 'default')
 
+            default_template_dir = os.path.join(os.path.dirname(working_dir), 'samples', 'templates')
+            if hasattr(self._sample, "sampleDir"):
+                default_template_dir = os.path.join(self._sample.sampleDir, 'templates')
+
             if not hasattr(self._sample, "jinja_template_dir"):
-                template_dir = os.path.join(os.path.dirname(working_dir), 'samples', 'templates')
+                template_dir = default_template_dir
             else:
                 template_dir = self._sample.jinja_template_dir
 
@@ -208,8 +212,8 @@ class JinjaGenerator(GeneratorPlugin):
             if not hasattr(self._sample, "jinja_target_template"):
                 raise CantFindTemplate("Template to load not specified in eventgen conf for stanza.  Skipping Stanza")
             jinja_env = Environment(
-                loader=FileSystemLoader([target_template_dir, working_dir, template_dir], encoding='utf-8',
-                                        followlinks=False), extensions=[
+                loader=FileSystemLoader([target_template_dir, working_dir, template_dir, default_template_dir],
+                                        encoding='utf-8', followlinks=False), extensions=[
                                             'jinja2.ext.do', 'jinja2.ext.with_', 'jinja2.ext.loopcontrols', JinjaTime],
                 line_statement_prefix="#", line_comment_prefix="##")
 
