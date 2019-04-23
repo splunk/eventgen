@@ -85,13 +85,14 @@ def test_mode_sample_latest(eventgen_test_helper):
     helper = eventgen_test_helper("eventgen_sample_latest.conf")
     events = helper.get_events()
     pattern = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
+    assert len(events) > 0
     for event in events:
         result = pattern.match(event)
         assert result is not None
         event_datetime = datetime.strptime(result.group(), "%Y-%m-%d %H:%M:%S")
         delter_seconds = (event_datetime - current_datetime).total_seconds()
         # assert the event time is after (now - earliest) time
-        assert delter_seconds < 16
+        assert delter_seconds < 15
 
 
 def test_mode_sample_count(eventgen_test_helper):

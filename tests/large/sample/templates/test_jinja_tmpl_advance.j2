@@ -1,0 +1,8 @@
+{% for idx in [1,2,3] %}
+{%- time_slice earliest="1234", latest="2345", count=loop.index, slices="5" -%}
+{% if flag %}
+{"_time":"{{ time_target_epoch }}", "_raw":"{{ time_target_formatted }} [{{username}}] test jinja template advance, switch={{flag}}, seq: {{loop.index}}/{{large_number}}"}
+{% else %}
+{"_time":"{{ time_target_epoch }}", "_raw":"{{ time_target_formatted }} [{{username}}] test jinja template generator, switch={{flag}}, seq: {{loop.index}}/{{large_number}}"}
+{% endif %}
+{% endfor %}

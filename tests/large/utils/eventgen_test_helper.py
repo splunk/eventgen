@@ -7,18 +7,24 @@ import configparser
 
 # $EVENTGEN_HOME/tests/large
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+result_dir = os.path.join(base_dir, 'results')
 # change working directory so that 'splunk_eventgen' call in the project root directory
 os.chdir(os.path.dirname(os.path.dirname(base_dir)))
 
 
 class EventgenTestHelper(object):
+    @classmethod
+    def make_result_dir(cls):
+        if not os.path.isdir(result_dir):
+            os.makedirs(result_dir)
+
     def __init__(self, conf, timeout=None):
         self.conf = os.path.join(base_dir, 'conf', conf)
         self.config, self.section = self._read_conf(self.conf)
         self.output_mode = self._get_output_mode()
         self.file_name = self._get_file_name()
         self.breaker = self._get_breaker()
-        self.process = subprocess.Popen(['splunk_eventgen', 'generate', self.conf], stdout=subprocess.PIPE)
+        self.process = subprocess.Popen(['splunk_eventgen', '-v', 'generate', self.conf], stdout=subprocess.PIPE)
         if timeout:
             timer = Timer(timeout, self.kill)
             timer.start()
@@ -38,7 +44,7 @@ class EventgenTestHelper(object):
         if self.output_mode == 'stdout':
             output = self.process.communicate()[0]
         elif self.output_mode == 'file':
-            with open(os.path.join(base_dir, 'results', self.file_name), 'r') as f:
+            with open(os.path.join(result_dir, self.file_name), 'r') as f:
                 output = f.read()
 
         if self.breaker[0] == '^':
@@ -53,7 +59,9 @@ class EventgenTestHelper(object):
         if self.is_alive():
             self.process.kill()
         if self.file_name:
-            os.remove(os.path.join(base_dir, 'results', self.file_name))
+            result_file = os.path.join(result_dir, self.file_name)
+            if os.path.isfile(result_file):
+                os.remove(result_file)
 
     def _get_output_mode(self):
         return self.config.get(self.section, 'outputMode', fallback=None)

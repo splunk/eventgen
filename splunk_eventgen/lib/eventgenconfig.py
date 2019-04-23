@@ -37,6 +37,8 @@ class Config(object):
     """Reads configuration from files or Splunk REST endpoint and stores them in a 'Borg' global.
     Borg is a variation on the Singleton design pattern which allows us to continually instantiate
     the configuration object throughout the application and maintain state."""
+    DEFAULT_SAMPLE_DIR = 'samples'
+
     # Stolen from http://code.activestate.com/recipes/66531/
     # This implements a Borg patterns, similar to Singleton
     # It allows numerous instantiations but always shared state
@@ -310,6 +312,7 @@ class Config(object):
             # If we see the sample in two places, use the first and ignore the second
             if not sampleexists:
                 s = Sample(stanza)
+                s.splunkEmbedded = self.splunkEmbedded
 
                 s.updateConfig(self)
 
@@ -441,38 +444,29 @@ class Config(object):
                 self.logger.debug("Sample directory not specified in config, setting based on standard")
                 if self.splunkEmbedded and not STANDALONE:
                     s.sampleDir = os.path.normpath(
-                        os.path.join(self.grandparentdir, '..', '..', '..', s.app, 'samples'))
+                        os.path.join(self.grandparentdir, os.path.pardir, os.path.pardir, os.path.pardir, s.app, self.DEFAULT_SAMPLE_DIR))
                 else:
                     # 2/1/15 CS  Adding support for looking for samples based on the config file specified on
                     # the command line.
                     if self.configfile:
-                        if os.path.isdir(self.configfile):
-                            s.sampleDir = os.path.join(self.configfile, 'samples')
-                        else:
-                            s.sampleDir = os.path.join(os.getcwd(), 'samples')
+                        base_dir = os.path.dirname(self.configfile) if os.path.isdir(self.configfile) else os.path.dirname(os.path.dirname(self.configfile))
+                        s.sampleDir = os.path.join(base_dir, self.DEFAULT_SAMPLE_DIR)
                     else:
-                        s.sampleDir = os.path.join(os.getcwd(), 'samples')
-                    if not os.path.exists(s.sampleDir):
-                        newSampleDir = os.path.join(os.sep.join(os.getcwd().split(os.sep)[:-1]), 'samples')
-                        self.logger.error("Path not found for samples '%s', trying '%s'" % (s.sampleDir, newSampleDir))
-                        s.sampleDir = newSampleDir
-
+                        s.sampleDir = os.path.join(os.getcwd(), self.DEFAULT_SAMPLE_DIR)
                         if not os.path.exists(s.sampleDir):
-                            newSampleDir = os.path.join(self.grandparentdir, 'samples')
-                            self.logger.error(
-                                "Path not found for samples '%s', trying '%s'" % (s.sampleDir, newSampleDir))
-                            s.sampleDir = newSampleDir
+                            # use the prebuilt sample dirs as the last choice
+                            if not os.path.exists(s.sampleDir):
+                                newSampleDir = os.path.join(self.grandparentdir, self.DEFAULT_SAMPLE_DIR)
+                                self.logger.error(
+                                    "Path not found for samples '%s', trying '%s'" % (s.sampleDir, newSampleDir))
+                                s.sampleDir = newSampleDir
             else:
-                self.logger.debug("Sample directory specified in config, checking for relative")
-                # Allow for relative paths to the base directory
-                if not os.path.exists(s.sampleDir):
-                    temp_sampleDir = os.path.join(self.grandparentdir, s.sampleDir)
-                    # check the greatgrandparent just incase for the sample file.
-                    if not os.path.exists(temp_sampleDir):
-                        temp_sampleDir = os.path.join(self.greatgrandparentdir, s.sampleDir)
-                    s.sampleDir = temp_sampleDir
-                else:
-                    s.sampleDir = s.sampleDir
+                if not os.path.isabs(s.sampleDir):
+                    # relative path use the conffile dir as the base dir
+                    self.logger.debug("Sample directory specified in config, checking for relative")
+                    base_path = self.configfile if os.path.isdir(self.configfile) else os.path.dirname(self.configfile)
+                    s.sampleDir = os.path.join(base_path, s.sampleDir)
+                # do nothing when sampleDir is absolute path
 
             # 2/1/15 CS Adding support for command line options, specifically running a single sample
             # from the command line

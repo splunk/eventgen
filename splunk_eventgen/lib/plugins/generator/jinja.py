@@ -188,29 +188,30 @@ class JinjaGenerator(GeneratorPlugin):
             startTime = datetime.datetime.now()
 
             # if eventgen is running as Splunk app the configfile is None
-            if self.config.configfile:
-                working_dir, working_config_file = os.path.split(self.config.configfile)
-            else:
+            sample_dir = self._sample.sampleDir
+            if self._sample.splunkEmbedded is True:
                 splunk_home = os.environ["SPLUNK_HOME"]
                 app_name = getattr(self._sample, 'app', 'SA-Eventgen')
-                working_dir = os.path.join(splunk_home, 'etc', 'apps', app_name, 'default')
+                sample_dir = os.path.join(splunk_home, 'etc', 'apps', app_name,
+                                          'default', self._sample.DEFAULT_SAMPLE_DIR)
 
             if not hasattr(self._sample, "jinja_template_dir"):
-                template_dir = os.path.join(os.path.dirname(working_dir), 'samples', 'templates')
+                template_dir = os.path.join(self._sample.sampleDir, 'templates')
             else:
                 template_dir = self._sample.jinja_template_dir
 
             if not os.path.isabs(template_dir):
-                target_template_dir = os.path.join(working_dir, template_dir)
+                target_template_dir = os.path.join(sample_dir, template_dir)
             else:
                 target_template_dir = template_dir
+            self.logger.info('set jinja template path to %s', target_template_dir)
 
             if not hasattr(self._sample, "jinja_target_template"):
                 raise CantFindTemplate("Template to load not specified in eventgen conf for stanza.  Skipping Stanza")
             jinja_env = Environment(
-                loader=FileSystemLoader([target_template_dir, working_dir, template_dir], encoding='utf-8',
+                loader=FileSystemLoader([target_template_dir], encoding='utf-8',
                                         followlinks=False), extensions=[
-                                            'jinja2.ext.do', 'jinja2.ext.with_', 'jinja2.ext.loopcontrols', JinjaTime],
+                                            'jinja2.ext.do', 'jinja2.ext.with_', 'jinja2.ext.loopcontrols', JinjaTime]                                        ,
                 line_statement_prefix="#", line_comment_prefix="##")
 
             jinja_loaded_template = jinja_env.get_template(str(self._sample.jinja_target_template))
@@ -238,8 +239,11 @@ class JinjaGenerator(GeneratorPlugin):
                 self.jinja_stream = jinja_loaded_template.stream(jinja_loaded_vars)
                 lines_out = []
                 try:
-                    for line in self.jinja_stream:
-                        if line != "\n":
+                    for raw_line in self.jinja_stream:
+                        # trim the newline char for jinja output
+                        # it is quite normal to output empty newlines in jinja
+                        line = raw_line.strip()
+                        if line:
                             # TODO: Time can be supported by self._sample.timestamp, should probably set that up here.
                             try:
                                 target_line = json.loads(line)
@@ -268,8 +272,6 @@ class JinjaGenerator(GeneratorPlugin):
                             if "index" not in current_line_keys:
                                 target_line["index"] = self._sample.index
                             lines_out.append(target_line)
-                        else:
-                            break
                 except TypeError as e:
                     self.logger.exception(e)
                 self.end_of_cycle = True

@@ -47,7 +47,7 @@ setup(
         'httplib2',
         'jinja2',
         'pyrabbit==1.1.0',
-        'urllib3==1.23',
+        'urllib3>=1.24.2',
         'pyOpenSSL',
         'flake8>=3.7.7',
         'yapf>=0.26.0',
