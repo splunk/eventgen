@@ -47,7 +47,6 @@ def test_jinja_template_dir_conf(eventgen_test_helper):
 
 def test_jinja_template_advance(eventgen_test_helper):
     """Test advanced jinja template var feature"""
-    current_datetime = datetime.datetime.now()
     events = eventgen_test_helper('eventgen_jinja_advance.conf').get_events()
     print events
     assert len(events) == 9

@@ -24,6 +24,7 @@ class CantFindTemplate(Exception):
         self.msg = msg
         super(CantFindTemplate, self).__init__(msg)
 
+
 class CantProcessTemplate(Exception):
     def __init__(self, msg):
         """Exception raised when we / Jinja can't find the template
@@ -209,10 +210,14 @@ class JinjaGenerator(GeneratorPlugin):
             if not hasattr(self._sample, "jinja_target_template"):
                 raise CantFindTemplate("Template to load not specified in eventgen conf for stanza.  Skipping Stanza")
             jinja_env = Environment(
-                loader=FileSystemLoader([target_template_dir], encoding='utf-8',
-                                        followlinks=False), extensions=[
-                                            'jinja2.ext.do', 'jinja2.ext.with_', 'jinja2.ext.loopcontrols', JinjaTime]                                        ,
-                line_statement_prefix="#", line_comment_prefix="##")
+                loader=FileSystemLoader(
+                    [target_template_dir], encoding='utf-8', followlinks=False),
+                extensions=[
+                    'jinja2.ext.do', 'jinja2.ext.with_', 'jinja2.ext.loopcontrols',
+                    JinjaTime
+                ],
+                line_statement_prefix="#",
+                line_comment_prefix="##")
 
             jinja_loaded_template = jinja_env.get_template(str(self._sample.jinja_target_template))
             if hasattr(self._sample, 'jinja_variables'):
