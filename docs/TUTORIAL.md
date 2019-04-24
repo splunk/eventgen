@@ -222,29 +222,3 @@ Please note Getting Started section for installation reference.
 There is an [Eventgen API Reference](REFERENCE.html#rest-api-reference) that you can also reference.
 
 ---
-
-## For Orca Users: Running Eventgen with Orca ##
-
-Orca 0.8.4 and above will natively support Eventgen 6.0.0 and above versions.
-
-```
-# The following command creates a specified number of eventgen instances as well as auto-configuring all servers and controllers.
-orca create --egx <NUM>
-```
-
-In addition, you can configure a custom scenario for automatic bundle install.
-
-```
-# Paste this into your ~/.orca/orca.conf
-# Below scenario will download an app from a specified path and start pumping out data
-[egxtest]
-indexers = 3
-search_heads = 2
-eventgenx_instances = 1
-ansible_params = eventgen_app=<APP_TGZ_PATH>,eventgen_volume=50,eventgen_start=now
-
-# Simply run this Orca command
-orca create --sc egxtest
-```
-
-
