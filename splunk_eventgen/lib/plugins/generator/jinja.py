@@ -197,7 +197,7 @@ class JinjaGenerator(GeneratorPlugin):
                                           'default', self._sample.DEFAULT_SAMPLE_DIR)
 
             if not hasattr(self._sample, "jinja_template_dir"):
-                template_dir = os.path.join(self._sample.sampleDir, 'templates')
+                template_dir = 'templates'
             else:
                 template_dir = self._sample.jinja_template_dir
 
