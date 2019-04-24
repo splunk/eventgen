@@ -10,7 +10,6 @@ OUTPUT_FILE = 'test_jinja_generator_file_output.result'
 
 
 class TestJinjaGenerator(object):
-  
     def test_jinja_generator_to_file(self):
         configfile = "tests/sample_eventgen_conf/jinja/eventgen.conf.jinja_basic"
         testargs = ["eventgen", "generate", configfile]

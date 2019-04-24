@@ -92,6 +92,7 @@ class Sample(object):
     # Internal fields
     sampleLines = None
     sampleDict = None
+    splunkEmbedded = False
     _lockedSettings = None
     _priority = None
     _origName = None
