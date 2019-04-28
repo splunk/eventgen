@@ -46,7 +46,7 @@ class Eventgen(ModularInput):
     def create_args(self):
         logger.debug("Creating default args for modinput")
         parser = argparse.ArgumentParser(prog="SA-Eventgen")
-        args = parser.parse_args()
+        args, unknown = parser.parse_known_args()
         args.daemon = False
         args.version = False
         args.backfill = None
