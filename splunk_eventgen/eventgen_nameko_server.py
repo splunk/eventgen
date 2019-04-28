@@ -83,11 +83,12 @@ class EventgenServer(object):
         '''
         res = dict()
         if self.eventgen_dependency.eventgen.check_running():
-            # running
-            status = 1
-        elif self.eventgen_dependency.eventgen.completed is True:
-            # all samples completed and stop
-            status = 2
+            if self.eventgen_dependency.eventgen.check_done():
+                # all jobs completed
+                status = 2
+            else:
+                # still running
+                status = 1
         else:
             # not start yet
             status = 0
