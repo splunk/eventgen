@@ -295,9 +295,8 @@ autotimestamp = <boolean>
     * Will enable autotimestamp feature which detects most common forms of timestamps in your samples with no configuration.
 
 timeMultiple = <float>
-    * Will slow down the replay of events by <float> factor. For example, allows a 10 minute sample
-      to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6.
-      By the converse, make timeMultiple 0.5 will make the events run twice as fast.
+    * Only valid in mode = replay
+    * Will slow down the replay of events by <float> factor. This is achieved by calculating the interval between events and adjusting the interval by the timeMultiple factor. For example, allows a 10 minute sample to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6. By the converse, make timeMultiple 0.5 will make the events run twice as fast. NOTE that the interval timeMultiple is adjusting is actual time interval between events in your sample file. "timeMultiple" option should not affect your "interval" option.
 
 timeField = <field name>
     * Only valid in mode = replay
