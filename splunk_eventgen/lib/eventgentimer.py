@@ -53,7 +53,7 @@ class Timer(object):
                 self.logger.error("Invalid setting for timeMultiple: {}, value should be positive".format(
                     self.sample.timeMultiple))
             elif self.sample.timeMultiple != 1:
-                self.interval = self.sample.interval * self.sample.timeMultiple
+                self.interval = self.sample.interval
                 self.logger.debug("Adjusting interval {} with timeMultiple {}, new interval: {}".format(
                     self.sample.interval, self.sample.timeMultiple, self.interval))
         self.logger.info(
