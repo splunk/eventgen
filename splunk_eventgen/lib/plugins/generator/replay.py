@@ -114,11 +114,11 @@ class ReplayGenerator(GeneratorPlugin):
                 continue
 
             # Refer to the last event to calculate the new backfill time
-            time_difference = current_event_timestamp - previous_event_timestamp
+            time_difference = datetime.timedelta(seconds=(current_event_timestamp - previous_event_timestamp) .total_seconds() * self._sample.timeMultiple)
 
             if self.backfill_time + time_difference >= self.current_time:
                 sleep_time = time_difference - (self.current_time - self.backfill_time)
-                if self._sample.backfill and not self._sample.backfilldone:
+                if not self._sample.backfill or self._sample.backfilldone:
                     time.sleep(sleep_time.seconds)
                 self.current_time += sleep_time
                 self.backfill_time = self.current_time
