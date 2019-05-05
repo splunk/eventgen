@@ -44,6 +44,15 @@ Specify that the input file is in CSV format, rather than a plain text file. Wit
     timeMultiple = 2
 ```
 This will slow down the replay by a factor of 2 by multiplying all time intervals between events by 2.
+For example, let's assume that you have 3 events generated like below:
+12:05:04 helloworld
+12:05:06 helloworld2
+12:05:09 helloworld3
+
+Applying timeMultiple=2 would instead generate 3 events like below:
+12:05:04 helloworld
+12:05:08 helloworld2
+12:05:14 helloworld3
 
 ```
     backfill = -15m

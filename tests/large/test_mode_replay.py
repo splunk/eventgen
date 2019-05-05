@@ -38,7 +38,6 @@ def test_mode_replay_backfill(eventgen_test_helper):
     assert len(events) == 24
 
 
-@pytest.mark.skip(reason="this issue is not fixed")
 def test_mode_replay_timemultiple(eventgen_test_helper):
     """Test normal replay mode with timeMultiple = 0.5 which will replay the sample with half time interval"""
     current_datetime = datetime.now()
@@ -52,7 +51,6 @@ def test_mode_replay_timemultiple(eventgen_test_helper):
         delter_seconds = (event_datetime - current_datetime).total_seconds()
         # assert the event time is after (now - earliest) time
         assert delter_seconds < 11
-
 
 def test_mode_replay_csv(eventgen_test_helper):
     """Test normal replay mode with sampletype = csv which will get _raw row from the sample"""
