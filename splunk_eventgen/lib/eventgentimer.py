@@ -32,7 +32,7 @@ class Timer(object):
         self.profiler = config.profiler
         self.config = config
         self.sample = sample
-        self.end = getattr(self.sample, "end", None)
+        self.end = getattr(self.sample, "end") if getattr(self.sample, "end") is not None else -1
         self.endts = getattr(self.sample, "endts", None)
         self.generatorQueue = genqueue
         self.outputQueue = outputqueue
