@@ -53,6 +53,9 @@ def parse_args():
                                     help="Use multiprocesing instead of threading")
     generate_subparser.add_argument("--profiler", action="store_true", help="Turn on cProfiler")
     generate_subparser.add_argument("--log-path", type=str, default="{0}/logs".format(FILE_LOCATION))
+    generate_subparser.add_argument(
+        "--generator-queue-size", type=int, default=500, help="the max queue size for the "
+        "generator queue, timer object puts all the generator tasks into this queue, default max size is 500")
     # Build subparser
     build_subparser = subparsers.add_parser('build', help="Will build different forms of sa-eventgen")
     build_subparser.add_argument("--mode", type=str, default="splunk-app",

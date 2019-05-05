@@ -75,8 +75,14 @@ class EventGenerator(object):
         # attach to the logging queue
         self.logger.info("Logging Setup Complete.")
 
+        self._generator_queue_size = getattr(self.args, 'generator_queue_size', 500)
+        if self._generator_queue_size < 0:
+            self._generator_queue_size = 0
+        self.logger.info("set generator queue size to %d", self._generator_queue_size)
+
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
+
 
     def _load_config(self, configfile, **kwargs):
         '''
@@ -216,11 +222,11 @@ class EventGenerator(object):
             self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
             self.logging_pool.start()
             # since we're now in multiprocess, we need to use better queues.
-            self.workerQueue = multiprocessing.JoinableQueue(maxsize=500)
+            self.workerQueue = multiprocessing.JoinableQueue(maxsize=self._generator_queue_size)
             self.genconfig = self.manager.dict()
             self.genconfig["stopping"] = False
         else:
-            self.workerQueue = Queue(maxsize=500)
+            self.workerQueue = Queue(maxsize=self._generator_queue_size)
             worker_threads = workercount
             if hasattr(self.config, 'outputCounter') and self.config.outputCounter:
                 self.output_counters = []
