@@ -27,3 +27,6 @@ _book
 venv/*
 *.log.*
 splunk_eventgen-*/
+.env
+.vscode
+
