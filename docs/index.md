@@ -1,6 +1,6 @@
 # What is Eventgen?
 
-Splunk Event Generator (Eventgen) is a utility that helps users easily build real-time event generators and elimintes the need for one-off, hard-coded event generators. 
+Splunk Event Generator (Eventgen) is a utility that helps users easily build real-time event generators and eliminates the need for one-off, hard-coded event generators. 
 
 **Eventgen features:**
 * Allows every type of events or transactions to be modeled
