@@ -1,3 +1,12 @@
+6.3.6
+- Add functional tests for jinja template and modular input feature
+- Fix default jinja template directory is not correctly resolved when sampleDir is set issue
+- Fix verbose flag not working in splunk_eventgen command line issue
+- Fix index, source, sourcetype are not correct when using splunkstream mode issue
+- Fix ssh to container issue
+- Fix perdayvolume without end setting error
+- Update documentation for better reading and remove unrelated part
+
 6.3.5
 - Added extendIndexes feature to support a list of indexes
 - Fixed timer and token logic
