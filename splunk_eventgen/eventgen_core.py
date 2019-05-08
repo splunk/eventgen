@@ -549,7 +549,6 @@ class EventGenerator(object):
                 time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
-            self.completed = True
         except Exception as e:
             self.logger.exception(e)
             raise e
@@ -609,3 +608,10 @@ class EventGenerator(object):
             else:
                 return True
         return False
+
+    def check_done(self):
+        '''
+
+        :return: if eventgen jobs are finished, return True else False
+        '''
+        return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty() and self.workerQueue.unfinished_tasks <= 0
