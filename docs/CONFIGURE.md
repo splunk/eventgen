@@ -278,7 +278,7 @@ The following options are only valid for the default Eventgen generator plugin.
     * If breaker does not match in sample, one iteration of sample will be generated.
     * Defaults to [^\r\n\s]+
     
-####### Token Settings
+###### Token Settings
 Tokens in the default generator can override the sample to allow dynamic content to be generated.
 
     token.<n>.token = <regular expression>

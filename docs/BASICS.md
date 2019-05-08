@@ -261,6 +261,11 @@ Make sure the bundle app permission is global. You can config this in two ways:
 export=system
 ```
 
+## Backward Capability
+If you are using Eventgen 5.x or even older versions, the `eventgen.conf` setting should be working in the latest Eventgen 6.x. If any thing broken, do not hesitate to open an issue on [GitHub](https://github.com/splunk/eventgen/issues/new/choose).
+
 ## Wrapping up
 
 We hope the tutorial covers most use cases you would need.  If you have something you're struggling to model, please reach out to Tony Lee (tonyl@splunk.com).  We believe we can cover just about anything you'd want to model with this Eventgen, but if not, we're happy to add features to the software so that everyone can benefit!
+
+
