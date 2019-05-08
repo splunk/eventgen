@@ -1,5 +1,5 @@
 [windbag-5-tokens]
-sampleDir = tests/perf/samples
+sampleDir = ./samples
 outputMode = httpevent
 httpeventServers = {"servers":[{ "protocol":"https", "address":"<enter-ip-address>", "port":"<enter-port>", "key":"<enter-http-key>"}]}
 index = eg

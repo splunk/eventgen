@@ -1,5 +1,5 @@
 [sample.shoppingapacheBrowse]
-sampleDir = tests/sample_eventgen_conf/perf/weblog
+sampleDir = ./weblog
 mode = sample
 outputMode = devnull
 index = main
