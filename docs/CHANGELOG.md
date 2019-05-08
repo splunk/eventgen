@@ -1,3 +1,12 @@
+6.3.5
+- Added extendIndexes feature to support a list of indexes
+- Fixed timer and token logic
+- Changed end=-1 to continuously iterate without stopping
+- Changed end=0 to not execute
+- Added a linter for code quality
+- Updated docs / docs format
+- Added a suite of functional tests
+
 6.3.4:
 - Documentation cleanup
 - Jinja template bugfix in app
