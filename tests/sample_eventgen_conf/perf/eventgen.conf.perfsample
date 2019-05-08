@@ -1,5 +1,5 @@
 [sample]
-sampleDir = tests/sample_eventgen_conf/sample
+sampleDir = ../sample
 outputMode = devnull
 count = 100000
 earliest = now

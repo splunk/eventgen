@@ -238,9 +238,7 @@ The following options are only valid for the default Eventgen generator plugin.
 
     timeMultiple = <float>
     * Only valid in mode = replay
-    * Will slow down the replay of events by <float> factor. For example, allows a 10 minute sample
-      to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6.
-      By the converse, make timeMultiple 0.5 will make the events run twice as fast.
+    * Will slow down the replay of events by <float> factor. This is achieved by calculating the interval between events and adjusting the interval by the timeMultiple factor. For example, allows a 10 minute sample to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6. By the converse, make timeMultiple 0.5 will make the events run twice as fast. NOTE that the interval timeMultiple is adjusting is actual time interval between events in your sample file. "timeMultiple" option should not affect your "interval" option.
 ---
     timeField = <field name>
     * Only valid in mode = replay
@@ -280,7 +278,7 @@ The following options are only valid for the default Eventgen generator plugin.
     * If breaker does not match in sample, one iteration of sample will be generated.
     * Defaults to [^\r\n\s]+
     
-####### Token Settings
+###### Token Settings
 Tokens in the default generator can override the sample to allow dynamic content to be generated.
 
     token.<n>.token = <regular expression>

@@ -1,5 +1,5 @@
 [raw]
-sampleDir = tests/sample_eventgen_conf/bundlelines
+sampleDir = .
 outputMode = stdout
 count = 3
 earliest = -3s

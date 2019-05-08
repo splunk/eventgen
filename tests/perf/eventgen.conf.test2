@@ -1,5 +1,5 @@
 [windbag]
-sampleDir = splunk_eventgen/samples
+sampleDir = ../../splunk_eventgen/samples
 outputMode = httpevent
 httpeventServers = {"servers":[{ "protocol":"https", "address":"<enter-ip-address>", "port":"<enter-port>", "key":"<enter-http-key>"}]}
 index = eg

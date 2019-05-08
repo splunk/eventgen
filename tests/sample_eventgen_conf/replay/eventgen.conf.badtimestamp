@@ -1,5 +1,5 @@
 [badtimestamp]
-sampleDir = tests/sample_eventgen_conf/replay
+sampleDir = .
 generator = replay
 timeMultiple = 2
 

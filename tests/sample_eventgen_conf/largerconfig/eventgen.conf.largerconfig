@@ -8,7 +8,7 @@ outputMode = stdout
 end = 1
 
 [sample]
-sampleDir = tests/sample_eventgen_conf/sample
+sampleDir = ../sample
 outputMode = stdout
 count = 3
 earliest = -3s
@@ -21,7 +21,7 @@ token.0.replacementType = timestamp
 token.0.replacement = %s.%f
 
 [sample.mobilemusic.csv]
-sampleDir = tests/sample_eventgen_conf/replaytimestamp
+sampleDir = ../replaytimestamp
 outputMode = stdout
 sampletype = csv
 interval = 3
@@ -40,7 +40,7 @@ token.0.replacementType = replaytimestamp
 token.0.replacement = ["%b %d %H:%M:%S:%f", "%Y-%m-%d %H:%M:%S:%f"]
 
 [replay]
-sampleDir = tests/sample_eventgen_conf/replay
+sampleDir = ../replay
 generator = replay
 timeMultiple = 2
 end = 1
@@ -56,7 +56,7 @@ token.0.replacementType = timestamp
 token.0.replacement = %Y-%m-%d %H:%M:%S
 
 [csv]
-sampleDir = tests/sample_eventgen_conf/bundlelines
+sampleDir = ../bundlelines
 outputMode = stdout
 count = 3
 earliest = -3s
@@ -71,7 +71,7 @@ token.0.replacementType = timestamp
 token.0.replacement = %Y-%m-%d %H:%M:%S
 
 [breakersample]
-sampleDir = tests/sample_eventgen_conf/breakersample
+sampleDir = ../breakersample
 outputMode = stdout
 count = 3
 earliest = -3s
