@@ -1,5 +1,5 @@
 [replay]
-sampleDir = tests/sample_eventgen_conf/replay
+sampleDir = .
 backfill = -5s
 sampletype = raw
 outputMode = stdout

@@ -32,7 +32,7 @@ class Timer(object):
         self.profiler = config.profiler
         self.config = config
         self.sample = sample
-        self.end = getattr(self.sample, "end", None)
+        self.end = getattr(self.sample, "end") if getattr(self.sample, "end") is not None else -1
         self.endts = getattr(self.sample, "endts", None)
         self.generatorQueue = genqueue
         self.outputQueue = outputqueue
@@ -53,7 +53,7 @@ class Timer(object):
                 self.logger.error("Invalid setting for timeMultiple: {}, value should be positive".format(
                     self.sample.timeMultiple))
             elif self.sample.timeMultiple != 1:
-                self.interval = self.sample.interval * self.sample.timeMultiple
+                self.interval = self.sample.interval
                 self.logger.debug("Adjusting interval {} with timeMultiple {}, new interval: {}".format(
                     self.sample.interval, self.sample.timeMultiple, self.interval))
         self.logger.info(

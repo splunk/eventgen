@@ -83,11 +83,12 @@ class EventgenServer(object):
         '''
         res = dict()
         if self.eventgen_dependency.eventgen.check_running():
-            # running
-            status = 1
-        elif self.eventgen_dependency.eventgen.completed is True:
-            # all samples completed and stop
-            status = 2
+            if self.eventgen_dependency.eventgen.check_done():
+                # all jobs completed
+                status = 2
+            else:
+                # still running
+                status = 1
         else:
             # not start yet
             status = 0
@@ -357,12 +358,17 @@ Output Queue Status: {7}\n'''
                     formatted_hostname = socket.gethostbyname(host)
                     if new_key:
                         key = create_new_hec_key(formatted_hostname)
-
-                    self.discovered_servers.append({
-                        "protocol": str(protocol), "address": str(formatted_hostname), "port": str(hec_port), "key":
-                        str(key)})
-                except socket.gaierror:
+                except (socket.gaierror, requests.ConnectionError):
+                    self.log.warning('failed to reach %s, skip...' % host)
                     continue
+                except (ValueError, KeyError):
+                    self.log.warning('failed to setup hec token for %s, skip...' % host)
+                    continue
+
+                self.discovered_servers.append({"protocol": str(protocol),
+                                                    "address": str(formatted_hostname),
+                                                    "port": str(hec_port),
+                                                    "key": str(key)})
 
             counter = 1
             while True:
@@ -395,7 +401,7 @@ Output Queue Status: {7}\n'''
 
             return self.get_conf()
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def get_volume(self):

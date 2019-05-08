@@ -7,6 +7,7 @@ from utils.eventgen_test_helper import EventgenTestHelper
 def eventgen_test_helper():
     """Returns a function to create EventgenTestHelper instance based on config file"""
     created_instances = []
+    EventgenTestHelper.make_result_dir()
 
     def _create_eventgen_test_helper_instance(conf, timeout=None):
         instance = EventgenTestHelper(conf, timeout)

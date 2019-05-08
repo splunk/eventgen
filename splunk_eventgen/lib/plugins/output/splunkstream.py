@@ -99,15 +99,15 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                         splunkhttp = connmethod(self._splunkHost, self._splunkPort)
                         splunkhttp.connect()
                         urlparams = []
-                        if not index:
+                        if index:
                             urlparams.append(('index', index))
-                        if not source:
+                        if source:
                             urlparams.append(('source', source))
-                        if not sourcetype:
+                        if sourcetype:
                             urlparams.append(('sourcetype', sourcetype))
-                        if not hostRegex:
+                        if hostRegex:
                             urlparams.append(('host_regex', hostRegex))
-                        elif not host:
+                        if host:
                             urlparams.append(('host', host))
                         url = '/services/receivers/simple?%s' % (urllib.urlencode(urlparams))
                         headers = {'Authorization': "Splunk %s" % self._sample.sessionKey}
@@ -141,7 +141,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                     except httplib.BadStatusLine:
                         self.logger.error("Received bad status from Splunk for sample '%s'" % self._sample)
                     self.logger.debug("Closing splunkhttp connection")
-                    if not splunkhttp:
+                    if splunkhttp:
                         splunkhttp.close()
 
     def _setup_logging(self):

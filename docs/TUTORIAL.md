@@ -44,6 +44,15 @@ Specify that the input file is in CSV format, rather than a plain text file. Wit
     timeMultiple = 2
 ```
 This will slow down the replay by a factor of 2 by multiplying all time intervals between events by 2.
+For example, let's assume that you have 3 events generated like below:
+12:05:04 helloworld
+12:05:06 helloworld2
+12:05:09 helloworld3
+
+Applying timeMultiple=2 would instead generate 3 events like below:
+12:05:04 helloworld
+12:05:08 helloworld2
+12:05:14 helloworld3
 
 ```
     backfill = -15m
@@ -222,29 +231,3 @@ Please note Getting Started section for installation reference.
 There is an [Eventgen API Reference](REFERENCE.html#rest-api-reference) that you can also reference.
 
 ---
-
-## For Orca Users: Running Eventgen with Orca ##
-
-Orca 0.8.4 and above will natively support Eventgen 6.0.0 and above versions.
-
-```
-# The following command creates a specified number of eventgen instances as well as auto-configuring all servers and controllers.
-orca create --egx <NUM>
-```
-
-In addition, you can configure a custom scenario for automatic bundle install.
-
-```
-# Paste this into your ~/.orca/orca.conf
-# Below scenario will download an app from a specified path and start pumping out data
-[egxtest]
-indexers = 3
-search_heads = 2
-eventgenx_instances = 1
-ansible_params = eventgen_app=<APP_TGZ_PATH>,eventgen_volume=50,eventgen_start=now
-
-# Simply run this Orca command
-orca create --sc egxtest
-```
-
-
