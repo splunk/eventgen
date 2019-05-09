@@ -50,7 +50,7 @@ def test_token_replacement(eventgen_test_helper):
         assert event_obj["netPerf"]["lastByte"] == "0"
 
         # assert replacementType = random and replacement = integer[<start>:<end>]
-        assert 5000 > int(event_obj["message"]["bytes"]) > 40
+        assert 5000 >= int(event_obj["message"]["bytes"]) > 40
 
         # assert replacementType = random and replacement = ipv4 | ipv6 | mac
         ipv4_pattern = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
