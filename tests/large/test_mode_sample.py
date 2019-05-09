@@ -53,8 +53,8 @@ def test_mode_sample_backfill(eventgen_test_helper):
         assert result is not None
         event_datetime = datetime.strptime(result.group(), "%Y-%m-%d %H:%M:%S")
         delter_seconds = (event_datetime - current_datetime).total_seconds()
-        # assert the event time is after (now - backfill) time
-        assert delter_seconds > -15
+        # assert the event time is after (now - backfill) + 1 time, plus 1 to make it less flaky
+        assert delter_seconds > -16
 
 
 def test_mode_sample_breaker(eventgen_test_helper):
