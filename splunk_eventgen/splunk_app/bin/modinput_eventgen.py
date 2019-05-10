@@ -10,8 +10,8 @@ from splunk.clilib.bundle_paths import make_splunkhome_path
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib']))
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib', 'splunk_eventgen', 'lib']))
 
-from modinput import ModularInput  # noqa isort:skip
-from modinput.fields import VerbosityField  # noqa isort:skip
+from mod_input import ModularInput  # noqa isort:skip
+from mod_input.fields import VerbosityField  # noqa isort:skip
 from splunk_eventgen import eventgen_core  # noqa isort:skip
 from splunk_eventgen.lib import eventgenconfig  # noqa isort:skip
 from xmloutput import XMLOutputManager, setupLogger  # noqa isort:skip

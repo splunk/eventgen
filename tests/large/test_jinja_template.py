@@ -45,6 +45,12 @@ def test_jinja_template_dir_conf(eventgen_test_helper):
         loop += 1
 
 
+def _get_ts(base_time, delta):
+    time_format = '%Y-%m-%dT%H:%M:%S'
+    t = datetime.datetime.strptime(base_time, time_format) + delta
+    return t.strftime(time_format)
+
+
 def test_jinja_template_advance(eventgen_test_helper):
     """Test advanced jinja template var feature"""
     events = eventgen_test_helper('eventgen_jinja_advance.conf').get_events()
@@ -53,10 +59,15 @@ def test_jinja_template_advance(eventgen_test_helper):
     # splunk may index multiline event
     assert len(events) == 27
     # because we use time slice method to mock the time, it should be static values
+
+    tz_delta = datetime.datetime.now() - datetime.datetime.utcnow()
+    # total seconds is a float number
+    delta_hours = int(round(tz_delta.total_seconds() / 3600))
+    tz_delta = datetime.timedelta(hours=delta_hours)
     ts_map = {
-        1: '1970-01-01T08:24:16',
-        2: '1970-01-01T08:27:58',
-        3: '1970-01-01T08:31:40',
+        1: _get_ts('1970-01-01T00:24:16', tz_delta),
+        2: _get_ts('1970-01-01T00:27:58', tz_delta),
+        3: _get_ts('1970-01-01T00:31:40', tz_delta),
     }
 
     firstline_pattern = re.compile(

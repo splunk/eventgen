@@ -21,6 +21,7 @@ eventgen_wsgi.conf
 **/*.tgz
 .cache
 *.xml
+!tests/large/splunk/input.xml
 dist
 _book
 *.result
