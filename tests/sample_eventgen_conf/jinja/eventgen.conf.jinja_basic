@@ -2,6 +2,7 @@
 end = 1
 count = 1
 generator = jinja
+sampleDir = .
 jinja_template_dir = templates
 jinja_target_template = test_jinja_basic.template
 jinja_variables = {"large_number":10}
