@@ -52,7 +52,6 @@ def test_mode_replay_timemultiple(eventgen_test_helper):
         # assert the event time is after (now - earliest) time
         assert delter_seconds < 12
 
-
 def test_mode_replay_csv(eventgen_test_helper):
     """Test normal replay mode with sampletype = csv which will get _raw row from the sample"""
     events = eventgen_test_helper('eventgen_replay_csv.conf').get_events()

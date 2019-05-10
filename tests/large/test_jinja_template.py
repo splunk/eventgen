@@ -50,7 +50,7 @@ def _get_ts(base_time, delta):
     t = datetime.datetime.strptime(base_time, time_format) + delta
     return t.strftime(time_format)
 
-
+  
 def test_jinja_template_advance(eventgen_test_helper):
     """Test advanced jinja template var feature"""
     events = eventgen_test_helper('eventgen_jinja_advance.conf').get_events()

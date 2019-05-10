@@ -24,6 +24,7 @@ def test_modular_input(mocker, capsys):
     copyfile(os.path.join(base_dir, 'tests', 'large', 'sample', 'film.json'), os.path.join(sample_path, 'film.json'))
 
     from modinput_eventgen import Eventgen
+
     # input xml stream used to start modular input
     input_stream_path = os.path.join(base_dir, 'tests', 'large', 'splunk', 'input.xml')
 
