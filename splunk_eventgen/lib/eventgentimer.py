@@ -207,7 +207,7 @@ class Timer(object):
                                 except Full:
                                     self.logger.warning("Generator Queue Full. Skipping current generation.")
                     except Exception as e:
-                        self.logger.exception(e)
+                        self.logger.exception(str(e))
                         if self.stopping:
                             end = True
                         pass

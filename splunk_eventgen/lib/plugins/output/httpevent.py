@@ -121,7 +121,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
             self.logger.debug("Pool created.")
             self.logger.debug("Finished init of httpevent plugin.")
         except Exception as e:
-            self.logger.exception(e)
+            self.logger.exception(str(e))
 
     def createConnections(self):
         self.serverPool = []
@@ -188,7 +188,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     currentreadsize = 0
                     stringpayload = targetline
                 except Exception as e:
-                    self.logger.exception(e)
+                    self.logger.exception(str(e))
                     raise e
         else:
             try:
@@ -198,7 +198,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     (totalbytessent, totalbytesexpected))
                 self._transmitEvents(stringpayload)
             except Exception as e:
-                self.logger.exception(e)
+                self.logger.exception(str(e))
                 raise e
 
     def _transmitEvents(self, payloadstring):
