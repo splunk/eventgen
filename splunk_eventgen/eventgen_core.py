@@ -138,7 +138,7 @@ class EventGenerator(object):
                 os.path.join(file_path, 'lib', 'plugins', 'rater'), self.config.plugins, 'rater')
             self.config._complexSettings['rater'] = plugins
         except Exception as e:
-            self.logger.exception(e)
+            self.logger.exception(str(e))
 
     def _load_custom_plugins(self, PluginNotLoadedException):
         plugintype = PluginNotLoadedException.type
@@ -365,7 +365,7 @@ class EventGenerator(object):
             except Empty:
                 pass
             except Exception as e:
-                self.logger.exception(e)
+                self.logger.exception(str(e))
                 raise e
 
     def _generator_do_work(self, work_queue, logging_queue, output_counter=None):
@@ -381,7 +381,7 @@ class EventGenerator(object):
             except Empty:
                 pass
             except Exception as e:
-                self.logger.exception(e)
+                self.logger.exception(str(e))
                 raise e
 
     @staticmethod
@@ -423,7 +423,7 @@ class EventGenerator(object):
             except Empty:
                 pass
             except Exception as e:
-                self.logger.exception(e)
+                self.logger.exception(str(e))
                 raise e
 
     def _initializePlugins(self, dirname, plugins, plugintype, name=None):
@@ -498,7 +498,7 @@ class EventGenerator(object):
                         self.logger.warn("Could not load plugin: %s, skipping" % mod_name.name)
                         self.logger.exception(ie)
                     except Exception as e:
-                        self.logger.exception(e)
+                        self.logger.exception(str(e))
                         raise e
         return ret
 
@@ -555,7 +555,7 @@ class EventGenerator(object):
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
         except Exception as e:
-            self.logger.exception(e)
+            self.logger.exception(str(e))
             raise e
 
     def stop(self):

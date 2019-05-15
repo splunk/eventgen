@@ -74,7 +74,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -88,7 +88,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -102,7 +102,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -116,7 +116,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -130,7 +130,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -144,7 +144,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -159,7 +159,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -174,7 +174,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -187,7 +187,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return "500", "Exception: {}".format(e.message)
 
     @rpc
@@ -198,7 +198,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return "500", "Exception: {}".format(e.message)
 
     @rpc
@@ -209,7 +209,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return "500", "Exception: {}".format(e.message)
 
     @rpc
@@ -222,7 +222,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return "500", "Exception: {}".format(e.message)
 
     @rpc
@@ -236,7 +236,7 @@ class EventgenController(object):
             self.log.info(msg)
             return msg
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     # HTTP Methods

@@ -166,7 +166,7 @@ Output Queue Status: {7}\n'''
             self.eventgen_dependency.eventgen.start(join_after_start=False)
             return "Eventgen has successfully started."
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def stop(self):
@@ -177,7 +177,7 @@ Output Queue Status: {7}\n'''
                 return "Eventgen is stopped."
             return "There is no eventgen process running."
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def restart(self):
@@ -188,7 +188,7 @@ Output Queue Status: {7}\n'''
             self.start()
             return "Eventgen restarted."
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def get_conf(self):
@@ -213,7 +213,7 @@ Output Queue Status: {7}\n'''
                 self.send_conf_to_controller(server_conf={})
                 return json.dumps({}, indent=4)
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -254,7 +254,7 @@ Output Queue Status: {7}\n'''
             self.log.info("custom_config_json is {}".format(conf_content))
             return self.get_conf()
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def edit_conf(self, conf):
@@ -285,7 +285,7 @@ Output Queue Status: {7}\n'''
                 self.restart()
             return self.get_conf()
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def bundle(self, url):
@@ -314,7 +314,7 @@ Output Queue Status: {7}\n'''
             else:
                 return self.get_conf()
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def setup(self, data):
@@ -415,7 +415,7 @@ Output Queue Status: {7}\n'''
             self.send_volume_to_controller(total_volume=self.total_volume)
             return str(self.total_volume)
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -451,7 +451,7 @@ Output Queue Status: {7}\n'''
             self.get_volume()
             return output
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def reset(self):
@@ -461,7 +461,7 @@ Output Queue Status: {7}\n'''
             self.eventgen_dependency.refresh_eventgen()
             return "Eventgen Refreshed"
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     # Event Handler Methods
@@ -645,10 +645,10 @@ Output Queue Status: {7}\n'''
             url = data["url"]
             return self.bundle(url)
         except ValueError as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '400', "Please pass in a valid object with bundle URL"
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '400', "Exception: {}".format(e.message)
 
     @http('POST', '/setup')
@@ -657,7 +657,7 @@ Output Queue Status: {7}\n'''
         try:
             return self.setup(data)
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '400', "Exception: {}".format(e.message)
 
     @http('GET', '/volume')
@@ -672,7 +672,7 @@ Output Queue Status: {7}\n'''
             volume = data["perDayVolume"]
             return self.set_volume(volume)
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '400', "Exception: {}".format(e.message)
 
     @http('POST', '/reset')
