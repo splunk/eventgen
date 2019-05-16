@@ -354,7 +354,7 @@ class EventGenerator(object):
                 startTime = time.time()
                 item.run()
                 totalTime = time.time() - startTime
-                if totalTime > self.config.interval:
+                if totalTime > self.config.interval and self.config.end != 1:
                     self.logger.warning("work took longer than current interval, queue/threading throughput limitation")
                 work_queue.task_done()
             except Empty:
@@ -370,7 +370,7 @@ class EventGenerator(object):
                 startTime = time.time()
                 item.run(output_counter=output_counter)
                 totalTime = time.time() - startTime
-                if totalTime > self.config.interval:
+                if totalTime > self.config.interval and item._sample.end != 1:
                     self.logger.warning("work took longer than current interval, queue/threading throughput limitation")
                 work_queue.task_done()
             except Empty:
@@ -521,21 +521,6 @@ class EventGenerator(object):
         if join_after_start:
             self.logger.info("All timers started, joining queue until it's empty.")
             self.join_process()
-        # Only need to start timers once
-        # Every 5 seconds, get values and output basic statistics about our operations
-        # TODO: Figure out how to do this better...
-        # generatorsPerSec = (generatorDecrements - generatorQueueCounter) / 5
-        # outputtersPerSec = (outputDecrements - outputQueueCounter) / 5
-        # outputQueueCounter = outputDecrements
-        # generatorQueueCounter = generatorDecrements
-        # self.logger.info('OutputQueueDepth=%d GeneratorQueueDepth=%d GeneratorsPerSec=%d OutputtersPerSec=%d' %
-        #                  (self.config.outputQueueSize.value(), self.config.generatorQueueSize.value(),
-        #                   generatorsPerSec, outputtersPerSec))
-        # kiloBytesPerSec = self.config.bytesSent.valueAndClear() / 5 / 1024
-        # gbPerDay = (kiloBytesPerSec / 1024 / 1024) * 60 * 60 * 24
-        # eventsPerSec = self.config.eventsSent.valueAndClear() / 5
-        # self.logger.info('GlobalEventsPerSec=%s KilobytesPerSec=%1f GigabytesPerDay=%1f' %
-        #                  (eventsPerSec, kiloBytesPerSec, gbPerDay))
 
     def join_process(self):
         '''
@@ -546,7 +531,7 @@ class EventGenerator(object):
         try:
             while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0 or not self.workerQueue.empty(
             ) or self.workerQueue.unfinished_tasks > 0:
-                time.sleep(5)
+                time.sleep(10)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
         except Exception as e:

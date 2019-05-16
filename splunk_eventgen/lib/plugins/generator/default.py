@@ -67,6 +67,5 @@ class DefaultGenerator(GeneratorPlugin):
 
         GeneratorPlugin.build_events(self, eventsDict, startTime, earliest, latest)
 
-
 def load():
     return DefaultGenerator

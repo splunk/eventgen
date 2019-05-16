@@ -124,14 +124,12 @@ class Output(object):
                 except Full:
                     self.logger.warning("Output Queue full, looping again")
             else:
-                tmp = [len(s['_raw']) for s in q]
-                # TODO: clean out eventsSend and bytesSent if they are not being used in config
-                # self.config.eventsSent.add(len(tmp))
-                # self.config.bytesSent.add(sum(tmp))
-                if self.config.splunkEmbedded and len(tmp) > 0:
-                    metrics = logging.getLogger('eventgen_metrics')
-                    metrics.info({
-                        'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 'sample':
-                        self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)})
-                tmp = None
+                if self.config.splunkEmbedded:
+                    tmp = [len(s['_raw']) for s in q]
+                    if len(tmp) > 0:
+                        metrics = logging.getLogger('eventgen_metrics')
+                        metrics.info({
+                            'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 'sample':
+                            self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)})
+                    tmp = None
                 outputer.run()
