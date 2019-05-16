@@ -115,8 +115,13 @@ class EventGenerator(object):
         self.config = Config(configfile, **new_args)
         self.config.parse()
         self._reload_plugins()
+        if getattr(args, "generators"):
+            generator_worker_count = args.generators
+        else:
+            generator_worker_count = self.config.generatorWorkers
+
         # TODO: Probably should destroy pools better so processes are cleaned.
-        self._setup_pools()
+        self._setup_pools(generator_worker_count)
 
     def _reload_plugins(self):
         # Initialize plugins
@@ -147,7 +152,7 @@ class EventGenerator(object):
         # APPPERF-263: be greedy when scanning plugin dir (eat all the pys)
         self._initializePlugins(plugindir, pluginsdict, plugintype)
 
-    def _setup_pools(self):
+    def _setup_pools(self, generator_worker_count):
         '''
         This method is an internal method called on init to generate pools needed for processing.
 
@@ -157,7 +162,7 @@ class EventGenerator(object):
         self._create_generator_pool()
         self._create_timer_threadpool()
         self._create_output_threadpool()
-        self._create_generator_workers()
+        self._create_generator_workers(generator_worker_count)
 
     def _create_timer_threadpool(self, threadcount=100):
         '''
