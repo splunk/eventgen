@@ -149,11 +149,10 @@ class Timer(object):
                         genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
                         try:
                             self.generatorQueue.put(genPlugin)
-                            self.executions += 1
                         except Full:
                             self.logger.warning("Generator Queue Full. Skipping current generation.")
                         backfillearliest = lt
-                        
+
                     self.sample.backfilldone = True
                 else:
                     # 12/15/13 CS Moving the rating to a separate plugin architecture
@@ -214,6 +213,7 @@ class Timer(object):
 
                 # Sleep until we're supposed to wake up and generate more events
                 self.countdown = self.interval
+                self.executions += 1
 
                 # 8/20/15 CS Adding support for ending generation at a certain time
 
