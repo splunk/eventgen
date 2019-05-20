@@ -137,10 +137,10 @@ class Timer(object):
                     backfillearliest = timeParserTimeMath(plusminus=mathsymbol, num=backfillnumber, unit=backfillletter,
                                                           ret=realtime)
                     while backfillearliest < realtime:
-                        if self.executions == int(self.end):
-                            self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
-                                self.end), self.sample.name))
-                            break
+                        # if self.executions == int(self.end):
+                        #     self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
+                        #         self.end), self.sample.name))
+                        #     break
                         et = backfillearliest
                         lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
                         genPlugin = self.generatorPlugin(sample=self.sample)
@@ -164,7 +164,7 @@ class Timer(object):
                                              format(count, raw_event_size) + "Wait for the next turn.")
                             previous_count_left = count
                             self.countdown = self.interval
-                            self.executions += 1
+                            # self.executions += 1
                             continue
                         else:
                             previous_count_left = 0
@@ -187,10 +187,12 @@ class Timer(object):
                                 # self.generatorPlugin is only an instance, now we need a real plugin. Make a copy of
                                 # of the sample in case another generator corrupts it.
                                 copy_sample = copy.copy(self.sample)
-                                copy_tokens = []
-                                for token in self.sample.tokens:
-                                    copy_tokens.append(token.deepcopy(self.sample))
-                                copy_sample.tokens = copy_tokens
+                                tokens = copy.deepcopy(self.sample.tokens)
+                                copy_sample.tokens = tokens
+                                # copy_tokens = []
+                                # for token in self.sample.tokens:
+                                #     copy_tokens.append(token.deepcopy(self.sample))
+                                # copy_sample.tokens = copy_tokens
                                 genPlugin = self.generatorPlugin(sample=copy_sample)
                                 # Adjust queue for threading mode
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
@@ -198,7 +200,7 @@ class Timer(object):
 
                                 try:
                                     self.generatorQueue.put(genPlugin)
-                                    self.executions += 1
+                                    # self.executions += 1
                                     self.logger.info(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
                                                       "with et '{3}' and lt '{4}'").format(
                                                           worker_id, round((count / 1024.0 / 1024), 4),
