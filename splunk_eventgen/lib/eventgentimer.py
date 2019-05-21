@@ -32,7 +32,7 @@ class Timer(object):
         self.profiler = config.profiler
         self.config = config
         self.sample = sample
-        self.end = getattr(self.sample, "end") if getattr(self.sample, "end") is not None else -1
+        self.end = getattr(self.sample, "end", None)
         self.endts = getattr(self.sample, "endts", None)
         self.generatorQueue = genqueue
         self.outputQueue = outputqueue
@@ -53,7 +53,7 @@ class Timer(object):
                 self.logger.error("Invalid setting for timeMultiple: {}, value should be positive".format(
                     self.sample.timeMultiple))
             elif self.sample.timeMultiple != 1:
-                self.interval = self.sample.interval
+                self.interval = self.sample.interval * self.sample.timeMultiple
                 self.logger.debug("Adjusting interval {} with timeMultiple {}, new interval: {}".format(
                     self.sample.interval, self.sample.timeMultiple, self.interval))
         self.logger.info(
@@ -107,12 +107,9 @@ class Timer(object):
         end = False
         previous_count_left = 0
         raw_event_size = self.predict_event_size()
-        if self.end:
-            if int(self.end) == 0:
-                self.logger.info("End = 0, no events will be generated for sample '%s'" % self.sample.name)
-                end = True
-            elif int(self.end) == -1:
-                self.logger.info("End is set to -1. Will be running without stopping for sample %s" % self.sample.name)
+        if self.end and int(self.end) == 0:
+            self.logger.info("End = 0, no events will be generated for sample '%s'" % self.sample.name)
+            end = True
         while not end:
             # Need to be able to stop threads by the main thread or this thread. self.config will stop all threads
             # referenced in the config object, while, self.stopping will only stop this one.
@@ -137,10 +134,6 @@ class Timer(object):
                     backfillearliest = timeParserTimeMath(plusminus=mathsymbol, num=backfillnumber, unit=backfillletter,
                                                           ret=realtime)
                     while backfillearliest < realtime:
-                        # if self.executions == int(self.end):
-                        #     self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
-                        #         self.end), self.sample.name))
-                        #     break
                         et = backfillearliest
                         lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
                         genPlugin = self.generatorPlugin(sample=self.sample)
@@ -200,7 +193,6 @@ class Timer(object):
 
                                 try:
                                     self.generatorQueue.put(genPlugin)
-                                    # self.executions += 1
                                     self.logger.info(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
                                                       "with et '{3}' and lt '{4}'").format(
                                                           worker_id, round((count / 1024.0 / 1024), 4),
@@ -220,10 +212,6 @@ class Timer(object):
                 # 8/20/15 CS Adding support for ending generation at a certain time
 
                 if self.end:
-                    if int(self.end) == -1:
-                        time.sleep(self.time)
-                        self.countdown -= self.time
-                        continue
                     # 3/16/16 CS Adding support for ending on a number of executions instead of time
                     # Should be fine with storing state in this sample object since each sample has it's own unique
                     # timer thread
