@@ -22,6 +22,7 @@ eventgen_wsgi.conf
 .cache
 *.xml
 !tests/large/splunk/input.xml
+!splunk_eventgen/splunk_app/default/data/ui/nav/default.xml
 dist
 _book
 *.result
