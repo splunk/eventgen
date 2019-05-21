@@ -157,7 +157,7 @@ class Timer(object):
                                              format(count, raw_event_size) + "Wait for the next turn.")
                             previous_count_left = count
                             self.countdown = self.interval
-                            # self.executions += 1
+                            self.executions += 1
                             continue
                         else:
                             previous_count_left = 0
@@ -182,10 +182,6 @@ class Timer(object):
                                 copy_sample = copy.copy(self.sample)
                                 tokens = copy.deepcopy(self.sample.tokens)
                                 copy_sample.tokens = tokens
-                                # copy_tokens = []
-                                # for token in self.sample.tokens:
-                                #     copy_tokens.append(token.deepcopy(self.sample))
-                                # copy_sample.tokens = copy_tokens
                                 genPlugin = self.generatorPlugin(sample=copy_sample)
                                 # Adjust queue for threading mode
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)

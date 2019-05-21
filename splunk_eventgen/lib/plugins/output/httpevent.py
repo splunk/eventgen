@@ -261,7 +261,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                             except:
                                 self.logger.error("Timestamp not in epoch format, ignoring event: {0}".format(event))
                         if event.get('index'):
-                            self.logger.debug("Event contains index, adding to httpevent event")
+                            self.logger.debugv("Event contains index, adding to httpevent event")
                             payloadFragment['index'] = event['index']
                     self.logger.debugv("Full payloadFragment: %s" % json.dumps(payloadFragment))
                     payload.append(payloadFragment)
