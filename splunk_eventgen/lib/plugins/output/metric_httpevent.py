@@ -31,8 +31,8 @@ class BadConnection(Exception):
 
 class MetricHTTPEventOutputPlugin(OutputPlugin):
     '''
-    HTTPEvent output will enable events that are generated to be sent directly
-    to splunk through the HTTP event input.  In order to use this output plugin,
+    MetricHTTPEvent output will enable events that are generated to be sent directly
+    to splunk metrics indexes through the HTTP event input.  In order to use this output plugin,
     you will need to supply an attribute 'httpeventServers' as a valid json object.
     this json object should look like the following:
 
@@ -93,9 +93,9 @@ class MetricHTTPEventOutputPlugin(OutputPlugin):
                     self.config.httpeventServers = self._sample.httpeventServers
                 else:
                     self.logger.error(
-                        'outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+                        'outputMode metric_httpevent but httpeventServers not specified for sample %s' % self._sample.name)
                     raise NoServers(
-                        'outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+                        'outputMode metric_httpevent but httpeventServers not specified for sample %s' % self._sample.name)
             # set default output mode to round robin
             if hasattr(self.config, 'httpeventOutputMode') and self.config.httpeventOutputMode:
                 self.httpeventoutputmode = config.httpeventOutputMode
@@ -161,7 +161,7 @@ class MetricHTTPEventOutputPlugin(OutputPlugin):
                 self.logger.debug("Adding server set to pool, server: %s" % setserver)
                 self.serverPool.append(setserver)
         else:
-            raise NoServers('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+            raise NoServers('outputMode metric_httpevent but httpeventServers not specified for sample %s' % self._sample.name)
 
     def _sendHTTPEvents(self, payload):
         currentreadsize = 0
@@ -228,7 +228,7 @@ class MetricHTTPEventOutputPlugin(OutputPlugin):
                 raise e
 
     def flush(self, q):
-        self.logger.debug("Flush called on httpevent plugin")
+        self.logger.debug("Flush called on metric_httpevent plugin")
         self._setup_REST_workers()
         if len(q) > 0:
             try:
@@ -241,7 +241,7 @@ class MetricHTTPEventOutputPlugin(OutputPlugin):
                     else:
                         self.logger.debug("Event contains _raw, attempting to process...")
                         self.logger.debug(event['_raw'])
-                        fields  = json.loads(event['_raw'])['fields']
+                        fields = json.loads(event['_raw'])['fields']
                         payloadFragment['fields'] = fields
                         payloadFragment['event'] = "metric"
                         if event.get('source'):
@@ -269,7 +269,7 @@ class MetricHTTPEventOutputPlugin(OutputPlugin):
                     self.logger.debug("Full payloadFragment: {}".format(payloadFragment))
                     # self.logger.debug("Full payloadFragment: %s" % json.dumps(payloadFragment))
                     payload.append(payloadFragment)
-                self.logger.debug("Metric Finished processing events, sending all to splunk")
+                self.logger.debug("Metric_httpevent Finished processing events, sending all to splunk")
                 self._sendHTTPEvents(payload)
                 if self.config.httpeventWaitResponse:
                     for session in self.active_sessions:
@@ -282,7 +282,7 @@ class MetricHTTPEventOutputPlugin(OutputPlugin):
                             raise BadConnection(
                                 "Server returned an error while sending, response code: %s" % response.status_code)
                 else:
-                    self.logger.debug("Ignoring response from HTTP server, leaving httpevent outputter")
+                    self.logger.debug("Ignoring response from HTTP server, leaving  metric_httpevent outputter")
             except Exception as e:
                 self.logger.error('failed indexing events, reason: %s ' % e)
 
