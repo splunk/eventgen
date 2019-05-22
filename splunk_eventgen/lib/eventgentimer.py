@@ -137,6 +137,10 @@ class Timer(object):
                     backfillearliest = timeParserTimeMath(plusminus=mathsymbol, num=backfillnumber, unit=backfillletter,
                                                           ret=realtime)
                     while backfillearliest < realtime:
+                        if self.executions == int(self.end):
+                            self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
+                                self.end), self.sample.name))
+                            break
                         et = backfillearliest
                         lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
                         genPlugin = self.generatorPlugin(sample=self.sample)
@@ -145,6 +149,7 @@ class Timer(object):
                         genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
                         try:
                             self.generatorQueue.put(genPlugin)
+                            self.executions += 1
                         except Full:
                             self.logger.warning("Generator Queue Full. Skipping current generation.")
                         backfillearliest = lt
@@ -192,6 +197,7 @@ class Timer(object):
 
                                 try:
                                     self.generatorQueue.put(genPlugin)
+                                    self.executions += 1
                                     self.logger.info(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
                                                       "with et '{3}' and lt '{4}'").format(
                                                           worker_id, round((count / 1024.0 / 1024), 4),
@@ -206,7 +212,6 @@ class Timer(object):
 
                 # Sleep until we're supposed to wake up and generate more events
                 self.countdown = self.interval
-                self.executions += 1
 
                 # 8/20/15 CS Adding support for ending generation at a certain time
 
