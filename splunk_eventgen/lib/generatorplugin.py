@@ -227,8 +227,12 @@ class GeneratorPlugin(object):
             except Exception:
                 time_val = int(time.mktime(self._sample.now().timetuple()))
             temp_event = {
-                '_raw': event, 'index': random.choice(self._sample.index_list)if len(self._sample.index_list) else targetevent['index'], 'host': host, 'hostRegex': self._sample.hostRegex,
+                '_raw': event, 'index': targetevent['index'], 'host': host, 'hostRegex': self._sample.hostRegex,
                 'source': targetevent['source'], 'sourcetype': targetevent['sourcetype'], '_time': time_val}
+            if len(self._sample.index_list):
+                temp_event['index'] = self._sample.index_list[self._sample._index_counter]
+                self._sample._index_counter += 1
+                self._sample._index_counter = self._sample._index_counter % len(self._sample.index_list)
             send_events.append(temp_event)
         return send_events
 
