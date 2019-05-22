@@ -99,6 +99,7 @@ class Sample(object):
     _lastts = None
     _earliestParsed = None
     _latestParsed = None
+    _index_counter = 0
 
     def __init__(self, name):
         self.name = name
