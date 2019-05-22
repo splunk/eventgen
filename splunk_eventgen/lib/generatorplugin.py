@@ -196,6 +196,7 @@ class GeneratorPlugin(object):
         eventcount = 0
         send_events = []
         total_count = len(eventsDict)
+        index = random.choice(self._sample.index_list) if len(self._sample.index_list) else eventsDict[0]['index']
         for targetevent in eventsDict:
             event = targetevent["_raw"]
             # Maintain state for every token in a given event, Hash contains keys for each file name which is
@@ -227,12 +228,8 @@ class GeneratorPlugin(object):
             except Exception:
                 time_val = int(time.mktime(self._sample.now().timetuple()))
             temp_event = {
-                '_raw': event, 'index': targetevent['index'], 'host': host, 'hostRegex': self._sample.hostRegex,
+                '_raw': event, 'index': index, 'host': host, 'hostRegex': self._sample.hostRegex,
                 'source': targetevent['source'], 'sourcetype': targetevent['sourcetype'], '_time': time_val}
-            if len(self._sample.index_list):
-                temp_event['index'] = self._sample.index_list[self._sample._index_counter]
-                self._sample._index_counter += 1
-                self._sample._index_counter = self._sample._index_counter % len(self._sample.index_list)
             send_events.append(temp_event)
         return send_events
 
