@@ -32,7 +32,7 @@ class Timer(object):
         self.profiler = config.profiler
         self.config = config
         self.sample = sample
-        self.end = getattr(self.sample, "end") if getattr(self.sample, "end") is not None else -1
+        self.end = getattr(self.sample, "end", -1)
         self.endts = getattr(self.sample, "endts", None)
         self.generatorQueue = genqueue
         self.outputQueue = outputqueue
@@ -153,7 +153,7 @@ class Timer(object):
                         except Full:
                             self.logger.warning("Generator Queue Full. Skipping current generation.")
                         backfillearliest = lt
-                        
+
                     self.sample.backfilldone = True
                 else:
                     # 12/15/13 CS Moving the rating to a separate plugin architecture
@@ -187,12 +187,11 @@ class Timer(object):
                             for worker_id in range(self.config.generatorWorkers):
                                 # self.generatorPlugin is only an instance, now we need a real plugin. Make a copy of
                                 # of the sample in case another generator corrupts it.
-                                copy_sample = copy.copy(self.sample)
-                                copy_tokens = []
-                                for token in self.sample.tokens:
-                                    copy_tokens.append(token.deepcopy(self.sample))
-                                copy_sample.tokens = copy_tokens
-                                genPlugin = self.generatorPlugin(sample=copy_sample)
+                                # copy_sample = copy.copy(self.sample)
+                                # tokens = copy.deepcopy(self.sample.tokens)
+                                # copy_sample.tokens = tokens
+                                # genPlugin = self.generatorPlugin(sample=copy_sample)
+                                genPlugin = self.generatorPlugin(sample=self.sample)
                                 # Adjust queue for threading mode
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                                 genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
