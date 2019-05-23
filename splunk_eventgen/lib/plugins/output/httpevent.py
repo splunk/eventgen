@@ -48,6 +48,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
 
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
+        self.serverPool = []
 
     # TODO: make workers a param that can be set in eventgen.conf
     def _setup_REST_workers(self, session=None, workers=10):
@@ -118,8 +119,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 self.httpeventServers = config.httpeventServers
             self.logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
             self.createConnections()
-            self.logger.debug("Pool created.")
-            self.logger.debug("Finished init of httpevent plugin.")
+            self.logger.debug("Pool created and finished init of httpevent plugin.")
         except Exception as e:
             self.logger.exception(str(e))
 
@@ -128,31 +128,20 @@ class HTTPEventOutputPlugin(OutputPlugin):
         if self.httpeventServers:
             for server in self.httpeventServers.get('servers'):
                 if not server.get('address'):
-                    self.logger.error(
-                        'requested a connection to a httpevent server, but no address specified for sample %s' %
-                        self._sample.name)
                     raise ValueError(
                         'requested a connection to a httpevent server, but no address specified for sample %s' %
                         self._sample.name)
                 if not server.get('port'):
-                    self.logger.error(
-                        'requested a connection to a httpevent server, but no port specified for server %s' % server)
                     raise ValueError(
                         'requested a connection to a httpevent server, but no port specified for server %s' % server)
                 if not server.get('key'):
-                    self.logger.error(
-                        'requested a connection to a httpevent server, but no key specified for server %s' % server)
                     raise ValueError(
                         'requested a connection to a httpevent server, but no key specified for server %s' % server)
                 if not ((server.get('protocol') == 'http') or (server.get('protocol') == 'https')):
-                    self.logger.error(
-                        'requested a connection to a httpevent server, but no protocol specified for server %s' %
-                        server)
                     raise ValueError(
                         'requested a connection to a httpevent server, but no protocol specified for server %s' %
                         server)
-                self.logger.debug(
-                    "Validation Passed, Creating a requests object for server: %s" % server.get('address'))
+                self.logger.debug("Validation Passed, Creating a requests object for server: %s" % server.get('address'))
 
                 setserver = {}
                 setserver['url'] = "%s://%s:%s/services/collector" % (server.get('protocol'), server.get('address'),
@@ -188,7 +177,6 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     currentreadsize = 0
                     stringpayload = targetline
                 except Exception as e:
-                    self.logger.exception(str(e))
                     raise e
         else:
             try:
@@ -204,7 +192,9 @@ class HTTPEventOutputPlugin(OutputPlugin):
     def _transmitEvents(self, payloadstring):
         targetServer = []
         self.logger.debug("Transmission called with payloadstring: %s " % payloadstring)
-        if self.httpeventoutputmode == "mirror":
+        if not self.serverPool:
+            raise Exception("No available servers exist. Please check your httpServers.")
+        if self.httpeventoutputmode == "mirror" and self.serverPool:
             targetServer = self.serverPool
         else:
             targetServer.append(random.choice(self.serverPool))
@@ -215,17 +205,32 @@ class HTTPEventOutputPlugin(OutputPlugin):
             headers['Authorization'] = server['header']
             headers['content-type'] = 'application/json'
             try:
-                payloadsize = len(payloadstring)
-                # response = requests.post(url, data=payloadstring, headers=headers, verify=False)
-                self.active_sessions.append(
-                    self.session.post(url=url, data=payloadstring, headers=headers, verify=False))
+                session_info = list()
+                session_info.append(url)
+                session_info.append(self.session.post(url=url, data=payloadstring, headers=headers, verify=False))
+                self.active_sessions.append(session_info)
             except Exception as e:
-                self.logger.error("Failed for exception: %s" % e)
                 self.logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" %
-                                  (url, self.lastsourcetype, payloadsize))
+                                  (url, self.lastsourcetype, len(payloadstring)))
                 self.logger.debug(
                     "Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payloadstring))
                 raise e
+    
+    def remove_requets_target(self, url):
+        if isinstance(self.config.httpeventServers, str):
+            httpeventServers = json.loads(self.config.httpeventServers)
+        else:
+            httpeventServers = self.config.httpeventServers
+        for i, server_info in enumerate(httpeventServers.get('servers', [])):
+            target_url = '{}://{}:{}'.format(server_info.get('protocol', ''), server_info.get('address', ''), server_info.get('port', '')) 
+            if target_url in url:
+                del httpeventServers.get('servers')[i]
+
+        if isinstance(self.config.httpeventServers, str):
+            self.config.httpeventServers = json.dumps(httpeventServers)
+        else:
+            self.config.httpeventServers = httpeventServers
+        self._sample.httpeventServers = httpeventServers
 
     def flush(self, q):
         self.logger.debug("Flush called on httpevent plugin")
@@ -268,23 +273,18 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 self.logger.debug("Finished processing events, sending all to splunk")
                 self._sendHTTPEvents(payload)
                 if self.config.httpeventWaitResponse:
-                    for session in self.active_sessions:
-                        response = session.result()
-                        if not response.raise_for_status():
-                            self.logger.debug("Payload successfully sent to httpevent server.")
-                        else:
-                            self.logger.error("Server returned an error while trying to send, response code: %s" %
-                                              response.status_code)
-                            raise BadConnection(
-                                "Server returned an error while sending, response code: %s" % response.status_code)
+                    for session_info in self.active_sessions:
+                        target_url, session = session_info[0], session_info[1]
+                        try:
+                            response = session.result(timeout = 0)
+                        except:
+                            self.remove_requets_target(target_url)
+                            raise BadConnection("Target endpoint {} did not respond. Removed from the list.".format(target_url))
+                        self.logger.debug("Payload successfully sent to httpevent server.")
                 else:
                     self.logger.debug("Ignoring response from HTTP server, leaving httpevent outputter")
             except Exception as e:
                 self.logger.error('failed indexing events, reason: %s ' % e)
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_httpeventout')
-
 
 def load():
     """Returns an instance of the plugin"""
