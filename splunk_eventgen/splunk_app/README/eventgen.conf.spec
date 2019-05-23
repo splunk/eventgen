@@ -22,7 +22,7 @@
 [global]
 disabled = false
 debug = false
-verbose = false
+verbosity = false
 spoolDir = $SPLUNK_HOME/var/spool/splunk
 spoolFile = <SAMPLE>
 breaker = [^\r\n\s]+

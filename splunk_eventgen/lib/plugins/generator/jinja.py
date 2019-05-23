@@ -193,8 +193,7 @@ class JinjaGenerator(GeneratorPlugin):
             if self._sample.splunkEmbedded is True:
                 splunk_home = os.environ["SPLUNK_HOME"]
                 app_name = getattr(self._sample, 'app', 'SA-Eventgen')
-                sample_dir = os.path.join(splunk_home, 'etc', 'apps', app_name,
-                                          'default', self._sample.DEFAULT_SAMPLE_DIR)
+                sample_dir = os.path.join(splunk_home, 'etc', 'apps', app_name, 'samples')
 
             if not hasattr(self._sample, "jinja_template_dir"):
                 template_dir = 'templates'
