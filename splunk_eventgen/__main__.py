@@ -308,6 +308,16 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
     directory_default_dir = os.path.join(directory, 'default', 'eventgen.conf')
     eventgen_conf = os.path.join(module_path, 'default', 'eventgen.conf')
     shutil.copyfile(eventgen_conf, directory_default_dir)
+
+    # install 3rd lib dependencies
+    install_target = os.path.join(directory, 'lib')
+    install_cmd = "pip install --requirement splunk_eventgen/lib/requirements.txt --upgrade --no-compile " + \
+                  "--no-binary :all: --target " + install_target
+    return_code = os.system(install_cmd)
+    if return_code != 0:
+        print("Failed to install dependencies via pip. Please check whether pip is installed.")
+    os.system("rm -rf " + os.path.join(install_target, "*.egg-info"))
+
     make_tarfile(target_file, directory)
     shutil.rmtree(splunk_app_samples)
     if remove:
