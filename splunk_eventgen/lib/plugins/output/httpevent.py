@@ -171,23 +171,16 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 self.logger.debug("stringpayload: %s " % stringpayload)
             else:
                 self.logger.debug("Max size for payload hit, sending to splunk then continuing.")
-                try:
-                    self._transmitEvents(stringpayload)
-                    totalbytessent += len(stringpayload)
-                    currentreadsize = 0
-                    stringpayload = targetline
-                except Exception as e:
-                    raise e
-        else:
-            try:
-                totalbytessent += len(stringpayload)
-                self.logger.debug(
-                    "End of for loop hit for sending events to splunk, total bytes sent: %s ---- out of %s -----" %
-                    (totalbytessent, totalbytesexpected))
                 self._transmitEvents(stringpayload)
-            except Exception as e:
-                self.logger.exception(str(e))
-                raise e
+                totalbytessent += len(stringpayload)
+                currentreadsize = 0
+                stringpayload = targetline
+        else:
+            totalbytessent += len(stringpayload)
+            self.logger.debug(
+                "End of for loop hit for sending events to splunk, total bytes sent: %s ---- out of %s -----" %
+                (totalbytessent, totalbytesexpected))
+            self._transmitEvents(stringpayload)
 
     def _transmitEvents(self, payloadstring):
         targetServer = []
@@ -276,8 +269,8 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     for session_info in self.active_sessions:
                         target_url, session = session_info[0], session_info[1]
                         try:
-                            response = session.result(timeout = 0)
-                        except:
+                            response = session.result(timeout = 0.5)
+                        except Exception as e:
                             self.remove_requets_target(target_url)
                             raise BadConnection("Target endpoint {} did not respond. Removed from the list.".format(target_url))
                         self.logger.debug("Payload successfully sent to httpevent server.")

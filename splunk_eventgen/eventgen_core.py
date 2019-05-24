@@ -536,7 +536,7 @@ class EventGenerator(object):
         try:
             while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0 or not self.workerQueue.empty(
             ) or self.workerQueue.unfinished_tasks > 0:
-                time.sleep(10)
+                time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
         except Exception as e:
@@ -567,7 +567,7 @@ class EventGenerator(object):
                     count += 1
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
-        self.logger.info("All items fully processed, stopping.")
+        self.logger.info("All items fully processed. Cleaning up internal processes.")
         self.started = False
         self.stopping = False
 
