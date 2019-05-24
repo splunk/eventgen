@@ -3,7 +3,6 @@ import logging
 import time
 from Queue import Full
 
-from timeparser import timeParserTimeMath
 
 
 class Timer(object):
@@ -46,7 +45,11 @@ class Timer(object):
         # load plugins
         if self.sample is not None:
             rater_class = self.config.getPlugin('rater.' + self.sample.rater, self.sample)
+            backrater_class = self.config.getPlugin('rater.backfill', self.sample)
+            splitrater_class = self.config.getPlugin('rater.splitrater', self.sample)
             self.rater = rater_class(self.sample)
+            self.backrater = backrater_class(self.sample)
+            self.splitrater = splitrater_class(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
             self.outputPlugin = self.config.getPlugin('output.' + self.sample.outputMode, self.sample)
             if self.sample.timeMultiple < 0:
@@ -118,43 +121,18 @@ class Timer(object):
             # referenced in the config object, while, self.stopping will only stop this one.
             if self.config.stopping or self.stopping:
                 end = True
+            self.rater.update_options(config=self.config, sample=self.sample, generatorQueue=self.generatorQueue,
+                                      outputQueue=self.outputQueue, outputPlugin=self.outputPlugin,
+                                      generatorPlugin=self.generatorPlugin)
             count = self.rater.rate()
             # First run of the generator, see if we have any backfill work to do.
             if self.countdown <= 0:
                 if self.sample.backfill and not self.sample.backfilldone:
-                    realtime = self.sample.now(realnow=True)
-                    if "-" in self.sample.backfill[0]:
-                        mathsymbol = "-"
-                    else:
-                        mathsymbol = "+"
-                    backfillnumber = ""
-                    backfillletter = ""
-                    for char in self.sample.backfill:
-                        if char.isdigit():
-                            backfillnumber += char
-                        elif char != "-":
-                            backfillletter += char
-                    backfillearliest = timeParserTimeMath(plusminus=mathsymbol, num=backfillnumber, unit=backfillletter,
-                                                          ret=realtime)
-                    while backfillearliest < realtime:
-                        if self.executions == int(self.end):
-                            self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
-                                self.end), self.sample.name))
-                            break
-                        et = backfillearliest
-                        lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
-                        genPlugin = self.generatorPlugin(sample=self.sample)
-                        # need to make sure we set the queue right if we're using multiprocessing or thread modes
-                        genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
-                        genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
-                        try:
-                            self.generatorQueue.put(genPlugin)
-                            self.executions += 1
-                        except Full:
-                            self.logger.warning("Generator Queue Full. Skipping current generation.")
-                        backfillearliest = lt
-                        
-                    self.sample.backfilldone = True
+                    self.backrater.update_options(config=self.config, sample=self.sample,
+                                      generatorQueue=self.generatorQueue, outputQueue=self.outputQueue,
+                                      outputPlugin=self.outputPlugin, generatorPlugin=self.generatorPlugin,
+                                      samplerater=self.rater)
+                    self.backrater.queue_it(count)
                 else:
                     # 12/15/13 CS Moving the rating to a separate plugin architecture
                     # Save previous interval count left to avoid perdayvolumegenerator drop small tasks
