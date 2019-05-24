@@ -10,11 +10,21 @@ class PerDayVolume(ConfigRater):
     stopping = False
 
     def __init__(self, sample):
+        super(PerDayVolume, self).__init__(sample)
         # Logger already setup by config, just get an instance
         self._setup_logging()
         self.logger.debug('Starting PerDayVolumeRater for %s' % sample.name if sample is not None else "None")
-        self._sample = sample
-        self._generatorWorkers = self._sample.config.generatorWorkers
+        self.previous_count_left = 0
+        self.raweventsize = 0
+
+    def queue_it(self, count):
+        count = count + self.previous_count_left
+        if 0 < count < self.raweventsize:
+            self.logger.info("current interval size is {}, which is smaller than a raw event size {}.".
+                             format(count, self.raweventsize) + "Wait for the next turn.")
+            self.update_options(previous_count_left=count)
+        else:
+            self.update_options(previous_count_left=0)
 
     def rate(self):
         perdayvolume = float(self._sample.perDayVolume) / self._generatorWorkers

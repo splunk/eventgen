@@ -47,9 +47,11 @@ class Timer(object):
             rater_class = self.config.getPlugin('rater.' + self.sample.rater, self.sample)
             backrater_class = self.config.getPlugin('rater.backfill', self.sample)
             splitrater_class = self.config.getPlugin('rater.splitrater', self.sample)
+            perdayrater_class = self.config.getPlugin('rater.perdayvolume', self.sample)
             self.rater = rater_class(self.sample)
             self.backrater = backrater_class(self.sample)
             self.splitrater = splitrater_class(self.sample)
+            self.perdayrater = perdayrater_class(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
             self.outputPlugin = self.config.getPlugin('output.' + self.sample.outputMode, self.sample)
             if self.sample.timeMultiple < 0:
@@ -108,7 +110,6 @@ class Timer(object):
         self.logger.debug("Timer creating plugin for '%s'" % self.sample.name)
 
         end = False
-        previous_count_left = 0
         raw_event_size = self.predict_event_size()
         if self.end:
             if int(self.end) == 0:
@@ -137,16 +138,14 @@ class Timer(object):
                     # 12/15/13 CS Moving the rating to a separate plugin architecture
                     # Save previous interval count left to avoid perdayvolumegenerator drop small tasks
                     if self.sample.generator == 'perdayvolumegenerator':
-                        count = self.rater.rate() + previous_count_left
-                        if 0 < count < raw_event_size:
-                            self.logger.info("current interval size is {}, which is smaller than a raw event size {}.".
-                                             format(count, raw_event_size) + "Wait for the next turn.")
-                            previous_count_left = count
-                            self.countdown = self.interval
-                            self.executions += 1
-                            continue
-                        else:
-                            previous_count_left = 0
+                        self.perdayrater.update_options(config=self.config, sample=self.sample,
+                                                      generatorQueue=self.generatorQueue, outputQueue=self.outputQueue,
+                                                      outputPlugin=self.outputPlugin, generatorPlugin=self.generatorPlugin,
+                                                      samplerater=self.rater, raweventsize=raw_event_size)
+                        self.perdayrater.rate()
+                        self.perdayrater.queue_it(count)
+                        self.countdown = self.interval
+                        self.executions += 1
                     else:
                         count = self.rater.rate()
 
