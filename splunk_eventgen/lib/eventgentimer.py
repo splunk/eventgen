@@ -132,8 +132,6 @@ class Timer(object):
                                       generatorQueue=self.generatorQueue, outputQueue=self.outputQueue,
                                       outputPlugin=self.outputPlugin, generatorPlugin=self.generatorPlugin,
                                       samplerater=self.rater)
-                        backfillearliest = lt
-
                     self.backrater.queue_it(count)
                 else:
                     # 12/15/13 CS Moving the rating to a separate plugin architecture
