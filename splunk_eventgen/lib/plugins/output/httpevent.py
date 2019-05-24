@@ -171,15 +171,15 @@ class HTTPEventOutputPlugin(OutputPlugin):
         numberevents = len(payload)
         self.logger.debug("Sending %s events to splunk" % numberevents)
         for line in payload:
-            self.logger.debug("line: %s " % line)
+            self.logger.debugv("line: %s " % line)
             targetline = json.dumps(line)
-            self.logger.debug("targetline: %s " % targetline)
+            self.logger.debugv("targetline: %s " % targetline)
             targetlinesize = len(targetline)
             totalbytesexpected += targetlinesize
             if (int(currentreadsize) + int(targetlinesize)) <= int(self.httpeventmaxsize):
                 stringpayload = stringpayload + targetline
                 currentreadsize = currentreadsize + targetlinesize
-                self.logger.debug("stringpayload: %s " % stringpayload)
+                self.logger.debugv("stringpayload: %s " % stringpayload)
             else:
                 self.logger.debug("Max size for payload hit, sending to splunk then continuing.")
                 try:
@@ -203,7 +203,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
 
     def _transmitEvents(self, payloadstring):
         targetServer = []
-        self.logger.debug("Transmission called with payloadstring: %s " % payloadstring)
+        self.logger.debugv("Transmission called with payloadstring: %s " % payloadstring)
         if self.httpeventoutputmode == "mirror":
             targetServer = self.serverPool
         else:
@@ -235,35 +235,35 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 payload = []
                 self.logger.debug("Currently being called with %d events" % len(q))
                 for event in q:
-                    self.logger.debug("HTTPEvent proccessing event: %s" % event)
+                    self.logger.debugv("HTTPEvent proccessing event: %s" % event)
                     payloadFragment = {}
                     if event.get('_raw') is None or event['_raw'] == "\n":
                         self.logger.error('failure outputting event, does not contain _raw')
                     else:
-                        self.logger.debug("Event contains _raw, attempting to process...")
+                        self.logger.debugv("Event contains _raw, attempting to process...")
                         payloadFragment['event'] = event['_raw']
                         if event.get('source'):
-                            self.logger.debug("Event contains source, adding to httpevent event")
+                            self.logger.debugv("Event contains source, adding to httpevent event")
                             payloadFragment['source'] = event['source']
                         if event.get('sourcetype'):
-                            self.logger.debug("Event contains sourcetype, adding to httpevent event")
+                            self.logger.debugv("Event contains sourcetype, adding to httpevent event")
                             payloadFragment['sourcetype'] = event['sourcetype']
                             self.lastsourcetype = event['sourcetype']
                         if event.get('host'):
-                            self.logger.debug("Event contains host, adding to httpevent event")
+                            self.logger.debugv("Event contains host, adding to httpevent event")
                             payloadFragment['host'] = event['host']
                         if event.get('_time'):
                             # make sure _time can be an epoch timestamp
                             try:
                                 float(event.get("_time"))
-                                self.logger.debug("Event contains _time, adding to httpevent event")
+                                self.logger.debugv("Event contains _time, adding to httpevent event")
                                 payloadFragment['time'] = event['_time']
                             except:
                                 self.logger.error("Timestamp not in epoch format, ignoring event: {0}".format(event))
                         if event.get('index'):
-                            self.logger.debug("Event contains index, adding to httpevent event")
+                            self.logger.debugv("Event contains index, adding to httpevent event")
                             payloadFragment['index'] = event['index']
-                    self.logger.debug("Full payloadFragment: %s" % json.dumps(payloadFragment))
+                    self.logger.debugv("Full payloadFragment: %s" % json.dumps(payloadFragment))
                     payload.append(payloadFragment)
                 self.logger.debug("Finished processing events, sending all to splunk")
                 self._sendHTTPEvents(payload)
