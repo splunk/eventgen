@@ -1,4 +1,5 @@
 from raterplugin import RaterPlugin
+from Queue import Full
 
 class ConfigRater(RaterPlugin):
     name = 'ConfigRater'

@@ -49,14 +49,7 @@ class RaterPlugin(object):
             if kwargs[key] and key in allowed_attrs:
                 self.__dict__.update({key: kwargs[key]})
 
-    def rate(self):
-        self.sample.count = int(self.sample.count)
-        # Let generators handle infinite count for themselves
-        if self.sample.count == -1 and self.sample.generator == 'default':
-            if not self.sample.sampleDict:
-                self.logger.error('No sample found for default generator, cannot generate events')
-            self.sample.count = len(self.sample.sampleDict)
-        count = self.sample.count
+    def adjust_rate_factor(self):
         # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
         # hourOfDay, dayOfWeek and randomizeCount configs
         rateFactor = 1.0
@@ -136,6 +129,17 @@ class RaterPlugin(object):
                 stack = traceback.format_exc()
                 self.logger.error(
                     "Month Of Year rate failed for sample '%s'.  Stacktrace %s" % (self.sample.name, stack))
+        return rateFactor
+
+    def rate(self):
+        self.sample.count = int(self.sample.count)
+        # Let generators handle infinite count for themselves
+        if self.sample.count == -1 and self.sample.generator == 'default':
+            if not self.sample.sampleDict:
+                self.logger.error('No sample found for default generator, cannot generate events')
+            self.sample.count = len(self.sample.sampleDict)
+        count = self.sample.count
+        rateFactor = self.adjust_rate_factor()
         ret = int(round(count * rateFactor, 0))
         if rateFactor != 1.0:
             self.logger.debug("Original count: %s Rated count: %s Rate factor: %s" % (count, ret, rateFactor))
