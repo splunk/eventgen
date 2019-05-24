@@ -196,7 +196,9 @@ class GeneratorPlugin(object):
         eventcount = 0
         send_events = []
         total_count = len(eventsDict)
-        index = random.choice(self._sample.index_list) if len(self._sample.index_list) else eventsDict[0]['index']
+        index = None
+        if total_count > 0:
+            index = random.choice(self._sample.index_list) if len(self._sample.index_list) else eventsDict[0]['index']
         for targetevent in eventsDict:
             event = targetevent["_raw"]
             # Maintain state for every token in a given event, Hash contains keys for each file name which is
