@@ -115,8 +115,8 @@ class EventGenerator(object):
         self.config = Config(configfile, **new_args)
         self.config.parse()
         self._reload_plugins()
-        if getattr(args, "generators"):
-            generator_worker_count = args.generators
+        if "args" in kwargs and getattr(kwargs["args"], "generators"):
+            generator_worker_count = kwargs["args"].generators
         else:
             generator_worker_count = self.config.generatorWorkers
 
