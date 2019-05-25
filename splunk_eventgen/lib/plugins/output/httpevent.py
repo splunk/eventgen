@@ -48,7 +48,6 @@ class HTTPEventOutputPlugin(OutputPlugin):
 
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
-        self.serverPool = []
 
     # TODO: make workers a param that can be set in eventgen.conf
     def _setup_REST_workers(self, session=None, workers=10):
@@ -59,7 +58,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
         if not session:
             session = Session()
         self.session = FuturesSession(session=session, executor=ThreadPoolExecutor(max_workers=workers))
-        self.active_sessions = []
+        self.active_session_info = []
 
     @staticmethod
     def _urlencode(value):
@@ -99,12 +98,13 @@ class HTTPEventOutputPlugin(OutputPlugin):
                         'outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
             # set default output mode to round robin
             if hasattr(self.config, 'httpeventOutputMode') and self.config.httpeventOutputMode:
-                self.httpeventoutputmode = config.httpeventOutputMode
+                self.httpeventoutputmode = self.config.httpeventOutputMode
             else:
                 if hasattr(self._sample, 'httpeventOutputMode') and self._sample.httpeventOutputMode:
                     self.httpeventoutputmode = self._sample.httpeventOutputMode
                 else:
                     self.httpeventoutputmode = 'roundrobin'
+
             if hasattr(self.config, 'httpeventMaxPayloadSize') and self.config.httpeventMaxPayloadSize:
                 self.httpeventmaxsize = self.config.httpeventMaxPayloadSize
             else:
@@ -112,6 +112,15 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     self.httpeventmaxsize = self._sample.httpeventMaxPayloadSize
                 else:
                     self.httpeventmaxsize = 10000
+
+            if hasattr(self.config, 'httpeventAllowFailureCount') and self.config.httpeventAllowFailureCount:
+                self.httpeventAllowFailureCount = int(self.config.httpeventOutputMode)
+            else:
+                if hasattr(self._sample, 'httpeventAllowFailureCount') and self._sample.httpeventAllowFailureCount:
+                    self.httpeventAllowFailureCount = int(self._sample.httpeventAllowFailureCount)
+                else:
+                    self.httpeventAllowFailureCount = 100
+
             self.logger.debug("Currentmax size: %s " % self.httpeventmaxsize)
             if isinstance(config.httpeventServers, str):
                 self.httpeventServers = json.loads(config.httpeventServers)
@@ -159,6 +168,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
         totalbytessent = 0
         numberevents = len(payload)
         self.logger.debug("Sending %s events to splunk" % numberevents)
+        session_info_list = []
         for line in payload:
             self.logger.debug("line: %s " % line)
             targetline = json.dumps(line)
@@ -175,22 +185,25 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 totalbytessent += len(stringpayload)
                 currentreadsize = 0
                 stringpayload = targetline
-        else:
-            totalbytessent += len(stringpayload)
-            self.logger.debug(
-                "End of for loop hit for sending events to splunk, total bytes sent: %s ---- out of %s -----" %
-                (totalbytessent, totalbytesexpected))
-            self._transmitEvents(stringpayload)
+                
+        totalbytessent += len(stringpayload)
+        self.logger.debug(
+            "End of for loop hit for sending events to splunk, total bytes sent: %s ---- out of %s -----" %
+            (totalbytessent, totalbytesexpected))
+        self._transmitEvents(stringpayload)
 
     def _transmitEvents(self, payloadstring):
         targetServer = []
-        self.logger.debug("Transmission called with payloadstring: %s " % payloadstring)
+        self.logger.debug("Transmission called with payloadstring length: %s " % len(payloadstring))
+
         if not self.serverPool:
             raise Exception("No available servers exist. Please check your httpServers.")
-        if self.httpeventoutputmode == "mirror" and self.serverPool:
+
+        if self.httpeventoutputmode == "mirror":
             targetServer = self.serverPool
         else:
             targetServer.append(random.choice(self.serverPool))
+
         for server in targetServer:
             self.logger.debug("Selected targetServer object: %s" % targetServer)
             url = server['url']
@@ -201,29 +214,49 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 session_info = list()
                 session_info.append(url)
                 session_info.append(self.session.post(url=url, data=payloadstring, headers=headers, verify=False))
-                self.active_sessions.append(session_info)
+                self.active_session_info.append(session_info)
             except Exception as e:
                 self.logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" %
                                   (url, self.lastsourcetype, len(payloadstring)))
-                self.logger.debug(
-                    "Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payloadstring))
-                raise e
     
+    def reset_count(self, url):
+        try:
+            self.config.httpeventServersCountdownMap['url'] = self.httpeventAllowFailureCount
+        except:
+            pass
+        
     def remove_requets_target(self, url):
         if isinstance(self.config.httpeventServers, str):
             httpeventServers = json.loads(self.config.httpeventServers)
         else:
             httpeventServers = self.config.httpeventServers
+
+        # If url fail more than specified count, we completely remove it from the pool.
+        try:
+            countdown_map = self.config.httpeventServersCountdownMap
+        except:
+            self.config.httpeventServersCountdownMap = {}
+            for i, server_info in enumerate(self.serverPool):
+                # URL is in format: https://2.2.2.2:8088/services/collector
+                self.config.httpeventServersCountdownMap[server_info.get('url', '')] = self.httpeventAllowFailureCount
+            countdown_map = self.config.httpeventServersCountdownMap
+
         for i, server_info in enumerate(httpeventServers.get('servers', [])):
             target_url = '{}://{}:{}'.format(server_info.get('protocol', ''), server_info.get('address', ''), server_info.get('port', '')) 
             if target_url in url:
-                del httpeventServers.get('servers')[i]
+                if countdown_map[url] <= 0:
+                    del httpeventServers.get('servers')[i]
+                    self.logger.warning("Cannot reach {}. Removing from the server pool".format(url))
+                else:
+                    countdown_map[url] -= 1
+                    self.logger.debug("Cannot reach {}. Lowering countdown to {}".format(url, countdown_map[url]))
 
         if isinstance(self.config.httpeventServers, str):
             self.config.httpeventServers = json.dumps(httpeventServers)
         else:
             self.config.httpeventServers = httpeventServers
         self._sample.httpeventServers = httpeventServers
+        self.config.httpeventServersCountdownMap = countdown_map
 
     def flush(self, q):
         self.logger.debug("Flush called on httpevent plugin")
@@ -265,19 +298,19 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     payload.append(payloadFragment)
                 self.logger.debug("Finished processing events, sending all to splunk")
                 self._sendHTTPEvents(payload)
-                if self.config.httpeventWaitResponse:
-                    for session_info in self.active_sessions:
-                        target_url, session = session_info[0], session_info[1]
-                        try:
-                            response = session.result(timeout = 0.5)
-                        except Exception as e:
-                            self.remove_requets_target(target_url)
-                            raise BadConnection("Target endpoint {} did not respond. Removed from the list.".format(target_url))
-                        self.logger.debug("Payload successfully sent to httpevent server.")
-                else:
+                if not self.config.httpeventWaitResponse:
                     self.logger.debug("Ignoring response from HTTP server, leaving httpevent outputter")
+                else:
+                    for session_info in self.active_session_info:
+                        url, session = session_info[0], session_info[1]
+                        try:
+                            response = session.result(3)
+                            self.reset_count(url)
+                            self.logger.debug("Payload successfully sent to " + url)
+                        except Exception as e:
+                            self.remove_requets_target(url)
             except Exception as e:
-                self.logger.error('failed indexing events, reason: %s ' % e)
+                self.logger.error('Failed sending events, reason: %s ' % e)
 
 def load():
     """Returns an instance of the plugin"""

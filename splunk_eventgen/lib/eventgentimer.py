@@ -182,7 +182,7 @@ class Timer(object):
                                     self.sample.config.generatorWorkers, count))
                         else:
                             # Spawn workers at the beginning of job rather than wait for next interval
-                            self.logger.info("Start '%d' generatorWorkers for sample '%s'" %
+                            self.logger.info("Starting '%d' generatorWorkers for sample '%s'" %
                                              (self.sample.config.generatorWorkers, self.sample.name))
                             for worker_id in range(self.config.generatorWorkers):
                                 # self.generatorPlugin is only an instance, now we need a real plugin. Make a copy of
@@ -200,8 +200,8 @@ class Timer(object):
                                 try:
                                     self.generatorQueue.put(genPlugin)
                                     self.executions += 1
-                                    self.logger.info(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
-                                                      "with et '{3}' and lt '{4}'").format(
+                                    self.logger.debug(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
+                                                       "with et '{3}' and lt '{4}'").format(
                                                           worker_id, round((count / 1024.0 / 1024), 4),
                                                           self.sample.name, et, lt))
                                 except Full:
