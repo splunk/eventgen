@@ -114,7 +114,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     self.httpeventmaxsize = 10000
 
             if hasattr(self.config, 'httpeventAllowFailureCount') and self.config.httpeventAllowFailureCount:
-                self.httpeventAllowFailureCount = int(self.config.httpeventOutputMode)
+                self.httpeventAllowFailureCount = int(self.config.httpeventAllowFailureCount)
             else:
                 if hasattr(self._sample, 'httpeventAllowFailureCount') and self._sample.httpeventAllowFailureCount:
                     self.httpeventAllowFailureCount = int(self._sample.httpeventAllowFailureCount)
@@ -304,7 +304,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                     for session_info in self.active_session_info:
                         url, session = session_info[0], session_info[1]
                         try:
-                            response = session.result(3)
+                            response = session.result(5)
                             self.reset_count(url)
                             self.logger.debug("Payload successfully sent to " + url)
                         except Exception as e:
