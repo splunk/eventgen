@@ -1,6 +1,10 @@
 from __future__ import division
 
-from httpevent_core import HTTPCoreOutputPlugin
+import logging
+import random
+import urllib
+
+from outputplugin import OutputPlugin
 
 try:
     import requests
@@ -25,19 +29,15 @@ class BadConnection(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
-    '''
-    HTTPEvent output will enable events that are generated to be sent directly
-    to splunk through the HTTP event input.  In order to use this output plugin,
-    you will need to supply an attribute 'httpeventServers' as a valid json object.
-    this json object should look like the following:
+class HTTPCoreOutputPlugin(OutputPlugin):
+    name = 'httpcore'
+    MAXQUEUELENGTH = 1000
+    useOutputQueue = False
+    validSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
+    defaultableSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
+    jsonSettings = ['httpeventServers']
 
-    {servers:[{ protocol:http/https, address:127.0.0.1, port:8088, key:12345-12345-123123123123123123}]}
-
-    '''
-    name = 'httpevent'
     def __init__(self, sample, output_counter=None):
-        super(HTTPEventOutputPlugin,self).__init__(sample,output_counter)
         OutputPlugin.__init__(self, sample, output_counter)
 
     # TODO: make workers a param that can be set in eventgen.conf
@@ -84,9 +84,9 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
                     self.config.httpeventServers = self._sample.httpeventServers
                 else:
                     self.logger.error(
-                        'outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+                        'outputMode %s but httpeventServers not specified for sample %s' % (self.name, self._sample.name))
                     raise NoServers(
-                        'outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+                        'outputMode %s but httpeventServers not specified for sample %s' % (self.name, self._sample.name))
             # set default output mode to round robin
             if hasattr(self.config, 'httpeventOutputMode') and self.config.httpeventOutputMode:
                 self.httpeventoutputmode = config.httpeventOutputMode
@@ -110,7 +110,7 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
             self.logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
             self.createConnections()
             self.logger.debug("Pool created.")
-            self.logger.debug("Finished init of httpevent plugin.")
+            self.logger.debug("Finished init of %s plugin." % self.name)
         except Exception as e:
             self.logger.exception(str(e))
 
@@ -152,7 +152,7 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
                 self.logger.debug("Adding server set to pool, server: %s" % setserver)
                 self.serverPool.append(setserver)
         else:
-            raise NoServers('outputMode httpevent but httpeventServers not specified for sample %s' % self._sample.name)
+            raise NoServers('outputMode %s but httpeventServers not specified for sample %s' %(self.name, self._sample.name))
 
     def _sendHTTPEvents(self, payload):
         currentreadsize = 0
@@ -162,15 +162,15 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
         numberevents = len(payload)
         self.logger.debug("Sending %s events to splunk" % numberevents)
         for line in payload:
-            self.logger.debugv("line: %s " % line)
+            self.logger.debug("line: %s " % line)
             targetline = json.dumps(line)
-            self.logger.debugv("targetline: %s " % targetline)
+            self.logger.debug("targetline: %s " % targetline)
             targetlinesize = len(targetline)
             totalbytesexpected += targetlinesize
             if (int(currentreadsize) + int(targetlinesize)) <= int(self.httpeventmaxsize):
                 stringpayload = stringpayload + targetline
                 currentreadsize = currentreadsize + targetlinesize
-                self.logger.debugv("stringpayload: %s " % stringpayload)
+                self.logger.debug("stringpayload: %s " % stringpayload)
             else:
                 self.logger.debug("Max size for payload hit, sending to splunk then continuing.")
                 try:
@@ -194,7 +194,7 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
 
     def _transmitEvents(self, payloadstring):
         targetServer = []
-        self.logger.debugv("Transmission called with payloadstring: %s " % payloadstring)
+        self.logger.debug("Transmission called with payloadstring: %s " % payloadstring)
         if self.httpeventoutputmode == "mirror":
             targetServer = self.serverPool
         else:
@@ -218,62 +218,11 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
                     "Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payloadstring))
                 raise e
 
-    def flush(self, q):
-        self.logger.debug("Flush called on httpevent plugin")
-        self._setup_REST_workers()
-        if len(q) > 0:
-            try:
-                payload = []
-                self.logger.debug("Currently being called with %d events" % len(q))
-                for event in q:
-                    self.logger.debugv("HTTPEvent proccessing event: %s" % event)
-                    payloadFragment = {}
-                    if event.get('_raw') is None or event['_raw'] == "\n":
-                        self.logger.error('failure outputting event, does not contain _raw')
-                    else:
-                        self.logger.debugv("Event contains _raw, attempting to process...")
-                        payloadFragment['event'] = event['_raw']
-                        if event.get('source'):
-                            self.logger.debugv("Event contains source, adding to httpevent event")
-                            payloadFragment['source'] = event['source']
-                        if event.get('sourcetype'):
-                            self.logger.debugv("Event contains sourcetype, adding to httpevent event")
-                            payloadFragment['sourcetype'] = event['sourcetype']
-                            self.lastsourcetype = event['sourcetype']
-                        if event.get('host'):
-                            self.logger.debugv("Event contains host, adding to httpevent event")
-                            payloadFragment['host'] = event['host']
-                        if event.get('_time'):
-                            # make sure _time can be an epoch timestamp
-                            try:
-                                float(event.get("_time"))
-                                self.logger.debugv("Event contains _time, adding to httpevent event")
-                                payloadFragment['time'] = event['_time']
-                            except:
-                                self.logger.error("Timestamp not in epoch format, ignoring event: {0}".format(event))
-                        if event.get('index'):
-                            self.logger.debugv("Event contains index, adding to httpevent event")
-                            payloadFragment['index'] = event['index']
-                    self.logger.debugv("Full payloadFragment: %s" % json.dumps(payloadFragment))
-                    payload.append(payloadFragment)
-                self.logger.debug("Finished processing events, sending all to splunk")
-                self._sendHTTPEvents(payload)
-                if self.config.httpeventWaitResponse:
-                    for session in self.active_sessions:
-                        response = session.result()
-                        if not response.raise_for_status():
-                            self.logger.debug("Payload successfully sent to httpevent server.")
-                        else:
-                            self.logger.error("Server returned an error while trying to send, response code: %s" %
-                                              response.status_code)
-                            raise BadConnection(
-                                "Server returned an error while sending, response code: %s" % response.status_code)
-                else:
-                    self.logger.debug("Ignoring response from HTTP server, leaving httpevent outputter")
-            except Exception as e:
-                self.logger.error('failed indexing events, reason: %s ' % e)
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen_httpeventout')
 
 
 def load():
     """Returns an instance of the plugin"""
-    return HTTPEventOutputPlugin
+    return HTTPCoreOutputPlugin
