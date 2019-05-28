@@ -1,5 +1,0 @@
-GET /browse/search
-GET /browse/tracks
-POST /sync/createplaylist
-POST /playhistory/uploadhistory
-POST /auth
