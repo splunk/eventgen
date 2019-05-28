@@ -50,10 +50,10 @@ class OutputPlugin(object):
         self.config = config
 
     def run(self):
-        if self.output_counter is not None:
-            self.output_counter.collect(len(self.events), sum([len(e['_raw']) for e in self.events]))
         if self.events:
             self.flush(self.events)
+        if self.output_counter is not None:
+            self.output_counter.collect(len(self.events), sum([len(e['_raw']) for e in self.events]))
         self.events = None
 
 
