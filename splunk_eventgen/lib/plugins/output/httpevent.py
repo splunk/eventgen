@@ -182,7 +182,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 self.logger.debug("Max size for payload hit, sending to splunk then continuing.")
                 self._transmitEvents(stringpayload)
                 totalbytessent += len(stringpayload)
-                currentreadsize = 0
+                currentreadsize = targetlinesize
                 stringpayload = targetline
                 
         totalbytessent += len(stringpayload)
