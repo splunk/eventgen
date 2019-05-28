@@ -217,6 +217,7 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
                 self.logger.debug(
                     "Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payloadstring))
                 raise e
+        super(HTTPEventOutputPlugin,self).__init__(sample,output_counter)
 
     def flush(self, q):
         self.logger.debug("Flush called on httpevent plugin")
