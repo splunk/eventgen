@@ -220,7 +220,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
     
     def reset_count(self, url):
         try:
-            self.config.httpeventServersCountdownMap['url'] = self.httpeventAllowFailureCount
+            self.config.httpeventServersCountdownMap[url] = self.httpeventAllowFailureCount
         except:
             pass
         
