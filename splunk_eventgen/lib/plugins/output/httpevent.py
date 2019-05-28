@@ -168,7 +168,6 @@ class HTTPEventOutputPlugin(OutputPlugin):
         totalbytessent = 0
         numberevents = len(payload)
         self.logger.debug("Sending %s events to splunk" % numberevents)
-        session_info_list = []
         for line in payload:
             self.logger.debug("line: %s " % line)
             targetline = json.dumps(line)
