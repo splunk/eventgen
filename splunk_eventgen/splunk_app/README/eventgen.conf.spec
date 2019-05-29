@@ -61,6 +61,7 @@ maxIntervalsBeforeFlush = 3
 maxQueueLength = 0
 autotimestamps = [ <jsonlist> ]
 autotimestamp = false
+disableLoggingQueue = false
 
 
 [<sample file name>]

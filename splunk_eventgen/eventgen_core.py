@@ -217,11 +217,13 @@ class EventGenerator(object):
         if self.args.multiprocess:
             import multiprocessing
             self.manager = multiprocessing.Manager()
-            self.loggingQueue = None
-            #TODO crash caused by logging Thread https://github.com/splunk/eventgen/issues/217
-            #self.loggingQueue = self.manager.Queue()
-            #self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
-            #self.logging_pool.start()
+            if self.config.disableLoggingQueue:
+                self.loggingQueue = None
+            else:
+                # TODO crash caused by logging Thread https://github.com/splunk/eventgen/issues/217
+                self.loggingQueue = self.manager.Queue()
+                self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
+                self.logging_pool.start()
             # since we're now in multiprocess, we need to use better queues.
             self.workerQueue = multiprocessing.JoinableQueue(maxsize=500)
             self.genconfig = self.manager.dict()
@@ -392,9 +394,10 @@ class EventGenerator(object):
         stopping = genconfig['stopping']
         root = logging.getLogger()
         root.setLevel(logging.DEBUG)
-        #TODO https://github.com/splunk/eventgen/issues/217
-        #qh = logutils.queue.QueueHandler(logging_queue)
-        #root.addHandler(qh)
+        if logging_queue is not None:
+            # TODO https://github.com/splunk/eventgen/issues/217
+            qh = logutils.queue.QueueHandler(logging_queue)
+            root.addHandler(qh)
         while not stopping:
             try:
                 root.info("Checking for work")

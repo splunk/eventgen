@@ -59,6 +59,7 @@ maxQueueLength = 0
 autotimestamps = [ <jsonlist> ]
 autotimestamp = false
 outputCounter = false
+disableLoggingQueue = false
 
 
 [<sample file name>]
@@ -104,6 +105,11 @@ useOutputQueue = true | false
       a single thread or a limited number of threads outputting data,
       for instance if you're outputting to a file or to stdout/modular input.
     * Default value depends on the output plugin being used.
+
+disableLoggingQueue = true | false
+    * Disable the logging queue for process mode
+    * In process mode, logs in each process will be collected via a logging queue
+    * Default is false which will enable the logging queue
 
 #############################
 ## OUTPUT RELATED SETTINGS ##
