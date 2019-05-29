@@ -217,9 +217,9 @@ class EventGenerator(object):
         if self.args.multiprocess:
             import multiprocessing
             self.manager = multiprocessing.Manager()
-            self.loggingQueue = self.manager.Queue()
-            self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
-            self.logging_pool.start()
+            self.loggingQueue = None #self.manager.Queue()
+            #self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
+            #self.logging_pool.start()
             # since we're now in multiprocess, we need to use better queues.
             self.workerQueue = multiprocessing.JoinableQueue(maxsize=500)
             self.genconfig = self.manager.dict()
@@ -388,10 +388,10 @@ class EventGenerator(object):
     def _proc_worker_do_work(work_queue, logging_queue, config):
         genconfig = config
         stopping = genconfig['stopping']
-        qh = logutils.queue.QueueHandler(logging_queue)
+        #qh = logutils.queue.QueueHandler(logging_queue)
         root = logging.getLogger()
         root.setLevel(logging.DEBUG)
-        root.addHandler(qh)
+        #root.addHandler(qh)
         while not stopping:
             try:
                 root.info("Checking for work")
