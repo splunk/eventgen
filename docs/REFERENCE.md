@@ -59,7 +59,7 @@ maxQueueLength = 0
 autotimestamps = [ <jsonlist> ]
 autotimestamp = false
 outputCounter = false
-disableLoggingQueue = false
+disableLoggingQueue = true
 
 
 [<sample file name>]
@@ -109,7 +109,7 @@ useOutputQueue = true | false
 disableLoggingQueue = true | false
     * Disable the logging queue for process mode
     * In process mode, logs in each process will be collected via a logging queue
-    * Default is false which will enable the logging queue
+    * Default is true which will disable the logging queue
 
 #############################
 ## OUTPUT RELATED SETTINGS ##
