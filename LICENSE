@@ -187,7 +187,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright [yyyy] [name of copyright owner]
+   Copyright 2019 Splunk, Inc.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -200,3 +200,57 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+=======================================================================
+Splunk Event Generator
+
+Splunk Event Generator project contains subcomponents with separate copyright
+notices and license terms. Your use of the source code for the these
+subcomponents is subject to the terms and conditions of the following
+licenses.
+
+========================================================================
+Apache License 2.0
+========================================================================
+The following components are provided under the Apache License 2.0. See project link for details.
+
+    (Apache License 2.0) boto3 (https://github.com/boto/boto3/blob/master/LICENSE)
+    (Apache License 2.0) requests (https://github.com/kennethreitz/requests/blob/master/LICENSE)
+    (Apache License 2.0) pyOpenSSL (https://github.com/pyca/pyopenssl/blob/master/LICENSE)
+    (Apache License 2.0) docker (https://github.com/docker/docker-py/blob/master/LICENSE)
+    (Apache License 2.0) requests-futures (https://github.com/ross/requests-futures/blob/master/LICENSE)
+    (Apache License 2.0) nameko (https://github.com/nameko/nameko/blob/master/LICENSE.txt)
+
+========================================================================
+MIT licenses
+========================================================================
+The following components are provided under the MIT License. See project link for details.
+
+    (MIT License) pyyaml (https://github.com/yaml/pyyaml/blob/master/LICENSE)
+    (MIT License) httplib2 (https://github.com/httplib2/httplib2/blob/master/LICENSE)
+    (MIT License) urllib3 (https://github.com/urllib3/urllib3/blob/master/LICENSE.txt)
+    (MIT License) isort (https://github.com/timothycrosley/isort/blob/develop/LICENSE)
+    (MIT License) flake8 (https://gitlab.com/pycqa/flake8/blob/master/LICENSE)
+    (MIT License) pytest (https://github.com/pytest-dev/pytest/blob/master/LICENSE)
+    (MIT License) pytest-mock (https://github.com/pytest-dev/pytest-mock/blob/master/LICENSE)
+    (MIT License) pytest-xdist (https://github.com/pytest-dev/pytest-xdist/blob/master/LICENSE)
+    (MIT License) pytest-cov (https://github.com/pytest-dev/pytest-cov/blob/master/LICENSE)
+
+========================================================================
+BSD-style licenses
+========================================================================
+
+The following components are provided under a BSD-style license. See project link for details.
+
+    (BSD 2-Clause "Simplified" License) mock (https://github.com/testing-cabal/mock/blob/master/LICENSE.txt)
+    (BSD 3-Clause) pyrabbit (https://github.com/bkjones/pyrabbit/blob/master/LICENSE)
+    (BSD 3-Clause) logutils (https://opensource.org/licenses/BSD-3-Clause)
+    (BSD 3-Clause) jinja2 (https://github.com/pallets/jinja/blob/master/LICENSE)
+    (BSD 3-Clause) ujson(https://github.com/esnme/ultrajson/blob/master/LICENSE.txt)
+
+========================================================================
+PSF licenses
+========================================================================
+
+The following components are provided under a PSF license. See project link for details.
+    (PSD License) futures (https://github.com/agronholm/pythonfutures/blob/master/LICENSE)
