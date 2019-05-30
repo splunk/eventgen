@@ -225,10 +225,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
             pass
         
     def remove_requets_target(self, url):
-        if isinstance(self.config.httpeventServers, str):
-            httpeventServers = json.loads(self.config.httpeventServers)
-        else:
-            httpeventServers = self.config.httpeventServers
+        httpeventServers = json.loads(self.config.httpeventServers)
 
         # If url fail more than specified count, we completely remove it from the pool.
         try:
@@ -249,11 +246,7 @@ class HTTPEventOutputPlugin(OutputPlugin):
                 else:
                     countdown_map[url] -= 1
                     self.logger.debug("Cannot reach {}. Lowering countdown to {}".format(url, countdown_map[url]))
-
-        if isinstance(self.config.httpeventServers, str):
-            self.config.httpeventServers = json.dumps(httpeventServers)
-        else:
-            self.config.httpeventServers = httpeventServers
+        self.config.httpeventServers = json.dumps(httpeventServers)
         self._sample.httpeventServers = httpeventServers
         self.config.httpeventServersCountdownMap = countdown_map
 
