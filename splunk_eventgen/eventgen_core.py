@@ -398,6 +398,8 @@ class EventGenerator(object):
             # TODO https://github.com/splunk/eventgen/issues/217
             qh = logutils.queue.QueueHandler(logging_queue)
             root.addHandler(qh)
+        else:
+            root.addHandler(logging.StreamHandler())
         while not stopping:
             try:
                 root.info("Checking for work")
