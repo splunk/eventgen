@@ -114,7 +114,7 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent
+outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout
     * Specifies how to output log data. Modinput is default.
     * If setting spool, should set spoolDir
     * If setting file, should set fileName
@@ -123,7 +123,6 @@ outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | h
     * If setting s2s, should set splunkHost and splunkPort
     * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort
     * If setting httpevent, should set httpeventServers
-    * If setting metric_httpevent, should set httpeventServers and make sure your index is a splunk metric index
 
 syslogDestinationHost = <host>
     * Defaults to 127.0.0.1
