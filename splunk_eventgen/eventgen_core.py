@@ -391,7 +391,7 @@ class EventGenerator(object):
         #qh = logutils.queue.QueueHandler(logging_queue)
         root = logging.getLogger()
         root.setLevel(logging.DEBUG)
-        #root.addHandler(qh)
+        root.addHandler(logging.StreamHandler())
         while not stopping:
             try:
                 root.info("Checking for work")
