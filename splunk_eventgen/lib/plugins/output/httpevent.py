@@ -1,6 +1,10 @@
 from __future__ import division
 
-from httpevent_core import HTTPCoreOutputPlugin
+import logging
+import random
+import urllib
+
+from outputplugin import OutputPlugin
 
 try:
     import requests
@@ -25,7 +29,7 @@ class BadConnection(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
+class HTTPEventOutputPlugin(OutputPlugin):
     '''
     HTTPEvent output will enable events that are generated to be sent directly
     to splunk through the HTTP event input.  In order to use this output plugin,
@@ -36,8 +40,13 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
 
     '''
     name = 'httpevent'
+    MAXQUEUELENGTH = 1000
+    useOutputQueue = False
+    validSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
+    defaultableSettings = ['httpeventServers', 'httpeventOutputMode', 'httpeventMaxPayloadSize']
+    jsonSettings = ['httpeventServers']
+
     def __init__(self, sample, output_counter=None):
-        super(HTTPEventOutputPlugin,self).__init__(sample,output_counter)
         OutputPlugin.__init__(self, sample, output_counter)
 
     # TODO: make workers a param that can be set in eventgen.conf
@@ -217,7 +226,6 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
                 self.logger.debug(
                     "Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payloadstring))
                 raise e
-        super(HTTPEventOutputPlugin,self).__init__(sample,output_counter)
 
     def flush(self, q):
         self.logger.debug("Flush called on httpevent plugin")
@@ -273,6 +281,9 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
                     self.logger.debug("Ignoring response from HTTP server, leaving httpevent outputter")
             except Exception as e:
                 self.logger.error('failed indexing events, reason: %s ' % e)
+
+    def _setup_logging(self):
+        self.logger = logging.getLogger('eventgen_httpeventout')
 
 
 def load():
