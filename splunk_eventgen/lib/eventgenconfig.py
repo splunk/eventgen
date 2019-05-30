@@ -88,7 +88,7 @@ class Config(object):
                     'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
                     'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort',
                     'verbosity', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse',
-                    'outputCounter', 'sequentialTimestamp', 'extendIndexes']
+                    'outputCounter', 'sequentialTimestamp', 'extendIndexes', 'disableLoggingQueue']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = [
@@ -98,7 +98,7 @@ class Config(object):
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = [
         'disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp',
-        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp']
+        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp', 'disableLoggingQueue']
     _jsonSettings = [
         'hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps']
     _defaultableSettings = [
