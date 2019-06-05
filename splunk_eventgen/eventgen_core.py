@@ -121,8 +121,8 @@ class EventGenerator(object):
         self.config = Config(configfile, **new_args)
         self.config.parse()
         self._reload_plugins()
-        if getattr(args, "generators"):
-            generator_worker_count = args.generators
+        if "args" in kwargs and getattr(kwargs["args"], "generators"):
+            generator_worker_count = kwargs["args"].generators
         else:
             generator_worker_count = self.config.generatorWorkers
 
@@ -223,9 +223,13 @@ class EventGenerator(object):
         if self.args.multiprocess:
             import multiprocessing
             self.manager = multiprocessing.Manager()
-            self.loggingQueue = self.manager.Queue()
-            self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
-            self.logging_pool.start()
+            if self.config.disableLoggingQueue:
+                self.loggingQueue = None
+            else:
+                # TODO crash caused by logging Thread https://github.com/splunk/eventgen/issues/217
+                self.loggingQueue = self.manager.Queue()
+                self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
+                self.logging_pool.start()
             # since we're now in multiprocess, we need to use better queues.
             self.workerQueue = multiprocessing.JoinableQueue(maxsize=self._generator_queue_size)
             self.genconfig = self.manager.dict()
@@ -394,10 +398,14 @@ class EventGenerator(object):
     def _proc_worker_do_work(work_queue, logging_queue, config):
         genconfig = config
         stopping = genconfig['stopping']
-        qh = logutils.queue.QueueHandler(logging_queue)
         root = logging.getLogger()
         root.setLevel(logging.DEBUG)
-        root.addHandler(qh)
+        if logging_queue is not None:
+            # TODO https://github.com/splunk/eventgen/issues/217
+            qh = logutils.queue.QueueHandler(logging_queue)
+            root.addHandler(qh)
+        else:
+            root.addHandler(logging.StreamHandler())
         while not stopping:
             try:
                 root.info("Checking for work")
@@ -542,7 +550,7 @@ class EventGenerator(object):
         try:
             while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0 or not self.workerQueue.empty(
             ) or self.workerQueue.unfinished_tasks > 0:
-                time.sleep(10)
+                time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
         except Exception as e:
@@ -573,7 +581,7 @@ class EventGenerator(object):
                     count += 1
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
-        self.logger.info("All items fully processed, stopping.")
+        self.logger.info("All items fully processed. Cleaning up internal processes.")
         self.started = False
         self.stopping = False
 

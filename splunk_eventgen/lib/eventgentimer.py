@@ -32,7 +32,7 @@ class Timer(object):
         self.profiler = config.profiler
         self.config = config
         self.sample = sample
-        self.end = getattr(self.sample, "end") if getattr(self.sample, "end") is not None else -1
+        self.end = getattr(self.sample, "end", -1)
         self.endts = getattr(self.sample, "endts", None)
         self.generatorQueue = genqueue
         self.outputQueue = outputqueue
@@ -189,17 +189,16 @@ class Timer(object):
                                     self.sample.config.generatorWorkers, count))
                         else:
                             # Spawn workers at the beginning of job rather than wait for next interval
-                            self.logger.info("Start '%d' generatorWorkers for sample '%s'" %
+                            self.logger.info("Starting '%d' generatorWorkers for sample '%s'" %
                                              (self.sample.config.generatorWorkers, self.sample.name))
                             for worker_id in range(self.config.generatorWorkers):
                                 # self.generatorPlugin is only an instance, now we need a real plugin. Make a copy of
                                 # of the sample in case another generator corrupts it.
-                                copy_sample = copy.copy(self.sample)
-                                copy_tokens = []
-                                for token in self.sample.tokens:
-                                    copy_tokens.append(token.deepcopy(self.sample))
-                                copy_sample.tokens = copy_tokens
-                                genPlugin = self.generatorPlugin(sample=copy_sample)
+                                # copy_sample = copy.copy(self.sample)
+                                # tokens = copy.deepcopy(self.sample.tokens)
+                                # copy_sample.tokens = tokens
+                                # genPlugin = self.generatorPlugin(sample=copy_sample)
+                                genPlugin = self.generatorPlugin(sample=self.sample)
                                 # Adjust queue for threading mode
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                                 genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
@@ -207,8 +206,8 @@ class Timer(object):
                                 try:
                                     self.generatorQueue.put(genPlugin)
                                     self.executions += 1
-                                    self.logger.info(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
-                                                      "with et '{3}' and lt '{4}'").format(
+                                    self.logger.debug(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
+                                                       "with et '{3}' and lt '{4}'").format(
                                                           worker_id, round((count / 1024.0 / 1024), 4),
                                                           self.sample.name, et, lt))
                                 except Full:

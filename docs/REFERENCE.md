@@ -59,6 +59,7 @@ maxQueueLength = 0
 autotimestamps = [ <jsonlist> ]
 autotimestamp = false
 outputCounter = false
+disableLoggingQueue = true
 
 
 [<sample file name>]
@@ -104,6 +105,11 @@ useOutputQueue = true | false
       a single thread or a limited number of threads outputting data,
       for instance if you're outputting to a file or to stdout/modular input.
     * Default value depends on the output plugin being used.
+
+disableLoggingQueue = true | false
+    * Disable the logging queue for process mode
+    * In process mode, logs in each process will be collected via a logging queue
+    * Default is true which will disable the logging queue
 
 #############################
 ## OUTPUT RELATED SETTINGS ##
@@ -160,6 +166,9 @@ httpeventMaxPayloadSize = <int>
 httpeventWaitResponse = <bool>
     * wait for all responses on a generator output before returning the outputter.
     * Defaults to true.
+
+httpeventAllowFailureCount = <int>
+    * Number of transmission failure allowed for a certain httpserver before we remove that server from the pool. For example, 100 means that we will no longer include a specific httpserver after 100 failures. Even after some failures, if we see a success for the server, we will reset the count and continue the transmission.
 
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.
