@@ -53,6 +53,9 @@ def parse_args():
                                     help="Use multiprocesing instead of threading")
     generate_subparser.add_argument("--profiler", action="store_true", help="Turn on cProfiler")
     generate_subparser.add_argument("--log-path", type=str, default="{0}/logs".format(FILE_LOCATION))
+    generate_subparser.add_argument(
+        "--generator-queue-size", type=int, default=500, help="the max queue size for the "
+        "generator queue, timer object puts all the generator tasks into this queue, default max size is 500")
     # Build subparser
     build_subparser = subparsers.add_parser('build', help="Will build different forms of sa-eventgen")
     build_subparser.add_argument("--mode", type=str, default="splunk-app",
@@ -308,6 +311,16 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
     directory_default_dir = os.path.join(directory, 'default', 'eventgen.conf')
     eventgen_conf = os.path.join(module_path, 'default', 'eventgen.conf')
     shutil.copyfile(eventgen_conf, directory_default_dir)
+
+    # install 3rd lib dependencies
+    install_target = os.path.join(directory, 'lib')
+    install_cmd = "pip install --requirement splunk_eventgen/lib/requirements.txt --upgrade --no-compile " + \
+                  "--no-binary :all: --target " + install_target
+    return_code = os.system(install_cmd)
+    if return_code != 0:
+        print("Failed to install dependencies via pip. Please check whether pip is installed.")
+    os.system("rm -rf " + os.path.join(install_target, "*.egg-info"))
+
     make_tarfile(target_file, directory)
     shutil.rmtree(splunk_app_samples)
     if remove:

@@ -193,8 +193,7 @@ class JinjaGenerator(GeneratorPlugin):
             if self._sample.splunkEmbedded is True:
                 splunk_home = os.environ["SPLUNK_HOME"]
                 app_name = getattr(self._sample, 'app', 'SA-Eventgen')
-                sample_dir = os.path.join(splunk_home, 'etc', 'apps', app_name,
-                                          'default', self._sample.DEFAULT_SAMPLE_DIR)
+                sample_dir = os.path.join(splunk_home, 'etc', 'apps', app_name, 'samples')
 
             if not hasattr(self._sample, "jinja_template_dir"):
                 template_dir = 'templates'
@@ -278,7 +277,7 @@ class JinjaGenerator(GeneratorPlugin):
                                 target_line["index"] = self._sample.index
                             lines_out.append(target_line)
                 except TypeError as e:
-                    self.logger.exception(e)
+                    self.logger.exception(str(e))
                 self.end_of_cycle = True
                 self._increment_count(lines_out)
                 self._out.bulksend(lines_out)
@@ -290,7 +289,7 @@ class JinjaGenerator(GeneratorPlugin):
             self.logger.info("Generation of sample '%s' completed in %s seconds." % (self._sample.name, timeDiffFrac))
             return 0
         except Exception as e:
-            self.logger.exception(e)
+            self.logger.exception(str(e))
             return 1
 
 
