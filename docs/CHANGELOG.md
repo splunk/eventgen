@@ -1,3 +1,16 @@
+6.4.0
+- Fix exception log error
+- Fix CircleCI status badage error
+- Fix navigation error for app if installed with Splunk Stream
+- Fix generatorWorkers not working error
+- Fix interval error when end = 1
+- Fix fileName in global stanza error
+- Add 3rd party libs in SA-Eventgen App
+- Add httpeventAllowFailureCount for httpevent
+- Add 3rd party libs in license credit
+- Disable logging queue in multiprocess mode
+- Change implementation of extendIndex for better performance
+
 6.3.6
 - Add functional tests for jinja template and modular input feature
 - Fix default jinja template directory is not correctly resolved when sampleDir is set issue
