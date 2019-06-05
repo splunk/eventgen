@@ -80,7 +80,12 @@ class Timer(object):
         except TypeError:
             self.logger.error("Error loading sample file for sample '%s'" % self.sample.name)
             return
-        return len(self.sample.sampleDict[0]['_raw'])
+        total_len = sum([len(e['_raw']) for e in self.sample.sampleDict])
+        sample_count = len(self.sample.sampleDict)
+        if sample_count == 0:
+            return 0
+        else:
+            return total_len/sample_count
 
     def run(self):
         """
@@ -135,9 +140,9 @@ class Timer(object):
                         elif char != "-":
                             backfillletter += char
                     backfillearliest = timeParserTimeMath(plusminus=mathsymbol, num=backfillnumber, unit=backfillletter,
-                                                          ret=realtime)
+                                                        ret=realtime)
                     while backfillearliest < realtime:
-                        if self.executions == int(self.end):
+                        if self.end and self.executions == int(self.end):
                             self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
                                 self.end), self.sample.name))
                             break
@@ -148,11 +153,13 @@ class Timer(object):
                         genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                         genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
                         try:
-                            self.generatorQueue.put(genPlugin)
+                            self.generatorQueue.put(genPlugin, True, 3)
                             self.executions += 1
+                            backfillearliest = lt
                         except Full:
-                            self.logger.warning("Generator Queue Full. Skipping current generation.")
-                        backfillearliest = lt
+                            self.logger.warning("Generator Queue Full. Reput the backfill generator task later. %d backfill generators are dispatched.", self.executions)
+                            backfillearliest = et
+                        realtime = self.sample.now(realnow=True)
 
                     self.sample.backfilldone = True
                 else:
