@@ -561,10 +561,14 @@ class Config(object):
                     # Override <SAMPLE> with real name
                     if s.outputMode == 'spool' and s.spoolFile == self.spoolFile:
                         news.spoolFile = f.split(os.sep)[-1]
-                    if s.outputMode == 'file' and s.fileName is None and s.spoolFile == self.spoolFile:
-                        news.fileName = os.path.join(s.spoolDir, f.split(os.sep)[-1])
-                    elif s.outputMode == 'file' and s.fileName is None and s.spoolFile is not None:
-                        news.fileName = os.path.join(s.spoolDir, s.spoolFile)
+                    if s.outputMode == 'file' and s.fileName is None:
+                        if self.fileName:
+                            news.fileName = self.fileName
+                            self.logger.debug("Found a global fileName {}. Setting the sample fileName.".format(self.fileName))
+                        elif s.spoolFile == self.spoolFile:
+                            news.fileName = os.path.join(s.spoolDir, f.split(os.sep)[-1])
+                        elif s.spoolFile is not None:
+                            news.fileName = os.path.join(s.spoolDir, s.spoolFile)
                     # Override s.name with file name.  Usually they'll match unless we've been a regex
                     # 6/22/12 CS Save original name for later matching
                     news._origName = news.name
