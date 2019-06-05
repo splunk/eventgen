@@ -167,6 +167,9 @@ httpeventWaitResponse = <bool>
     * wait for all responses on a generator output before returning the outputter.
     * Defaults to true.
 
+httpeventAllowFailureCount = <int>
+    * Number of transmission failure allowed for a certain httpserver before we remove that server from the pool. For example, 100 means that we will no longer include a specific httpserver after 100 failures. Even after some failures, if we see a success for the server, we will reset the count and continue the transmission.
+
 spoolDir = <spool directory>
     * Spool directory is the generated files destination directory.
     * Only valid in spool outputMode.
