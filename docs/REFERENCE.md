@@ -116,6 +116,7 @@ disableLoggingQueue = true | false
 #############################
 
 outputWorkers = <number of worker threads>
+    * Deprecated. This will be removed in future releases.
     * Specifies how many threads or processes to stand up to handle output
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
