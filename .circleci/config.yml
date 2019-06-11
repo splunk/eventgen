@@ -22,8 +22,6 @@ jobs:
           path: /home/circleci/project/tests/test-reports
       - store_artifacts:
           path: /home/circleci/project/tests/test-reports
-      - store_test_results:
-          path: /home/circleci/project/htmlcov
       - store_artifacts:
           path: /home/circleci/project/htmlcov
 

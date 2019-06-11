@@ -42,7 +42,13 @@ if len(args) > 1:
 # Array that will hold return codes
 return_codes = []
 
-cov_args = ["--cov=splunk_eventgen", "--cov-config=tests/.coveragerc", "--cov-report=term", "--cov-report=html"]
+cov_args = [
+    "--cov=splunk_eventgen",
+    "--cov-config=tests/.coveragerc",
+    "--cov-report=term",
+    "--cov-report=html",
+    "--cov-append"
+]
 
 # Run small tests
 if SMALL:
@@ -50,8 +56,6 @@ if SMALL:
     os.environ = ENV
     args = [SMALL, "--junitxml=tests/test-reports/tests_small_results.xml"] + cov_args
     return_codes.append(pytest.main(args))
-
-cov_args.append("--cov-append")
 
 # Run medium tests
 if MEDIUM:
