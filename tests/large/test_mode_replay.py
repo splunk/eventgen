@@ -1,7 +1,6 @@
 from datetime import datetime
 import re
 import time
-import pytest
 
 
 def test_mode_replay(eventgen_test_helper):
@@ -51,6 +50,7 @@ def test_mode_replay_timemultiple(eventgen_test_helper):
         delter_seconds = (event_datetime - current_datetime).total_seconds()
         # assert the event time is after (now - earliest) time
         assert delter_seconds < 12
+
 
 def test_mode_replay_csv(eventgen_test_helper):
     """Test normal replay mode with sampletype = csv which will get _raw row from the sample"""
