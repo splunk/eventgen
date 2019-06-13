@@ -53,6 +53,8 @@ test_collection_cleanup:
 	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/test-reports/tests_large_results.xml tests/test-reports/tests_large_results.xml || echo "no tests_large_results.xml"
 	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/test-reports/tests_xlarge_results.xml tests/test-reports/tests_xlarge_results.xml || echo "no tests_xlarge_results.xml"
 
+	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/htmlcov htmlcov || echo "no htmlcov folder"
+
 	@echo 'Stopping test container'
 	docker stop ${EVENTGEN_TEST_IMAGE} || true
 

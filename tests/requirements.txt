@@ -2,9 +2,7 @@ pytest
 pytest-xdist
 mock
 pytest-cov
-nose
 requests
 docker==2.7.0
-requests_futures 
-nameko 
+nameko
 pyOpenSSL
