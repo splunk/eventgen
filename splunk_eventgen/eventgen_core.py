@@ -75,8 +75,14 @@ class EventGenerator(object):
         # attach to the logging queue
         self.logger.info("Logging Setup Complete.")
 
+        self._generator_queue_size = getattr(self.args, 'generator_queue_size', 500)
+        if self._generator_queue_size < 0:
+            self._generator_queue_size = 0
+        self.logger.info("set generator queue size to %d", self._generator_queue_size)
+
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
+
 
     def _load_config(self, configfile, **kwargs):
         '''
@@ -217,15 +223,19 @@ class EventGenerator(object):
         if self.args.multiprocess:
             import multiprocessing
             self.manager = multiprocessing.Manager()
-            self.loggingQueue = self.manager.Queue()
-            self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
-            self.logging_pool.start()
+            if self.config.disableLoggingQueue:
+                self.loggingQueue = None
+            else:
+                # TODO crash caused by logging Thread https://github.com/splunk/eventgen/issues/217
+                self.loggingQueue = self.manager.Queue()
+                self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
+                self.logging_pool.start()
             # since we're now in multiprocess, we need to use better queues.
-            self.workerQueue = multiprocessing.JoinableQueue(maxsize=500)
+            self.workerQueue = multiprocessing.JoinableQueue(maxsize=self._generator_queue_size)
             self.genconfig = self.manager.dict()
             self.genconfig["stopping"] = False
         else:
-            self.workerQueue = Queue(maxsize=500)
+            self.workerQueue = Queue(maxsize=self._generator_queue_size)
             worker_threads = workercount
             if hasattr(self.config, 'outputCounter') and self.config.outputCounter:
                 self.output_counters = []
@@ -388,10 +398,14 @@ class EventGenerator(object):
     def _proc_worker_do_work(work_queue, logging_queue, config):
         genconfig = config
         stopping = genconfig['stopping']
-        qh = logutils.queue.QueueHandler(logging_queue)
         root = logging.getLogger()
         root.setLevel(logging.DEBUG)
-        root.addHandler(qh)
+        if logging_queue is not None:
+            # TODO https://github.com/splunk/eventgen/issues/217
+            qh = logutils.queue.QueueHandler(logging_queue)
+            root.addHandler(qh)
+        else:
+            root.addHandler(logging.StreamHandler())
         while not stopping:
             try:
                 root.info("Checking for work")
@@ -534,9 +548,9 @@ class EventGenerator(object):
         :return:
         '''
         try:
-            while not self.sampleQueue.empty() or (getattr(self.sampleQueue, "unfinished_tasks", 0) > 0) \
-              or not self.workerQueue.empty() or (getattr(self.workerQueue, "unfinished_tasks", 0) > 0):
-                time.sleep(10)
+            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0 or not self.workerQueue.empty(
+            ) or self.workerQueue.unfinished_tasks > 0:
+                time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()
         except Exception as e:
@@ -567,7 +581,7 @@ class EventGenerator(object):
                     count += 1
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
-        self.logger.info("All items fully processed, stopping.")
+        self.logger.info("All items fully processed. Cleaning up internal processes.")
         self.started = False
         self.stopping = False
 

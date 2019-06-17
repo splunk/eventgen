@@ -31,4 +31,5 @@ venv/*
 splunk_eventgen-*/
 .env
 .vscode
+htmlcov/*
 

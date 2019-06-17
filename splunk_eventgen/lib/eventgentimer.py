@@ -85,7 +85,12 @@ class Timer(object):
         except TypeError:
             self.logger.error("Error loading sample file for sample '%s'" % self.sample.name)
             return
-        return len(self.sample.sampleDict[0]['_raw'])
+        total_len = sum([len(e['_raw']) for e in self.sample.sampleDict])
+        sample_count = len(self.sample.sampleDict)
+        if sample_count == 0:
+            return 0
+        else:
+            return total_len/sample_count
 
     def run(self):
         """

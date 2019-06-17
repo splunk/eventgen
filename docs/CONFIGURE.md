@@ -40,7 +40,6 @@ sample you wish to create, followed by key = value tuning options for that sampl
     
 [windbag]
   count=100
-  
 ```
 Stanza names are one of the most important early configurations because they are used to find your sample file. Stanza names will perform a
 search for the stanza name as a file, located in the current directory, the default samples directory, or a sample directory specified by the user. If no matching sample is found, Eventgen
@@ -55,22 +54,22 @@ eventgen settings. Below is a list of those options with their descriptions:
     threading = thread | process
     * Configurable threading model. Process uses multiprocessing.Process in Python to get around issues with the GIL.
     * Defaults to thread
----
+
     profiler = true | false
     * Run eventgen with python profiler on
     * Defaults to false
----    
+
     useOutputQueue = true | false
     * Disable the use of the output Queue.
     * The output queue functions as a reduce step when you need to maintain a single thread or a limited number of threads outputting data, for instance if you're outputtingto a file or to stdout/modular input.
     * If you can multithread output, for example with splunkstream or s2s type outputs, setting this to false will give an order of magnitude or better performance improvement.
     * Defaults to true
 
----
     outputWorkers = <number of worker threads>
+    * Deprecated. This will be removed in future releases.
     * Specifies how many threads or processes to stand up for handling output
     * Defaults to 1
----    
+
     generatorWorkers = <number of generator threads>
     * Specifies how many threads/processes to use to generate events. Each stanza you have will occupy 1 thread / process as it processes.
       tuning this number will consume more CPU and can have negatvie effects if overallocated.
@@ -84,7 +83,7 @@ Generic settings work on all stanzas and all stanza types.
 
     disabled = true | false
     * Like what it looks like. Will disable event generation for this sample.
----
+
     sampleDir = <dir>
     * Set a different directory to look for samples in
 
@@ -116,16 +115,16 @@ to create, and processed. Replay mode however, will only run 1 time. If you wish
     interval = <integer>
     * How often to generate sample (in seconds).
     * Defaults to 60.
----
+
     rater = default | <plugin>
     * Specifies which rater plugin to use. Default rater uses hourOfDayRate, etc, settings to specify
       how to affect the count of events being generated. Raters in 3.0 are now pluggable python modules.
----
+
     delay = <integer>
     * Specifies how long to wait until we begin generating events for this sample from startup.
     * Primarily this is used so we can stagger sets of samples which similar but slightly different data
     * Defaults to 0 which is disabled.
----
+
     end = <time-str> | <integer>
     * Will end execution on a specific time or a number of intervals
     * Can be used to execute only a specified number of intervals or with backfill to generate events over a specific time window.
@@ -141,12 +140,12 @@ amount of volume perday. These plugins can be set either in the cwd, or in lib/p
     * Maximum number of events to generate per sample file
     * -1 means replay the entire sample.
     * Defaults to -1.
----    
+
     perDayVolume = <float>
     * This is used in place of count. The perDayVolume is a size supplied in GB per Day. This value will allow
     * eventgen to supply a target datavolume instead of a count for event generation.
     * Defaults to Null
----    
+
     hourOfDayRate = <json>
     * Takes a JSON hash of 24 hours with float values to rate limit how many events we should see
       in a given hour.
@@ -154,35 +153,35 @@ amount of volume perday. These plugins can be set either in the cwd, or in lib/p
       { "0": 0.05, "1": 0.05: "2": 0.07... }
     * If a match is not found, will default to count events
     * Also multiplied times dayOfWeekRate, minuteOfHourRate, dayOfMonthRate, monthOfYearRate
----
+
     dayOfWeekRate = <json>
     * Takes a JSON hash of 7 days of the week in Splunk format (0 is Sunday)
     * Sample JSON:
       { "0": 0.55, "1": 0.97, "2": 0.95, "3": 0.90, "4": 0.97, "5": 1.0, "6": 0.99 }
     * If a match is not found, will default to count events
     * Also multiplied times hourOfDayRate, minuteOfHourRate, dayOfMonthRate, monthOfYearRate
----
+
     minuteOfHourRate = <json>
     * Takes a JSON hash of 60 minutes of an hour, starting with 0
     * Sample JSON:
       { "0": 1, "2": 1...}
     * If a match is not found, will default to count events
     * Also multiplied times dayOfWeekRate, hourOfDateRate, dayOfMonthRate, monthOfYearRate
----
+
     dayOfMonthRate = <json>
     * Takes a JSON hash of 31 days of the month, starting with 1
     * Sample JSON:
       { "1": 1, "2": 1...}
     * If a match is not found, will default to count events
     * Also multiplied times dayOfWeekRate, hourOfDateRate, minuteOfHourRate, monthOfYearRate
----
+
     monthOfYearRate = <json>
     * Takes a JSON hash of 60 minutes of an hour, starting with 0
     * Sample JSON:
       { "0": 1, "2": 1...}
     * If a match is not found, will default to count events
     * Also multiplied times dayOfWeekRate, hourOfDateRate, minuteOfHourRate, dayOfMonthRate
----  
+
     randomizeCount = <float>
     * Will randomize the number of events generated by percentage passed
     * Example values: 0.2, 0.5
@@ -202,19 +201,19 @@ Generic settings are valid for all generators.
     * Specifies the generator plugin to use.
     * The default generator exclusively uses settings in eventgen.conf to control behavior.
     * All other generators are pluggable python modules which can be custom code.
----
+
     mode = sample | replay
     * Default is sample, which will generate count (+/- rating) events every configured interval
     * Replay will instead read the file and leak out events, replacing timestamps, 
     * May not be supported by plugins otherthan "default"
----
+
     sampletype = raw | csv
     * Raw are raw events (default)
     * CSV are from an outputcsv or export from Splunk.
       CSV allows you to override output fields for the sample like host, index, source and sourcetype
       from the CSV file. Will read the raw events from a field called _raw. Assumes the CSV file has
       a header row which defines field names.
----
+
     timezone = local | <integer>
     * If set to 'local', will output local time, if set to '0000' will output UTC time
     * Otherwise it must be a timezone offset like +hhmm or -hhmm, for example:
@@ -222,12 +221,12 @@ Generic settings are valid for all generators.
       US Pacific Daylight (PDT) would be: timezone = -0700
       Indian Standard would be timezone = +0530
     * Valid range +2359 to -2359 (The last two digits are MINUTES, so they should be within 0-59)
----    
+
     earliest = <time-str>
     * Specifies the earliest random time for generated events.
     * If this value is an absolute time, use the dispatch.time_format to format the value.
     * Defaults to now.
----
+
     latest = <time-str>
     * Specifies the latest random time for generated events.
     * If this value is an absolute time, use the dispatch.time_format to format the value.
@@ -239,23 +238,23 @@ The following options are only valid for the default Eventgen generator plugin.
     timeMultiple = <float>
     * Only valid in mode = replay
     * Will slow down the replay of events by <float> factor. This is achieved by calculating the interval between events and adjusting the interval by the timeMultiple factor. For example, allows a 10 minute sample to play out over 20 minutes with a timeMultiple of 2, or 60 minutes with a timeMultiple of 6. By the converse, make timeMultiple 0.5 will make the events run twice as fast. NOTE that the interval timeMultiple is adjusting is actual time interval between events in your sample file. "timeMultiple" option should not affect your "interval" option.
----
+
     timeField = <field name>
     * Only valid in mode = replay
     * Will select the field to find the timestamp in. In many cases, time will come from a different
       field in the CSV.
----
+
     backfill = <time-str>
     * Specified in Splunk's relative time language, used to set a time to backfill events
----
+
     backfillSearch = <splunk search>
     * If outputMode = splunkstream, this will run this search, appending '| head 1', and narrow the
       backfill range specified with backfill to when the search has last seen events.
----
+
     backfillSearchUrl = <url>
     * Defaults to splunkMethod://splunkHost:splunkPort/, can override in case you're running
       in a cluster.
----
+
     bundlelines = true | false
     * For outside use cases where you need to take all the lines in a sample file and pretend they are
       one event, but count = 0 will not work because you want to replay all the lines more than once.
@@ -265,12 +264,12 @@ The following options are only valid for the default Eventgen generator plugin.
     * If bundlelines = true and the token replacementType is replaytimestamp, we will introduce some randomness
       into the times between items in the transaction in microseconds.
     * Will override any breaker setting.
----    
+
     randomizeEvents = <boolean>
     * Will randomize the events found in the sample file before choosing the events.
     * NOT SUPPORTED WITH sampletype csv
     * NOT SUPPORTED WITH mode = replay OR custom generators like generator = replay
----    
+
     breaker = <regular expression>
     * NOT to be confused w/ props.conf LINE_BREAKER.
     * PCRE used for flow control.
@@ -286,7 +285,7 @@ Tokens in the default generator can override the sample to allow dynamic content
     * PCRE expression used to identify segment for replacement.
     * If one or more capture groups are present the replacement will be performed on group 1.
     * Defaults to None.
----    
+
     token.<n>.replacementType = static | timestamp | replaytimestamp | random | rated | file | mvfile | seqfile | integerid
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For static, the token will be replaced with the value specified in the replacement setting.
@@ -308,7 +307,7 @@ Tokens in the default generator can override the sample to allow dynamic content
     * For seqfile, the token will be replaced with a value that retrieved from (a column of) file sequentially.
     * For integerid, will use an incrementing integer as the replacement.
     * Defaults to None.
----    
+
     token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid | ipv4 | ipv6 | mac | integer[<start>:<end>] | float[<start>:<end>] | string(<i>) | hex(<i>) | list["list", "of", "values"] | <replacement file name> | <replacement file name>:<column number> | <integer>
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For <string>, the token will be replaced with the value specified.
@@ -345,10 +344,10 @@ The following options are only valid with the jinja generator.
 
     jinja_template_dir = <str> example: templates
     * directory name inside the current eventgen.conf dir where jinja templates can be located
----    
+
     jinja_target_template = <str> example: test_jinja.template
     * root template to load for all sample generation
----    
+
     jinja_variables = <json> example:{"large_number":50000}
     * json value that contains a dict of kv pairs to pass as options to load inside of the jinja templating engine.
     
@@ -373,24 +372,24 @@ specifically be supported by all plugins. Plugins that write to files like spool
     index = <index>
     * Only valid with outputMode 'splunkstream'.
     * Splunk index to write events to. Defaults to main if none specified.
----    
+
     source = <source>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
     * Set event source in Splunk to <source>. Defaults to 'eventgen' if none specified.
----    
+
     sourcetype = <sourcetype>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
     * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
----    
+
     host = <host>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Set event host in Splunk to <host>. Defaults to 127.0.0.1 if none specified.
---- 
+
     host.token = <regular expression>
     * PCRE expression used to identify the host name (or partial name) for replacement.
     * If one or more capture groups are present the replacement will be performed on group 1.
     * Defaults to None.
----
+
     host.replacement = <replacement file name> | <replacement file name>:<column number>
     * For <replacement file name>, the token will be replaced with a random line in the replacement file.
       * Replacement file name should be a fully qualified path (i.e. $SPLUNK_HOME/etc/apps/windows/samples/users.list).
@@ -398,15 +397,15 @@ specifically be supported by all plugins. Plugins that write to files like spool
       * Unix separators will work on Windows and vice-versa.
     * Column numbers in mvfile or seqfile references are indexed at 1, meaning the first column is column 1, not 0.
     * Defaults to None.
----    
+
     hostRegex = <hostRegex>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Allows setting the event host via a regex from the actual event itself. Only used if host not set.
----    
+
     maxIntervalsBeforeFlush = <intervals before flushing queue>
     * Number of intervals before flushing the queue if the queue hasn't filled to maxQueueLength
     * Defaults to 3
----
+
     maxQueueLength = <maximum items before flushing the queue>
     * Number of items before flushing the output queue
     * Default is per outputMode specific
@@ -416,7 +415,6 @@ specifically be supported by all plugins. Plugins that write to files like spool
     * Defaults to 127.0.0.1
     * Required
 
----
     syslogDestinationPort = <port>
     * Defaults to port 1514
     * Only supports UDP ports
@@ -426,7 +424,7 @@ specifically be supported by all plugins. Plugins that write to files like spool
     tcpDestinationHost = <host>
     * Defaults to 127.0.0.1
     * Required
----
+
     tcpDestinationPort = <port>
     * Defaults to port 3333
     * Required
@@ -435,7 +433,7 @@ specifically be supported by all plugins. Plugins that write to files like spool
     udpDestinationHost = <host>
     * Defaults to 127.0.0.1
     * Required
----
+
     udpDestinationPort = <port>
     * Defaults to port 3333
     * Required
@@ -446,19 +444,22 @@ specifically be supported by all plugins. Plugins that write to files like spool
     * valid server objects contain a protocol, a address, a port and a session key. Example:
       {"servers":[{ "protocol":"https", "address":"127.0.0.1", "port":"8088", "key":"12345-12345-123123123123123123"}]}
     * Required
----
+
     httpeventOutputMode = roundrobin | mirror
     * in roundrobin mode, the HEC plugin will output to a random server out of the server pool
     * in mirror moded, HEC plugin will mirror the event to every server specified in the server pool
     * Defaults to roundrobin
----
+
     httpeventMaxPayloadSize = <int>
     * the max payload size that is currently configured for HTTP event
     * This setting can be tuned to send more events than Splunk is configured for. Please use caution when adjusting this value.
----
+
     httpeventWaitResponse = <bool>
     * wait for all responses on a generator output before returning the outputter.
     * Defaults to true.
+
+    httpeventAllowFailureCount = <int>
+    * Number of transmission failure allowed for a certain httpserver before we remove that server from the pool. For example, 100 means that we will no longer include a specific httpserver after 100 failures. Even after some failures, if we see a success for the server, we will reset the count and continue the transmission.
 
 ###### spool
     spoolDir = <spool directory>
@@ -468,7 +469,7 @@ specifically be supported by all plugins. Plugins that write to files like spool
     * Unix separators will work on Windows and vice-versa.
     * Defaults to $SPLUNK_HOME/var/spool/splunk
     * Required
----    
+
     spoolFile = <spool file name>
     * Spool file is the generated files name.
     * Not valid if stanza is a pattern.
@@ -480,11 +481,11 @@ specifically be supported by all plugins. Plugins that write to files like spool
     * Uses a rotating file handler which will rotate the file at a certain size, by default 10 megs
       and will by default only save 5 files. See fileMaxBytes and fileBackupFiles
     * Required
----      
+
     fileMaxBytes = <size in bytes>
     * Will rotate a file output at this given size
     * Defaults to 10 Megabytes (10485760 bytes)
----    
+
     fileBackupFiles = <number of files>
     * Will keep this number of files (.1, .2, etc) after rotation
     * Defaults to 5
@@ -496,26 +497,26 @@ specifically be supported by all plugins. Plugins that write to files like spool
       feed an entire cluster of Splunk indexers without needing forwarders.
     * JSON list should look like [ "host.name", "host2.name" ]
     * Required
----    
+
     splunkPort = <port>
     * Defaults to the default Splunk management port 8089
     * Required
----
+
     splunkMethod = http | https
     * Defaults to https
     * Required
----    
+
     splunkUser = <user>
     * User with rights to post to REST endpoint receivers/stream
     * Required
----    
+
     splunkPass = <pass>
     * Password for SplunkUser
     * Required
----    
+
     projectID = <id>
     * Project ID for Splunk Storm
----    
+
     accessToken = <accesstoken>
     * Access Token for Splunk Storm
     

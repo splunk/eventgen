@@ -122,7 +122,7 @@ class Eventgen(ModularInput):
                 logger.info("Finished parse")
                 eventgen._reload_plugins()
                 logger.info("Finished reload")
-                eventgen._setup_pools()
+                eventgen._setup_pools(eventgen.config.generatorWorkers)
                 logger.info("Finished setup pools")
                 eventgen.start(join_after_start=True)
                 logger.info("Finished running start")
