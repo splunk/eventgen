@@ -30,7 +30,7 @@ test_helper:
 	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} eventgen:latest cat
 
 	@echo 'Install libxml2'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "apk add --no-cache --update libxml2-dev libxslt1-dev"
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "apk add --no-cache --update libxml2-dev"
 
 	@echo 'Creating dirs needed for tests'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "mkdir -p $(shell pwd) " || true
