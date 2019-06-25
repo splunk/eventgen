@@ -25,25 +25,25 @@ class BadConnection(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
+class MetricHTTPEventOutputPlugin(HTTPCoreOutputPlugin):
     '''
-    HTTPEvent output will enable events that are generated to be sent directly
-    to splunk through the HTTP event input.  In order to use this output plugin,
+    MetricHTTPEvent output will enable events that are generated to be sent directly
+    to splunk metrics indexes through the HTTP event input.  In order to use this output plugin,
     you will need to supply an attribute 'httpeventServers' as a valid json object.
     this json object should look like the following:
     {servers:[{ protocol:http/https, address:127.0.0.1, port:8088, key:12345-12345-123123123123123123}]}
     '''
-    name = 'httpevent'
+    name = 'metric_httpevent'
+
     def __init__(self, sample, output_counter=None):
-        super(HTTPEventOutputPlugin,self).__init__(sample,output_counter)
+        super(MetricHTTPEventOutputPlugin, self).__init__(sample, output_counter)
 
     def flush(self, q):
-        self.logger.debug("Flush called on httpevent plugin")
+        self.logger.debug("Flush called on metric_httpevent plugin")
         self._setup_REST_workers()
         if len(q) > 0:
             try:
                 payload = []
-                self.logger.debug("Currently being called with %d events" % len(q))
                 for event in q:
                     self.logger.debug("HTTPEvent proccessing event: %s" % event)
                     payloadFragment = {}
@@ -51,7 +51,10 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
                         self.logger.error('failure outputting event, does not contain _raw')
                     else:
                         self.logger.debug("Event contains _raw, attempting to process...")
-                        payloadFragment['event'] = event['_raw']
+                        self.logger.debug(event['_raw'])
+                        fields = json.loads(event['_raw'])['fields']
+                        payloadFragment['fields'] = fields
+                        payloadFragment['event'] = "metric"
                         if event.get('source'):
                             self.logger.debug("Event contains source, adding to httpevent event")
                             payloadFragment['source'] = event['source']
@@ -73,9 +76,11 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
                         if event.get('index'):
                             self.logger.debug("Event contains index, adding to httpevent event")
                             payloadFragment['index'] = event['index']
-                    self.logger.debug("Full payloadFragment: %s" % json.dumps(payloadFragment))
+
+                    self.logger.debug("Full payloadFragment: {}".format(payloadFragment))
+                    # self.logger.debug("Full payloadFragment: %s" % json.dumps(payloadFragment))
                     payload.append(payloadFragment)
-                self.logger.debug("Finished processing events, sending all to splunk")
+                self.logger.debug("Metric_httpevent Finished processing events, sending all to splunk")
                 self._sendHTTPEvents(payload)
                 if self.config.httpeventWaitResponse:
                     for session in self.active_sessions:
@@ -88,11 +93,11 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
                             raise BadConnection(
                                 "Server returned an error while sending, response code: %s" % response.status_code)
                 else:
-                    self.logger.debug("Ignoring response from HTTP server, leaving httpevent outputter")
+                    self.logger.debug("Ignoring response from HTTP server, leaving  metric_httpevent outputter")
             except Exception as e:
                 self.logger.error('failed indexing events, reason: %s ' % e)
 
 
 def load():
     """Returns an instance of the plugin"""
-    return HTTPEventOutputPlugin
+    return MetricHTTPEventOutputPlugin
