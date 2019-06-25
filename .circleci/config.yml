@@ -12,7 +12,7 @@ jobs:
       - run:
           name: Install Dependencies
           command: |
-            sudo apt-get install -y libxml2-dev
+            sudo apt-get install -y libxml2-dev libxslt1-dev
             pip install -r tests/requirements.txt
       - run:
           name: Run Tests
