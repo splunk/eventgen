@@ -275,6 +275,8 @@ class EventGenerator(object):
         eventgen_metrics_logger_path = os.path.join(log_path, 'eventgen-metrics.log')
         eventgen_error_logger_path = os.path.join(log_path, 'eventgen-errors.log')
         eventgen_server_logger_path = os.path.join(log_path, 'eventgen-server.log')
+        eventgen_httpevent_logger_path = os.path.join(log_path, 'eventgen-httpevent.log')
+
         if not config:
             log_format = '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
             date_format = '%Y-%m-%d %H:%M:%S'
@@ -313,6 +315,11 @@ class EventGenerator(object):
             server_file_handler.setFormatter(json_formatter)
             server_file_handler.setLevel(logging.INFO)
 
+            httpevent_file_handler = logging.handlers.RotatingFileHandler(eventgen_httpevent_logger_path, maxBytes=2500000,
+                                                                       backupCount=10)
+            httpevent_file_handler.setFormatter(detailed_formatter)
+            httpevent_file_handler.setLevel(logging.INFO)
+
             # Configure eventgen logger
             logger = logging.getLogger('eventgen')
             logger.setLevel(self.args.verbosity or logging.ERROR)
@@ -346,6 +353,13 @@ class EventGenerator(object):
             logger.handlers = []
             logger.addHandler(server_file_handler)
             logger.addHandler(console_handler)
+
+            # Configure httpeventout logger
+            logger = logging.getLogger('eventgen_httpeventout')
+            logger.setLevel(logging.INFO)
+            logger.propagate = False
+            logger.handlers = []
+            logger.addHandler(httpevent_file_handler)
         else:
             self.logger_config = config
             logging.config.dictConfig(self.logger_config)
@@ -548,8 +562,7 @@ class EventGenerator(object):
         :return:
         '''
         try:
-            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0 or not self.workerQueue.empty(
-            ) or self.workerQueue.unfinished_tasks > 0:
+            while not self.sampleQueue.empty() or self.sampleQueue.unfinished_tasks > 0 or not self.workerQueue.empty():
                 time.sleep(5)
             self.logger.info("All timers have finished, signalling workers to exit.")
             self.stop()

@@ -18,13 +18,16 @@ class EventgenTestHelper(object):
         if not os.path.isdir(result_dir):
             os.makedirs(result_dir)
 
-    def __init__(self, conf, timeout=None):
+    def __init__(self, conf, timeout=None, mode=None):
         self.conf = os.path.join(base_dir, 'conf', conf)
         self.config, self.section = self._read_conf(self.conf)
         self.output_mode = self._get_output_mode()
         self.file_name = self._get_file_name()
         self.breaker = self._get_breaker()
-        self.process = subprocess.Popen(['splunk_eventgen', '-v', 'generate', self.conf], stdout=subprocess.PIPE)
+        cmd = ['splunk_eventgen', '-v', 'generate', self.conf]
+        if mode == 'process':
+            cmd.append('--multiprocess')
+        self.process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         if timeout:
             timer = Timer(timeout, self.kill)
             timer.start()
@@ -42,7 +45,9 @@ class EventgenTestHelper(object):
         """Get events either from stdout or from file"""
         self.process.wait()
         if self.output_mode == 'stdout':
-            output = self.process.communicate()[0]
+            output, stderr = self.process.communicate()
+            if stderr:
+                assert False
         elif self.output_mode == 'file':
             with open(os.path.join(result_dir, self.file_name), 'r') as f:
                 output = f.read()
