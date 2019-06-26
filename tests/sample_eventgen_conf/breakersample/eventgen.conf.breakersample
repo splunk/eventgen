@@ -1,5 +1,5 @@
 [breakersample]
-sampleDir = tests/sample_eventgen_conf/breakersample
+sampleDir = .
 outputMode = stdout
 count = 3
 earliest = -3s

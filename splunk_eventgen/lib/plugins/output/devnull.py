@@ -1,6 +1,9 @@
 from __future__ import division
-from outputplugin import OutputPlugin
+
 import logging
+
+from outputplugin import OutputPlugin
+
 
 class DevNullOutputPlugin(OutputPlugin):
     name = 'devnull'
@@ -20,6 +23,7 @@ class DevNullOutputPlugin(OutputPlugin):
 
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen_devnullout')
+
 
 def load():
     """Returns an instance of the plugin"""

@@ -1,6 +1,7 @@
-## Install ##
+## Install
 
-There are a multiple ways to using Eventgen, and you should choose the method that best fits your use case.  Below are the two major ways to use Eventgen - as a PyPI module and as a Splunk App. Follow the instructions below depending on your ideal use:
+There are multiple ways to use Eventgen, and you should choose the method that best fits your use case.
+Below are the two major ways to use Eventgen - as a PyPI module and as a Splunk App. Follow the instructions below depending on your ideal use:
 
 * Install / Use Eventgen as a [Splunk App](#splunk-app-installation)
 
@@ -33,12 +34,9 @@ There are a multiple ways to using Eventgen, and you should choose the method th
   * You have to run the "build" command to produce a Splunk app
   * Harder to troubleshoot (especially in multiprocess mode)
 
-
-
-
 ---
 
-## PyPI Installation / First Run #####
+## PyPI Installation / First Run
 
 To use Eventgen as a PyPI module, you need to either download/clone the source code or install direct from github. 
 
@@ -118,7 +116,7 @@ A quick preface on this mode of operation: due to its complexity, this is only r
 
 ---
 
-## Splunk App Installation / First Run #####
+## Splunk App Installation / First Run
 
 To use Eventgen as a Splunk app, you need a SPL file. This SPL file can be obtained in one of two ways:
 1. Through running the "build" process of the splunk_eventgen pypi module
@@ -160,5 +158,13 @@ To start generating data, simply enable the SA-Eventgen modinput by going to Set
 
 If you wish you add your bundle so that the modinput can detect your package:
 Package your eventgen.conf and sample files into a directory structure as outlined in the [configuration](CONFIGURE.md). After that's done, copy/move the bundle into your `${SPLUNK_HOME}/etc/apps/` directory and restart Splunk. If you have specific samples enabled in your eventgen.conf, you should see data streaming into the specified Splunk index.
+
+Make sure the bundle app permission is global. You can config this in two ways:
+* Log in to Splunk Web and navigate to Apps > Manage Apps. Find the bundle app row and set the permission to 'Global' on the Sharing column.
+* Create a folder `metadata` under the bundle with file `default.meta` and add the following content:
+```
+[]
+export=system
+```
 
 ---

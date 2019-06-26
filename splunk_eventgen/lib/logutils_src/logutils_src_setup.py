@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import distutils.core
-import logutils
-from os.path import join, dirname, abspath
 import re
+from os.path import dirname, join
+
+import logutils
 
 
 def description():
@@ -15,6 +16,7 @@ def description():
     regexp = r'Availability & Documentation\s*\n-----+\s*\n(.*)'
     avail, = re.findall(regexp, readme, re.DOTALL)
     return reqts + avail
+
 
 class TestCommand(distutils.core.Command):
     user_options = []
@@ -37,6 +39,7 @@ class TestCommand(distutils.core.Command):
     def finalize_options(self):
         pass
 
+
 distutils.core.setup(
     name='logutils',
     version=logutils.__version__,
@@ -44,7 +47,7 @@ distutils.core.setup(
     author_email='vinay_sajip@red-dove.com',
     url='http://code.google.com/p/logutils/',
     description='Logging utilities',
-    long_description = description(),
+    long_description=description(),
     license='Copyright (C) 2010-2017 by Vinay Sajip. All Rights Reserved. See LICENSE.txt for license.',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -55,11 +58,8 @@ distutils.core.setup(
         'Programming Language :: Python',
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 3",
-        'Topic :: Software Development',
-    ],
+        'Topic :: Software Development', ],
     packages=['logutils'],
     cmdclass={
-        'test': TestCommand,
-    },
-
+        'test': TestCommand, },
 )

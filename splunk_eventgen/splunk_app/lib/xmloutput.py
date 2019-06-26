@@ -1,9 +1,9 @@
-import xml.sax.saxutils
+import datetime
 import logging
 import logging.handlers
 import sys
-import time
-import datetime
+import xml.sax.saxutils
+
 from splunk.appserver.mrsparkle.lib.util import make_splunkhome_path
 
 
@@ -18,8 +18,8 @@ def setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [ModInput] %(
     logger.propagate = False  # Prevent the log messages from being duplicated in the python.log file
     logger.setLevel(level)
 
-    file_handler = logging.handlers.RotatingFileHandler(make_splunkhome_path(['var', 'log', 'splunk', log_name]),
-                                                        maxBytes=2500000, backupCount=5)
+    file_handler = logging.handlers.RotatingFileHandler(
+        make_splunkhome_path(['var', 'log', 'splunk', log_name]), maxBytes=2500000, backupCount=5)
     formatter = logging.Formatter(log_format)
     file_handler.setFormatter(formatter)
 
@@ -30,22 +30,21 @@ def setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [ModInput] %(
     return logger
 
 
-########################################################################
-# COMMUNICATION WITH SPLUNKD
-# We provide a class for printing data out to splunkd. Essentially this
-# is just a wrapper on using xml formatted data delivery to splunkd
-########################################################################
+#########################################################################
+# COMMUNICATION WITH SPLUNKD                                            #
+# We provide a class for printing data out to splunkd. Essentially this #
+# is just a wrapper on using xml formatted data delivery to splunkd     #
+#########################################################################
 class XMLOutputManager(object):
     """
-    This guy handles writing data to splunkd with modular input xml 
-    streaming mode. 
+    This guy handles writing data to splunkd with modular input xml streaming mode.
     """
 
     def __init__(self, out=sys.stdout):
         """
-        Construct an output manager. 
-        kwargs: 
-            out - represents the stream to print to. Defaults to sys.stdout. 
+        Construct an output manager.
+        kwargs:
+            out - represents the stream to print to. Defaults to sys.stdout.
         """
         self.stream_initiated = False
         self.out = out
@@ -72,13 +71,13 @@ class XMLOutputManager(object):
         args:
             buf - the buffer of data to send (string). REQUIRED.
         kwargs:
-            unbroken - this is a boolean indicating the buf passed is unbroken data if this is True. 
+            unbroken - this is a boolean indicating the buf passed is unbroken data if this is True.
                        Defaults to False (buf is a single event).
             sourcetype - the sourcetype to assign to the event (string). Defaults to input default.
             source - the source to assign to the event (string). Defaults to input default.
             host - the host to assign to the event (string). Defaults to input default.
-            time - the time to assign to the event (string of UTC UNIX timestamp, 
-                   miliseconds supported). Defaults to letting splunkd work it out.
+            time - the time to assign to the event (string of UTC UNIX timestamp,
+                   milliseconds supported). Defaults to letting splunkd work it out.
             index - the index into which the data should be stored. Defaults to the input default.
         """
         if not unbroken:
@@ -107,7 +106,7 @@ class XMLOutputManager(object):
         """
         Let splunkd know that previously sent, unbroken events are now complete
         and ready for processing. Typically you will send some data, like chunks of a log file
-        then when you know you are done, say at the end of the log file you will send a 
+        then when you know you are done, say at the end of the log file you will send a
         done key to indicate that sent data may be processed for the provided source,
         sourcetype, host, and index
         kwargs:

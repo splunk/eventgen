@@ -1,16 +1,16 @@
 # Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 #
-# This file contains all possible options for an eventgen.conf file.  Use this file to configure 
+# This file contains all possible options for an eventgen.conf file.  Use this file to configure
 # Splunk's event generation properties.
 #
-# To generate events place an eventgen.conf in $SPLUNK_HOME/etc/apps/<app>/local/. 
+# To generate events place an eventgen.conf in $SPLUNK_HOME/etc/apps/<app>/local/.
 # For examples, see eventgen.conf.example. You must restart Splunk to enable configurations.
 #
-# To learn more about configuration files (including precedence) please see the documentation 
+# To learn more about configuration files (including precedence) please see the documentation
 # located at http://www.splunk.com/base/Documentation/latest/Admin/Aboutconfigurationfiles
 #
-# CAUTION:  You can drastically affect your Splunk installation by changing these settings.  
-# Consult technical support (http://www.splunk.com/page/submit_issue) if you are not sure how 
+# CAUTION:  You can drastically affect your Splunk installation by changing these settings.
+# Consult technical support (http://www.splunk.com/page/submit_issue) if you are not sure how
 # to configure this file.
 #
 
@@ -22,7 +22,7 @@
 [global]
 disabled = false
 debug = false
-verbose = false
+verbosity = false
 spoolDir = $SPLUNK_HOME/var/spool/splunk
 spoolFile = <SAMPLE>
 breaker = [^\r\n\s]+
@@ -61,6 +61,7 @@ maxIntervalsBeforeFlush = 3
 maxQueueLength = 0
 autotimestamps = [ <jsonlist> ]
 autotimestamp = false
+disableLoggingQueue = true
 
 
 [<sample file name>]
@@ -82,12 +83,16 @@ autotimestamp = false
         * rated -> float[<start.numzerosforprecision>:<end.numzerosforprecision>]
         * file -> <replacment file name>
         * mvfile -> <replacement file name, expects CSV file>:<column number>
-        
+
 disabled = true | false
     * Like what it looks like.  Will disable event generation for this sample.
 
 sampleDir = <dir>
-    * Set a different directory to look for samples in
+    * Set a different directory to look for samples in.
+    * if sampleDir is not set, by default, eventgen will loads the sample files from <conf_file_dir>/../samples. conf_file_dir is the directory where eventgen conf file locates.
+    * You can set sampleDir to some relative path or some absolute path.
+    * When sampleDir is an absolute path, eventgen will load the sample files from the path directly. But absolute path is not recommended, absolute path makes your configuration not work with different OS.
+    * When sampleDir is a relative path, eventgen takes conf_file_dir as the base path when resolve sampleDir. For example, sampleDir=../../my_sample will be resolved to <conf_file_dir>/../../my_sample. conf_file_dir is the directory where eventgen conf file locates.
 
 threading = thread | process
     * Configurable threading model.  Process uses multiprocessing.Process in Python to get around issues with the GIL.
@@ -99,7 +104,7 @@ profiler = true | false
 
 useOutputQueue = true | false
     * Disable the use of the output Queue.  The output queue functions as a reduce step when you need to maintain a single thread or a limited number of threads outputting data, for instance if you're outputting to a file or to stdout/modular input.  Defaults to true.  If you can multithread output, for example with splunkstream or s2s type outputs, setting this to false will give an order of magnitude or better performance improvement.
-        
+
 #############################
 ## OUTPUT RELATED SETTINGS ##
 #############################
@@ -157,76 +162,76 @@ spoolDir = <spool directory>
     * Windows separators should contain double forward slashes '\\' (i.e. $SPLUNK_HOME\\var\\spool\\splunk).
     * Unix separators will work on Windows and vice-versa.
     * Defaults to $SPLUNK_HOME/var/spool/splunk
-    
+
 spoolFile = <spool file name>
     * Spool file is the generated files name.
     * Not valid if stanza is a pattern.
     * Defaults to <SAMPLE> (sample file name).
-    
+
 fileName = </path/to/file>
     * Should set the full path
     * Uses a rotating file handler which will rotate the file at a certain size, by default 10 megs
       and will by default only save 5 files.  See fileMaxBytes and fileBackupFiles
-      
+
 fileMaxBytes = <size in bytes>
     * Will rotate a file output at this given size
     * Defaults to 10 Megabytes (10485760 bytes)
-    
+
 fileBackupFiles = <number of files>
     * Will keep this number of files (.1, .2, etc) after rotation
     * Defaults to 5
-    
+
 splunkHost = <host> | <json list of hosts>
     * If you specify just one host, will only POST to that host, if you specify a JSON list,
       it will POST to multiple hosts in a random distribution.  This allows us from one eventgen to
       feed an entire cluster of Splunk indexers without needing forwarders.
     * JSON list should look like [ "host.name", "host2.name" ]
-    
+
 splunkPort = <port>
     * Defaults to the default Splunk management port 8089
 
 splunkMethod = http | https
     * Defaults to https
-    
+
 splunkUser = <user>
     * User with rights to post to REST endpoint receivers/stream
-    
+
 splunkPass = <pass>
     * Password for SplunkUser
-    
+
 projectID = <id>
     * Project ID for Splunk Storm
-    
+
 accessToken = <accesstoken>
     * Access Token for Splunk Storm
-    
+
 index = <index>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Splunk index to write events to.  Defaults to main if none specified.
-    
+
 source = <source>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
     * Set event source in Splunk to <source>.  Defaults to 'eventgen' if none specified.
-    
+
 sourcetype = <sourcetype>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
     * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
-    
+
 host = <host>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Set event host in Splunk to <host>.  Defaults to 127.0.0.1 if none specified.
-    
+
 hostRegex = <hostRegex>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
     * Allows setting the event host via a regex from the actual event itself.  Only used if host not set.
-    
+
 maxIntervalsBeforeFlush = <intervals before flushing queue>
     * Number of intervals before flushing the queue if the queue hasn't filled to maxQueueLength
     * Defaults to 3
 
 maxQueueLength = <maximum items before flushing the queue>
     * Number of items before flushing the output queue
-    * Default is per outputMode specific    
+    * Default is per outputMode specific
 
 
 ###############################
@@ -248,7 +253,7 @@ rater = config | <plugin>
 
 mode = sample | replay
     * Default is sample, which will generate count (+/- rating) events every configured interval
-    * Replay will instead read the file and leak out events, replacing timestamps, 
+    * Replay will instead read the file and leak out events, replacing timestamps,
 
 sampletype = raw | csv
     * Raw are raw events (default)
@@ -263,12 +268,12 @@ interval = <integer>
     * How often to generate sample (in seconds).
     * 0 means disabled.
     * Defaults to 60 seconds.
-   
+
 delay = <integer>
     * Specifies how long to wait until we begin generating events for this sample
     * Primarily this is used so we can stagger sets of samples which similar but slightly different data
     * Defaults to 0 which is disabled.
-    
+
 autotimestamp = <boolean>
     * Will enable autotimestamp feature which detects most common forms of timestamps in your samples with no configuration.
 
@@ -305,7 +310,7 @@ backfillSearch = <splunk search>
 backfillSearchUrl = <url>
     * Defaults to splunkMethod://splunkHost:splunkPort/, can override in case you're running
       in a cluster.
-    
+
 count = <integer>
     * Maximum number of events to generate per sample file
     * 0 means replay the entire sample.
@@ -325,7 +330,7 @@ bundlelines = true | false
     * If bundlelines = true and the token replacementType is replaytimestamp, we will introduce some randomness
       into the times between items in the transaction in microseconds.
     * Will override any breaker setting.
-    
+
 hourOfDayRate = <json>
     * Takes a JSON hash of 24 hours with float values to rate limit how many events we should see
       in a given hour.
@@ -361,24 +366,24 @@ monthOfYearRate = <json>
       { "0": 1, "2": 1...}
     * If a match is not found, will default to count events
     * Also multiplied times dayOfWeekRate, hourOfDateRate, minuteOfHourRate, dayOfMonthRate
-    
+
 randomizeCount = <float>
     * Will randomize the number of events generated by percentage passed
     * Example values: 0.2, 0.5
     * Recommend passing 0.2 to give 20% randomization either way (plus or minus)
-    
+
 randomizeEvents = <boolean>
     * Will randomize the events found in the sample file before choosing the events.
     * NOT SUPPORTED WITH sampletype csv
     * NOT SUPPORTED WITH mode = replay OR custom generators like generator = replay
-    
+
 breaker = <regular expression>
     * NOT to be confused w/ props.conf LINE_BREAKER.
     * PCRE used for flow control.
     * If count > 0; data will be generated until number of discovered breakers <= "count".
     * If breaker does not match in sample, one iteration of sample will be generated.
     * Defaults to [^\r\n\s]+
-    
+
 earliest = <time-str>
     * Specifies the earliest random time for generated events.
     * If this value is an absolute time, use the dispatch.time_format to format the value.
@@ -388,17 +393,34 @@ latest = <time-str>
     * Specifies the latest random time for generated events.
     * If this value is an absolute time, use the dispatch.time_format to format the value.
     * Defaults to now.
-    
+
+#############################
+## JINJA TEMPLATE SETTINGS ##
+#############################
+
+jinja_template_dir = <str>
+    * directory where jinja templates can be located.
+    * If it is not defined, default template directory is <sampleDir>/templates. sampleDir is the parameter which defines the sample file directory.
+    * You can set it as some relative path or absolute path.
+    * When it is set as the absolute path, eventgen loads the jinja template from this directory directly.
+    * When it is set as the relative path, eventgen uses sampleDir as the base when resolving the path. sampleDir is the parameter which defines the sample file directory. For example, if jinja_template_dir=../my_templates, it will be resolved to <sampleDir>/../my_templates.
+
+jinja_target_template = <str>
+    * root template to load for all sample generation.
+
+jinja_variables = <json>
+    * json value that contains a dict of kv pairs to pass as options to load inside of the jinja templating engine.
+
 ################################
 ## TOKEN REPLACEMENT SETTINGS ##
 ################################
-    
+
 token.<n>.token = <regular expression>
     * 'n' is a number starting at 0, and increasing by 1.
     * PCRE expression used to identify segment for replacement.
     * If one or more capture groups are present the replacement will be performed on group 1.
     * Defaults to None.
-    
+
 token.<n>.replacementType = static | timestamp | replaytimestamp | random | rated | file | mvfile | integerid
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For static, the token will be replaced with the value specified in the replacement setting.
@@ -418,7 +440,7 @@ token.<n>.replacementType = static | timestamp | replaytimestamp | random | rate
     * For mvfile, the token will be replaced with a random value of a column retrieved from a file specified in the replacement setting.  Multiple files can reference the same source file and receive different columns from the same random line.
     * For integerid, will use an incrementing integer as the replacement.
     * Defaults to None.
-    
+
 token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid | ipv4 | ipv6 | mac | integer[<start>:<end>] | float[<start>:<end>] | string(<i>) | hex(<i>) | list["list", "of", "values"] | <replacement file name> | <replacement file name>:<column number> | <integer>
     * 'n' is a number starting at 0, and increasing by 1. Stop looking at the filter when 'n' breaks.
     * For <string>, the token will be replaced with the value specified.
@@ -429,8 +451,8 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid 
     * For ipv4, the token will be replaced with a random valid IPv4 Address (i.e. 10.10.200.1).
     * For ipv6, the token will be replaced with a random valid IPv6 Address (i.e. c436:4a57:5dea:1035:7194:eebb:a210:6361).
     * For mac, the token will be replaced with a random valid MAC Address (i.e. 6e:0c:51:c6:c6:3a).
-    * For integer[<start>:<end>], the token will be replaced with a random integer between 
-      start and end values where <start> is a number greater than 0 
+    * For integer[<start>:<end>], the token will be replaced with a random integer between
+      start and end values where <start> is a number greater than 0
       and <end> is a number greater than 0 and greater than or equal to <start>.  If rated,
       will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For float[<start>:<end>], the token will be replaced with a random float between

@@ -3,7 +3,8 @@
 
 import os
 import sys
-from mock import MagicMock, patch, call
+
+from mock import MagicMock, patch
 
 from splunk_eventgen.__main__ import parse_args
 from splunk_eventgen.eventgen_core import EventGenerator
@@ -13,12 +14,11 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestSyslogOutputPlugin(object):
-
     def test_output_data_to_syslog(self):
         configfile = "tests/sample_eventgen_conf/medium_test/eventgen.conf.syslogoutput"
         testargs = ["eventgen", "generate", configfile]
         with patch.object(sys, 'argv', testargs):
-            with patch('logging.getLogger') as mock_log:
+            with patch('logging.getLogger'):
                 pargs = parse_args()
                 assert pargs.subcommand == 'generate'
                 assert pargs.configfile == configfile

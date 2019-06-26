@@ -1,4 +1,4 @@
-[Test_Jinja]
+[test_jinja]
 end = 1
 count = 1
 generator = jinja
@@ -7,10 +7,9 @@ jinja_target_template = test_jinja.template
 jinja_variables = {"large_number":50000}
 earliest = -3s
 latest = now
-outputMode = httpevent
-httpeventServers = {"servers":[{ "protocol":"https", "address":"127.0.0.1", "port":"8088", "key":"8d5ab52c-3759-49e3-b66a-5213ce525692"}]}
+outputMode = modinput
 
-[Test_Jinja_loop]
+[test_jinja_loop]
 end = 1
 count = 5
 generator = jinja
@@ -19,10 +18,9 @@ jinja_target_template = test_jinja_loop.template
 jinja_variables = {"large_number":1000}
 earliest = -3s
 latest = now
-outputMode = httpevent
-httpeventServers = {"servers":[{ "protocol":"https", "address":"127.0.0.1", "port":"8088", "key":"8d5ab52c-3759-49e3-b66a-5213ce525692"}]}
+outputMode = modinput
 
-[Test_Jinja_timeslice]
+[test_jinja_timeslice]
 end = 1
 generator = jinja
 jinja_template_dir = templates
@@ -30,5 +28,4 @@ jinja_target_template = test_jinja_timeslice.template
 jinja_variables = {"large_number":1000}
 earliest = -3s
 latest = now
-outputMode = httpevent
-httpeventServers = {"servers":[{ "protocol":"https", "address":"127.0.0.1", "port":"8088", "key":"8d5ab52c-3759-49e3-b66a-5213ce525692"}]}
+outputMode = modinput

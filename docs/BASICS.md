@@ -1,22 +1,23 @@
 # Welcome
 
-Thanks for checking out the tutorial.
-This should hopefully get you through setting up a working event generator.  It's only a tutorial though, so if you want a complete reference of all of the available configuration options, please check out the [eventgen.conf.spec](REFERENCE.md#eventgenconfspec) in the README directory.  With that, feel free to dig right in, and feel free to post to the Issues page if you have any questions.
+Welcome to the basics of Eventgen.
+This should hopefully get you through setting up a working eventgen instance. For a complete reference of all of the available configuration options, please check out the [eventgen.conf.spec](REFERENCE.md#eventgenconfspec) in the docs directory.  With that, feel free to dig right in, and please post to the Issues page if you have any questions.
 
 ## Replay Example
 
-The first example we'll show you should likely cover 90% of the use cases you can imagine.  Eventgen can take an export from another Splunk instance, or just a plain text file, and replay those events while replacing the time stamps. Eventgen will pause the amount of time between each event just like it happened in the original, so the events will appear to be coming out in real time.  When Eventgen reaches the end of the file, it will automatically start over from the beginning.  Since this allows you to use real data as your eventgen, like we said earlier, it'll cover 9 out of 10 of most people's use cases.
+The first example we'll show you should likely cover 90% of the use cases you can imagine.  Eventgen can take an export from another Splunk instance, or just a plain text file, and replay those events while replacing the time stamps. Eventgen will pause the amount of time between each event just like it happened in the original, so the events will appear to be coming out in real time.  When Eventgen reaches the end of the file, it will automatically start over from the beginning.
 
-### Making a Splunk export
+### Making a Splunk Export
 
-To build a seed for your new Eventgen, I recommend taking an export from an existing Splunk instance.  You could also take a regular log file and use it for replay (in which case, you can omit sampletype=csv).  There are a few considerations.  First, Eventgen assumes its sample files are in chronological order.  Second, it only uses index, host, source, sourcetype and \_raw fields.  To accommodate that, whatever search you write, we recommend appending '| reverse | fields index, host, source, sourcetype, _raw' to your Splunk search and then doing an export to CSV format.  Third, make sure you find all the different time formats inside the log file and set up tokens to replace for them, so limiting your initial search to a few sourcetypes is probably advisable.
-
-This example was pulled from a simple search of \_internal on my Splunk instance.
+To build a seed for your new Eventgen, I recommend taking an export from an existing Splunk instance.  You could also take a regular log file and use it for replay (in which case, you can omit sampletype=csv).  There are a few considerations.
+* First, Eventgen assumes its sample files are in chronological order.
+* Second, it only uses `index`, `host`, `source`, `sourcetype` and `_raw` fields.  To accommodate that, whatever search you write, we recommend appending `| reverse | fields index, host, source, sourcetype, _raw` to your Splunk search and then doing an export to CSV format.
+* Third, make sure you find all the different time formats inside the log file and set up tokens to replace for them, so limiting your initial search to a few sourcetypes is probably advisable.
 
 ### Running the example
-You can easily run these examples by hand.  In fact, for testing purposes, I almost always change outputMode = stdout to visually examine the data. Run the command below from the base directory of Eventgen.
+You can easily run these examples by hand.  In fact, for testing purposes, I almost always change outputMode = stdout to visually examine the data. Run the command below from directory `$EVENTGEN_HOME/splunk_eventgen`.
 
-    python -m splunk_eventgen generate splunk_eventgen/README/eventgen.conf.tutorial1
+    python -m splunk_eventgen generate README/eventgen.conf.tutorial1
 
 You should now see events showing up on your terminal window.  You can see Eventgen will sleep between events as it sees gaps in the events in the source log.
 
@@ -25,9 +26,9 @@ This will cover most, if not all, of most people's use cases.  Find a real world
 
 ## Basic Sample
 
-Next, lets build a basic noise generator from a log file.  This will use sample mode, which take a file and replay all or a subset of that file every X seconds, defined by the interval.  Sample mode is the original way eventgen ran, and it's still very useful for generating random data where you want to engineer the data generated from the ground up. To run the example:
+Next, lets build a basic noise generator from a log file.  This will use sample mode, which take a file and replay all or a subset of that file every X seconds, defined by the interval.  Sample mode is the original way eventgen ran, and it's still very useful for generating random data where you want to engineer the data generated from the ground up. Run the command below from directory `$EVENTGEN_HOME/splunk_eventgen`:
 
-    python -m splunk_eventgen generate splunk_eventgen/README/eventgen.conf.tutorial2
+    python -m splunk_eventgen generate README/eventgen.conf.tutorial2
 
 ### Grabbing and rating events
 
@@ -69,7 +70,7 @@ Let's us decide how often we want to generate events and how we want to generate
     randomizeEvents = true
 Eventgen by default will rate events by the time of day and the day of the week and introduce some randomness every interval.  Also by default, we'll only grab the first X events from the log file every time. For this example, we're looking at router and switch events, which actually is the opposite of the normal business flow.  We expect to see more events overnight for a few hours during maintenance windows and calm down during the day, so we'll need to override the default rating which looks like a standard business cycle.
     
-hourOfDayRate is a JSON formatted hash, with a string identifier for the current hour and a float representing the multiplier we want to use for that hour.  In general, I've always configured the rate to be between 0 and 1, but nothing limits you from putting it at any valid floating point value.  dayOfWeekRate is similar, but the number is the day of the week, starting with Sunday.  In this example, Saturday and Sunday early mornings should have the greatest number of events, with fewer events evenly distributed during the week.  randomizeCount says to introduce 20% randomess, which means plus or minus 10% of the rated total, to every rated count just to make sure we don't have a flat rate of events.  randomizeEvents we discussed previously, it makes sure we don't grab the same lines from the file every time.
+`hourOfDayRate` is a JSON formatted hash, with a string identifier for the current hour and a float representing the multiplier we want to use for that hour.  In general, I've always configured the rate to be between 0 and 1, but nothing limits you from putting it at any valid floating point value.  `dayOfWeekRate` is similar, but the number is the day of the week, starting with Sunday.  In this example, Saturday and Sunday early mornings should have the greatest number of events, with fewer events evenly distributed during the week. `randomizeCount` says to introduce 20% randomness, which means plus or minus 10% of the rated total, to every rated count just to make sure we don't have a flat rate of events. `randomizeEvents` we discussed previously, it makes sure we don't grab the same lines from the file every time.
 
     outputMode = file
     fileName = /tmp/ciscosample.log
@@ -83,7 +84,7 @@ As we've seen before, here's a simple token substitution for the timestamp.  Thi
 
 Let's look in detail at this configuration format.  token is the configuration statement, 0 is the token number (we'll want a different number for every token we define, although they can be non-contiguous).  The third part defines the three subitems of token configuration.  The first, token, defines a regular expression we're going to look for in the events as they stream through Eventgen.  The second, replacementType, defines what type of replacement we're going to need.  This is a timestamp, but we also offer a variety of other token replacement types such as random for randomly generated values, file for grabbing lines out of files, static for replacing with static strings, etc.  We'll cover those in detail later.  The third subitem, replacement, is specific for the replacementType, and in this case defines a strptime format we're going to use to output the time using strftime.  For a reference on how to configure strptime, check python's documentation on strptime format strings.
 
-This should now replay random events from the file we have configured.  Go ahead and cd to $EVENTGEN\_HOME/bin and run python eventgen.py ../README/eventgen.conf.tutorial1.  In another shell, tail -f /tmp/ciscosample.log and you should see events replaying from the cisco.sample file!  You can reuse this same example to easily replay a customer log file, of course accounting for the different regular expressions and strptime formats you'll need for their timestamps.  Remember to customize interval, earliest, and count for the number of events you want the generator to build.
+This should now replay random events from the file we have configured.  Go ahead and cd to `$EVENTGEN_HOME/splunk_eventgen` and run `python -m splunk_eventgen generate README/eventgen.conf.tutorial1`.  In another shell, tail -f /tmp/ciscosample.log and you should see events replaying from the cisco.sample file!  You can reuse this same example to easily replay a customer log file, of course accounting for the different regular expressions and strptime formats you'll need for their timestamps.  Remember to customize interval, earliest, and count for the number of events you want the generator to build.
 
 ## Second example, building events from scratch
 
@@ -153,7 +154,7 @@ Note here that we've specified index, host, source and sourceType.  In the past 
 
 ### Defining tokens
 
-If you look at the sample.tutorial3 file, you'll see that we took just one sample event and placed it in the file.  Eventgen will look at this one event, continue to replay it a number of times defined by our rating parameters, and then substitute in tokens we're going to define.  First, let's get the one token we understand out of the way, the timestamp:
+If you look at the `sample.tutorial3` file, you'll see that we took just one sample event and placed it in the file.  Eventgen will look at this one event, continue to replay it a number of times defined by our rating parameters, and then substitute in tokens we're going to define.  First, let's get the one token we understand out of the way, the timestamp:
 
     token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
     token.0.replacementType = timestamp
@@ -239,29 +240,32 @@ Secondly, in the replacement clause, we have a JSON formatted list.  This allows
 
 ## Command Line
 
-This revision of Eventgen can be run by itself from a command line for testing.  This means you can simply run bin/eventgen.py and start seeing output, which is great for testing.  Please note to do this you'll want to set the $SPLUNK\_HOME environment variable properly so your configurations will work.  **Command Line and Embedded Defaults are defined in the lib/eventgen\_defaults file in the [global] stanza**.
+This revision of Eventgen can be run by itself from a command line for testing.  This means you can simply run `splunk_eventgen generate eventgen.conf` and start seeing output, which is great for testing.  **Command Line and Embedded Defaults are defined in the `splunk_eventgen/default/eventgen.conf` file in the [global] stanza**.
 
 ## Splunk App
 
-The original SA-Eventgen was written as a Splunk app, and this Eventgen release supports that deployment method as well.  In this deployment method, we will read configurations through Splunk's internal REST interface for grabbing config info, and Eventgen will look for configurations in every installed apps default and local directories in eventgen.conf file.  This is how ES is deployed, and it provides a very good example of this deployment method.  If you are writing a complicated Splunk application which will be deployed in multiple Applications, like ES, this is the recommended deployment method as it will simply your needs of building scripted inputs for each of those individual applications.  Installed a separate application, there is also a setup.xml provided which allows for easy disabling of the scripted input in Eventgen application.  **Defaults are defined in the default/eventgen.conf file in App mode**.
+The original `SA-Eventgen` was written as a Splunk app, and this Eventgen release supports that deployment method as well.  In this deployment method, we will read configurations through Splunk's internal REST interface for grabbing config info, and Eventgen will look for configurations in every installed apps default and local directories in `eventgen.conf` file.  This is how ES is deployed, and it provides a very good example of this deployment method.  If you are writing a complicated Splunk application which will be deployed in multiple Applications, like ES, this is the recommended deployment method.
 
-In your app's eventgen.conf file, sample files for file, mvfile and seqfile substitution should be referenced using `$SPLUNK_HOME/etc/apps/<your_app>/samples/<file>`.
+Install the latest SA-Eventgen App. There is no additional configuration required. SA-Eventgen app will automatically identify with any apps with `eventgen.conf`.
 
-## Scripted Input
+To start generating data, simply enable the SA-Eventgen modinput by going to Settings > Data Inputs > SA-Eventgen and by clicking "enable" on the default modular input stanza.
 
-If you are writing an Eventgen for one application, like the Operational Intelligence demo, bundling two applications together is more complex than required and complicates distribution.  In this case, Eventgen supports being deployed as a scripted input inside your application.  **Note, you must set 'passAuth = splunk-system-user' in your inputs.conf for this to work**.  An example inputs.conf entry:
+If you wish you add your bundle so that the modinput can detect your package:
+Package your `eventgen.conf` and sample files into a directory structure as outlined in the [configuration](CONFIGURE.md). After that's done, copy/move the bundle into your `${SPLUNK_HOME}/etc/apps/` directory and restart Splunk. If you have specific samples enabled in your `eventgen.conf`, you should see data streaming into the specified Splunk index.
 
-    [script://./bin/eventgen.py]
-    disabled = false
-    interval = 300
-    passAuth = splunk-system-user
-    sourcetype = eventgen
-    index = _internal
+Make sure the bundle app permission is global. You can config this in two ways:
+* Log in to Splunk Web and navigate to Apps > Manage Apps. Find the bundle app row and set the permission to 'Global' on the Sharing column.
+* Create a folder `metadata` under the bundle with file `default.meta` and add the following content:
+```
+[]
+export=system
+```
 
-Note, the interval can be set to anything.  Eventgen will stay running as soon as Splunk launches it.  To embed Eventgen into your application, you need to include everything in the bin and lib directories in your application.  In Scripted Input mode, we also read eventgen-standalone.conf in the default and local directories, and again **it will not flatten these configurations, so the local file will completely override the default**.  It is recommended that when deploying standalone, you only write one configuration file in the local directory.  Remember to copy any stock samples you are using into your apps samples directory as well.  **Defaults are defined in the lib/eventgen\_defaults file in the [global] stanza**.
-
-In your app's eventgen.conf file, sample files for file, mvfile and seqfile substitution should be referenced using `$SPLUNK_HOME/etc/apps/<your_app>/samples/<file>`.
+## Backward Capability
+If you are using Eventgen 5.x or even older versions, the `eventgen.conf` setting should be working in the latest Eventgen 6.x. If any thing broken, do not hesitate to open an issue on [GitHub](https://github.com/splunk/eventgen/issues/new/choose).
 
 ## Wrapping up
 
 We hope the tutorial covers most use cases you would need.  If you have something you're struggling to model, please reach out to Tony Lee (tonyl@splunk.com).  We believe we can cover just about anything you'd want to model with this Eventgen, but if not, we're happy to add features to the software so that everyone can benefit!
+
+

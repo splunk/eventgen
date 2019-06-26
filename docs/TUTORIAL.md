@@ -2,10 +2,10 @@
 
 The primary source of configuration done in Eventgen is governed by the `eventgen.conf` file. 
 
-* If deployed using containers, Eventgen will look for eventgen.conf in bundles under the `default` directory. For instance, if your bundle is named "datamix-app", you should archive your eventgen.conf in "datamix-app/default/eventgen.conf".
-* If deployed as a Splunk App, Eventgen will look for eventgen.conf files for every app installed in Splunk, and will generate events for every eventgen.conf file it finds. This is convenient if you want to design event generation into a Technology Addon (TA) or other type of Splunk app. You can ship Eventgen configurations with your app and distribute Eventgen app separately.
+* If deployed using containers, Eventgen will look for `eventgen.conf` in bundles under the `default` directory. For instance, if your bundle is named `datamix-app`, you should archive your `eventgen.conf` in `datamix-app/default/eventgen.conf`.
+* If deployed as a Splunk App, Eventgen will look for `eventgen.conf` files for every app installed in Splunk, and will generate events for every `eventgen.conf` file it finds. This is convenient if you want to design event generation into a Technology Addon (TA) or other type of Splunk app. You can ship Eventgen configurations with your app and distribute the Eventgen app separately.
 
-The INI format of eventgen.conf can have one or more stanzas. Each stanza name is a sample file it will be reading from. There a number of options available in each stanza. For instance, breaking down this tutorial file option-by-option, we can see how this file will be used to set up Eventgen:
+The INI format of `eventgen.conf` can have one or more stanzas. Each stanza name is a sample file it will be reading from. There a number of options available in each stanza. For instance, breaking down this tutorial file option-by-option, we can see how this file will be used to set up Eventgen:
 
 ```
     [sample.tutorial1]
@@ -28,7 +28,7 @@ The INI format of eventgen.conf can have one or more stanzas. Each stanza name i
 ```
     [sample.tutorial1]
 ```
-This is the stanza name and the name of the file in the samples/ directory of Eventgen or your bundle that you want to read from. You can also specify a regex here to match multiple files of similar extensions/naming conventions.
+This is the stanza name and the name of the sample file in Eventgen or your bundle that you want to read from. You can also specify a regex here to match multiple files of similar extensions/naming conventions.
 
 ```
     mode = replay
@@ -44,6 +44,15 @@ Specify that the input file is in CSV format, rather than a plain text file. Wit
     timeMultiple = 2
 ```
 This will slow down the replay by a factor of 2 by multiplying all time intervals between events by 2.
+For example, let's assume that you have 3 events generated like below:
+12:05:04 helloworld
+12:05:06 helloworld2
+12:05:09 helloworld3
+
+Applying timeMultiple=2 would instead generate 3 events like below:
+12:05:04 helloworld
+12:05:08 helloworld2
+12:05:14 helloworld3
 
 ```
     backfill = -15m
@@ -58,7 +67,7 @@ A search to run to find the last events generated for this stanza. If this retur
 ```
     outputMode = splunkstream
 ```
-There are various outputModes available (see the [spec](REFERENCE.md#eventgenconfspec)). The splunkstream mode will output via the Splunk [receivers/stream](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTinput#receivers.2Fstream) endpoint straight into Splunk. This allows us to specify things like index, host, source and sourcetype to Splunk at index time. In this case, we're getting those values from sampletype = csv rather than specifying them here in eventgen.conf for the sample.
+There are various outputModes available (see the [spec](REFERENCE.md#eventgenconfspec)). The splunkstream mode will output via the Splunk [receivers/stream](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTinput#receivers.2Fstream) endpoint straight into Splunk. This allows us to specify things like index, host, source and sourcetype to Splunk at index time. In this case, we're getting those values directly from our sample rather than specifying them here in eventgen.conf.
 
 ```
     splunkHost = localhost
@@ -66,14 +75,16 @@ There are various outputModes available (see the [spec](REFERENCE.md#eventgencon
     splunkPass = changeme
 ```
 Parameters for setting up outputMode = splunkstream. This is only required if we want to run Eventgen outside of Splunk. As a Splunk App and running as a scripted input, eventgen will gather this information from Splunk itself. Since we'll be running this from the command line for the tutorial, please customize your username and password in the tutorial.
+Note:
+>When using outputMode=splunkstream for running Eventgen outside of Splunk, use parameter `PYTHONHTTPSVERIFY=0` to ignore the SSL error: `SSLError: [SSL: CERTIFICATE_VERIFY_FAILED]`
 
 ```
     token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
-    token.0.replacementType = timestamp
+    token.0.replacementType = replaytimestamp
     token.0.replacement = %Y-%m-%d %H:%M:%S,%f
 ```
-The 3 tokens are virtually the same, only with different regular expressions and strptime formats. This is a timestamp replacement, which will find the timestamp specified by the regular expression and replace it with a current (or relative to a backfill) time based on the stprtime format. Generally you'll define a regular expression and a strptime format to match.
-For more information see [regular expressions](http://lmgtfy.com/?q=regex) and [striptime](http://lmgtfy.com/?q=strptime).
+All sets of token replacement lines will look very similar, with different regular expressions and strptime formats. This is a replaytimestamp replacement, which will find the timestamp specified by the regular expression and replace it with a current (or relative to the first event) time based on the stprtime format. Generally you'll define a regular expression and a strptime format to match.
+For more information see [regular expressions](http://lmgtfy.com/?q=regex) and [striptime](http://lmgtfy.com/?q=strptime). You can also read more about the different replacement types on the [reference page](REFERENCE.md#eventgenconfspec).
 
 That's it, pretty simple!
 
@@ -167,6 +178,8 @@ Running Eventgen with above conf file and template would result in below output.
 With above template, Eventgen iterates through a loop of 50000 and generate the data according to the template.
 Note that the template is in a JSON format with a key "_raw" which is a raw string of data. It is necessary that you follow this pattern for Eventgen Jinja generator to work.
 
+> If you are using `SA-Eventgen` app rather than PyPi module, put `eventgen.conf` and template files into a directory structure as outlined in the [configuration](CONFIGURE.md).
+Default templates folder is `<bundle/samples/templates>`. You can also config absolute or relative path(relative to `eventgen.conf`) via `jinja_template_dir`.
 
 Let's look at how to extend an existing template.
 
@@ -218,29 +231,3 @@ Please note Getting Started section for installation reference.
 There is an [Eventgen API Reference](REFERENCE.html#rest-api-reference) that you can also reference.
 
 ---
-
-## For Orca Users: Running Eventgen with Orca ##
-
-Orca 0.8.4 and above will natively support Eventgen 6.0.0 and above versions.
-
-```
-# The following command creates a specified number of eventgen instances as well as auto-configuring all servers and controllers.
-orca create --egx <NUM>
-```
-
-In addition, you can configure a custom scenario for automatic bundle install.
-
-```
-# Paste this into your ~/.orca/orca.conf
-# Below scenario will download an app from a specified path and start pumping out data
-[egxtest]
-indexers = 3
-search_heads = 2
-eventgenx_instances = 1
-ansible_params = eventgen_app=<APP_TGZ_PATH>,eventgen_volume=50,eventgen_start=now
-
-# Simply run this Orca command
-orca create --sc egxtest
-```
-
-

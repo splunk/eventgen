@@ -1,21 +1,23 @@
-from nameko.rpc import rpc
-from nameko.web.handlers import http
-from nameko.events import EventDispatcher, event_handler, BROADCAST
-from pyrabbit.api import Client
 import atexit
 import ConfigParser
-import yaml
-import json
-import os
-import socket
-import time
-import requests
 import glob
-import tarfile
-import zipfile
-import shutil
-import eventgen_nameko_dependency
+import json
 import logging
+import os
+import shutil
+import socket
+import tarfile
+import time
+import zipfile
+
+import requests
+import yaml
+from pyrabbit.api import Client
+
+import eventgen_nameko_dependency
+from nameko.events import BROADCAST, EventDispatcher, event_handler
+from nameko.rpc import rpc
+from nameko.web.handlers import http
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
@@ -27,7 +29,6 @@ def get_eventgen_name_from_conf():
     with open(os.path.abspath(os.path.join(FILE_PATH, "server_conf.yml"))) as config_yml:
         loaded_yml = yaml.load(config_yml)
         return loaded_yml['EVENTGEN_NAME'] if 'EVENTGEN_NAME' in loaded_yml else socket.gethostname()
-    return None
 
 
 def exit_handler(client, hostname, logger):
@@ -53,8 +54,7 @@ class EventgenServer(object):
     config["AMQP_PASS"] = osvars.get("EVENTGEN_AMQP_PASS", "guest")
 
     pyrabbit_cl = Client('{0}:{1}'.format(config['AMQP_HOST'], config['AMQP_WEBPORT']),
-                         '{0}'.format(config['AMQP_USER']),
-                         '{0}'.format(config['AMQP_PASS']))
+                         '{0}'.format(config['AMQP_USER']), '{0}'.format(config['AMQP_PASS']))
     pyrabbit_cl.create_vhost(host)
     log.info("Vhost set to {}".format(host))
 
@@ -83,11 +83,12 @@ class EventgenServer(object):
         '''
         res = dict()
         if self.eventgen_dependency.eventgen.check_running():
-            # running
-            status = 1
-        elif self.eventgen_dependency.eventgen.completed == True:
-            # all samples completed and stop
-            status = 2
+            if self.eventgen_dependency.eventgen.check_done():
+                # all jobs completed
+                status = 2
+            else:
+                # still running
+                status = 1
         else:
             # not start yet
             status = 0
@@ -96,9 +97,10 @@ class EventgenServer(object):
         res["CONFIGURED"] = self.eventgen_dependency.configured
         res["CONFIG_FILE"] = self.eventgen_dependency.configfile
         res["TOTAL_VOLUME"] = self.total_volume
-        res["QUEUE_STATUS"] = {'SAMPLE_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
-                               'OUTPUT_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'},
-                               'WORKER_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}}
+        res["QUEUE_STATUS"] = {
+            'SAMPLE_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}, 'OUTPUT_QUEUE': {
+                'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}, 'WORKER_QUEUE': {
+                    'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}}
         res['THROUGHPUT_STATUS'] = self.get_throughput()
         if hasattr(self.eventgen_dependency.eventgen, "sampleQueue"):
             res["QUEUE_STATUS"]['SAMPLE_QUEUE'][
@@ -114,9 +116,7 @@ class EventgenServer(object):
             res["QUEUE_STATUS"]['WORKER_QUEUE']['QUEUE_LENGTH'] = self.eventgen_dependency.eventgen.workerQueue.qsize()
         return res
 
-    ##############################################
-    ############### Real Methods #################
-    ##############################################
+    # Real Methods
 
     def index(self):
         self.log.info("index method called")
@@ -139,14 +139,8 @@ Output Queue Status: {7}\n'''
         sample_queue_status = status["QUEUE_STATUS"]["SAMPLE_QUEUE"]
         output_queue_status = status["QUEUE_STATUS"]["OUTPUT_QUEUE"]
 
-        return home_page.format(host,
-                                eventgen_status,
-                                configured,
-                                config_file,
-                                total_volume,
-                                worker_queue_status,
-                                sample_queue_status,
-                                output_queue_status)
+        return home_page.format(host, eventgen_status, configured, config_file, total_volume, worker_queue_status,
+                                sample_queue_status, output_queue_status)
 
     def status(self):
         self.log.info('Status method called.')
@@ -172,7 +166,7 @@ Output Queue Status: {7}\n'''
             self.eventgen_dependency.eventgen.start(join_after_start=False)
             return "Eventgen has successfully started."
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def stop(self):
@@ -183,7 +177,7 @@ Output Queue Status: {7}\n'''
                 return "Eventgen is stopped."
             return "There is no eventgen process running."
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def restart(self):
@@ -194,7 +188,7 @@ Output Queue Status: {7}\n'''
             self.start()
             return "Eventgen restarted."
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def get_conf(self):
@@ -219,7 +213,7 @@ Output Queue Status: {7}\n'''
                 self.send_conf_to_controller(server_conf={})
                 return json.dumps({}, indent=4)
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -260,7 +254,7 @@ Output Queue Status: {7}\n'''
             self.log.info("custom_config_json is {}".format(conf_content))
             return self.get_conf()
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def edit_conf(self, conf):
@@ -291,7 +285,7 @@ Output Queue Status: {7}\n'''
                 self.restart()
             return self.get_conf()
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def bundle(self, url):
@@ -320,7 +314,7 @@ Output Queue Status: {7}\n'''
             else:
                 return self.get_conf()
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def setup(self, data):
@@ -344,28 +338,18 @@ Output Queue Status: {7}\n'''
             new_key = bool(data.get("new_key", True))
 
             def create_new_hec_key(hostname):
-                requests.post("https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/http".format(
-                        hostname, mgmt_port),
-                        auth=("admin", password),
-                        data={"disabled": "0"},
-                        verify=False)
-                requests.delete(
-                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}".format(
-                                hostname, mgmt_port,key_name),
-                        verify=False,
-                        auth=("admin", password)
-                    )
                 requests.post(
-                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(
-                                hostname, mgmt_port),
-                        verify=False,
-                        auth=("admin", password),
-                        data={"name": key_name})
+                    "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/http".format(
+                        hostname, mgmt_port), auth=("admin", password), data={"disabled": "0"}, verify=False)
+                requests.delete(
+                    "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}".format(
+                        hostname, mgmt_port, key_name), verify=False, auth=("admin", password))
+                requests.post(
+                    "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(
+                        hostname, mgmt_port), verify=False, auth=("admin", password), data={"name": key_name})
                 r = requests.post(
-                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(
-                                hostname, mgmt_port, key_name),
-                        verify=False,
-                        auth=("admin", password))
+                    "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(
+                        hostname, mgmt_port, key_name), verify=False, auth=("admin", password))
                 return str(json.loads(r.text)["entry"][0]["content"]["token"])
 
             self.discovered_servers = []
@@ -374,13 +358,17 @@ Output Queue Status: {7}\n'''
                     formatted_hostname = socket.gethostbyname(host)
                     if new_key:
                         key = create_new_hec_key(formatted_hostname)
+                except (socket.gaierror, requests.ConnectionError):
+                    self.log.warning('failed to reach %s, skip...' % host)
+                    continue
+                except (ValueError, KeyError):
+                    self.log.warning('failed to setup hec token for %s, skip...' % host)
+                    continue
 
-                    self.discovered_servers.append({"protocol": str(protocol),
+                self.discovered_servers.append({"protocol": str(protocol),
                                                     "address": str(formatted_hostname),
                                                     "port": str(hec_port),
                                                     "key": str(key)})
-                except socket.gaierror:
-                    continue
 
             counter = 1
             while True:
@@ -389,10 +377,9 @@ Output Queue Status: {7}\n'''
                     if new_key:
                         key = create_new_hec_key(formatted_hostname)
 
-                    self.discovered_servers.append({"protocol": str(protocol),
-                                                    "address": str(formatted_hostname),
-                                                    "port": str(hec_port),
-                                                    "key": str(key)})
+                    self.discovered_servers.append({
+                        "protocol": str(protocol), "address": str(formatted_hostname), "port": str(hec_port), "key":
+                        str(key)})
                     counter += 1
                 except socket.gaierror:
                     break
@@ -414,7 +401,7 @@ Output Queue Status: {7}\n'''
 
             return self.get_conf()
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def get_volume(self):
@@ -428,7 +415,7 @@ Output Queue Status: {7}\n'''
             self.send_volume_to_controller(total_volume=self.total_volume)
             return str(self.total_volume)
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     @rpc
@@ -464,7 +451,7 @@ Output Queue Status: {7}\n'''
             self.get_volume()
             return output
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
     def reset(self):
@@ -474,12 +461,10 @@ Output Queue Status: {7}\n'''
             self.eventgen_dependency.refresh_eventgen()
             return "Eventgen Refreshed"
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '500', "Exception: {}".format(e.message)
 
-    ##############################################
-    ############ Event Handler Methods ###########
-    ##############################################
+    # Event Handler Methods
 
     @event_handler("eventgen_controller", "all_index", handler_type=BROADCAST, reliable_delivery=False)
     def event_handler_all_index(self, payload):
@@ -602,9 +587,7 @@ Output Queue Status: {7}\n'''
     def event_handler_reset(self, payload):
         return self.reset()
 
-    ##############################################
-    ################ HTTP Methods ################
-    ##############################################
+    # HTTP Methods
 
     @http('GET', '/')
     def http_root(self, request):
@@ -662,10 +645,10 @@ Output Queue Status: {7}\n'''
             url = data["url"]
             return self.bundle(url)
         except ValueError as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '400', "Please pass in a valid object with bundle URL"
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '400', "Exception: {}".format(e.message)
 
     @http('POST', '/setup')
@@ -674,7 +657,7 @@ Output Queue Status: {7}\n'''
         try:
             return self.setup(data)
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '400', "Exception: {}".format(e.message)
 
     @http('GET', '/volume')
@@ -689,16 +672,14 @@ Output Queue Status: {7}\n'''
             volume = data["perDayVolume"]
             return self.set_volume(volume)
         except Exception as e:
-            self.log.exception(e)
+            self.log.exception(str(e))
             return '400', "Exception: {}".format(e.message)
 
     @http('POST', '/reset')
     def http_reset(self, request):
         return json.dumps(self.reset())
 
-    ##############################################
-    ################ Helper Methods ##############
-    ##############################################
+    # Helper Methods
 
     def parse_eventgen_conf(self, path):
         config = ConfigParser.ConfigParser()
@@ -759,10 +740,7 @@ Output Queue Status: {7}\n'''
 
     def get_throughput(self):
         self.log.debug("Getting throughput ...")
-        empty_throughput = {'TOTAL_VOLUME_MB': 0,
-                            'TOTAL_COUNT': 0,
-                            'THROUGHPUT_VOLUME_KB': 0,
-                            'THROUGHPUT_COUNT': 0}
+        empty_throughput = {'TOTAL_VOLUME_MB': 0, 'TOTAL_COUNT': 0, 'THROUGHPUT_VOLUME_KB': 0, 'THROUGHPUT_COUNT': 0}
         if hasattr(self.eventgen_dependency.eventgen, 'output_counters'):
             total_volume = 0
             total_count = 0
@@ -773,10 +751,9 @@ Output Queue Status: {7}\n'''
                 total_count += output_counter.total_output_count
                 throughput_volume += output_counter.throughput_volume
                 throughput_count += output_counter.throughput_count
-            return {'TOTAL_VOLUME_MB': total_volume / (1024*1024),
-                    'TOTAL_COUNT': total_count,
-                    'THROUGHPUT_VOLUME_KB': throughput_volume / (1024),
-                    'THROUGHPUT_COUNT': throughput_count}
+            return {
+                'TOTAL_VOLUME_MB': total_volume / (1024 * 1024), 'TOTAL_COUNT': total_count, 'THROUGHPUT_VOLUME_KB':
+                throughput_volume / (1024), 'THROUGHPUT_COUNT': throughput_count}
         else:
             self.log.debug("return empty throughput because of output_counters not found.")
             return empty_throughput

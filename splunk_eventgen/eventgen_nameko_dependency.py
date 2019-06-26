@@ -1,9 +1,11 @@
-from nameko.extensions import DependencyProvider
-import eventgen_core
-import logging
 import argparse
-import sys
+import logging
 import os
+import sys
+
+import eventgen_core
+from nameko.extensions import DependencyProvider
+
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default", "eventgen_wsgi.conf"))
 
@@ -11,6 +13,7 @@ CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default", "eventg
 # usage: eventgen_nameko_dependency [-h]
 # eventgen_nameko_dependency: error: unrecognized arguments: --role master --config server_conf.yml
 sys.argv = [sys.argv.pop(0)]
+
 
 def create_args():
     parser = argparse.ArgumentParser(prog="eventgen_nameko_dependency")
@@ -37,6 +40,7 @@ def create_args():
     args.wsgi = True
     args.modinput_mode = False
     return args
+
 
 class EventgenDependency(DependencyProvider):
 

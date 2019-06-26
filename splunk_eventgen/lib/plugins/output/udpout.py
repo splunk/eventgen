@@ -1,6 +1,9 @@
 from __future__ import division
-from outputplugin import OutputPlugin
+
 import logging
+
+from outputplugin import OutputPlugin
+
 
 class UdpOutputPlugin(OutputPlugin):
     useOutputQueue = False
@@ -10,8 +13,10 @@ class UdpOutputPlugin(OutputPlugin):
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-        self._udpDestinationHost = sample.udpDestinationHost if hasattr(sample,'udpDestinationHost') and sample.udpDestinationHost else '127.0.0.1'
-        self._udpDestinationPort = sample.udpDestinationPort if hasattr(sample,'udpDestinationPort') and sample.udpDestinationPort else '3333'
+        self._udpDestinationHost = sample.udpDestinationHost if hasattr(
+            sample, 'udpDestinationHost') and sample.udpDestinationHost else '127.0.0.1'
+        self._udpDestinationPort = sample.udpDestinationPort if hasattr(
+            sample, 'udpDestinationPort') and sample.udpDestinationPort else '3333'
 
         import socket  # Import socket module
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -24,6 +29,7 @@ class UdpOutputPlugin(OutputPlugin):
 
     def _setup_logging(self):
         self.logger = logging.getLogger('eventgen')
+
 
 def load():
     """Returns an instance of the plugin"""

@@ -17,16 +17,17 @@ jobs:
           name: Run Tests
           command: |
             make test
+          no_output_timeout: 30m
       - store_test_results:
           path: /home/circleci/project/tests/test-reports
       - store_artifacts:
           path: /home/circleci/project/tests/test-reports
-        
-      
+      - store_artifacts:
+          path: /home/circleci/project/htmlcov
+
 workflows:
   version: 2
   run_tests:
     jobs: 
       - test_eventgen
       
-          

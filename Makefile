@@ -10,8 +10,10 @@ SMALL ?= 'tests/small'
 MEDIUM ?= 'tests/medium'
 LARGE ?= 'tests/large'
 XLARGE ?= 'tests/xlarge'
+NEWLY_ADDED_PY_FILES = $(shell git ls-files -o --exclude-standard | grep -E '\.py$$')
+CHANGED_ADDED_PY_FILES = $(shell git ls-files -mo --exclude-standard | grep -E '\.py$$')
 
-.PHONY: tests
+.PHONY: tests, lint, format, docs
 
 all: egg
 
@@ -22,7 +24,7 @@ image: setup_eventgen egg
 	rm splunk_eventgen/default/eventgen_engine.conf || true
 	docker build -f dockerfiles/Dockerfile . -t eventgen
 
-test: egg image test_helper test_collection_cleanup
+test: egg image test_helper run_tests test_collection_cleanup
 
 test_helper:
 	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} eventgen:latest cat
@@ -39,14 +41,9 @@ test_helper:
 	@echo 'Installing test requirements'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install -r $(shell pwd)/tests/requirements.txt" || true
 
+run_tests:
 	@echo 'Running the super awesome tests'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python tests/run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}" || true
-
-	echo 'Collecting results'
-	#TODO: Should be paramaterized or generalized so that we don't need to add this here
-	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests_results.xml tests_results.xml || echo "no tests_results.xml" || true
-
-	docker stop ${EVENTGEN_TEST_IMAGE} || true
 
 test_collection_cleanup:
 	@echo 'Collecting results'
@@ -55,6 +52,8 @@ test_collection_cleanup:
 	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/test-reports/tests_medium_results.xml tests/test-reports/tests_medium_results.xml || echo "no tests_medium_results.xml"
 	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/test-reports/tests_large_results.xml tests/test-reports/tests_large_results.xml || echo "no tests_large_results.xml"
 	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/tests/test-reports/tests_xlarge_results.xml tests/test-reports/tests_xlarge_results.xml || echo "no tests_xlarge_results.xml"
+
+	docker cp ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/htmlcov htmlcov || echo "no htmlcov folder"
 
 	@echo 'Stopping test container'
 	docker stop ${EVENTGEN_TEST_IMAGE} || true
@@ -79,7 +78,7 @@ clean:
 	docker network rm eg_network_test || true
 
 setup_eventgen:
-	wget -O splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
+	curl -O splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
 
 eg_network:
 	docker network create --attachable --driver bridge eg_network || true
@@ -95,9 +94,34 @@ run_controller: eg_network
 	docker run --name eg_controller --network eg_network -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
 
 docs:
-	npm install -g gitbook-serve
-	cd docs/
-	gitbookserve
+	cd docs/; bundle install; bundle exec jekyll serve
 
 build_spl: clean
 	python -m splunk_eventgen build --destination ./
+
+lint:
+ifeq ($(NEWLY_ADDED_PY_FILES), )
+	@echo 'No newly added python files. Skip...'
+else
+	@flake8 $(NEWLY_ADDED_PY_FILES) || true
+endif
+	@git diff -U0 -- '*.py' | flake8 --diff || true
+
+format:
+ifeq ($(CHANGED_ADDED_PY_FILES), )
+	@echo 'No changed python files. Skip...'
+else
+	@isort $(CHANGED_ADDED_PY_FILES)
+endif
+ifeq ($(NEWLY_ADDED_PY_FILES), )
+	@echo 'No newly added python files. Skip...'
+else
+	@yapf -i $(NEWLY_ADDED_PY_FILES)
+endif
+
+lint-all:
+	@flake8 .
+
+format-all:
+	@isort -rc .
+	@yapf -r -i .

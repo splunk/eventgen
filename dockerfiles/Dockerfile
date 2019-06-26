@@ -22,12 +22,13 @@ RUN apk --no-cache upgrade && \
 	erlang-asn1 \
 	erlang-inets \
 	erlang-os-mon \
-	erlang-xmerl \ 
+	erlang-xmerl \
 	erlang-eldap \
 	erlang-syntax-tools \
+	pwgen \
 	xz \
 	curl \
-	bash && \ 
+	bash && \
 	rm -rf /var/cache/apk/* && \
 	curl -sL https://www.rabbitmq.com/releases/rabbitmq-server/v${RABBITMQ_VERSION}/rabbitmq-server-generic-unix-${RABBITMQ_VERSION}.tar.xz | tar -xJ -C /usr/local && \
 	ln -s /usr/local/rabbitmq_server-${RABBITMQ_VERSION}/sbin/rabbitmq-server /usr/sbin/rabbitmq-server && \
@@ -40,6 +41,7 @@ RUN apk --no-cache upgrade && \
 	chmod 0700 /root/.ssh && \
 	pip install requests_futures nameko pyOpenSSL --upgrade
 
+RUN echo "root:`pwgen 15 1`" | chpasswd
 COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
 COPY dist/* /root/splunk_eventgen.tgz

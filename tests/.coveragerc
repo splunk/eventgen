@@ -1,10 +1,13 @@
 [run]
 omit =
 	splunk_eventgen/lib/logutils_src/*
-	splunk_eventgen/concurrent/*
+	splunk_eventgen/lib/concurrent/*
+	splunk_eventgen/lib/requests_futures/*
+	splunk_eventgen/logger/*
 	
 [report]
 omit = 
 	splunk_eventgen/lib/logutils_src/*
-	splunk_eventgen/concurrent/*
-	
+	splunk_eventgen/lib/concurrent/*
+	splunk_eventgen/lib/requests_futures/*
+	splunk_eventgen/logger/*
