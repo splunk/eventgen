@@ -27,11 +27,18 @@ def test_plugin_httpevent(eventgen_test_helper):
 
     time.sleep(30)
     # https://github.com/docker/compose/issues/5696
-    provision_cmd = ["docker-compose -f " + docker_compose_file +
-                     " exec -T splunk /bin/bash -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk restart'"]
-
+    provision_cmd = [
+        "docker-compose",
+        "-f",
+        docker_compose_file,
+        "exec",
+        "-T",
+        "splunk",
+        "sh",
+        "-c",
+        "'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk restart'"]
     try:
-        subprocess.check_output(provision_cmd, shell=True, stderr=subprocess.STDOUT)
+        subprocess.Popen(provision_cmd, shell=True, stdout=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
         raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
 
