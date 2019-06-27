@@ -4,6 +4,13 @@ Please be sure to read the contribution guidelines before making or requesting a
 
 ## Code of conduct
 
+###Contributor License Agreement
+At the moment, we can only accept pull requests submitted from either:
+* Splunk employees or
+* Individuals that have signed our contribution agreement
+
+If you wish to be a contributing member of our community, please see the agreement [for individuals](https://www.splunk.com/goto/individualcontributions) or [for organizations](https://www.splunk.com/goto/contributions).
+
 ### Our Pledge
 
 In the interest of fostering an open and welcoming environment, we as
