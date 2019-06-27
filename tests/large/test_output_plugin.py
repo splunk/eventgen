@@ -23,7 +23,7 @@ def test_plugin_httpevent(eventgen_test_helper):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     docker_compose_file = os.path.join(base_dir, "provision/docker-compose.yml")
     up_cmd = ["docker-compose", "-f", docker_compose_file, "up"]
-    subprocess.Popen(up_cmd, stdout=subprocess.PIPE)
+    subprocess.Popen(up_cmd, shell=True, stdout=subprocess.PIPE)
 
     time.sleep(30)
     # https://github.com/docker/compose/issues/5696
@@ -43,4 +43,4 @@ def test_plugin_httpevent(eventgen_test_helper):
     events = get_search_response(session_key, search_job_id)
     assert len(events) == 12
     down_cmd = ["docker-compose", "-f", docker_compose_file, "down"]
-    subprocess.Popen(down_cmd, stdout=subprocess.PIPE)
+    subprocess.Popen(down_cmd, shell=True, stdout=subprocess.PIPE)
