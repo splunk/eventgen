@@ -192,12 +192,6 @@ class Timer(object):
                             self.logger.info("Starting '%d' generatorWorkers for sample '%s'" %
                                              (self.sample.config.generatorWorkers, self.sample.name))
                             for worker_id in range(self.config.generatorWorkers):
-                                # self.generatorPlugin is only an instance, now we need a real plugin. Make a copy of
-                                # of the sample in case another generator corrupts it.
-                                # copy_sample = copy.copy(self.sample)
-                                # tokens = copy.deepcopy(self.sample.tokens)
-                                # copy_sample.tokens = tokens
-                                # genPlugin = self.generatorPlugin(sample=copy_sample)
                                 genPlugin = self.generatorPlugin(sample=self.sample)
                                 # Adjust queue for threading mode
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
@@ -205,13 +199,13 @@ class Timer(object):
 
                                 try:
                                     self.generatorQueue.put(genPlugin)
-                                    self.executions += 1
                                     self.logger.debug(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
                                                        "with et '{3}' and lt '{4}'").format(
                                                           worker_id, round((count / 1024.0 / 1024), 4),
                                                           self.sample.name, et, lt))
                                 except Full:
                                     self.logger.warning("Generator Queue Full. Skipping current generation.")
+                            self.executions += 1
                     except Exception as e:
                         self.logger.exception(str(e))
                         if self.stopping:

@@ -99,3 +99,9 @@ def test_mode_sample_count(eventgen_test_helper):
     helper = eventgen_test_helper("eventgen_sample_count.conf")
     events = helper.get_events()
     assert len(events) == 5
+
+
+def test_mode_sample_generator_workers(eventgen_test_helper):
+    """Test sample mode with generatorWorkers = 5, end = 5 and count = 10"""
+    events = eventgen_test_helper("eventgen_sample_generatorWorkers.conf").get_events()
+    assert len(events) == 50
