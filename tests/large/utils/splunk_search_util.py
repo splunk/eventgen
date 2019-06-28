@@ -4,7 +4,7 @@ from xml.dom import minidom
 import time
 import json
 
-BASEURL = 'https://localhost:8089'
+BASEURL = 'https://127.0.0.1:8089'
 USERNAME = 'admin'
 PASSWORD = 'changeme'
 

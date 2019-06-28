@@ -42,8 +42,15 @@ test_helper:
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install -r $(shell pwd)/tests/requirements.txt" || true
 
 	@echo 'Installing docker-compose'
-	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-	sudo chmod +x /usr/local/bin/docker-compose
+	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
+	sudo chmod +x /usr/local/bin/docker-compose || true
+
+	@echo 'Start container with splunk'
+	docker-compose -f tests/large/provision/docker-compose.yml up &
+
+	sleep 80
+	@echo 'Provision splunk container'
+	docker-compose -f tests/large/provision/docker-compose.yml exec -T splunk sh -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk restart'
 
 run_tests:
 	@echo 'Running the super awesome tests'
@@ -61,6 +68,9 @@ test_collection_cleanup:
 
 	@echo 'Stopping test container'
 	docker stop ${EVENTGEN_TEST_IMAGE} || true
+
+	@echo 'Stopping splunk container'
+	docker-compose -f tests/large/provision/docker-compose.yml down || true
 
 clean:
 	rm *.spl || true
