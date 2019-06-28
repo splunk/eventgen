@@ -196,7 +196,7 @@ class Token(object):
             if self._floatMatch is not None:
                 floatMatch = self._floatMatch
             else:
-                floatRE = re.compile('float\[(-?\d+|\d+\.(\d+)):(-?\d+|\d+\.(\d+))\]', re.I)
+                floatRE = re.compile('float\[(-?\d+|-?\d+\.(\d+)):(-?\d+|-?\d+\.(\d+))\]', re.I)
                 floatMatch = floatRE.match(self.replacement)
                 self._floatMatch = floatMatch
 

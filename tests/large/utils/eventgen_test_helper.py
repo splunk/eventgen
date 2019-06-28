@@ -87,6 +87,11 @@ class EventgenTestHelper(object):
     def _read_conf(conf):
         config = configparser.ConfigParser()
         config.read(conf)
-        if len(config.sections()) != 1 or config.sections()[0] == 'default' or config.sections()[0] == 'global':
-            raise Exception("Invalid test eventgen conf")
-        return config, config.sections()[0]
+        section = None
+        for s in config.sections():
+            if s == 'default' or s == 'global':
+                continue
+            else:
+                section = s
+                break
+        return config, section
