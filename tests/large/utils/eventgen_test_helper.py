@@ -51,6 +51,8 @@ class EventgenTestHelper(object):
         elif self.output_mode == 'file':
             with open(os.path.join(result_dir, self.file_name), 'r') as f:
                 output = f.read()
+        else:
+            output = ''
 
         if self.breaker[0] == '^':
             self.breaker = self.breaker[1:]
