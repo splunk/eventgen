@@ -108,7 +108,7 @@ run_server: eg_network
 run_controller: eg_network
 	docker kill eg_controller || true
 	docker rm eg_controller || true
-	docker run --name eg_controller --network eg_network -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
+	docker run --network eg_network --name eg_controller  -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
 
 docs:
 	cd docs/; bundle install; bundle exec jekyll serve

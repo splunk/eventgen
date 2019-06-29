@@ -17,8 +17,10 @@ RUN apk --no-cache upgrade && \
 
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
 COPY dist/* /root/splunk_eventgen.tgz
-RUN pip install /root/splunk_eventgen.tgz && rm /root/splunk_eventgen.tgz
+RUN pip install /root/splunk_eventgen.tgz && \
+	rm /root/splunk_eventgen.tgz && \
+	echo "[{rabbit, [{loopback_users, []}]}]." >> /etc/rabbitmq/rabbitmq.config
 
 EXPOSE 5672 15672 9500
-WORKDIR /opt/splunk/etc/apps
+WORKDIR  /usr/lib/python2.7/site-packages/splunk_eventgen
 ENTRYPOINT ["/sbin/entrypoint.sh"]
