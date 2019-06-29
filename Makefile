@@ -24,7 +24,7 @@ image: setup_eventgen egg
 	rm splunk_eventgen/default/eventgen_engine.conf || true
 	docker build -f dockerfiles/Dockerfile . -t eventgen
 
-test: egg image test_helper run_tests test_collection_cleanup
+test: image test_helper run_tests test_collection_cleanup
 
 test_helper:
 	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} eventgen:latest cat
