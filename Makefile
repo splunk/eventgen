@@ -53,7 +53,7 @@ test_helper:
 
 	sleep 80
 	@echo 'Provision splunk container'
-	docker-compose -f tests/large/provision/docker-compose.yml exec -T splunk sh -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk restart'
+	docker-compose -f tests/large/provision/docker-compose.yml exec -T splunk sh -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk restart' &
 
 run_tests:
 	@echo 'Running the super awesome tests'
