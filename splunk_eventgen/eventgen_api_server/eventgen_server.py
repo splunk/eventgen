@@ -1,12 +1,11 @@
 from flask import Flask
-import eventgen_core_object
 from eventgen_server_api import EventgenServerAPI
+
 
 class EventgenServer():
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):        
         self.app = self._create_app()
-        self.eventgen = eventgen_core_object.EventgenCoreObject() 
 
     def app_run(self):
         self.app.run(host="0.0.0.0", port=9500)
