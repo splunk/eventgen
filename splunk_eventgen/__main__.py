@@ -63,18 +63,13 @@ def parse_args():
     build_subparser.add_argument("--destination", help="Specify where to store the output of the build command.")
     build_subparser.add_argument("--remove", default=True,
                                  help="Remove the build directory after completion. Defaults to True")
-    # WSGI subparser
-    wsgi_subparser = subparsers.add_parser('wsgi', help="start a wsgi server to interact with eventgen.")
-    wsgi_subparser.add_argument(
-        "--daemon", action="store_true",
-        help="Daemon will tell the wsgi server to start in a daemon mode and will release the cli.")
     # Service subparser
     service_subparser = subparsers.add_parser(
         'service',
-        help=("Run Eventgen as a Nameko service. Parameters for starting this service can be defined as either env"
+        help=("Run Eventgen as an api server. Parameters for starting this service can be defined as either env"
               "variables or CLI arguments, where env variables takes precedence. See help for more info."))
     service_subparser.add_argument("--role", "-r", type=str, default=None, required=True, choices=[
-        "controller", "server"], help="Define the role for this Eventgen node. Options: master, slave")
+        "controller", "server", "standalone"], help="Define the role for this Eventgen node. Options: controller, server, standalone")
     service_subparser.add_argument(
         "--amqp-uri", type=str, default=None,
         help=("Full URI to AMQP endpoint in the format pyamqp://<user>:<password>@<host>:<port>."
@@ -111,7 +106,6 @@ def parse_args():
     # add subparsers to the subparser dict, this will be used later for usage / help statements.
     subparser_dict['generate'] = generate_subparser
     subparser_dict['build'] = build_subparser
-    subparser_dict['wsgi'] = wsgi_subparser
     subparser_dict['help'] = help_subparser
 
     if len(sys.argv) == 1:
@@ -347,6 +341,7 @@ def main():
         eventgen = eventgen_core.EventGenerator(args=args)
         eventgen.start()
     elif args.subcommand == "service":
+        
         run_nameko(args)
     elif args.subcommand == "build":
         if not args.destination:
