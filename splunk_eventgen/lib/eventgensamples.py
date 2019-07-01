@@ -432,6 +432,8 @@ class Sample(object):
             except Exception:
                 self.logger.error("Failed to parse extendIndexes, using index={} now.".format(self.index))
                 self.index_list = []
+            finally:
+                # only read the extendIndexes configure once.
                 self.extendIndexes = None
 
     def get_loaded_sample(self):
