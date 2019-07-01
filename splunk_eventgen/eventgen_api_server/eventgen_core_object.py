@@ -1,8 +1,5 @@
 import argparse
-from argparse import Namespace
 import logging
-import os
-import sys
 
 import splunk_eventgen.eventgen_core as eventgen_core
 
@@ -20,7 +17,7 @@ class EventgenCoreObject():
         self.logger.info("Refreshed the eventgen core object")
 
     def _create_args(self):
-        args = Namespace()
+        args = argparse.Namespace()
         args.daemon = False
         args.verbosity = None
         args.version = False

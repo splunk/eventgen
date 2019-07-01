@@ -1,5 +1,6 @@
 from flask import Flask
 import eventgen_core_object
+from eventgen_server_api import EventgenServerAPI
 
 class EventgenServer():
 
@@ -14,7 +15,7 @@ class EventgenServer():
         app = Flask(__name__)
         app.config['SECRET_KEY'] = 'does-not-exist'
 
-        # app.register_blueprint(CreateWorkflowApi(self.logger).get_blueprint())
+        app.register_blueprint(EventgenServerAPI().get_blueprint())
         # app.register_blueprint(OtherApi(self.logger).get_blueprint())
 
         @app.route('/')
