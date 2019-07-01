@@ -341,8 +341,15 @@ def main():
         eventgen = eventgen_core.EventGenerator(args=args)
         eventgen.start()
     elif args.subcommand == "service":
-        
-        run_nameko(args)
+        if args.role == "controller":
+            from eventgen_api_server.eventgen_controller import EventgenController
+            EventgenController().app_run()
+        elif args.role == "server":
+            from eventgen_api_server.eventgen_server import EventgenServer
+            EventgenServer(mode = "cluster").app_run()
+        elif args.role == "standalone":
+            from eventgen_api_server.eventgen_server import EventgenServer
+            EventgenServer(mode = "standalone").app_run()
     elif args.subcommand == "build":
         if not args.destination:
             args.destination = cwd
