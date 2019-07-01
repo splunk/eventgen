@@ -42,7 +42,7 @@ test_helper:
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip install dist/splunk_eventgen*.tar.gz" || true
 
 	@echo 'Installing test requirements'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install -r $(shell pwd)/tests/requirements.txt" || true
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install --upgrade pip;pip install -r $(shell pwd)/tests/requirements.txt" || true
 
 	@echo 'Installing docker-compose'
 	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
@@ -53,7 +53,7 @@ test_helper:
 
 	sleep 80
 	@echo 'Provision splunk container'
-	docker-compose -f tests/large/provision/docker-compose.yml exec -T splunk sh -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk restart'
+	docker-compose -f tests/large/provision/docker-compose.yml exec -T splunk sh -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk enable listen 9997 -auth admin:changeme;/opt/splunk/bin/splunk restart'
 
 run_tests:
 	@echo 'Running the super awesome tests'
