@@ -19,7 +19,6 @@ def create_args():
     parser = argparse.ArgumentParser(prog="eventgen_nameko_dependency")
     args = parser.parse_args()
     args.daemon = False
-    args.verbosity = None
     args.version = False
     args.backfill = None
     args.count = None
@@ -36,7 +35,7 @@ def create_args():
     args.sample = None
     args.version = False
     args.subcommand = 'generate'
-    args.verbosity = 40
+    args.verbosity = 20
     args.wsgi = True
     args.modinput_mode = False
     return args

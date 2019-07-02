@@ -28,9 +28,9 @@ except ImportError:
     import logutils
     import logutils.queue
 
-file_path = os.path.dirname(os.path.realpath(__file__))
-EVENTGEN_DIR = os.path.realpath(os.path.join(file_path, ".."))
-EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(file_path, "default", "eventgen_engine.conf"))
+FILE_PATH = os.path.dirname(os.path.realpath(__file__))
+EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
+EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
 
 
 class JSONFormatter(logging.Formatter):
@@ -136,12 +136,12 @@ class EventGenerator(object):
         try:
             self.config.outputPlugins = {}
             plugins = self._initializePlugins(
-                os.path.join(file_path, 'lib', 'plugins', 'output'), self.config.outputPlugins, 'output')
+                os.path.join(FILE_PATH, 'lib', 'plugins', 'output'), self.config.outputPlugins, 'output')
             self.config.validOutputModes.extend(plugins)
             self._initializePlugins(
-                os.path.join(file_path, 'lib', 'plugins', 'generator'), self.config.plugins, 'generator')
+                os.path.join(FILE_PATH, 'lib', 'plugins', 'generator'), self.config.plugins, 'generator')
             plugins = self._initializePlugins(
-                os.path.join(file_path, 'lib', 'plugins', 'rater'), self.config.plugins, 'rater')
+                os.path.join(FILE_PATH, 'lib', 'plugins', 'rater'), self.config.plugins, 'rater')
             self.config._complexSettings['rater'] = plugins
         except Exception as e:
             self.logger.exception(str(e))
@@ -269,7 +269,7 @@ class EventGenerator(object):
             pass
 
     def _setup_loggers(self, args=None, config=None):
-        log_path = getattr(args, "log_path", os.path.join(file_path, 'logs'))
+        log_path = getattr(args, "log_path", os.path.join(FILE_PATH, 'logs'))
         eventgen_main_logger_path = os.path.join(log_path, 'eventgen-main.log')
         eventgen_controller_logger_path = os.path.join(log_path, 'eventgen-controller.log')
         eventgen_metrics_logger_path = os.path.join(log_path, 'eventgen-metrics.log')

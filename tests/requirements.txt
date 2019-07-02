@@ -1,9 +1,0 @@
-pytest
-pytest-xdist
-mock
-pytest-cov
-requests
-docker==2.7.0
-nameko
-pyOpenSSL
-lxml==4.3.4
