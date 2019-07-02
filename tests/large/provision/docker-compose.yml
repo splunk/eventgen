@@ -7,6 +7,7 @@ services:
       - 8000:8000
       - 8089:8089
       - 8088:8088
+      - 9997:9997
     environment:
       SPLUNK_START_ARGS: --answer-yes --no-prompt --accept-license
       # add `SHELL` env variable to make the `dircolors` happy
