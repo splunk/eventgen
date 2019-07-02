@@ -74,7 +74,7 @@ def parse_args():
         help=("Run Eventgen as a Nameko service. Parameters for starting this service can be defined as either env"
               "variables or CLI arguments, where env variables takes precedence. See help for more info."))
     service_subparser.add_argument("--role", "-r", type=str, default=None, required=True, choices=[
-        "controller", "server"], help="Define the role for this Eventgen node. Options: master, slave")
+        "controller", "server"], help="Define the role for this Eventgen node. Options: controller, server")
     service_subparser.add_argument(
         "--amqp-uri", type=str, default=None,
         help=("Full URI to AMQP endpoint in the format pyamqp://<user>:<password>@<host>:<port>."

@@ -26,3 +26,11 @@ def test_plugin_httpevent(eventgen_test_helper):
     search_job_id = run_search(session_key, preprocess_search('index=main sourcetype=httpevent'))
     events = get_search_response(session_key, search_job_id)
     assert len(events) == 12
+
+
+def test_plugin_s2s(eventgen_test_helper):
+    eventgen_test_helper("eventgen_plugin_s2s.conf").get_events()
+    session_key = get_session_key()
+    search_job_id = run_search(session_key, preprocess_search('index=main sourcetype=s2s'))
+    events = get_search_response(session_key, search_job_id)
+    assert len(events) == 12
