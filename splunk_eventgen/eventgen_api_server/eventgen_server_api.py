@@ -15,7 +15,7 @@ class EventgenServerAPI(ApiBlueprint):
         ApiBlueprint.__init__(self)
         self.bp = self._create_blueprint()
 
-        self.total_volume = 0
+        self.total_volume = 0.0
         self.eventgen = eventgen_core_object.EventgenCoreObject()
         self.host = socket.gethostname()
 
@@ -47,12 +47,29 @@ class EventgenServerAPI(ApiBlueprint):
         @bp.route('/conf', methods=['POST'])
         def http_post_conf():
             try:
-                response = set_conf(request.get_json(force=True))
+                set_conf(request.get_json(force=True))
                 return Response(json.dumps(get_conf()), mimetype='application/json', status=200)
             except Exception as e:
                 # log exeption
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-
+        
+        @bp.route('/volume', methods=['GET'])
+        def http_get_volume():
+            try:
+                response = get_volume()
+                return Response(json.dumps(response), mimetype='application/json', status=200)
+            except Exception as e:
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+        
+        @bp.route('/volume', methods=['POST'])
+        def http_post_volume():
+            try:
+                set_volume(request.get_json(force=True).get("total_volume", 0.0))
+                return Response(json.dumps(get_volume()), mimetype='application/json', status=200)
+            except Exception as e:
+                raise e
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+        
         def get_index():
             home_page = '''*** Eventgen WSGI ***\nHost: {0}\nEventgen Status: {1}\nEventgen Config file exists: {2}\nEventgen Config file path: {3}\nTotal volume: {4}\nWorker Queue Status: {5}\nSample Queue Status: {6}\nOutput Queue Status: {7}\n'''
             status = get_status()
@@ -151,63 +168,40 @@ class EventgenServerAPI(ApiBlueprint):
                     'THROUGHPUT_COUNT': throughput_count}
             else:
                 return empty_throughput
+        
+        def get_volume():
+            response = dict()
+            config = get_conf()
+            total_volume = 0.0
+            volume_distribution = {}
+            for stanza in config.keys():
+                if isinstance(config[stanza], dict) and "perDayVolume" in config[stanza].keys():
+                    total_volume += float(config[stanza]["perDayVolume"])
+                    volume_distribution[stanza] = float(config[stanza]["perDayVolume"])
 
- 
+            if total_volume:
+                self.total_volume = total_volume
+            response['total_volume'] = self.total_volume
+            response['volume_distribution'] = volume_distribution
+            return response
+        
+        def set_volume(target_volume):
+            conf_dict = get_conf()
+            if get_volume()['total_volume'] != 0:
+                ratio = float(target_volume) / float(self.total_volume)
+                for stanza, kv_pair in conf_dict.iteritems():
+                    if isinstance(kv_pair, dict):
+                        if "perDayVolume" in kv_pair.keys():
+                            conf_dict[stanza]["perDayVolume"] = round(float(conf_dict[stanza]["perDayVolume"]) * ratio, 2)
+            else:
+                # If there is no total_volume existing, divide the volume equally into stanzas
+                divided_volume = float(target_volume) / len(conf_dict.keys())
+                for stanza, kv_pair in conf_dict.iteritems():
+                    if isinstance(kv_pair, dict):
+                        conf_dict[stanza]["perDayVolume"] = divided_volume
 
-    # def get_status(self):
-    #     '''
-    #     Get status of eventgen
+            set_conf(conf_dict)
+            self.total_volume = round(float(target_volume), 2)
 
-    #     return value structure
-    #     {
-    #         "EVENTGEN_STATUS" :
-    #         "EVENTGEN_HOST" :
-    #         "CONFIGURED" :
-    #         "CONFIG_FILE" :
-    #         "TOTAL_VOLUME" :
-    #         "QUEUE_STATUS" : { "SAMPLE_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': },
-    #                            "OUTPUT_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': },
-    #                            "WORKER_QUEUE": {'UNFISHED_TASK': , 'QUEUE_LENGTH': }}
-    #         "THROUGHPUT_STATUS": {  "TOTAL_VOLUME_MB": '<volume_MB>',
-    #                                 "TOTAL_COUNT": '<count_int>',
-    #                                 "THROUGHPUT_VOLUME_KB": '<throughput_KB/s>',
-    #                                 "THROUGHPUT_COUNT": '<output_count_per_second_int>'}
-    #     }
-    #     '''
-    #     res = dict()
-    #     if self.eventgen_dependency.eventgen.check_running():
-    #         if self.eventgen_dependency.eventgen.check_done():
-    #             # all jobs completed
-    #             status = 2
-    #         else:
-    #             # still running
-    #             status = 1
-    #     else:
-    #         # not start yet
-    #         status = 0
-    #     res["EVENTGEN_STATUS"] = status
-    #     res["EVENTGEN_HOST"] = self.host
-    #     res["CONFIGURED"] = self.eventgen_dependency.configured
-    #     res["CONFIG_FILE"] = self.eventgen_dependency.configfile
-    #     res["TOTAL_VOLUME"] = self.total_volume
-    #     res["QUEUE_STATUS"] = {
-    #         'SAMPLE_QUEUE': {'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}, 'OUTPUT_QUEUE': {
-    #             'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}, 'WORKER_QUEUE': {
-    #                 'UNFINISHED_TASK': 'N/A', 'QUEUE_LENGTH': 'N/A'}}
-    #     res['THROUGHPUT_STATUS'] = self.get_throughput()
-    #     if hasattr(self.eventgen_dependency.eventgen, "sampleQueue"):
-    #         res["QUEUE_STATUS"]['SAMPLE_QUEUE'][
-    #             'UNFINISHED_TASK'] = self.eventgen_dependency.eventgen.sampleQueue.unfinished_tasks
-    #         res["QUEUE_STATUS"]['SAMPLE_QUEUE']['QUEUE_LENGTH'] = self.eventgen_dependency.eventgen.sampleQueue.qsize()
-    #     if hasattr(self.eventgen_dependency.eventgen, "outputQueue"):
-    #         res["QUEUE_STATUS"]['OUTPUT_QUEUE'][
-    #             'UNFINISHED_TASK'] = self.eventgen_dependency.eventgen.outputQueue.unfinished_tasks
-    #         res["QUEUE_STATUS"]['OUTPUT_QUEUE']['QUEUE_LENGTH'] = self.eventgen_dependency.eventgen.outputQueue.qsize()
-    #     if hasattr(self.eventgen_dependency.eventgen, "workerQueue"):
-    #         res["QUEUE_STATUS"]['WORKER_QUEUE'][
-    #             'UNFINISHED_TASK'] = self.eventgen_dependency.eventgen.workerQueue.unfinished_tasks
-    #         res["QUEUE_STATUS"]['WORKER_QUEUE']['QUEUE_LENGTH'] = self.eventgen_dependency.eventgen.workerQueue.qsize()
-    #     return res
-
-            
         return bp
+
