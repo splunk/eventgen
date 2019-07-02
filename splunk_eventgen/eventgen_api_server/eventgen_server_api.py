@@ -4,6 +4,7 @@ import socket
 import json
 import ConfigParser
 import os
+import time
 
 from api_blueprint import ApiBlueprint
 import eventgen_core_object
@@ -66,6 +67,33 @@ class EventgenServerAPI(ApiBlueprint):
             try:
                 set_volume(request.get_json(force=True).get("total_volume", 0.0))
                 return Response(json.dumps(get_volume()), mimetype='application/json', status=200)
+            except Exception as e:
+                raise e
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+        
+        @bp.route('/start', methods=['POST'])
+        def http_post_start():
+            try:
+                response = start()
+                return Response(json.dumps(response), mimetype='application/json', status=200)
+            except Exception as e:
+                raise e
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+        
+        @bp.route('/stop', methods=['POST'])
+        def http_post_stop():
+            try:
+                response = stop()
+                return Response(json.dumps(response), mimetype='application/json', status=200)
+            except Exception as e:
+                raise e
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+        
+        @bp.route('/restart', methods=['POST'])
+        def http_post_restart():
+            try:
+                response = restart()
+                return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
                 raise e
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
@@ -202,6 +230,38 @@ class EventgenServerAPI(ApiBlueprint):
 
             set_conf(conf_dict)
             self.total_volume = round(float(target_volume), 2)
+
+        def start():
+            response = {}
+            if not self.eventgen.configured:
+                response['message'] = "Eventgen is not configured."
+            elif self.eventgen.eventgen_core_object.check_running():
+                response['message'] = "Eventgen already started."
+            else:
+                self.eventgen.eventgen_core_object.start(join_after_start=False)
+                response['message'] = "Eventgen has successfully started."
+            return response
+        
+        def stop():
+            response = {}
+            if self.eventgen.eventgen_core_object.check_running():
+                self.eventgen.eventgen_core_object.stop()
+                response['message'] = "Eventgen is stopped."
+            else:
+                response['message'] = "There is no Eventgen process running."
+            return response
+
+        def restart():
+            response = {}
+            if self.eventgen.eventgen_core_object.check_running():
+                stop()
+                time.sleep(0.5)
+                start()
+                response['message'] = "Eventgen has successfully restarted."
+            else:
+                start()
+                response['message'] = "Eventgen was not running. Starting Eventgen."
+            return response
 
         return bp
 

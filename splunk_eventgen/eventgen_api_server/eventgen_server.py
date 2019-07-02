@@ -4,9 +4,9 @@ from eventgen_server_api import EventgenServerAPI
 
 class EventgenServer():
 
-    def __init__(self, *args, **kwargs, mode='standalone'):        
+    def __init__(self, *args, **kwargs):        
         self.app = self._create_app()
-        self.mode = mode
+        self.mode = kwargs.get('mode', 'standalone')
 
     def app_run(self):
         self.app.run(host="0.0.0.0", port=9500)
