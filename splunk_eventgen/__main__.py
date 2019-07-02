@@ -346,10 +346,10 @@ def main():
             EventgenController().app_run()
         elif args.role == "server":
             from eventgen_api_server.eventgen_server import EventgenServer
-            EventgenServer(mode = "cluster").app_run()
+            EventgenServer(mode="cluster").app_run()
         elif args.role == "standalone":
             from eventgen_api_server.eventgen_server import EventgenServer
-            EventgenServer(mode = "standalone").app_run()
+            EventgenServer(mode="standalone").app_run()
     elif args.subcommand == "build":
         if not args.destination:
             args.destination = cwd
