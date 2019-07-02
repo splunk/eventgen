@@ -98,6 +98,15 @@ class EventgenServerAPI(ApiBlueprint):
                 raise e
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
+        @bp.route('/rest', methods=['POST'])
+        def http_post_reset():
+            try:
+                response = reset()
+                return Response(json.dumps(response), mimetype='application/json', status=200)
+            except Exception as e:
+                raise e
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+        
         def get_index():
             home_page = '''*** Eventgen WSGI ***\nHost: {0}\nEventgen Status: {1}\nEventgen Config file exists: {2}\nEventgen Config file path: {3}\nTotal volume: {4}\nWorker Queue Status: {5}\nSample Queue Status: {6}\nOutput Queue Status: {7}\n'''
             status = get_status()
@@ -261,6 +270,13 @@ class EventgenServerAPI(ApiBlueprint):
             else:
                 start()
                 response['message'] = "Eventgen was not running. Starting Eventgen."
+            return response
+
+        def reset():
+            response = {}
+            self.stop()
+            self.eventgen.refresh_eventgen_core_object()
+            response['message'] = "Eventgen has been reset."
             return response
 
         return bp
