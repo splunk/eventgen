@@ -8,7 +8,8 @@ controller_logger_config = {
         'console': {
             'class': 'logging.StreamHandler',
             'level': 'INFO',
-            'formatter': 'detailed', }, 'main': {
+            'formatter': 'detailed', },
+        'main': {
                 'class': 'logging.FileHandler',
                 'filename': 'eventgen-controller-main.log',
                 'mode': 'w',
