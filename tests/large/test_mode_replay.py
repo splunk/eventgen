@@ -37,6 +37,26 @@ def test_mode_replay_backfill(eventgen_test_helper):
     assert len(events) == 24
 
 
+def test_mode_replay_backfill_greater_interval(eventgen_test_helper):
+    """Test normal replay mode with backfill = -120s"""
+    current_datetime = datetime.now()
+    events = eventgen_test_helper('eventgen_replay_backfill_greater_interval.conf').get_events()
+    # assert the events length is twice of the events in the sample file
+    assert len(events) == 24
+    pattern = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
+    for event in events:
+        result = pattern.match(event)
+        assert result is not None
+        event_datetime = datetime.strptime(result.group(), "%Y-%m-%d %H:%M:%S")
+        assert event_datetime < current_datetime
+
+
+def test_mode_replay_tutorial1(eventgen_test_helper):
+    """Test the replay mode with csv for sample file sample.tutorial1. https://github.com/splunk/eventgen/issues/244"""
+    events = eventgen_test_helper('eventgen_tutorial1.conf').get_events()
+    assert len(events) == 2019
+
+
 def test_mode_replay_timemultiple(eventgen_test_helper):
     """Test normal replay mode with timeMultiple = 0.5 which will replay the sample with half time interval"""
     current_datetime = datetime.now()
