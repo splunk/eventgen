@@ -5,11 +5,21 @@ import json
 import ConfigParser
 import os
 import time
+import requests
+import zipfile
+import tarfile
+import glob
+import shutil
+import collections
 
 from api_blueprint import ApiBlueprint
 import eventgen_core_object
 
 INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
+
+FILE_PATH = os.path.dirname(os.path.realpath(__file__))
+DEFAULT_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "default"))
+SAMPLE_DIR_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "samples"))
 
 class EventgenServerAPI(ApiBlueprint):
     def __init__(self):
@@ -98,7 +108,7 @@ class EventgenServerAPI(ApiBlueprint):
                 raise e
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
-        @bp.route('/rest', methods=['POST'])
+        @bp.route('/reset', methods=['POST'])
         def http_post_reset():
             try:
                 response = reset()
@@ -107,6 +117,24 @@ class EventgenServerAPI(ApiBlueprint):
                 raise e
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
+        @bp.route('/bundle', methods=['POST'])
+        def http_post_bundle():
+            try:
+                set_bundle(request.get_json(force=True).get("url", ''))
+                return Response(json.dumps(get_conf()), mimetype='application/json', status=200)
+            except Exception as e:
+                raise e
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+        
+        @bp.route('/setup', methods=['POST'])
+        def http_post_setup():
+            try:
+                clean_bundle_conf()
+                return Response(json.dumps(get_conf()), mimetype='application/json', status=200)
+            except Exception as e:
+                raise e
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+                
         def get_index():
             home_page = '''*** Eventgen WSGI ***\nHost: {0}\nEventgen Status: {1}\nEventgen Config file exists: {2}\nEventgen Config file path: {3}\nTotal volume: {4}\nWorker Queue Status: {5}\nSample Queue Status: {6}\nOutput Queue Status: {7}\n'''
             status = get_status()
@@ -122,7 +150,7 @@ class EventgenServerAPI(ApiBlueprint):
                                     sample_queue_status, output_queue_status)
 
         def get_conf():
-            response = dict()
+            response = collections.OrderedDict()
             if self.eventgen.configured:
                 config = ConfigParser.ConfigParser()
                 config.optionxform = str
@@ -130,13 +158,14 @@ class EventgenServerAPI(ApiBlueprint):
                 if os.path.isfile(config_path):
                     config.read(config_path)
                     for section in config.sections():
-                        response[section] = dict()
+                        response[section] = collections.OrderedDict()
                         for k, v in config.items(section):
                             response[section][k] = v
+            self.eventgen.check_and_configure_eventgen
             return response
         
         def set_conf(request_body):
-            config = ConfigParser.ConfigParser()
+            config = ConfigParser.ConfigParser({}, collections.OrderedDict)
             config.optionxform = str
 
             for sample in request_body.iteritems():
@@ -278,6 +307,88 @@ class EventgenServerAPI(ApiBlueprint):
             self.eventgen.refresh_eventgen_core_object()
             response['message'] = "Eventgen has been reset."
             return response
+
+        def set_bundle(url):
+            if not url:
+                return 
+
+            self.eventgen.configured = False
+            bundle_dir = unarchive_bundle(download_bundle(url))
+
+            if os.path.isdir(os.path.join(bundle_dir, "samples")):
+                for file in glob.glob(os.path.join(bundle_dir, "samples", "*")):
+                    shutil.copy(file, SAMPLE_DIR_PATH)
+
+            if os.path.isfile(os.path.join(bundle_dir, "default", "eventgen.conf")):
+                config = ConfigParser.ConfigParser()
+                config.optionxform = str
+                config.read(os.path.join(bundle_dir, "default", "eventgen.conf"))
+                config_dict = {s: collections.OrderedDict(config.items(s)) for s in config.sections()}
+                set_conf(config_dict)
+                self.eventgen.configured = True
+
+        def download_bundle(url):
+            bundle_path = os.path.join(DEFAULT_PATH, "eg-bundle.tgz")
+            r = requests.get(url, stream=True)
+            with open(bundle_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=None):
+                    if chunk:
+                        f.write(chunk)
+            r.close()
+            return bundle_path
+
+        def unarchive_bundle(path):
+            output = ''
+            if tarfile.is_tarfile(path):
+                tar = tarfile.open(path)
+                output = os.path.join(os.path.dirname(path), os.path.commonprefix(tar.getnames()))
+                tar.extractall(path=os.path.dirname(path))
+                tar.close()
+            elif zipfile.is_zipfile(path):
+                zipf = zipfile.ZipFile(path)
+                # output = 
+                # zipf.extractall(path=os.path.dirname(path))
+                for info in zipf.infolist():
+                    old_file_name = info.filename
+                    if info.filename.find('/') == len(info.filename) - 1:
+                        info.filename = "eg-bundle/"
+                    else:
+                        info.filename = "eg-bundle/" + info.filename[info.filename.find('/') + 1:]
+                    zipf.extract(info, os.path.dirname(path))
+                output = os.path.join(os.path.dirname(path), 'eg-bundle')
+                zipf.close()
+            else:
+                msg = "Unknown archive format!"
+                raise Exception(msg)
+            return output
+        
+        def clean_bundle_conf():
+            conf_dict = get_conf()
+
+            if ".*" not in conf_dict.keys():
+                conf_dict['.*'] = {}
+
+            # 1. Remove sampleDir from individual stanza and set a global sampleDir
+            # 2. Remove outputMode from individual stanza and set a global outputMode to httpevent
+            # 3. Change token sample path to a local sample path
+            for stanza, kv_pair in conf_dict.iteritems():
+                if stanza != ".*":
+                    if 'sampleDir' in kv_pair:
+                        del kv_pair['sampleDir']
+                    if 'outputMode' in kv_pair:
+                        del kv_pair['outputMode']
+                for key, value in kv_pair.iteritems():
+                    if 'replacementType' in key and value in ['file', 'mvfile', 'seqfile']:
+                        token_num = key[key.find('.')+1:key.rfind('.')]
+                        if not token_num: continue
+                        else:
+                            existing_path = kv_pair['token.{}.replacement'.format(token_num)]
+                            kv_pair['token.{}.replacement'.format(token_num)] = os.path.join(SAMPLE_DIR_PATH, existing_path[existing_path.rfind('/')+1:])
+
+            conf_dict['.*']['sampleDir'] = SAMPLE_DIR_PATH
+            conf_dict['.*']['outputMode'] = 'httpevent'
+
+            set_conf(conf_dict)
 
         return bp
 
