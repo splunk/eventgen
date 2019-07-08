@@ -16,7 +16,6 @@ class EventgenServer():
         app.config['SECRET_KEY'] = 'does-not-exist'
 
         app.register_blueprint(EventgenServerAPI().get_blueprint())
-        # app.register_blueprint(OtherApi(self.logger).get_blueprint())
 
         @app.route('/')
         def index():

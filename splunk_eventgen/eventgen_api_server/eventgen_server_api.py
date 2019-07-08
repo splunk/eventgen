@@ -11,6 +11,7 @@ import tarfile
 import glob
 import shutil
 import collections
+import logging
 
 from api_blueprint import ApiBlueprint
 import eventgen_core_object
@@ -30,6 +31,8 @@ class EventgenServerAPI(ApiBlueprint):
         self.eventgen = eventgen_core_object.EventgenCoreObject()
         self.host = socket.gethostname()
 
+        self.logger = logging.getLogger('eventgen_server')
+
     def _create_blueprint(self):
         bp = flask.Blueprint('server_api', __name__)
 
@@ -43,7 +46,7 @@ class EventgenServerAPI(ApiBlueprint):
                 response = get_status()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
-                # log exeption
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
             
         @bp.route('/conf', methods=['GET'])
@@ -52,7 +55,7 @@ class EventgenServerAPI(ApiBlueprint):
                 response = get_conf()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
-                # log exeption
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
         @bp.route('/conf', methods=['POST'])
@@ -61,7 +64,7 @@ class EventgenServerAPI(ApiBlueprint):
                 set_conf(request.get_json(force=True))
                 return Response(json.dumps(get_conf()), mimetype='application/json', status=200)
             except Exception as e:
-                # log exeption
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
         @bp.route('/volume', methods=['GET'])
@@ -70,6 +73,7 @@ class EventgenServerAPI(ApiBlueprint):
                 response = get_volume()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
         @bp.route('/volume', methods=['POST'])
@@ -78,7 +82,7 @@ class EventgenServerAPI(ApiBlueprint):
                 set_volume(request.get_json(force=True).get("total_volume", 0.0))
                 return Response(json.dumps(get_volume()), mimetype='application/json', status=200)
             except Exception as e:
-                raise e
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
         @bp.route('/start', methods=['POST'])
@@ -87,7 +91,7 @@ class EventgenServerAPI(ApiBlueprint):
                 response = start()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
-                raise e
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
         @bp.route('/stop', methods=['POST'])
@@ -96,7 +100,7 @@ class EventgenServerAPI(ApiBlueprint):
                 response = stop()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
-                raise e
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
         @bp.route('/restart', methods=['POST'])
@@ -105,7 +109,7 @@ class EventgenServerAPI(ApiBlueprint):
                 response = restart()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
-                raise e
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
         @bp.route('/reset', methods=['POST'])
@@ -114,25 +118,28 @@ class EventgenServerAPI(ApiBlueprint):
                 response = reset()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
-                raise e
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
         @bp.route('/bundle', methods=['POST'])
         def http_post_bundle():
             try:
                 set_bundle(request.get_json(force=True).get("url", ''))
+                clean_bundle_conf()
                 return Response(json.dumps(get_conf()), mimetype='application/json', status=200)
             except Exception as e:
-                raise e
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
         @bp.route('/setup', methods=['POST'])
         def http_post_setup():
             try:
+                stop()
                 clean_bundle_conf()
+                setup_http(request.get_json(force=True))
                 return Response(json.dumps(get_conf()), mimetype='application/json', status=200)
             except Exception as e:
-                raise e
+                self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
                 
         def get_index():
@@ -371,12 +378,15 @@ class EventgenServerAPI(ApiBlueprint):
             # 1. Remove sampleDir from individual stanza and set a global sampleDir
             # 2. Remove outputMode from individual stanza and set a global outputMode to httpevent
             # 3. Change token sample path to a local sample path
+            # 4. Remove httpeventServers from individual stanza
             for stanza, kv_pair in conf_dict.iteritems():
                 if stanza != ".*":
                     if 'sampleDir' in kv_pair:
                         del kv_pair['sampleDir']
                     if 'outputMode' in kv_pair:
                         del kv_pair['outputMode']
+                    if 'httpeventServers' in kv_pair:
+                        del kv_pair['httpeventServers']
                 for key, value in kv_pair.iteritems():
                     if 'replacementType' in key and value in ['file', 'mvfile', 'seqfile']:
                         token_num = key[key.find('.')+1:key.rfind('.')]
@@ -389,6 +399,72 @@ class EventgenServerAPI(ApiBlueprint):
             conf_dict['.*']['outputMode'] = 'httpevent'
 
             set_conf(conf_dict)
+        
+        def setup_http(data):
+            if data.get("servers"):
+                conf_dict = get_conf()
+                conf_dict['.*']['httpeventServers'] = {"servers": data.get("servers")}
+                set_conf(conf_dict)
+            else:
+                # If hec_servers information doesn't exist, do service discovery
+                mode = data.get("mode", "roundrobin")
+                hostname_template = data.get("hostname_template", "idx{0}")
+                hosts = data.get("other_hosts", [])
+                protocol = data.get("protocol", "https")
+                key = data.get("key", "00000000-0000-0000-0000-000000000000")
+                key_name = data.get("key_name", "eventgen") + '_' + self.host
+                password = data.get("password", "Chang3d!")
+                hec_port = int(data.get("hec_port", 8088))
+                mgmt_port = int(data.get("mgmt_port", 8089))
+                new_key = bool(data.get("new_key", True))
+
+                def create_new_hec_key(hostname):
+                    requests.post(
+                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/http".format(
+                            hostname, mgmt_port), auth=("admin", password), data={"disabled": "0"}, verify=False)
+                    requests.delete(
+                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}".format(
+                            hostname, mgmt_port, key_name), verify=False, auth=("admin", password))
+                    requests.post(
+                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http?output_mode=json".format(
+                            hostname, mgmt_port), verify=False, auth=("admin", password), data={"name": key_name})
+                    r = requests.post(
+                        "https://{0}:{1}/servicesNS/admin/splunk_httpinput/data/inputs/http/{2}?output_mode=json".format(
+                            hostname, mgmt_port, key_name), verify=False, auth=("admin", password))
+                    return str(json.loads(r.text)["entry"][0]["content"]["token"])
+
+                self.discovered_servers = []
+                for host in hosts:
+                    try:
+                        formatted_hostname = socket.gethostbyname(host)
+                        if new_key:
+                            key = create_new_hec_key(formatted_hostname)
+                    except (socket.gaierror, requests.ConnectionError):
+                        self.log.warning('failed to reach %s, skip...' % host)
+                        continue
+                    except (ValueError, KeyError):
+                        self.log.warning('failed to setup hec token for %s, skip...' % host)
+                        continue
+
+                    self.discovered_servers.append({"protocol": str(protocol), "address": str(formatted_hostname), "port": str(hec_port), "key": str(key)})
+
+                counter = 1
+                while True:
+                    try:
+                        formatted_hostname = socket.gethostbyname(hostname_template.format(counter))
+                        if new_key:
+                            key = create_new_hec_key(formatted_hostname)
+
+                        self.discovered_servers.append({
+                            "protocol": str(protocol), "address": str(formatted_hostname), "port": str(hec_port), "key":
+                            str(key)})
+                        counter += 1
+                    except socket.gaierror:
+                        break
+            
+                conf_dict = get_conf()
+                conf_dict['.*']['httpeventServers'] = {"servers": self.discovered_servers}
+                set_conf(conf_dict)
 
         return bp
 
