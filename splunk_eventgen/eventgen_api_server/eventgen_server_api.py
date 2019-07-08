@@ -98,6 +98,7 @@ class EventgenServerAPI(ApiBlueprint):
         def http_post_stop():
             try:
                 response = stop()
+                self.eventgen.refresh_eventgen_core_object()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
                 self.logger.error(e)
@@ -397,6 +398,7 @@ class EventgenServerAPI(ApiBlueprint):
 
             conf_dict['.*']['sampleDir'] = SAMPLE_DIR_PATH
             conf_dict['.*']['outputMode'] = 'httpevent'
+            conf_dict['.*']['threading'] = 'process'
 
             set_conf(conf_dict)
         

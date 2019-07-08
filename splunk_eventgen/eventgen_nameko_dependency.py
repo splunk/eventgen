@@ -29,7 +29,7 @@ def create_args():
     args.interval = None
     args.keepoutput = False
     args.modinput = False
-    args.multiprocess = False
+    args.multiprocess = True
     args.outputters = None
     args.profiler = False
     args.sample = None

@@ -9,7 +9,7 @@ class EventgenServer():
         self.mode = kwargs.get('mode', 'standalone')
 
     def app_run(self):
-        self.app.run(host="0.0.0.0", port=9500)
+        self.app.run(host="0.0.0.0", port=9500, threaded=True)
     
     def _create_app(self):
         app = Flask(__name__)

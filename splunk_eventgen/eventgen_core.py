@@ -579,19 +579,23 @@ class EventGenerator(object):
         self.workerQueue.join()
         # if we're in multiprocess, make sure we don't add more generators after the timers stopped.
         if self.args.multiprocess:
-            self.genconfig["stopping"] = True
-            for worker in self.workerPool:
-                count = 0
-                # We wait for a minute until terminating the worker
-                while worker.exitcode is None and count != 20:
-                    if count == 30:
-                        self.logger.info("Terminating worker {0}".format(worker._name))
-                        worker.terminate()
-                        count = 0
-                        break
-                    self.logger.info("Worker {0} still working, waiting for it to finish.".format(worker._name))
-                    time.sleep(2)
-                    count += 1
+            if self.args.wsgi:
+                for worker in self.workerPool:
+                    worker.terminate()
+            else:
+                self.genconfig["stopping"] = True
+                for worker in self.workerPool:
+                    count = 0
+                    # We wait for a minute until terminating the worker
+                    while worker.exitcode is None and count != 20:
+                        if count == 30:
+                            self.logger.info("Terminating worker {0}".format(worker._name))
+                            worker.terminate()
+                            count = 0
+                            break
+                        self.logger.info("Worker {0} still working, waiting for it to finish.".format(worker._name))
+                        time.sleep(2)
+                        count += 1
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         self.outputQueue.join()
         self.logger.info("All items fully processed. Cleaning up internal processes.")
