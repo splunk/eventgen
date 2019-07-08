@@ -148,6 +148,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
                 setserver = {}
                 setserver['url'] = "%s://%s:%s/services/collector" % (server.get('protocol'), server.get('address'),
                                                                       server.get('port'))
+                setserver['roll'] = "%s://%s:8089/services/admin/indexes/{index}/roll-hot-buckets?output_mode=json" % (server.get('protocol'), server.get('address'))
                 setserver['header'] = "Splunk %s" % server.get('key')
                 self.logger.debug("Adding server set to pool, server: %s" % setserver)
                 self.serverPool.append(setserver)
@@ -161,6 +162,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
         totalbytessent = 0
         numberevents = len(payload)
         self.logger.debug("Sending %s events to splunk" % numberevents)
+        index=payload[0]['index']
         for line in payload:
             self.logger.debug("line: %s " % line)
             targetline = json.dumps(line)
@@ -174,7 +176,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
             else:
                 self.logger.debug("Max size for payload hit, sending to splunk then continuing.")
                 try:
-                    self._transmitEvents(stringpayload)
+                    self._transmitEvents(stringpayload, index=index)
                     totalbytessent += len(stringpayload)
                     currentreadsize = 0
                     stringpayload = targetline
@@ -187,12 +189,12 @@ class HTTPCoreOutputPlugin(OutputPlugin):
                 self.logger.debug(
                     "End of for loop hit for sending events to splunk, total bytes sent: %s ---- out of %s -----" %
                     (totalbytessent, totalbytesexpected))
-                self._transmitEvents(stringpayload)
+                self._transmitEvents(stringpayload, index=index)
             except Exception as e:
                 self.logger.exception(str(e))
                 raise e
 
-    def _transmitEvents(self, payloadstring):
+    def _transmitEvents(self, payloadstring, index):
         targetServer = []
         self.logger.debug("Transmission called with payloadstring: %s " % payloadstring)
         if self.httpeventoutputmode == "mirror":
@@ -202,6 +204,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
         for server in targetServer:
             self.logger.debug("Selected targetServer object: %s" % targetServer)
             url = server['url']
+            roll_url = server['roll']
             headers = {}
             headers['Authorization'] = server['header']
             headers['content-type'] = 'application/json'
@@ -210,6 +213,8 @@ class HTTPCoreOutputPlugin(OutputPlugin):
                 # response = requests.post(url, data=payloadstring, headers=headers, verify=False)
                 self.active_sessions.append(
                     self.session.post(url=url, data=payloadstring, headers=headers, verify=False))
+                self.logger.debug("Rolling hot bucket for index %s" % index)
+                self.active_sessions.append(self.session.post(url=roll_url.format(index=index), auth=('admin','Chang3d!'), verify=False))
             except Exception as e:
                 self.logger.error("Failed for exception: %s" % e)
                 self.logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" %
