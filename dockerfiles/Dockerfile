@@ -1,4 +1,4 @@
-FROM rabbitmq:3.7.15-management-alpine
+FROM alpine:3.6
 
 RUN apk --no-cache upgrade && \
 	apk add --no-cache --update \
@@ -10,6 +10,7 @@ RUN apk --no-cache upgrade && \
 	openssl-dev \
 	libxml2-dev \
 	libxslt-dev \
+	bash \
 	curl && \
 	pip install --upgrade pip && \
 	rm -rf /tmp/* && \
@@ -18,9 +19,9 @@ RUN apk --no-cache upgrade && \
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
 COPY dist/* /root/splunk_eventgen.tgz
 RUN pip install /root/splunk_eventgen.tgz && \
-	rm /root/splunk_eventgen.tgz && \
-	echo "[{rabbit, [{loopback_users, []}]}]." >> /etc/rabbitmq/rabbitmq.config
+	rm /root/splunk_eventgen.tgz
 
-EXPOSE 5672 15672 9500
-WORKDIR  /usr/lib/python2.7/site-packages/splunk_eventgen
+EXPOSE 9500
+RUN chmod a+x /sbin/entrypoint.sh
+WORKDIR /usr/lib/python2.7/site-packages/splunk_eventgen
 ENTRYPOINT ["/sbin/entrypoint.sh"]
