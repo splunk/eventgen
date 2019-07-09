@@ -3,6 +3,7 @@
 
 import os
 import sys
+import pytest
 
 from mock import MagicMock, patch
 
@@ -14,6 +15,7 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestUdpOutputPlugin(object):
+    @pytest.mark.capture_disabled
     def test_output_data_to_udp_port(self):
         configfile = "tests/sample_eventgen_conf/medium_test/eventgen.conf.udpoutput"
         testargs = ["eventgen", "generate", configfile]
