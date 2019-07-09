@@ -75,9 +75,9 @@ class Servers():
                 osvars, config = dict(os.environ), {}
                 test = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
                 port = 9500
-                if test == 'localhost':
-                    port = 9501
-                    hostname = 'localhost'
+                # if test == 'localhost':
+                #     port = 9501
+                #     hostname = 'localhost'
                 print('make multi call')
                 print(body)
                 active_sessions.append(action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, port, method), data=json.dumps(body)))
