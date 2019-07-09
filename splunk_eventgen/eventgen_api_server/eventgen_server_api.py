@@ -123,6 +123,15 @@ class EventgenServerAPI(ApiBlueprint):
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
         
+        @bp.route('/conf', methods=['PUT'])
+        def http_edit_conf():
+            try:
+                edit_conf(request.get_json(force=True))
+                return Response(json.dumps(get_conf()), mimetype='application/json', status=200)
+            except Exception as e:
+                self.logger.error(e)
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+        
         @bp.route('/volume', methods=['GET'])
         def http_get_volume():
             try:
@@ -243,6 +252,16 @@ class EventgenServerAPI(ApiBlueprint):
                 config.write(conf_content)
 
             self.eventgen.check_and_configure_eventgen()
+        
+        def edit_conf(request_body):
+            conf_dict = get_conf()
+
+            for stanza, kv_pairs in request_body.iteritems():
+                for key, value in kv_pairs.iteritems():
+                    if stanza in conf_dict.keys():
+                        conf_dict[stanza][key] = value
+            
+            set_conf(conf_dict)
         
         def get_status():
             response = dict()
