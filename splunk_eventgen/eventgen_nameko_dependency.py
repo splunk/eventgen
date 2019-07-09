@@ -1,10 +1,10 @@
 import argparse
-import logging
 import os
 import sys
 
 import eventgen_core
 from nameko.extensions import DependencyProvider
+from lib.logging_config import server_logger
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "default", "eventgen_wsgi.conf"))
@@ -45,7 +45,7 @@ class EventgenDependency(DependencyProvider):
 
     arguments = create_args()
     eventgen = eventgen_core.EventGenerator(arguments)
-    log = logging.getLogger('eventgen_dependency')
+    log = server_logger
     log.info("EventgenDependency Init. Memory reference to eventgen object: {}".format(eventgen))
 
     configured = False

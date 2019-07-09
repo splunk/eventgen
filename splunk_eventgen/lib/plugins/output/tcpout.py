@@ -1,8 +1,7 @@
 from __future__ import division
 
-import logging
-
 from outputplugin import OutputPlugin
+from logging_config import logger
 
 
 class TcpOutputPlugin(OutputPlugin):
@@ -23,13 +22,10 @@ class TcpOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         self.s.connect((self._tcpDestinationHost, int(self._tcpDestinationPort)))
-        self.logger.info("Socket connected to {0}:{1}".format(self._tcpDestinationHost, self._tcpDestinationPort))
+        logger.info("Socket connected to {0}:{1}".format(self._tcpDestinationHost, self._tcpDestinationPort))
         for x in q:
             self.s.send(x['_raw'].rstrip() + '\n')
         self.s.close()
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen')
 
 
 def load():

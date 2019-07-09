@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 import imp
-import json
 import logging
 import logging.config
 import os
@@ -14,6 +13,7 @@ from lib.eventgenconfig import Config
 from lib.eventgenexceptions import PluginNotLoaded
 from lib.eventgentimer import Timer
 from lib.outputcounter import OutputCounter
+from lib.logging_config import logger
 
 lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.insert(0, lib_path_prepend)
@@ -31,28 +31,6 @@ except ImportError:
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
-
-
-class JSONFormatter(logging.Formatter):
-    """
-    Quick and dirty formatter that turns the log into a quick json format
-    """
-
-    def format(self, record):
-        message = record.msg
-        if not isinstance(message, dict):
-            # The record is probably a string
-            try:
-                message = json.loads(message)
-            except ValueError:
-                # Abort, just store the message as an attribute
-                message = {"message": message}
-
-        if "timestamp" not in message:
-            message["timestamp"] = super(JSONFormatter, self).formatTime(record, self.datefmt)
-        if "level" not in message:
-            message["level"] = logging.getLevelName(record.levelno)
-        return json.dumps(message)
 
 
 class EventGenerator(object):
@@ -78,11 +56,10 @@ class EventGenerator(object):
         self._generator_queue_size = getattr(self.args, 'generator_queue_size', 500)
         if self._generator_queue_size < 0:
             self._generator_queue_size = 0
-        self.logger.info("set generator queue size to %d", self._generator_queue_size)
+        self.logger.info("Set generator queue size to %d" % self._generator_queue_size)
 
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
-
 
     def _load_config(self, configfile, **kwargs):
         '''
@@ -268,113 +245,11 @@ class EventGenerator(object):
         else:
             pass
 
-    def _setup_loggers(self, args=None, config=None):
-        log_path = getattr(args, "log_path", os.path.join(FILE_PATH, 'logs'))
-        eventgen_main_logger_path = os.path.join(log_path, 'eventgen-main.log')
-        eventgen_controller_logger_path = os.path.join(log_path, 'eventgen-controller.log')
-        eventgen_metrics_logger_path = os.path.join(log_path, 'eventgen-metrics.log')
-        eventgen_error_logger_path = os.path.join(log_path, 'eventgen-errors.log')
-        eventgen_server_logger_path = os.path.join(log_path, 'eventgen-server.log')
-        eventgen_httpevent_logger_path = os.path.join(log_path, 'eventgen-httpevent.log')
-
-        if not config:
-            log_format = '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
-            date_format = '%Y-%m-%d %H:%M:%S'
-
-            # Set up formatter
-            detailed_formatter = logging.Formatter(log_format, datefmt=date_format)
-            json_formatter = JSONFormatter(log_format, datefmt=date_format)
-
-            # Set up handlers
-            console_handler = logging.StreamHandler()
-            console_handler.setFormatter(detailed_formatter)
-            console_handler.setLevel(logging.DEBUG)
-
-            file_handler = logging.handlers.RotatingFileHandler(eventgen_main_logger_path, maxBytes=2500000,
-                                                                backupCount=20)
-            file_handler.setFormatter(detailed_formatter)
-            file_handler.setLevel(logging.DEBUG)
-
-            eventgen_controller_file_handler = logging.handlers.RotatingFileHandler(eventgen_controller_logger_path,
-                                                                                    maxBytes=2500000, backupCount=20)
-            eventgen_controller_file_handler.setFormatter(detailed_formatter)
-            eventgen_controller_file_handler.setLevel(logging.DEBUG)
-
-            error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000,
-                                                                      backupCount=20)
-            error_file_handler.setFormatter(detailed_formatter)
-            error_file_handler.setLevel(logging.ERROR)
-
-            metrics_file_handler = logging.handlers.RotatingFileHandler(eventgen_metrics_logger_path, maxBytes=2500000,
-                                                                        backupCount=20)
-            metrics_file_handler.setFormatter(json_formatter)
-            metrics_file_handler.setLevel(logging.INFO)
-
-            server_file_handler = logging.handlers.RotatingFileHandler(eventgen_server_logger_path, maxBytes=2500000,
-                                                                       backupCount=10)
-            server_file_handler.setFormatter(json_formatter)
-            server_file_handler.setLevel(logging.INFO)
-
-            httpevent_file_handler = logging.handlers.RotatingFileHandler(eventgen_httpevent_logger_path, maxBytes=2500000,
-                                                                       backupCount=10)
-            httpevent_file_handler.setFormatter(detailed_formatter)
-            httpevent_file_handler.setLevel(logging.INFO)
-
-            # Configure eventgen logger
-            logger = logging.getLogger('eventgen')
-            logger.setLevel(self.args.verbosity or logging.ERROR)
-            logger.propagate = False
-            logger.handlers = []
-            if args and not args.modinput_mode:
-                logger.addHandler(console_handler)
-            logger.addHandler(file_handler)
-            logger.addHandler(error_file_handler)
-
-            # Configure eventgen listener
-            logger = logging.getLogger('eventgen_controller')
-            logger.setLevel(self.args.verbosity or logging.ERROR)
-            logger.propagate = False
-            logger.handlers = []
-            logger.addHandler(eventgen_controller_file_handler)
-            logger.addHandler(error_file_handler)
-            logger.addHandler(console_handler)
-
-            # Configure eventgen mertics logger
-            logger = logging.getLogger('eventgen_metrics')
-            logger.setLevel(logging.INFO)
-            logger.propagate = False
-            logger.handlers = []
-            logger.addHandler(metrics_file_handler)
-
-            # Configure eventgen server logger
-            logger = logging.getLogger('eventgen_server')
-            logger.setLevel(logging.INFO)
-            logger.propagate = False
-            logger.handlers = []
-            logger.addHandler(server_file_handler)
-            logger.addHandler(console_handler)
-
-            # Configure httpeventout logger
-            logger = logging.getLogger('eventgen_httpeventout')
-            logger.setLevel(logging.INFO)
-            logger.propagate = False
-            logger.handlers = []
-            logger.addHandler(httpevent_file_handler)
-        else:
-            self.logger_config = config
-            logging.config.dictConfig(self.logger_config)
-        # We need to have debugv from the olderversions of eventgen.
-        DEBUG_LEVELV_NUM = 9
-        logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
-
-        def debugv(self, message, *args, **kws):
-            # Yes, logger takes its '*args' as 'args'.
-            if self.isEnabledFor(DEBUG_LEVELV_NUM):
-                self._log(DEBUG_LEVELV_NUM, message, args, **kws)
-
-        logging.Logger.debugv = debugv
-        self.logger = logging.getLogger('eventgen')
+    def _setup_loggers(self, args=None):
+        self.logger = logger
         self.loggingQueue = None
+        if args and args.verbosity:
+            self.logger.setLevel(args.verbosity)
 
     def _worker_do_work(self, work_queue, logging_queue):
         while not self.stopping:
@@ -425,9 +300,7 @@ class EventGenerator(object):
                 root.info("Checking for work")
                 item = work_queue.get(timeout=10)
                 item.logger = root
-                item.config._setup_logging()
                 item._out.updateConfig(item.config)
-                item._out._setup_logging()
                 item.run()
                 work_queue.task_done()
                 stopping = genconfig['stopping']
@@ -496,7 +369,6 @@ class EventGenerator(object):
 
                         # set plugin to something like output.file or generator.default
                         pluginname = plugintype + '.' + base
-                        # self.logger.debugv("Filename: %s os.sep: %s pluginname: %s" % (filename, os.sep, pluginname))
                         plugins[pluginname] = plugin
 
                         # Return is used to determine valid configs, so only return the base name of the plugin
@@ -523,7 +395,7 @@ class EventGenerator(object):
                     except ValueError:
                         self.logger.error("Error loading plugin '%s' of type '%s'" % (base, plugintype))
                     except ImportError as ie:
-                        self.logger.warn("Could not load plugin: %s, skipping" % mod_name.name)
+                        self.logger.warning("Could not load plugin: %s, skipping" % mod_name.name)
                         self.logger.exception(ie)
                     except Exception as e:
                         self.logger.exception(str(e))

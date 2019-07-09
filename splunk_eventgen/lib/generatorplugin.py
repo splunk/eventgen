@@ -1,8 +1,6 @@
 from __future__ import division
 
 import datetime
-import logging
-import logging.handlers
 import pprint
 import time
 import random
@@ -15,6 +13,7 @@ import httplib2
 from eventgenoutput import Output
 from eventgentimestamp import EventgenTimestamp
 from timeparser import timeParser
+from logging_config import logger
 
 
 class GeneratorPlugin(object):
@@ -23,7 +22,6 @@ class GeneratorPlugin(object):
 
     def __init__(self, sample):
         self._sample = sample
-        self._setup_logging()
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""
@@ -35,16 +33,6 @@ class GeneratorPlugin(object):
     def __repr__(self):
         return self.__str__()
 
-    def __getstate__(self):
-        temp = self.__dict__
-        if getattr(self, 'logger', None):
-            temp.pop('logger', None)
-        return temp
-
-    def __setstate__(self, d):
-        self.__dict__ = d
-        self._setup_logging()
-
     def build_events(self, eventsDict, startTime, earliest, latest, ignore_tokens=False):
         """Ready events for output by replacing tokens and updating the output queue"""
         # Replace tokens first so that perDayVolume evaluates the correct event length
@@ -53,23 +41,20 @@ class GeneratorPlugin(object):
             self._out.bulksend(send_objects)
             self._sample.timestamp = None
         except Exception as e:
-            self.logger.exception("Exception {} happened.".format(type(e)))
+            logger.exception("Exception {} happened.".format(type(e)))
             raise e
         try:
             # TODO: Change this logic so that we don't lose all events if an exception is hit (try/except/break?)
             endTime = datetime.datetime.now()
             timeDiff = endTime - startTime
             timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
-            self.logger.debug("Interval complete, flushing feed")
+            logger.debug("Interval complete, flushing feed")
             self._out.flush(endOfInterval=True)
-            self.logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." %
+            logger.debug("Generation of sample '%s' in app '%s' completed in %s seconds." %
                               (self._sample.name, self._sample.app, timeDiffFrac))
         except Exception as e:
-            self.logger.exception("Exception {} happened.".format(type(e)))
+            logger.exception("Exception {} happened.".format(type(e)))
             raise e
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen')
 
     def updateConfig(self, config, outqueue):
         self.config = config
@@ -93,11 +78,6 @@ class GeneratorPlugin(object):
         self.end_time = end_time
 
     def setOutputMetadata(self, event):
-        # self.logger.debug("Sample Index: %s Host: %s Source: %s Sourcetype: %s" %
-        #                   (self.index, self.host, self.source, self.sourcetype))
-        # self.logger.debug("Event Index: %s Host: %s Source: %s Sourcetype: %s" %
-        #                   (sampleDict[x]['index'], sampleDict[x]['host'], sampleDict[x]['source'],
-        #                    sampleDict[x]['sourcetype']))
         if self._sample.sampletype == 'csv' and (event['index'] != self._sample.index
                                                  or event['host'] != self._sample.host
                                                  or event['source'] != self._sample.source
@@ -110,7 +90,7 @@ class GeneratorPlugin(object):
 
             self._sample.source = event['source']
             self._sample.sourcetype = event['sourcetype']
-            self.logger.debug("Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" %
+            logger.debug("Setting CSV parameters. index: '%s' host: '%s' source: '%s' sourcetype: '%s'" %
                               (self._sample.index, self._sample.host, self._sample.source, self._sample.sourcetype))
 
     def setupBackfill(self):
@@ -122,9 +102,9 @@ class GeneratorPlugin(object):
         if s.backfill is not None:
             try:
                 s.backfillts = timeParser(s.backfill, timezone=s.timezone)
-                self.logger.info("Setting up backfill of %s (%s)" % (s.backfill, s.backfillts))
+                logger.info("Setting up backfill of %s (%s)" % (s.backfill, s.backfillts))
             except Exception as ex:
-                self.logger.error("Failed to parse backfill '%s': %s" % (s.backfill, ex))
+                logger.error("Failed to parse backfill '%s': %s" % (s.backfill, ex))
                 raise
 
             if s.backfillSearch is not None:
@@ -132,14 +112,14 @@ class GeneratorPlugin(object):
                     try:
                         s.backfillSearchUrl = c.getSplunkUrl(s)[0]  # noqa, we update c in the globals() dict
                     except ValueError:
-                        self.logger.error(
+                        logger.error(
                             "Backfill Search URL not specified for sample '%s', not running backfill search" % s.name)
                 if not s.backfillSearch.startswith('search'):
                     s.backfillSearch = 'search ' + s.backfillSearch
                 s.backfillSearch += '| head 1 | table _time'
 
                 if s.backfillSearchUrl is not None:
-                    self.logger.debug(
+                    logger.debug(
                         "Searching Splunk URL '%s/services/search/jobs' with search '%s' with sessionKey '%s'" %
                         (s.backfillSearchUrl, s.backfillSearch, s.sessionKey))
 
@@ -149,7 +129,7 @@ class GeneratorPlugin(object):
                                 'search': s.backfillSearch, 'earliest_time': s.backfill, 'exec_mode': 'oneshot'}))[1]
                     try:
                         temptime = minidom.parseString(results).getElementsByTagName('text')[0].childNodes[0].nodeValue
-                        # self.logger.debug("Time returned from backfill search: %s" % temptime)
+                        # logger.debug("Time returned from backfill search: %s" % temptime)
                         # Results returned look like: 2013-01-16T10:59:15.411-08:00
                         # But the offset in time can also be +, so make sure we strip that out first
                         if len(temptime) > 0:
@@ -157,7 +137,7 @@ class GeneratorPlugin(object):
                                 temptime = temptime.split('+')[0]
                             temptime = '-'.join(temptime.split('-')[0:3])
                         s.backfillts = datetime.datetime.strptime(temptime, '%Y-%m-%dT%H:%M:%S.%f')
-                        self.logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" %
+                        logger.debug("Backfill search results: '%s' value: '%s' time: '%s'" %
                                           (pprint.pformat(results), temptime, s.backfillts))
                     except (ExpatError, IndexError):
                         pass
@@ -169,14 +149,14 @@ class GeneratorPlugin(object):
                 s.endts = None
                 parsed = True
             except ValueError:
-                self.logger.debug("Failed to parse end '%s' for sample '%s', treating as end time" % (s.end, s.name))
+                logger.debug("Failed to parse end '%s' for sample '%s', treating as end time" % (s.end, s.name))
 
             if not parsed:
                 try:
                     s.endts = timeParser(s.end, timezone=s.timezone)
-                    self.logger.info("Ending generation at %s (%s)" % (s.end, s.endts))
+                    logger.info("Ending generation at %s (%s)" % (s.end, s.endts))
                 except Exception as ex:
-                    self.logger.error(
+                    logger.error(
                         "Failed to parse end '%s' for sample '%s', treating as number of executions" % (s.end, s.name))
                     raise
 
@@ -188,7 +168,7 @@ class GeneratorPlugin(object):
         # TODO: Make this some how handle an output queue and support intervals and a master queue
         # Just double check to see if there's something in queue to flush out at the end of run
         if len(self._out._queue) > 0:
-            self.logger.debug("Queue is not empty, flush out at the end of each run")
+            logger.debug("Queue is not empty, flush out at the end of each run")
             self._out.flush()
 
     def replace_tokens(self, eventsDict, earliest, latest, ignore_tokens=False):

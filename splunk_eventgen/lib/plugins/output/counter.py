@@ -1,4 +1,3 @@
-import logging
 import datetime
 import pprint
 import sys
@@ -39,9 +38,6 @@ class CounterOutputPlugin(OutputPlugin):
 
     def _print_info(self, msg):
         print >> sys.stderr, '{} {}'.format(datetime.datetime.now(), msg)
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_counter_out')
 
 
 def load():

@@ -3,6 +3,7 @@ import datetime
 from datetime import timedelta
 
 from generatorplugin import GeneratorPlugin
+from logging_config import logger
 
 
 class WindbagGenerator(GeneratorPlugin):
@@ -11,7 +12,7 @@ class WindbagGenerator(GeneratorPlugin):
 
     def gen(self, count, earliest, latest, samplename=None):
         if count < 0:
-            self.logger.warn('Sample size not found for count=-1 and generator=windbag, defaulting to count=60')
+            logger.warning('Sample size not found for count=-1 and generator=windbag, defaulting to count=60')
             count = 60
         time_interval = timedelta.total_seconds((latest - earliest)) / count
         for i in xrange(count):

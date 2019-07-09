@@ -7,6 +7,7 @@ import datetime
 import random
 
 from generatorplugin import GeneratorPlugin
+from logging_config import logger
 
 
 class DefaultGenerator(GeneratorPlugin):
@@ -14,7 +15,7 @@ class DefaultGenerator(GeneratorPlugin):
         GeneratorPlugin.__init__(self, sample)
 
     def gen(self, count, earliest, latest, samplename=None):
-        self.logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" %
+        logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" %
                           (self._sample.name, self._sample.app, count, earliest, latest))
         startTime = datetime.datetime.now()
 
@@ -22,7 +23,7 @@ class DefaultGenerator(GeneratorPlugin):
         if self._sample.randomizeEvents:
             eventsDict = []
             sdlen = len(self._sample.sampleDict)
-            self.logger.debugv("Random filling eventsDict for sample '%s' in app '%s' with %d events" %
+            logger.debug("Random filling eventsDict for sample '%s' in app '%s' with %d events" %
                                (self._sample.name, self._sample.app, count))
             # Count is -1, replay the whole file, but in randomizeEvents I think we'd want it to actually
             # just put as many events as there are in the file
@@ -34,7 +35,7 @@ class DefaultGenerator(GeneratorPlugin):
         # If we're bundlelines, create count copies of the sampleDict
         elif self._sample.bundlelines:
             eventsDict = []
-            self.logger.debugv(
+            logger.debug(
                 "Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" %
                 (self._sample.name, self._sample.app, count))
             for x in xrange(count):
@@ -50,22 +51,23 @@ class DefaultGenerator(GeneratorPlugin):
 
             # Continue to fill events array until len(events) == count
             if len(eventsDict) < count:
-                self.logger.debugv(
+                logger.debug(
                     "Events fill for sample '%s' in app '%s' less than count (%s vs. %s); continuing fill" %
                     (self._sample.name, self._sample.app, len(eventsDict), count))
-                self.logger.debugv("Current eventsDict: %s" % eventsDict)
+                logger.debug("Current eventsDict: %s" % eventsDict)
                 # run a modulus on the size of the eventdict to figure out what the last event was.  Populate to count
                 # from there.
 
                 while len(eventsDict) < count:
                     if len(self._sample.sampleDict):
                         nextEventToUse = self._sample.sampleDict[len(eventsDict) % len(self._sample.sampleDict)]
-                        self.logger.debugv("Next event to add: %s" % nextEventToUse)
+                        logger.debug("Next event to add: %s" % nextEventToUse)
                         eventsDict.append(nextEventToUse)
-                self.logger.debugv("Events fill complete for sample '%s' in app '%s' length %d" %
+                logger.debug("Events fill complete for sample '%s' in app '%s' length %d" %
                                    (self._sample.name, self._sample.app, len(eventsDict)))
 
         GeneratorPlugin.build_events(self, eventsDict, startTime, earliest, latest)
+
 
 def load():
     return DefaultGenerator

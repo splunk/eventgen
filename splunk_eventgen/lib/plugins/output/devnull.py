@@ -1,7 +1,5 @@
 from __future__ import division
 
-import logging
-
 from outputplugin import OutputPlugin
 
 
@@ -20,9 +18,6 @@ class DevNullOutputPlugin(OutputPlugin):
             self.firsttime = False
         buf = '\n'.join(x['_raw'].rstrip() for x in q)
         self.f.write(buf)
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_devnullout')
 
 
 def load():

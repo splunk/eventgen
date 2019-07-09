@@ -20,9 +20,9 @@ sys.path.append(path_prepend)
 
 import __init__ as splunk_eventgen_init  # noqa isort:skip
 import eventgen_core  # noqa isort:skip
+from logging_config import logger  # noqa isort:skip
 
 EVENTGEN_VERSION = splunk_eventgen_init.__version__
-logger = logging.getLogger()
 
 
 def parse_args():

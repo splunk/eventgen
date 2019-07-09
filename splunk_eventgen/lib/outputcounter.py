@@ -1,5 +1,6 @@
-import logging
 import time
+
+from logging_config import logger
 
 
 class OutputCounter(object):
@@ -16,7 +17,6 @@ class OutputCounter(object):
         self.throughput_volume = 0
         self.total_output_volume = 0
         self.total_output_count = 0
-        self.logger = logging.getLogger('eventgen')
 
     def update_throughput(self, timestamp):
         # B/s, count/s
@@ -26,7 +26,7 @@ class OutputCounter(object):
         self.current_time = timestamp
         self.event_count_1_min = 0
         self.event_size_1_min = 0
-        self.logger.debug("Current throughput is {} B/s, {} count/s".format(self.throughput_volume,
+        logger.debug("Current throughput is {} B/s, {} count/s".format(self.throughput_volume,
                                                                             self.throughput_count))
 
     def collect(self, event_count, event_size):
