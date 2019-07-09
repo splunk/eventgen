@@ -210,7 +210,7 @@ You are running Eventgen Controller.\n'''
             if self.servers.isRegistered(target):
                 return json.dumps(self.servers.status(target))
             else:
-                return 404, json.dumps("Target not available.", indent=4)
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/conf', methods=['GET'])
         def http_get_conf():
@@ -221,64 +221,76 @@ You are running Eventgen Controller.\n'''
             if self.servers.isRegistered(target):
                 return json.dumps(self.servers.get_conf(target))
             else:
-                return 404, json.dumps("Target not available.", indent=4)
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/conf', methods=['POST'])
         def http_set_conf():
-            data = request.get_json()
-            if data:
-                return json.dumps(self.servers.set_conf(target="all", body=data))
-            else:
-                return 400, 'Please pass valid config data.'
+            data = None
+            try:
+                data = request.get_json()
+            except:
+                return self.__make_error_response(400, "Please pass valid config data.")
+            
+            return json.dumps(self.servers.set_conf(target="all", body=data))
 
         @bp.route('/conf/<string:target>', methods=['POST'])
         def http_set_conf_target(target):
-            data = request.get_json()
-            if data:
-                if self.servers.isRegistered(target):
-                    return json.dumps(self.servers.set_conf(target=target, body=data))
-                else:
-                    return 404, json.dumps("Target not available.", indent=4)
+            data = None
+            try:
+                data = request.get_json()
+            except:
+                return self.__make_error_response(400, "Please pass valid config data.")
+
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.set_conf(target=target, body=data))
             else:
-                return 400, 'Please pass valid config data.'
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/conf', methods=['PUT'])
         def http_update_conf():
-            data = request.get_json()
-            if data:
-                return json.dumps(self.servers.update_conf(target="all", body=data))
-            else:
-                return 400, 'Please pass valid config data.'
+            data = None
+            try:
+                data = request.get_json()
+            except:
+                return self.__make_error_response(400, "Please pass valid config data.")
+
+            return json.dumps(self.servers.update_conf(target="all", body=data))
 
         @bp.route('/conf/<string:target>', methods=['PUT'])
         def http_update_conf_target(target):
-            data = request.get_json()
-            if data:
-                if self.servers.isRegistered(target):
-                    return json.dumps(self.servers.update_conf(target=target, body=data))
-                else:
-                    return 404, json.dumps("Target not available.", indent=4)
+            data = None
+            try:
+                data = request.get_json()
+            except:
+                return self.__make_error_response(400, "Please pass valid config data.")
+                
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.update_conf(target=target, body=data))
             else:
-                return 400, 'Please pass valid config data.'
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/bundle', methods=['POST'])
         def http_set_bundle():
-            data = request.get_json()
-            if data:
-                return json.dumps(self.servers.set_bundle(target="all", body=data))
-            else:
-                return 400, "Please pass in a valid object with bundle URL."
+            data = None
+            try:
+                data = request.get_json()
+            except:
+                return self.__make_error_response(400, "Please pass in a valid object with bundle URL.")
+
+            return json.dumps(self.servers.set_bundle(target="all", body=data))
 
         @bp.route('/bundle/<string:target>', methods=['POST'])
         def http_set_bundle_target(target):
-            data = request.get_json()
-            if data:
-                if self.servers.isRegistered(target):
-                    return json.dumps(self.servers.set_bundle(target=target, body=data))
-                else:
-                    return 404, json.dumps("Target not available.", indent=4)
+            data = None
+            try:
+                data = request.get_json()
+            except:
+                return self.__make_error_response(400, "Please pass in a valid object with bundle URL.")
+
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.set_bundle(target=target, body=data))
             else:
-                return 400, "Please pass in a valid object with bundle URL."
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/setup', methods=['POST'])
         def http_update_setup():
@@ -291,7 +303,7 @@ You are running Eventgen Controller.\n'''
             if self.servers.isRegistered(target):
                 return json.dumps(self.servers.set_bundle(target=target, body=data))
             else:
-                return 404, json.dumps("Target not available.", indent=4)
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/volume', methods=['GET'])
         def http_get_volume():
@@ -302,26 +314,29 @@ You are running Eventgen Controller.\n'''
             if self.servers.isRegistered(target):
                 return json.dumps(self.servers.get_volume(target))
             else:
-                return 404, json.dumps("Target not available.", indent=4)
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/volume', methods=['POST'])
         def http_set_volume():
-            data = request.get_json()
-            if data:
-                return json.dumps(self.servers.set_volume(target="all", body=data))
-            else:
-                return 400, "Please pass in a valid object with volume."
+            data = None
+            try:
+                data = request.get_json()
+            except:
+                return self.__make_error_response(400, "Please pass in a valid object with volume.")
+
+            return json.dumps(self.servers.set_volume(target="all", body=data))
 
         @bp.route('/volume/<string:target>', methods=['POST'])
         def http_set_volume_target(target):
-            data = request.get_json()
-            if data:
-                if self.servers.isRegistered(target):
-                    return json.dumps(self.servers.set_volume(target=target, body=data))
-                else:
-                    return 404, json.dumps("Target not available.", indent=4)
+            data = None
+            try:
+                data = request.get_json()
+            except:
+                return self.__make_error_response(400, "Please pass in a valid object with volume.")
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.set_volume(target=target, body=data))
             else:
-                return 400, "Please pass in a valid object with volume."
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/start', methods=['POST'])
         def http_start():
@@ -332,7 +347,7 @@ You are running Eventgen Controller.\n'''
             if self.servers.isRegistered(target):
                 return json.dumps(self.servers.start(target=target))
             else:
-                return 404, json.dumps("Target not available.", indent=4)
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/stop', methods=['POST'])
         def http_stop():
@@ -345,7 +360,7 @@ You are running Eventgen Controller.\n'''
             if self.servers.isRegistered(target):
                 return json.dumps(self.servers.stop(target=target, body=data))
             else:
-                return 404, json.dumps("Target not available.", indent=4)
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/restart', methods=['POST'])
         def http_restart():
@@ -356,7 +371,7 @@ You are running Eventgen Controller.\n'''
             if self.servers.isRegistered(target):
                 return json.dumps(self.servers.restart(target=target))
             else:
-                return 404, json.dumps("Target not available.", indent=4)
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         @bp.route('/reset', methods=['POST'])
         def http_reset():
@@ -367,6 +382,9 @@ You are running Eventgen Controller.\n'''
             if self.servers.isRegistered(target):
                 return json.dumps(self.servers.reset(target=target))
             else:
-                return 404, json.dumps("Target not available.", indent=4)
+                return self.__make_error_response(404, json.dumps("Target not available.", indent=4))
 
         return bp
+
+    def __make_error_response(self, status, message):
+        return Response(json.dumps({'message': message}), status=status)
