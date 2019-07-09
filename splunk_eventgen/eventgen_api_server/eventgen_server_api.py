@@ -97,7 +97,7 @@ class EventgenServerAPI(ApiBlueprint):
         @bp.route('/stop', methods=['POST'])
         def http_post_stop():
             try:
-                response = stop()
+                response = stop(force_stop = request.get_json(force=True).get("force", False))
                 self.eventgen.refresh_eventgen_core_object()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
@@ -169,7 +169,6 @@ class EventgenServerAPI(ApiBlueprint):
                         response[section] = collections.OrderedDict()
                         for k, v in config.items(section):
                             response[section][k] = v
-            self.eventgen.check_and_configure_eventgen
             return response
         
         def set_conf(request_body):
@@ -193,7 +192,7 @@ class EventgenServerAPI(ApiBlueprint):
             response = dict()
             if self.eventgen.eventgen_core_object.check_running():
                 status = 1 if not self.eventgen.eventgen_core_object.check_done() else 2 # 1 is running and 2 is done
-            else: 
+            else:
                 status = 0 # not start yet
             response["EVENTGEN_STATUS"] = status
             response["EVENTGEN_HOST"] = self.host
@@ -288,10 +287,10 @@ class EventgenServerAPI(ApiBlueprint):
                 response['message'] = "Eventgen has successfully started."
             return response
         
-        def stop():
+        def stop(force_stop=False):
             response = {}
             if self.eventgen.eventgen_core_object.check_running():
-                self.eventgen.eventgen_core_object.stop()
+                self.eventgen.eventgen_core_object.stop(force_stop=force_stop)
                 response['message'] = "Eventgen is stopped."
             else:
                 response['message'] = "There is no Eventgen process running."
@@ -320,7 +319,6 @@ class EventgenServerAPI(ApiBlueprint):
             if not url:
                 return 
 
-            self.eventgen.configured = False
             bundle_dir = unarchive_bundle(download_bundle(url))
 
             if os.path.isdir(os.path.join(bundle_dir, "samples")):
@@ -329,6 +327,7 @@ class EventgenServerAPI(ApiBlueprint):
                 self.logger.info("Copied all samples to the sample directory.")
 
             if os.path.isfile(os.path.join(bundle_dir, "default", "eventgen.conf")):
+                self.eventgen.configured = False
                 config = ConfigParser.ConfigParser()
                 config.optionxform = str
                 config.read(os.path.join(bundle_dir, "default", "eventgen.conf"))
