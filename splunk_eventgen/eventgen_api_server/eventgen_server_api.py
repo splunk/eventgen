@@ -311,7 +311,7 @@ class EventgenServerAPI(ApiBlueprint):
 
         def reset():
             response = {}
-            self.stop()
+            stop()
             self.eventgen.refresh_eventgen_core_object()
             response['message'] = "Eventgen has been reset."
             return response

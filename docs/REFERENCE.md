@@ -705,3 +705,17 @@ Note, "TARGET_NAME" is a variable that should be replaced by the hostname of Eve
         ```
         $ curl http://localhost:9500/volume/egx1 -X POST -d '{"perDayVolume": 200}'
         ```
+* ```POST /reset```
+    * Stops a running Eventgen run, reset the Eventgen Core Object, and reconfigure the server.
+    * Example:
+        ```
+        $ curl http://localhost:9500/reset -X POST
+        ```
+
+* ```POST /reset/<TARGET_NAME>```
+    * Stops a running Eventgen run, reset the Eventgen Core Object, and reconfigure the server.
+    * Example:
+        ```
+        $ curl http://localhost:9500/reset/egx1 -X POST
+        ```
+
