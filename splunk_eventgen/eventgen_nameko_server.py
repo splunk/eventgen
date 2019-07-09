@@ -383,7 +383,7 @@ Output Queue Status: {7}\n'''
                     counter += 1
                 except socket.gaierror:
                     break
-
+                    
             config = ConfigParser.ConfigParser()
             config.optionxform = str
             config.read(EVENTGEN_DEFAULT_CONF_PATH)

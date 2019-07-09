@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 
 from eventgen_controller_api import EventgenControllerAPI
 
@@ -20,6 +20,7 @@ class EventgenController():
 
         @app.route('/')
         def index():
+            print(request.remote_addr)
             return "hellocontrollerworld"
             
         return app

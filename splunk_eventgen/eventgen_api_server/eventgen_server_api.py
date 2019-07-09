@@ -12,6 +12,7 @@ import glob
 import shutil
 import collections
 import logging
+import requests
 
 from api_blueprint import ApiBlueprint
 import eventgen_core_object
@@ -27,11 +28,19 @@ class EventgenServerAPI(ApiBlueprint):
         ApiBlueprint.__init__(self)
         self.bp = self._create_blueprint()
 
+        ### Garbage self.__setup_pyrabbit() # make this conditional on not being standalone
+
         self.total_volume = 0.0
         self.eventgen = eventgen_core_object.EventgenCoreObject()
         self.host = socket.gethostname()
 
         self.logger = logging.getLogger('eventgen_server')
+
+
+        osvars, config = dict(os.environ), {}
+        config["AMQP_HOST"] = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
+        payload = {'hostname': self.host}
+        requests.post('http://{0}:{1}/{2}'.format(config["AMQP_HOST"], 9500, 'register'), data=payload)
 
     def _create_blueprint(self):
         bp = flask.Blueprint('server_api', __name__)
@@ -469,4 +478,70 @@ class EventgenServerAPI(ApiBlueprint):
                 set_conf(conf_dict)
 
         return bp
+        
+
+
+    ### garbage can ###
+
+
+
+
+    def __setup_pyrabbit(self):
+        self.host = socket.gethostname() + '_server'
+        self.controller_host = 'controller' #get the controller host
+        self.exchangeName = 'requests'
+
+        osvars, config = dict(os.environ), {}
+        config["AMQP_HOST"] = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
+        config["AMQP_WEBPORT"] = osvars.get("EVENTGEN_AMQP_WEBPORT", 15672)
+        config["AMQP_USER"] = osvars.get("EVENTGEN_AMQP_URI", "guest")
+        config["AMQP_PASS"] = osvars.get("EVENTGEN_AMQP_PASS", "guest")
+
+        print('make client...')
+        self.pyrabbit_cl = Client('{0}:{1}'.format(config['AMQP_HOST'], config['AMQP_WEBPORT']),
+                            '{0}'.format(config['AMQP_USER']), '{0}'.format(config['AMQP_PASS']))
+        rabbit_started = False
+        while(not rabbit_started):
+            try:
+                print('is this alive?...')
+                print(self.pyrabbit_cl.is_alive())
+                rabbit_started = True
+            except:
+                rabbit_started = False
+        print('create vhost with hostname{}...'.format(self.host))
+        print(Client.json_headers)
+        self.pyrabbit_cl.create_vhost(self.host)
+        print('create exchange...')
+        self.pyrabbit_cl.create_exchange(self.controller_host, self.exchangeName, 'fanout')
+        print('create queue...')
+        self.queueName = 'server_queue_{}'.format(self.host)
+        self.pyrabbit_cl.create_queue(self.controller_host, self.queueName)
+        print('bind queue...')
+        self.pyrabbit_cl.create_binding(self.controller_host, self.exchangeName, self.queueName)
+
+        cease_continuous_run = threading.Event()
+
+        class getMessagesThread(threading.Thread):
+            @classmethod
+            def run(cls):
+                while not cease_continuous_run.is_set():
+                    print(self.controller_host)
+                    print(self.queueName)
+                    messages = self.pyrabbit_cl.get_messages(self.controller_host, self.queueName)
+                    if len(messages) > 0:
+                        payload = json.loads(messages[0]['payload'])
+                        methodType = payload['type']
+                        response = None
+                        if methodType == 'status':
+                            pass
+                        print(messages[0])
+                    time.sleep(1)
+
+        continuous_thread = getMessagesThread()
+        continuous_thread.start()
+        return cease_continuous_run
+
+
+        # log.info("Vhost set to {}".format(host))
+        # log.info("Current Vhosts are {}".format(pyrabbit_cl.get_vhost_names()))
 
