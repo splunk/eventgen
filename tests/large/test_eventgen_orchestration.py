@@ -69,20 +69,17 @@ class TestEventgenOrchestration(object):
         cls.controller_container = cls.client.inspect_container(container["Id"])
         cls.controller_eventgen_webport = cls.controller_container["NetworkSettings"]["Ports"]["9500/tcp"][0][
             "HostPort"]
-        cls.controller_rabbitmq_webport = cls.controller_container["NetworkSettings"]["Ports"]["15672/tcp"][0][
-            "HostPort"]
         # Start the server
         print 'creating server'
         container = cls.client.create_container(
             image=IMAGE_NAME, command="server", environment=[
-                "EVENTGEN_AMQP_HOST={}".format(cls.controller_container["Id"][:12])], host_config=host_config,
+                "EVENTGEN_CONTROLLER={}".format(cls.controller_container["Id"][:12])], host_config=host_config,
             networking_config=networking_config)
         cls.client.start(container["Id"])
         TestEventgenOrchestration.server_id = container["Id"]
         print container["Id"]
         cls.server_container = cls.client.inspect_container(container["Id"])
         cls.server_eventgen_webport = cls.server_container["NetworkSettings"]["Ports"]["9500/tcp"][0]["HostPort"]
-        cls.server_rabbitmq_webport = cls.server_container["NetworkSettings"]["Ports"]["15672/tcp"][0]["HostPort"]
         # Wait for the controller to be available
         print "Waiting for Eventgen Controller to become available."
         wait_for_response("http://127.0.0.1:{}".format(cls.controller_eventgen_webport))
@@ -91,7 +88,7 @@ class TestEventgenOrchestration(object):
         print "Waiting for Eventgen Server to become available."
         wait_for_response("http://127.0.0.1:{}".format(cls.server_eventgen_webport))
         print "Eventgen Server has become available."
-        time.sleep(60)
+        time.sleep(30)
 
     @classmethod
     def teardown_class(cls):
@@ -101,18 +98,10 @@ class TestEventgenOrchestration(object):
         cls.client.remove_network(NETWORK_NAME)
 
     # Controller tests #
-
-    def test_controller_rabbitmq(self):
-        r = requests.get("http://127.0.0.1:{}".format(self.controller_rabbitmq_webport))
-        assert r.status_code == 200
-        assert "RabbitMQ" in r.content
-
     def test_controller_root(self):
-        r = requests.get("http://127.0.0.1:{}".format(self.controller_eventgen_webport))
+        r = requests.get("http://127.0.0.1:{}/".format(self.controller_eventgen_webport))
         assert r.status_code == 200
-        assert "Eventgen Controller" in r.content
-        assert "Host: " in r.content
-        assert "You are running Eventgen Controller" in r.content
+        assert "hellocontrollerworld" in r.content
 
     def test_controller_index(self):
         r = requests.get("http://127.0.0.1:{}/index".format(self.controller_eventgen_webport))
@@ -222,13 +211,7 @@ class TestEventgenOrchestration(object):
     def test_server_root(self):
         r = requests.get("http://127.0.0.1:{}".format(self.server_eventgen_webport))
         assert r.status_code == 200
-        assert "Host: " in r.content
-        assert "Eventgen Status" in r.content
-        assert "Eventgen Config file path" in r.content
-        assert "Total volume:" in r.content
-        assert "Worker Queue Status" in r.content
-        assert "Sample Queue Status" in r.content
-        assert "Output Queue Status" in r.content
+        assert "helloserverworld" in r.content
 
     def test_server_index(self):
         r = requests.get("http://127.0.0.1:{}/index".format(self.server_eventgen_webport))

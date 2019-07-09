@@ -37,7 +37,7 @@ class EventgenServer():
 
         @app.route('/')
         def index():
-            return "helloworld"
+            return "helloserverworld"
             
         return app
 
