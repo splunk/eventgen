@@ -19,6 +19,7 @@ def exit_handler(client, hostname, logger):
 class Servers():
     def __init__(self):
         self.servers = set()
+        self.log = logging.getLogger("eventgen_server")
 
     def register(self, hostname):
         if hostname != None:
@@ -32,12 +33,16 @@ class Servers():
     def __call(self, hostname, verb, method, body=None, headers=None):
         action = getattr(requests, verb, None)
         if action:
-            action(headers=self.headers, url='http://{0}:{1}/{2}'.format(hostname, 9500, method))
+            return action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, 9500, method))
+        else:
+            return verb + ' is not a valid verb'
 
     def status(self, target):
         if target == "all":
+            responses = []
             for server in self.servers:
-                self.__call(server, 'GET', 'status')
+                responses.append(self.__call(server, 'get', 'status'))
+            return responses
         else:
             pass            
 
@@ -47,11 +52,11 @@ class EventgenControllerAPI(ApiBlueprint):
         ApiBlueprint.__init__(self)
         self.bp = self.__create_blueprint()
         
-        self.name = "eventgen_controller"
+        self.name = "eventgen_server"
         self.servers = Servers()
         # logging.config.dictConfig(controller_logger_config)
-        log = logging.getLogger(self.name)
-        log.info("Logger set as eventgen_controller")
+        self.log = logging.getLogger(self.name)
+        self.log.info("Logger set as eventgen_controller")
 
         ### self.__setup_pyrabbit()
 
@@ -75,7 +80,7 @@ class EventgenControllerAPI(ApiBlueprint):
         @bp.route('/status', methods=['GET'])
         def all_status():
             print('test')
-            return json.dumps(self.__get_rpc_responses(ApiTypes.status))
+            return json.dumps(self.servers.status('all'))
         return bp
 
 
