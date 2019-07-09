@@ -79,7 +79,7 @@ class EventgenServerAPI(ApiBlueprint):
         @bp.route('/volume', methods=['POST'])
         def http_post_volume():
             try:
-                set_volume(request.get_json(force=True).get("total_volume", 0.0))
+                set_volume(request.get_json(force=True).get("perDayVolume", 0.0))
                 return Response(json.dumps(get_volume()), mimetype='application/json', status=200)
             except Exception as e:
                 self.logger.error(e)
@@ -255,13 +255,13 @@ class EventgenServerAPI(ApiBlueprint):
 
             if total_volume:
                 self.total_volume = total_volume
-            response['total_volume'] = self.total_volume
+            response['perDayVolume'] = self.total_volume
             response['volume_distribution'] = volume_distribution
             return response
         
         def set_volume(target_volume):
             conf_dict = get_conf()
-            if get_volume()['total_volume'] != 0:
+            if get_volume()['perDayVolume'] != 0:
                 ratio = float(target_volume) / float(self.total_volume)
                 for stanza, kv_pair in conf_dict.iteritems():
                     if isinstance(kv_pair, dict):

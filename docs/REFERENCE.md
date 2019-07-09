@@ -651,6 +651,7 @@ Note, "TARGET_NAME" is a variable that should be replaced by the hostname of Eve
             * Default values
                 * mode: "roundrobin"
                 * hostname_template: "idx{0}"
+                * hosts: [] # list of host addresses
                 * protocol: "https"
                 * key: "00000000-0000-0000-0000-000000000000"
                 * key_name: "eventgen"
@@ -664,6 +665,7 @@ Note, "TARGET_NAME" is a variable that should be replaced by the hostname of Eve
             * Default values
                 * mode: "roundrobin"
                 * hostname_template: "idx{0}"
+                * hosts: [] # list of host addresses
                 * protocol: "https"
                 * key: "00000000-0000-0000-0000-000000000000"
                 * key_name: "eventgen"
