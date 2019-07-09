@@ -326,6 +326,7 @@ class EventgenServerAPI(ApiBlueprint):
             if os.path.isdir(os.path.join(bundle_dir, "samples")):
                 for file in glob.glob(os.path.join(bundle_dir, "samples", "*")):
                     shutil.copy(file, SAMPLE_DIR_PATH)
+                self.logger.info("Copied all samples to the sample directory.")
 
             if os.path.isfile(os.path.join(bundle_dir, "default", "eventgen.conf")):
                 config = ConfigParser.ConfigParser()
@@ -334,6 +335,8 @@ class EventgenServerAPI(ApiBlueprint):
                 config_dict = {s: collections.OrderedDict(config.items(s)) for s in config.sections()}
                 set_conf(config_dict)
                 self.eventgen.configured = True
+                self.logger.info("Configured Eventgen with the downloaded bundle.")
+            
 
         def download_bundle(url):
             bundle_path = os.path.join(DEFAULT_PATH, "eg-bundle.tgz")
@@ -343,6 +346,7 @@ class EventgenServerAPI(ApiBlueprint):
                     if chunk:
                         f.write(chunk)
             r.close()
+            self.logger.info("Downloaded bundle to the path {}".format(bundle_path))
             return bundle_path
 
         def unarchive_bundle(path):
@@ -368,6 +372,7 @@ class EventgenServerAPI(ApiBlueprint):
             else:
                 msg = "Unknown archive format!"
                 raise Exception(msg)
+            self.logger.info("Unarchived bundle to the path {}".format(path))
             return output
         
         def clean_bundle_conf():
