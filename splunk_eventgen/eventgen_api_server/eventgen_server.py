@@ -1,5 +1,6 @@
 from flask import Flask
 from eventgen_server_api import EventgenServerAPI
+import os
 
 
 class EventgenServer():
@@ -9,7 +10,12 @@ class EventgenServer():
         self.mode = kwargs.get('mode', 'standalone')
 
     def app_run(self):
-        self.app.run(host="0.0.0.0", port=9500, threaded=True)
+        osvars, config = dict(os.environ), {}
+        test = osvars.get("EVENTGEN_CONTROLLER", "localhost")
+        port = 9500
+        # if test == 'localhost':
+        #     port = 9501
+        self.app.run(host="0.0.0.0", port=port, threaded=True)
     
     def _create_app(self):
         app = Flask(__name__)

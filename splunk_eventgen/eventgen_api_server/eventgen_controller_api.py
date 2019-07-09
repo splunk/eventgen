@@ -10,6 +10,12 @@ import logging
 
 from api_types import ApiTypes
 from api_blueprint import ApiBlueprint
+try:
+    from requests import Session
+    from requests_futures.sessions import FuturesSession
+    from concurrent.futures import ThreadPoolExecutor
+except:
+    raise Exception("couldn't import our own stuff?")
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = os.path.join(FILE_PATH, '..', 'logs')
@@ -22,6 +28,7 @@ class Servers():
     def __init__(self):
         self.servers = set()
         self.logger = logging.getLogger("eventgen_server")
+        self.session = FuturesSession(session=Session(), executor=ThreadPoolExecutor(max_workers=10))
 
     def register(self, hostname):
         if hostname != None:
@@ -32,21 +39,52 @@ class Servers():
         else:
             raise Exception('ip can\'t be None')
 
-    def __call(self, hostname, verb, method, body=None, headers=None):
-        action = getattr(requests, verb, None)
+    def __async_multi_call(self, hostnames, verb, method, body=None, headers=None, retries=1, interval=1):
+        action = getattr(self.session, verb, None)
         if action:
-            return action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, 9500, method))
+            active_sessions = []
+            for hostname in hostnames:
+                osvars, config = dict(os.environ), {}
+                test = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
+                port = 9500
+                # if test == 'localhost':
+                #     port = 9501
+                #     hostname = 'localhost'
+                for x in range(0, 10):
+                    active_sessions.append(action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, port, method)))
+                # time.sleep(2)
+                # print(active_sessions)
+            response_data = []
+            failed_requests = []
+            for session in active_sessions:
+                try:
+                    print('getting result')
+                    response = session.result()
+                    print(response)
+                    # print(response.raise_for_status())
+                    if not response.raise_for_status():
+                        response_data.append(response.content)
+                        self.logger.debug("Payload successfully sent to httpevent server.")
+                    else:
+                        self.logger.error("Server returned an error while trying to send, response code: %s" %
+                                            response.status_code)
+                        raise BadConnection(
+                            "Server returned an error while sending, response code: %s" % response.status_code)
+                except Exception as e:
+                    failed_requests.append(session)
+                    raise(e)
+            return response_data
         else:
             return verb + ' is not a valid verb'
 
     def status(self, target):
         if target == "all":
-            responses = []
-            for server in self.servers:
-                responses.append(self.__call(server, 'get', 'status'))
-            return responses
+            responses = self.__call(self.servers, 'get', 'status')
+            print(responses)
+            return json.dumps(responses)
         else:
-            pass            
+            responses = self.__call([target], 'get', 'status')
+            if            
 
 class EventgenControllerAPI(ApiBlueprint):
 

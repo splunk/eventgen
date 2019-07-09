@@ -8,7 +8,7 @@ class EventgenController():
         self.app = self._create_app()
 
     def app_run(self):
-        self.app.run(host="0.0.0.0", port=9500)
+        self.app.run(host="0.0.0.0", port=9500, threaded=True)
     
     def _create_app(self):
         print('creating controller...')
