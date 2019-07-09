@@ -30,6 +30,7 @@ class Servers():
         self.servers = set()
         self.logger = logging.getLogger("eventgen_server")
         self.session = FuturesSession(session=Session(), executor=ThreadPoolExecutor(max_workers=20))
+        self.port = 9500
 
     def registeredServersList(self):
         return list(self.servers)
@@ -42,9 +43,7 @@ class Servers():
 
     def register(self, hostname):
         if hostname != None:
-            print('adding server with hostname {}...'.format(hostname))
             self.servers.add(hostname)
-            print('new servers set is {}'.format(self.servers))
             return self.servers
         else:
             raise Exception('ip can\'t be None')
@@ -53,14 +52,7 @@ class Servers():
         action = getattr(requests, verb, None)
         if action:
             osvars, config = dict(os.environ), {}
-            test = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
-            port = 9500
-            if test == 'localhost':
-                port = 9501
-                hostname = 'localhost'
-            print('making single call')
-            print(body)
-            response = action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, port, method), data=json.dumps(body))
+            response = action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, self.port, method), data=json.dumps(body))
             if response.status_code == 200:
                 return response.json()
             else:
@@ -73,24 +65,12 @@ class Servers():
             active_sessions = []
             for hostname in hostnames:
                 osvars, config = dict(os.environ), {}
-                test = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
-                port = 9500
-                # if test == 'localhost':
-                #     port = 9501
-                #     hostname = 'localhost'
-                print('make multi call')
-                print(body)
-                active_sessions.append(action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, port, method), data=json.dumps(body)))
-                # time.sleep(2)
-                # print(active_sessions)
+                active_sessions.append(action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, self.port, method), data=json.dumps(body)))
             response_data = []
             failed_requests = []
             for session in active_sessions:
                 try:
-                    print('getting result')
                     response = session.result()
-                    print(response)
-                    # print(response.raise_for_status())
                     if not response.raise_for_status():
                         try:
                             response_data.append(response.json())
@@ -111,11 +91,9 @@ class Servers():
     def __call(self, target, verb, method, body=None, headers=None, retries=1, interval=1):
         if target == "all":
             responses = self.__async_multi_call(self.servers, verb, method, body, headers, retries, interval)
-            print(responses)
             return responses
         else:
             response = self.__single_call(target, verb, method, body, headers, retries, interval)
-            print(response)
             return response
 
     def index(self, target):
@@ -210,7 +188,6 @@ class EventgenControllerAPI(ApiBlueprint):
 
         @bp.route('/register', methods=['POST'])
         def register_server():
-            print('test')
             data = request.get_json(force=True) #should this be force?
             self.servers.register(data['hostname'])
             return 'successfully registered hostname'
@@ -226,7 +203,6 @@ You are running Eventgen Controller.\n'''
 
         @bp.route('/status', methods=['GET'])
         def all_status():
-            print('test')
             return json.dumps(self.servers.status('all'))
 
         @bp.route('/status/<string:target>', methods=['GET'])
@@ -250,7 +226,6 @@ You are running Eventgen Controller.\n'''
         @bp.route('/conf', methods=['POST'])
         def http_set_conf():
             data = request.get_json()
-            print(data)
             if data:
                 return json.dumps(self.servers.set_conf(target="all", body=data))
             else:
@@ -395,58 +370,3 @@ You are running Eventgen Controller.\n'''
                 return 404, json.dumps("Target not available.", indent=4)
 
         return bp
-
-
-
-
-
-    ### Garbage can ###
-
-
-    def __setup_pyrabbit(self):
-        self.host = 'controller' #socket.gethostname() + '_controller'
-        self.exchangeName = 'requests'
-
-        osvars, config = dict(os.environ), {}
-        config["AMQP_HOST"] = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
-        config["AMQP_WEBPORT"] = osvars.get("EVENTGEN_AMQP_WEBPORT", 15672)
-        config["AMQP_USER"] = osvars.get("EVENTGEN_AMQP_URI", "guest")
-        config["AMQP_PASS"] = osvars.get("EVENTGEN_AMQP_PASS", "guest")
-
-        print('make client...')
-        self.pyrabbit_cl = Client('{0}:{1}'.format(config['AMQP_HOST'], config['AMQP_WEBPORT']),
-                            '{0}'.format(config['AMQP_USER']), '{0}'.format(config['AMQP_PASS']))
-        rabbit_started = False
-        while(not rabbit_started):
-            try:
-                print('is this alive?...')
-                print(self.pyrabbit_cl.is_alive())
-                rabbit_started = True
-            except:
-                rabbit_started = False
-        print('create vhost with hostname{}...'.format(self.host))
-        print(Client.json_headers)
-        self.pyrabbit_cl.create_vhost(self.host)
-        print('create exchange...')
-        self.pyrabbit_cl.create_exchange(self.host, self.exchangeName, 'fanout')
-        print('create queue...')
-        self.queue_name = 'controller_queue'
-        self.pyrabbit_cl.create_queue(self.host, self.queue_name)
-        # log.info("Vhost set to {}".format(host))
-        # log.info("Current Vhosts are {}".format(pyrabbit_cl.get_vhost_names()))
-
-    def __get_rpc_responses(self, apiType, servers='all', num_retries=15, delay=0.3):
-        print(apiType.value)
-        self.pyrabbit_cl.publish(self.host, self.exchangeName, '', apiType.value, 'string', {'reply_to': 'controller_queue'})
-        messages = []
-        servers = self.get_current_server_vhosts()
-        current_retries = 0
-        while len(messages) < len(servers) and current_retries < num_retries:
-            time.sleep(delay)
-            messages.append(self.pyrabbit_cl.get_messages(self.host, self.queue_name))
-            current_retries += 1
-        return messages
-
-    def get_current_server_vhosts(self):
-        current_vhosts = self.pyrabbit_cl.get_vhost_names()
-        return [name for name in current_vhosts if name != '/' and name != self.host]

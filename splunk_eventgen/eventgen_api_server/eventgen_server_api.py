@@ -16,10 +16,6 @@ import requests
 from requests.packages.urllib3.util.retry import Retry
 import threading
 
-### DELETE THIS ###
-from pprint import pprint
-###
-
 from constants import Constants
 from api_blueprint import ApiBlueprint
 import eventgen_core_object
@@ -45,45 +41,10 @@ class EventgenServerAPI(ApiBlueprint):
 
         self.logger = logging.getLogger('eventgen_server')
         self.logger.info(self.host)
-        print('test')
 
 
         # print('http://{0}:{1}/{2}'.format(config["EVENTGEN_CONTROLLER"], 9500, 'register'))
         # print(requests.post('http://{0}:{1}/{2}'.format(config["EVENTGEN_CONTROLLER"], 9500, 'register'), data=data, headers=headers))
-
-        self._create_health_check()
-
-    def _create_health_check(self):
-        def health_check():
-            while True:
-                self.reRegister()
-                time.sleep(consts.PING_TIME) # need a time interval for this
-            
-        thread = threading.Thread(target=health_check)
-        thread.daemon = True
-        thread.start()
-
-    def reRegister(self):
-        osvars, config = dict(os.environ), {}
-        config["EVENTGEN_CONTROLLER"] = osvars.get("EVENTGEN_CONTROLLER", "localhost")
-        self.logger.info(config["EVENTGEN_CONTROLLER"])
-        payload = {'hostname': self.host}
-        data = json.dumps(payload)
-        headers = {'content-type': 'application/json'}
-
-        registered = False
-        maxBackoff = consts.BACKOFF_MAX # these should be set somewhere probably
-        currentBackoff = consts.BACKOFF_START
-        while not registered:
-            try:
-                requests.post('http://{0}:{1}/{2}'.format(config["EVENTGEN_CONTROLLER"], 9500, 'register'), data=data, headers=headers)
-                registered = True
-                print('reached the controller!')
-            except:
-                print('could not reach controller... retrying in {} seconds'.format(currentBackoff))
-                time.sleep(currentBackoff)
-                currentBackoff *= 2
-                currentBackoff = min(maxBackoff, currentBackoff)
 
     def _create_blueprint(self):
         bp = flask.Blueprint('server_api', __name__)
@@ -114,9 +75,7 @@ class EventgenServerAPI(ApiBlueprint):
         @bp.route('/conf', methods=['POST'])
         def http_post_conf():
             try:
-                pprint(request.data)
                 json_data = request.get_json(force=True)
-                print(json_data)
                 set_conf(json_data)
                 return Response(json.dumps(get_conf()), mimetype='application/json', status=200)
             except Exception as e:
@@ -553,70 +512,3 @@ class EventgenServerAPI(ApiBlueprint):
                 set_conf(conf_dict)
 
         return bp
-        
-
-
-    ### garbage can ###
-
-
-
-
-    def __setup_pyrabbit(self):
-        self.host = socket.gethostname() + '_server'
-        self.controller_host = 'controller' #get the controller host
-        self.exchangeName = 'requests'
-
-        osvars, config = dict(os.environ), {}
-        config["AMQP_HOST"] = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
-        config["AMQP_WEBPORT"] = osvars.get("EVENTGEN_AMQP_WEBPORT", 15672)
-        config["AMQP_USER"] = osvars.get("EVENTGEN_AMQP_URI", "guest")
-        config["AMQP_PASS"] = osvars.get("EVENTGEN_AMQP_PASS", "guest")
-
-        print('make client...')
-        self.pyrabbit_cl = Client('{0}:{1}'.format(config['AMQP_HOST'], config['AMQP_WEBPORT']),
-                            '{0}'.format(config['AMQP_USER']), '{0}'.format(config['AMQP_PASS']))
-        rabbit_started = False
-        while(not rabbit_started):
-            try:
-                print('is this alive?...')
-                print(self.pyrabbit_cl.is_alive())
-                rabbit_started = True
-            except:
-                rabbit_started = False
-        print('create vhost with hostname{}...'.format(self.host))
-        print(Client.json_headers)
-        self.pyrabbit_cl.create_vhost(self.host)
-        print('create exchange...')
-        self.pyrabbit_cl.create_exchange(self.controller_host, self.exchangeName, 'fanout')
-        print('create queue...')
-        self.queueName = 'server_queue_{}'.format(self.host)
-        self.pyrabbit_cl.create_queue(self.controller_host, self.queueName)
-        print('bind queue...')
-        self.pyrabbit_cl.create_binding(self.controller_host, self.exchangeName, self.queueName)
-
-        cease_continuous_run = threading.Event()
-
-        class getMessagesThread(threading.Thread):
-            @classmethod
-            def run(cls):
-                while not cease_continuous_run.is_set():
-                    print(self.controller_host)
-                    print(self.queueName)
-                    messages = self.pyrabbit_cl.get_messages(self.controller_host, self.queueName)
-                    if len(messages) > 0:
-                        payload = json.loads(messages[0]['payload'])
-                        methodType = payload['type']
-                        response = None
-                        if methodType == 'status':
-                            pass
-                        print(messages[0])
-                    time.sleep(1)
-
-        continuous_thread = getMessagesThread()
-        continuous_thread.start()
-        return cease_continuous_run
-
-
-        # log.info("Vhost set to {}".format(host))
-        # log.info("Current Vhosts are {}".format(pyrabbit_cl.get_vhost_names()))
-
