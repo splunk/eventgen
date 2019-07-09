@@ -11,7 +11,6 @@ class EventgenController():
         self.app.run(host="0.0.0.0", port=9500, threaded=True)
     
     def _create_app(self):
-        print('creating controller...')
         app = Flask(__name__)
         app.config['SECRET_KEY'] = 'does-not-exist'
         
@@ -20,7 +19,6 @@ class EventgenController():
 
         @app.route('/')
         def index():
-            print(request.remote_addr)
             return "hellocontrollerworld"
             
         return app

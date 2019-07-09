@@ -42,10 +42,6 @@ class EventgenServerAPI(ApiBlueprint):
         self.logger = logging.getLogger('eventgen_server')
         self.logger.info(self.host)
 
-
-        # print('http://{0}:{1}/{2}'.format(config["EVENTGEN_CONTROLLER"], 9500, 'register'))
-        # print(requests.post('http://{0}:{1}/{2}'.format(config["EVENTGEN_CONTROLLER"], 9500, 'register'), data=data, headers=headers))
-
     def _create_blueprint(self):
         bp = flask.Blueprint('server_api', __name__)
 

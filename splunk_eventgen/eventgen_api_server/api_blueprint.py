@@ -4,5 +4,4 @@ class ApiBlueprint():
         self.bp = None
     
     def get_blueprint(self):
-        print(self.bp)
         return self.bp
