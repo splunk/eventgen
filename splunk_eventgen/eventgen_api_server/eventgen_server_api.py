@@ -40,7 +40,10 @@ class EventgenServerAPI(ApiBlueprint):
         osvars, config = dict(os.environ), {}
         config["AMQP_HOST"] = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
         payload = {'hostname': self.host}
-        requests.post('http://{0}:{1}/{2}'.format(config["AMQP_HOST"], 9500, 'register'), data=payload)
+        data = json.dumps(payload)
+        headers = {'content-type': 'application/json'}
+        print('http://{0}:{1}/{2}'.format(config["AMQP_HOST"], 9500, 'register'))
+        print(requests.post('http://{0}:{1}/{2}'.format(config["AMQP_HOST"], 9500, 'register'), data=data, headers=headers))
 
     def _create_blueprint(self):
         bp = flask.Blueprint('server_api', __name__)

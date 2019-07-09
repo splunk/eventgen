@@ -5,6 +5,8 @@ import os
 import socket
 import time
 import json
+import requests
+import logging
 
 from api_types import ApiTypes
 from api_blueprint import ApiBlueprint
@@ -27,11 +29,17 @@ class Servers():
         else:
             raise Exception('ip can\'t be None')
 
+    def __call(self, hostname, verb, method, body=None, headers=None):
+        action = getattr(requests, verb, None)
+        if action:
+            action(headers=self.headers, url='http://{0}:{1}/{2}'.format(hostname, 9500, method))
+
     def status(self, target):
         if target == "all":
-            pass
+            for server in self.servers:
+                self.__call(server, 'GET', 'status')
         else:
-            pass
+            pass            
 
 class EventgenControllerAPI(ApiBlueprint):
 
@@ -42,8 +50,8 @@ class EventgenControllerAPI(ApiBlueprint):
         self.name = "eventgen_controller"
         self.servers = Servers()
         # logging.config.dictConfig(controller_logger_config)
-        # log = logging.getLogger(name)
-        # log.info("Logger set as eventgen_controller")
+        log = logging.getLogger(self.name)
+        log.info("Logger set as eventgen_controller")
 
         ### self.__setup_pyrabbit()
 
@@ -59,6 +67,7 @@ class EventgenControllerAPI(ApiBlueprint):
 
         @bp.route('/register', methods=['POST'])
         def register_server():
+            print('test')
             data = request.get_json(force=True) #should this be force?
             self.servers.register(data['hostname'])
             return 'successfully registered hostname'
