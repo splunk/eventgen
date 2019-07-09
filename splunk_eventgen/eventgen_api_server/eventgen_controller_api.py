@@ -11,6 +11,8 @@ import logging
 from api_types import ApiTypes
 from api_blueprint import ApiBlueprint
 
+FILE_PATH = os.path.dirname(os.path.realpath(__file__))
+LOG_PATH = os.path.join(FILE_PATH, '..', 'logs')
 
 def exit_handler(client, hostname, logger):
     client.delete_vhost(hostname)
@@ -19,7 +21,7 @@ def exit_handler(client, hostname, logger):
 class Servers():
     def __init__(self):
         self.servers = set()
-        self.log = logging.getLogger("eventgen_server")
+        self.logger = logging.getLogger("eventgen_server")
 
     def register(self, hostname):
         if hostname != None:
@@ -51,16 +53,45 @@ class EventgenControllerAPI(ApiBlueprint):
     def __init__(self):
         ApiBlueprint.__init__(self)
         self.bp = self.__create_blueprint()
-        
-        self.name = "eventgen_server"
+
         self.servers = Servers()
         # logging.config.dictConfig(controller_logger_config)
-        self.log = logging.getLogger(self.name)
-        self.log.info("Logger set as eventgen_controller")
+        self._setup_loggers()
+        self.logger = logging.getLogger("eventgen_controller")
+        self.logger.info("Logger set as eventgen_controller")
 
         ### self.__setup_pyrabbit()
 
         ### Garbage #### atexit.register(exit_handler, client=self.pyrabbit_cl, hostname=self.host, logger=None)#log)
+    
+    def _setup_loggers(self):
+        log_path = os.path.join(FILE_PATH, 'logs')
+        eventgen_controller_logger_path = os.path.join(LOG_PATH, 'eventgen-controller.log')
+        eventgen_error_logger_path = os.path.join(LOG_PATH, 'eventgen-error.log')
+        
+        log_format = '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s'
+        date_format = '%Y-%m-%d %H:%M:%S'
+        detailed_formatter = logging.Formatter(log_format, datefmt=date_format)
+
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(detailed_formatter)
+        console_handler.setLevel(logging.DEBUG)
+
+        eventgen_controller_file_handler = logging.handlers.RotatingFileHandler(eventgen_controller_logger_path, maxBytes=2500000, backupCount=20)
+        eventgen_controller_file_handler.setFormatter(detailed_formatter)
+        eventgen_controller_file_handler.setLevel(logging.DEBUG)
+
+        error_file_handler = logging.handlers.RotatingFileHandler(eventgen_error_logger_path, maxBytes=2500000, backupCount=20)
+        error_file_handler.setFormatter(detailed_formatter)
+        error_file_handler.setLevel(logging.ERROR)
+
+        logger = logging.getLogger('eventgen_controller')
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+        logger.handlers = []
+        logger.addHandler(eventgen_controller_file_handler)
+        logger.addHandler(console_handler)
+        logger.addHandler(error_file_handler)
 
     def __create_blueprint(self):
         bp = Blueprint('api', __name__)
