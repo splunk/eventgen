@@ -104,7 +104,7 @@ eg_network:
 run_server: eg_network
 	docker kill eg_server || true
 	docker rm eg_server || true
-	docker run --network eg_network --name eg_server -e EVENTGEN_AMQP_HOST="eg_controller" -d -p 9501:9500 eventgen:latest server
+	docker run --network eg_network --name eg_server -e EVENTGEN_CONTROLLER="eg_controller" -d -p 9501:9500 eventgen:latest server
 
 run_controller: eg_network
 	docker kill eg_controller || true

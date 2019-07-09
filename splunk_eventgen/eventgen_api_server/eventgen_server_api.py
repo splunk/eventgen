@@ -16,6 +16,11 @@ import requests
 from requests.packages.urllib3.util.retry import Retry
 import threading
 
+### DELETE THIS ###
+from pprint import pprint
+###
+
+from constants import Constants
 from api_blueprint import ApiBlueprint
 import eventgen_core_object
 
@@ -24,6 +29,8 @@ INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "default"))
 SAMPLE_DIR_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "samples"))
+
+consts = Constants()
 
 class EventgenServerAPI(ApiBlueprint):
     def __init__(self):
@@ -38,6 +45,7 @@ class EventgenServerAPI(ApiBlueprint):
 
         self.logger = logging.getLogger('eventgen_server')
         self.logger.info(self.host)
+        print('test')
 
 
         # print('http://{0}:{1}/{2}'.format(config["EVENTGEN_CONTROLLER"], 9500, 'register'))
@@ -49,7 +57,7 @@ class EventgenServerAPI(ApiBlueprint):
         def health_check():
             while True:
                 self.reRegister()
-                time.sleep(3) # need a time interval for this
+                time.sleep(consts.PING_TIME) # need a time interval for this
             
         thread = threading.Thread(target=health_check)
         thread.daemon = True
@@ -58,13 +66,14 @@ class EventgenServerAPI(ApiBlueprint):
     def reRegister(self):
         osvars, config = dict(os.environ), {}
         config["EVENTGEN_CONTROLLER"] = osvars.get("EVENTGEN_CONTROLLER", "localhost")
+        self.logger.info(config["EVENTGEN_CONTROLLER"])
         payload = {'hostname': self.host}
         data = json.dumps(payload)
         headers = {'content-type': 'application/json'}
 
         registered = False
-        maxBackoff = 60 # these should be set somewhere probably
-        currentBackoff = 1
+        maxBackoff = consts.BACKOFF_MAX # these should be set somewhere probably
+        currentBackoff = consts.BACKOFF_START
         while not registered:
             try:
                 requests.post('http://{0}:{1}/{2}'.format(config["EVENTGEN_CONTROLLER"], 9500, 'register'), data=data, headers=headers)
@@ -105,7 +114,10 @@ class EventgenServerAPI(ApiBlueprint):
         @bp.route('/conf', methods=['POST'])
         def http_post_conf():
             try:
-                set_conf(request.get_json(force=True))
+                pprint(request.data)
+                json_data = request.get_json(force=True)
+                print(json_data)
+                set_conf(json_data)
                 return Response(json.dumps(get_conf()), mimetype='application/json', status=200)
             except Exception as e:
                 self.logger.error(e)
@@ -141,7 +153,7 @@ class EventgenServerAPI(ApiBlueprint):
         @bp.route('/stop', methods=['POST'])
         def http_post_stop():
             try:
-                response = stop(force_stop = request.get_json(force=True).get("force", False))
+                response = stop(force_stop = request.get_json(force=False).get("force", False))
                 self.eventgen.refresh_eventgen_core_object()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:

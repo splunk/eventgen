@@ -13,8 +13,8 @@ class EventgenServer():
         osvars, config = dict(os.environ), {}
         test = osvars.get("EVENTGEN_CONTROLLER", "localhost")
         port = 9500
-        # if test == 'localhost':
-        #     port = 9501
+        if test == 'localhost':
+            port = 9501
         self.app.run(host="0.0.0.0", port=port, threaded=True)
     
     def _create_app(self):

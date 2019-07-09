@@ -10,6 +10,7 @@ import logging
 
 from api_types import ApiTypes
 from api_blueprint import ApiBlueprint
+import ast
 try:
     from requests import Session
     from requests_futures.sessions import FuturesSession
@@ -28,7 +29,16 @@ class Servers():
     def __init__(self):
         self.servers = set()
         self.logger = logging.getLogger("eventgen_server")
-        self.session = FuturesSession(session=Session(), executor=ThreadPoolExecutor(max_workers=10))
+        self.session = FuturesSession(session=Session(), executor=ThreadPoolExecutor(max_workers=20))
+
+    def registeredServersList(self):
+        return list(self.servers)
+
+    def isRegistered(self, hostname):
+        if hostname != None:
+            return hostname in self.servers
+        else:
+            return False
 
     def register(self, hostname):
         if hostname != None:
@@ -39,6 +49,24 @@ class Servers():
         else:
             raise Exception('ip can\'t be None')
 
+    def __single_call(self, hostname, verb, method, body=None, headers=None, retries=1, interval=1):
+        action = getattr(requests, verb, None)
+        if action:
+            osvars, config = dict(os.environ), {}
+            test = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
+            port = 9500
+            if test == 'localhost':
+                port = 9501
+                hostname = 'localhost'
+            print('making single call')
+            print(body)
+            response = action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, port, method), data=json.dumps(body))
+            if response.status_code == 200:
+                return response.json()
+            else:
+                raise(Exception('Server returned a bad status'))
+
+
     def __async_multi_call(self, hostnames, verb, method, body=None, headers=None, retries=1, interval=1):
         action = getattr(self.session, verb, None)
         if action:
@@ -47,11 +75,12 @@ class Servers():
                 osvars, config = dict(os.environ), {}
                 test = osvars.get("EVENTGEN_AMQP_HOST", "localhost")
                 port = 9500
-                # if test == 'localhost':
-                #     port = 9501
-                #     hostname = 'localhost'
-                for x in range(0, 10):
-                    active_sessions.append(action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, port, method)))
+                if test == 'localhost':
+                    port = 9501
+                    hostname = 'localhost'
+                print('make multi call')
+                print(body)
+                active_sessions.append(action(headers=headers, url='http://{0}:{1}/{2}'.format(hostname, port, method), data=json.dumps(body)))
                 # time.sleep(2)
                 # print(active_sessions)
             response_data = []
@@ -63,7 +92,10 @@ class Servers():
                     print(response)
                     # print(response.raise_for_status())
                     if not response.raise_for_status():
-                        response_data.append(response.content)
+                        try:
+                            response_data.append(response.json())
+                        except:
+                            response_data.append(response.content)
                         self.logger.debug("Payload successfully sent to httpevent server.")
                     else:
                         self.logger.error("Server returned an error while trying to send, response code: %s" %
@@ -72,19 +104,56 @@ class Servers():
                             "Server returned an error while sending, response code: %s" % response.status_code)
                 except Exception as e:
                     failed_requests.append(session)
-                    raise(e)
             return response_data
         else:
             return verb + ' is not a valid verb'
 
-    def status(self, target):
+    def __call(self, target, verb, method, body=None, headers=None, retries=1, interval=1):
         if target == "all":
-            responses = self.__call(self.servers, 'get', 'status')
+            responses = self.__async_multi_call(self.servers, verb, method, body, headers, retries, interval)
             print(responses)
-            return json.dumps(responses)
+            return responses
         else:
-            responses = self.__call([target], 'get', 'status')
-            if            
+            response = self.__single_call(target, verb, method, body, headers, retries, interval)
+            print(response)
+            return response
+
+    def index(self, target):
+        return self.__call(target, 'get', 'index')
+
+    def status(self, target):
+        return self.__call(target, 'get', 'status')
+
+    def get_conf(self, target):
+        return self.__call(target, 'get', 'conf')
+
+    def set_conf(self, target, body):
+        return self.__call(target, 'post', 'conf', body=body)
+
+    def update_conf(self, target, body):
+        return self.__call(target, 'put', 'conf', body=body)
+
+    def set_bundle(self, target, body):
+        return self.__call(target, 'post', 'bundle', body=body)
+
+    def start(self, target):
+        return self.__call(target, 'post', 'start')
+
+    def stop(self, target, body):
+        return self.__call(target, 'post', 'stop', body=body)
+
+    def restart(self, target):
+        return self.__call(target, 'post', 'restart')
+
+    def reset(self, target):
+        return self.__call(target, 'post', 'reset')
+
+    def get_volume(self, target):
+        return self.__call(target, 'get', 'volume')
+
+    def set_volume(self, target, body):
+        return self.__call(target, 'post', 'volume', body=body)
+
 
 class EventgenControllerAPI(ApiBlueprint):
 
@@ -146,10 +215,185 @@ class EventgenControllerAPI(ApiBlueprint):
             self.servers.register(data['hostname'])
             return 'successfully registered hostname'
 
+        @bp.route('/index', methods=['GET'])
+        def index():
+            home_page = '''*** Eventgen Controller ***
+Host: {0}
+Connected Servers: {1}
+You are running Eventgen Controller.\n'''
+            host = socket.gethostname()
+            return home_page.format(host, self.servers.registeredServersList())
+
         @bp.route('/status', methods=['GET'])
         def all_status():
             print('test')
             return json.dumps(self.servers.status('all'))
+
+        @bp.route('/status/<string:target>', methods=['GET'])
+        def http_status_target(target="all"):
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.status(target))
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+
+        @bp.route('/conf', methods=['GET'])
+        def http_get_conf():
+            return json.dumps(self.servers.get_conf('all'), indent=4)
+
+        @bp.route('/conf/<string:target>', methods=['GET'])
+        def http_get_conf_target(target="all"):
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.get_conf(target))
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+
+        @bp.route('/conf', methods=['POST'])
+        def http_set_conf():
+            data = request.get_json()
+            print(data)
+            if data:
+                return json.dumps(self.servers.set_conf(target="all", body=data))
+            else:
+                return 400, 'Please pass valid config data.'
+
+        @bp.route('/conf/<string:target>', methods=['POST'])
+        def http_set_conf_target(target):
+            data = request.get_json()
+            if data:
+                if self.servers.isRegistered(target):
+                    return json.dumps(self.servers.set_conf(target=target, body=data))
+                else:
+                    return 404, json.dumps("Target not available.", indent=4)
+            else:
+                return 400, 'Please pass valid config data.'
+
+        @bp.route('/conf', methods=['PUT'])
+        def http_update_conf():
+            data = request.get_json()
+            if data:
+                return json.dumps(self.servers.update_conf(target="all", body=data))
+            else:
+                return 400, 'Please pass valid config data.'
+
+        @bp.route('/conf/<string:target>', methods=['PUT'])
+        def http_update_conf_target(target):
+            data = request.get_json()
+            if data:
+                if self.servers.isRegistered(target):
+                    return json.dumps(self.servers.update_conf(target=target, body=data))
+                else:
+                    return 404, json.dumps("Target not available.", indent=4)
+            else:
+                return 400, 'Please pass valid config data.'
+
+        @bp.route('/bundle', methods=['POST'])
+        def http_set_bundle():
+            data = request.get_json()
+            if data:
+                return json.dumps(self.servers.set_bundle(target="all", body=data))
+            else:
+                return 400, "Please pass in a valid object with bundle URL."
+
+        @bp.route('/bundle/<string:target>', methods=['POST'])
+        def http_set_bundle_target(target):
+            data = request.get_json()
+            if data:
+                if self.servers.isRegistered(target):
+                    return json.dumps(self.servers.set_bundle(target=target, body=data))
+                else:
+                    return 404, json.dumps("Target not available.", indent=4)
+            else:
+                return 400, "Please pass in a valid object with bundle URL."
+
+        @bp.route('/setup', methods=['POST'])
+        def http_update_setup():
+            data = request.get_json()
+            return json.dumps(self.servers.set_bundle(target="all", body=data))
+
+        @bp.route('/setup/<string:target>', methods=['POST'])
+        def http_update_setup_target(target):
+            data = request.get_json()
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.set_bundle(target=target, body=data))
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+
+        @bp.route('/volume', methods=['GET'])
+        def http_get_volume():
+            return json.dumps(self.servers.get_volume('all'), indent=4)
+
+        @bp.route('/volume/<string:target>', methods=['GET'])
+        def http_get_volume_target(target="all"):
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.get_volume(target))
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+
+        @bp.route('/volume', methods=['POST'])
+        def http_set_volume():
+            data = request.get_json()
+            if data:
+                return json.dumps(self.servers.set_volume(target="all", body=data))
+            else:
+                return 400, "Please pass in a valid object with volume."
+
+        @bp.route('/volume/<string:target>', methods=['POST'])
+        def http_set_volume_target(target):
+            data = request.get_json()
+            if data:
+                if self.servers.isRegistered(target):
+                    return json.dumps(self.servers.set_volume(target=target, body=data))
+                else:
+                    return 404, json.dumps("Target not available.", indent=4)
+            else:
+                return 400, "Please pass in a valid object with volume."
+
+        @bp.route('/start', methods=['POST'])
+        def http_start():
+            return json.dumps(self.servers.start(target="all"))
+
+        @bp.route('/start/<string:target>', methods=['POST'])
+        def http_start_target(target="all"):
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.start(target=target))
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+
+        @bp.route('/stop', methods=['POST'])
+        def http_stop():
+            data = request.get_json()
+            return json.dumps(self.servers.stop(target="all", body=data))
+
+        @bp.route('/stop/<string:target>', methods=['POST'])
+        def http_stop_target(target="all"):
+            data = request.get_json()
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.stop(target=target, body=data))
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+
+        @bp.route('/restart', methods=['POST'])
+        def http_restart():
+            return json.dumps(self.servers.restart(target="all"))
+
+        @bp.route('/restart/<string:target>', methods=['POST'])
+        def http_restart_target(target="all"):
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.restart(target=target))
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+
+        @bp.route('/reset', methods=['POST'])
+        def http_reset():
+            return json.dumps(self.servers.reset(target="all"))
+
+        @bp.route('/reset/<string:target>', methods=['POST'])
+        def http_reset_target(target="all"):
+            if self.servers.isRegistered(target):
+                return json.dumps(self.servers.reset(target=target))
+            else:
+                return 404, json.dumps("Target not available.", indent=4)
+
         return bp
 
 
