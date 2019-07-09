@@ -1,16 +1,16 @@
 import atexit
 import json
+import logging
 import os
 import socket
 import time
-import sys
 
 from pyrabbit.api import Client
 
+from logger.logger_config import controller_logger_config
 from nameko.events import BROADCAST, EventDispatcher, event_handler
 from nameko.rpc import rpc
 from nameko.web.handlers import http
-from lib.logging_config import controller_logger
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
@@ -22,9 +22,12 @@ def exit_handler(client, hostname, logger):
 
 
 class EventgenController(object):
+    name = "eventgen_controller"
+
     dispatch = EventDispatcher()
     PAYLOAD = 'Payload'
-    log = controller_logger
+    logging.config.dictConfig(controller_logger_config)
+    log = logging.getLogger(name)
     log.info("Logger set as eventgen_controller")
     host = socket.gethostname() + '_controller'
 

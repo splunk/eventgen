@@ -50,7 +50,6 @@ LOGGING_CONFIG = {
             'level': DEFAULT_LOGGING_LEVEL,
             'class': 'logging.StreamHandler',
             'formatter': 'default',
-            'stream': 'ext://sys.stdout'
         },
         'eventgen_main': {
             'class': 'logging.handlers.RotatingFileHandler',
@@ -104,7 +103,7 @@ LOGGING_CONFIG = {
 
     'loggers': {
         'eventgen': {
-            'handlers': ['eventgen_main', 'console'],
+            'handlers': ['console', 'eventgen_main'],
             'level': DEFAULT_LOGGING_LEVEL,
             'propagate': False
         },

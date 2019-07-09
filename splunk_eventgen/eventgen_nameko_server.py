@@ -9,7 +9,6 @@ import socket
 import tarfile
 import time
 import zipfile
-import sys
 
 import requests
 import yaml
@@ -19,7 +18,6 @@ import eventgen_nameko_dependency
 from nameko.events import BROADCAST, EventDispatcher, event_handler
 from nameko.rpc import rpc
 from nameko.web.handlers import http
-from lib.logging_config import server_logger
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
@@ -39,12 +37,14 @@ def exit_handler(client, hostname, logger):
 
 
 class EventgenServer(object):
+    name = "eventgen_server"
+
     dispatch = EventDispatcher()
 
     eventgen_dependency = eventgen_nameko_dependency.EventgenDependency()
     eventgen_name = get_eventgen_name_from_conf()
     host = socket.gethostname()
-    log = server_logger
+    log = logging.getLogger(name)
     log.info("Eventgen name is set to [{}] at host [{}]".format(eventgen_name, host))
 
     osvars, config = dict(os.environ), {}
@@ -433,7 +433,7 @@ Output Queue Status: {7}\n'''
             self.get_volume()
             num_stanzas = 0
             if not self.total_volume:
-                self.log.warning("There is no stanza found with perDayVolume")
+                self.log.warn("There is no stanza found with perDayVolume")
                 num_stanzas = len(config.keys())
                 self.total_volume = volume
             ratio = float(volume) / float(self.total_volume)
