@@ -66,6 +66,7 @@ class EventGenerator(object):
         :param args: __main__ parse_args() object.
         '''
         self.stopping = False
+        self.force_stop = False
         self.started = False
         self.completed = False
         self.config = None
@@ -405,6 +406,8 @@ class EventGenerator(object):
             except Empty:
                 pass
             except Exception as e:
+                if self.force_stop:
+                    break
                 self.logger.exception(str(e))
                 raise e
 
@@ -435,6 +438,8 @@ class EventGenerator(object):
             except Empty:
                 stopping = genconfig['stopping']
             except Exception as e:
+                if self.force_stop:
+                    break
                 root.exception(e)
                 raise e
         else:
@@ -451,6 +456,8 @@ class EventGenerator(object):
             except Empty:
                 pass
             except Exception as e:
+                if self.force_stop:
+                    break
                 self.logger.exception(str(e))
                 raise e
 
@@ -570,16 +577,22 @@ class EventGenerator(object):
             self.logger.exception(str(e))
             raise e
 
-    def stop(self):
+    def stop(self, force_stop=False):
         # empty the sample queue:
         self.config.stopping = True
         self.stopping = True
+        self.force_stop = force_stop
+        print self.force_stop, '*('
 
         self.logger.info("All timers exited, joining generation queue until it's empty.")
+        if force_stop:
+            self.logger.info("Forcibly stopping Eventgen: Deleting workerQueue.")
+            del self.workerQueue
+            self._create_generator_pool()
         self.workerQueue.join()
         # if we're in multiprocess, make sure we don't add more generators after the timers stopped.
         if self.args.multiprocess:
-            if self.args.wsgi:
+            if force_stop:
                 for worker in self.workerPool:
                     worker.terminate()
             else:
@@ -597,6 +610,10 @@ class EventGenerator(object):
                         time.sleep(2)
                         count += 1
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
+        if force_stop:
+            self.logger.info("Forcibly stopping Eventgen: Deleting outputQueue.")
+            del self.outputQueue
+            self._create_output_threadpool()
         self.outputQueue.join()
         self.logger.info("All items fully processed. Cleaning up internal processes.")
         self.started = False

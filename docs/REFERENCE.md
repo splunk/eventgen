@@ -605,8 +605,12 @@ Note, "TARGET_NAME" is a variable that should be replaced by the hostname of Eve
     * Starts target Eventgen instance's data generation
 * ```POST /stop```
     * Stops all Eventgen instances' data generation
+    * body is optional; default is false. Setting force to true will destroy current Queues and trying to hard stop a running Eventgen object by causing errors.
+        * Format: ```{"force": true}``` or ```{"force": false}```
 * ```POST /stop/<TARGET_NAME>```
     * Stops target Eventgen instance's data generation
+    * body is optional; default is false. Setting force to true will destroy current Queues and trying to hard stop a running Eventgen object by causing errors.
+        * Format: ```{"force": true}``` or ```{"force": false}```
 * ```POST /restart```
     * Restarts all Eventgen instances' data generation
 * ```POST /restart/<TARGET_NAME>```
