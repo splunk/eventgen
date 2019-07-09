@@ -162,7 +162,12 @@ class EventgenServerAPI(ApiBlueprint):
         @bp.route('/stop', methods=['POST'])
         def http_post_stop():
             try:
-                response = stop(force_stop = request.get_json(force=False).get("force", False))
+                force_stop = False
+                try:
+                    force_stop = True
+                except:
+                    force_stop = False
+                response = stop(force_stop = force_stop)
                 self.eventgen.refresh_eventgen_core_object()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
