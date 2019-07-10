@@ -44,6 +44,7 @@ class EventgenServerAPI(ApiBlueprint):
         if mode != 'standalone':
             self.redis_connector = redis_connector
             self._channel_listener()
+            self.logger.info("Initialized the channel listener. Cluster mode ready.")
     
     def _channel_listener(self):
         def start_listening(self):

@@ -40,7 +40,7 @@ class EventgenServer():
         if self.mode == 'standalone':
             app.register_blueprint(EventgenServerAPI(eventgen=self.eventgen, redis_connector=None, host=self.host).get_blueprint())
         else:
-            app.register_blueprint(EventgenServerAPI(eventgen=self.eventgen, redis_connector=self.redis_connector, host=self.host).get_blueprint())
+            app.register_blueprint(EventgenServerAPI(eventgen=self.eventgen, redis_connector=self.redis_connector, host=self.host, mode=self.mode).get_blueprint())
 
         @app.route('/')
         def index():
