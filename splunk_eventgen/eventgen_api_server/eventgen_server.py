@@ -29,7 +29,6 @@ class EventgenServer():
             from redis_connector import RedisConnector
             self.redis_connector = RedisConnector(host=self.env_vars.get('REDIS_HOST'), port=self.env_vars.get('REDIS_PORT'))
             self.redis_connector.register_myself(hostname=self.host, role=self.role)
-
         self.app = self._create_app()
 
     def app_run(self):
@@ -37,7 +36,7 @@ class EventgenServer():
     
     def _create_app(self):
         app = Flask(__name__)
-        app.config['S=CRET_KEY'] = 'does-not-exist'
+        app.config['SECRET_KEY'] = 'does-not-exist'
         if self.mode == 'standalone':
             app.register_blueprint(EventgenServerAPI(eventgen=self.eventgen, redis_connector=None, host=self.host).get_blueprint())
         else:
