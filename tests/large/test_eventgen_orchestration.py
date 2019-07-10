@@ -100,7 +100,7 @@ class TestEventgenOrchestration(object):
     def test_controller_root(self):
         r = requests.get("http://127.0.0.1:{}/".format(self.controller_eventgen_webport))
         assert r.status_code == 200
-        assert "hellocontrollerworld" in r.content
+        assert "running_eventgen_controller" in r.content
 
     def test_controller_index(self):
         r = requests.get("http://127.0.0.1:{}/index".format(self.controller_eventgen_webport))
@@ -210,7 +210,7 @@ class TestEventgenOrchestration(object):
     def test_server_root(self):
         r = requests.get("http://127.0.0.1:{}".format(self.server_eventgen_webport))
         assert r.status_code == 200
-        assert "helloserverworld" in r.content
+        assert "running_eventgen_server" in r.content
 
     def test_server_index(self):
         r = requests.get("http://127.0.0.1:{}/index".format(self.server_eventgen_webport))
