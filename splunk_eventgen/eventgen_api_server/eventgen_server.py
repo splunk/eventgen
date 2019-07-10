@@ -5,6 +5,7 @@ import socket
 import logging
 import json
 import time
+import requests
 
 from eventgen_server_api import EventgenServerAPI
 from constants import Constants
