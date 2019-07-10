@@ -1,10 +1,9 @@
-debug = True
-
+DEBUG = True
 class Constants():
 
     @property
     def PING_TIME(self):
-        return 30 if not debug else 3
+        return 30 if not DEBUG else 3
     
     @property
     def BACKOFF_START(self):

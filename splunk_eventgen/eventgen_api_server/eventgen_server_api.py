@@ -32,9 +32,7 @@ class EventgenServerAPI(ApiBlueprint):
     def __init__(self):
         ApiBlueprint.__init__(self)
         self.bp = self._create_blueprint()
-
-        ### Garbage self.__setup_pyrabbit() # make this conditional on not being standalone
-
+        
         self.total_volume = 0.0
         self.eventgen = eventgen_core_object.EventgenCoreObject()
         self.host = socket.gethostname()
