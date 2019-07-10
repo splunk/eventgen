@@ -1,5 +1,4 @@
 from enum import Enum
-
 class ApiTypes(Enum):
     index = 'INDEX'
     status = 'STATUS'

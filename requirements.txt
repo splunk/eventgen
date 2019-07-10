@@ -3,7 +3,6 @@ pytest-xdist
 mock
 pytest-cov
 docker==2.7.0
-nameko
 pyOpenSSL
 lxml==4.3.4
 pytest-mock>=1.10.4
@@ -16,7 +15,6 @@ ujson>=1.35
 pyyaml
 httplib2
 jinja2
-pyrabbit==1.1.0
 urllib3==1.24.2
 pyOpenSSL
 flake8>=3.7.7

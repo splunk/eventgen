@@ -1,6 +1,5 @@
 import atexit
 from flask import Blueprint, Response, request
-from pyrabbit.api import Client
 import os
 import socket
 import time
@@ -145,10 +144,6 @@ class EventgenControllerAPI(ApiBlueprint):
         self.logger = logging.getLogger("eventgen_controller")
         self.logger.info("Logger set as eventgen_controller")
 
-        ### self.__setup_pyrabbit()
-
-        ### Garbage #### atexit.register(exit_handler, client=self.pyrabbit_cl, hostname=self.host, logger=None)#log)
-    
     def _setup_loggers(self):
         log_path = os.path.join(FILE_PATH, 'logs')
         eventgen_controller_logger_path = os.path.join(LOG_PATH, 'eventgen-controller.log')

@@ -219,7 +219,6 @@ The following components are provided under the Apache License 2.0. See project 
     (Apache License 2.0) pyOpenSSL (https://github.com/pyca/pyopenssl/blob/master/LICENSE)
     (Apache License 2.0) docker (https://github.com/docker/docker-py/blob/master/LICENSE)
     (Apache License 2.0) requests-futures (https://github.com/ross/requests-futures/blob/master/LICENSE)
-    (Apache License 2.0) nameko (https://github.com/nameko/nameko/blob/master/LICENSE.txt)
 
 ========================================================================
 MIT licenses
