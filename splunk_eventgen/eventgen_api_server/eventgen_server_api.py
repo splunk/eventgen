@@ -78,7 +78,7 @@ class EventgenServerAPI(ApiBlueprint):
                     self.edit_conf(body)
                 self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('conf', request_method, response=self.get_conf()))
             elif job == 'bundle':
-                self.set_bundle(body)
+                self.set_bundle(body.get("url", ''))
                 self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('bundle', request_method, response=self.get_conf()))
             elif job == 'setup':
                 self.reset()
@@ -399,6 +399,7 @@ class EventgenServerAPI(ApiBlueprint):
     def reset(self):
         response = {}
         self.stop(force_stop=True)
+        time.sleep(0.3)
         self.eventgen.refresh_eventgen_core_object()
         self.total_volume = 0.0
         response['message'] = "Eventgen has been reset."
@@ -408,7 +409,7 @@ class EventgenServerAPI(ApiBlueprint):
         if not url:
             return 
 
-        bundle_dir = unarchive_bundle(download_bundle(url))
+        bundle_dir = self.unarchive_bundle(self.download_bundle(url))
 
         if os.path.isdir(os.path.join(bundle_dir, "samples")):
             for file in glob.glob(os.path.join(bundle_dir, "samples", "*")):

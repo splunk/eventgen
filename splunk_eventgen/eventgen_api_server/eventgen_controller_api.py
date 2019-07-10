@@ -23,7 +23,7 @@ class EventgenControllerAPI(ApiBlueprint):
         self.logger = logging.getLogger("eventgen_controller")
         self.logger.info("Initialized the EventgenControllerAPI Blueprint")
 
-        self.interval = 0.1
+        self.interval = 0.001
     
     def __create_blueprint(self):
         bp = Blueprint('api', __name__)
@@ -36,8 +36,8 @@ class EventgenControllerAPI(ApiBlueprint):
             if not response_number_target:
                 response_number_target = int(self.redis_connector.message_connection.pubsub_numsub(self.redis_connector.servers_channel)[0][1])
             response_num = 0
-            countdown = 1 / self.interval
-            for i in range(0, 10):
+            countdown = 1.5 / self.interval
+            for i in range(0, int(countdown)):
                 if response_num == response_number_target:
                     break
                 else:
