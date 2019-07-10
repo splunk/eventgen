@@ -19,4 +19,4 @@ def test_gather_env_vars():
     args.redis_port = "6379"
     args.web_server_port = '9500'
     obj = gather_env_vars(args)
-    assert obj == {"REDIS_HOST": "127.0.0.1", "REDIS_PORT" = "6379", "WEB_SERVER_PORT" = "9500"}
+    assert obj == {"REDIS_HOST": "127.0.0.1", "REDIS_PORT": "6379", "WEB_SERVER_PORT": "9500"}
