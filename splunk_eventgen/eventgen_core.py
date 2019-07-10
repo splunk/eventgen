@@ -56,7 +56,7 @@ class EventGenerator(object):
         self._generator_queue_size = getattr(self.args, 'generator_queue_size', 500)
         if self._generator_queue_size < 0:
             self._generator_queue_size = 0
-        self.logger.info("Set generator queue size to %d" % self._generator_queue_size)
+        self.logger.info("Set generator queue size", queue_size=self._generator_queue_size)
 
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
@@ -250,6 +250,9 @@ class EventGenerator(object):
         self.loggingQueue = None
         if args and args.verbosity:
             self.logger.setLevel(args.verbosity)
+        # Set the default log level to ERROR when directly called Generator in tests
+        if args.verbosity is None:
+            self.logger.setLevel(logging.ERROR)
 
     def _worker_do_work(self, work_queue, logging_queue):
         while not self.stopping:
