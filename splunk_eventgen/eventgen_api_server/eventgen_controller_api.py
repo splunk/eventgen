@@ -346,12 +346,20 @@ You are running Eventgen Controller.\n'''
 
         @bp.route('/stop', methods=['POST'])
         def http_stop():
-            data = request.get_json()
+            data = None
+            try:
+                data = request.get_json()
+            except:
+                pass
             return json.dumps(self.servers.stop(target="all", body=data))
 
         @bp.route('/stop/<string:target>', methods=['POST'])
         def http_stop_target(target="all"):
-            data = request.get_json()
+            data = None
+            try:
+                data = request.get_json()
+            except:
+                pass
             if self.servers.isRegistered(target):
                 return json.dumps(self.servers.stop(target=target, body=data))
             else:
