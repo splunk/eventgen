@@ -3,7 +3,6 @@
 
 import os
 import sys
-import pytest
 
 from mock import MagicMock, patch
 
@@ -15,7 +14,6 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestSyslogOutputPlugin(object):
-    @pytest.mark.capture_disabled
     def test_output_data_to_syslog(self):
         configfile = "tests/sample_eventgen_conf/medium_test/eventgen.conf.syslogoutput"
         testargs = ["eventgen", "generate", configfile]
