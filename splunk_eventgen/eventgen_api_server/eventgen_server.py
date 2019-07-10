@@ -9,66 +9,42 @@ import requests
 
 from eventgen_server_api import EventgenServerAPI
 from constants import Constants
+import eventgen_core_object
 
 consts = Constants()
 
 class EventgenServer():
 
-    def __init__(self, *args, **kwargs):        
-        self.app = self._create_app()
+    def __init__(self, *args, **kwargs):  
+        self.eventgen = eventgen_core_object.EventgenCoreObject()      
         self.mode = kwargs.get('mode', 'standalone')
-        self.port = 9500
+        self.env_vars = kwargs.get('env_vars')
         self.host = socket.gethostname()
+        self.role = 'server'
 
         self.logger = logging.getLogger('eventgen_server')
-        self.logger.info(self.host)
+        self.logger.info('Initialized Eventgen Controller: hostname [{}]'.format(self.host))
+
+        if self.mode != 'standalone':
+            from redis_connector import RedisConnector
+            self.redis_connector = RedisConnector(host=self.env_vars.get('REDIS_HOST'), port=self.env_vars.get('REDIS_PORT'))
+            self.redis_connector.register_myself(hostname=self.host, role=self.role)
+
+        self.app = self._create_app()
 
     def app_run(self):
-        osvars, config = dict(os.environ), {}
-        domain = osvars.get("EVENTGEN_CONTROLLER", "localhost")
-        if self.mode != 'standalone':
-            self._create_health_check()
-        self.app.run(host="0.0.0.0", port=self.port, threaded=True)
+        self.app.run(host="0.0.0.0", port=int(self.env_vars.get('WEB_SERVER_PORT')), threaded=True)
     
     def _create_app(self):
         app = Flask(__name__)
-        app.config['SECRET_KEY'] = 'does-not-exist'
-
-        app.register_blueprint(EventgenServerAPI().get_blueprint())
+        app.config['S=CRET_KEY'] = 'does-not-exist'
+        if self.mode == 'standalone':
+            app.register_blueprint(EventgenServerAPI(eventgen=self.eventgen, redis_connector=None, host=self.host).get_blueprint())
+        else:
+            app.register_blueprint(EventgenServerAPI(eventgen=self.eventgen, redis_connector=self.redis_connector, host=self.host).get_blueprint())
 
         @app.route('/')
         def index():
-            return "helloserverworld"
+            return "running_eventgen_server"
             
         return app
-
-    def _create_health_check(self):
-        def health_check():
-            while True:
-                self.reRegister()
-                time.sleep(consts.PING_TIME) # need a time interval for this
-            
-        thread = threading.Thread(target=health_check)
-        thread.daemon = True
-        thread.start()
-
-    def reRegister(self):
-        osvars, config = dict(os.environ), {}
-        config["EVENTGEN_CONTROLLER"] = osvars.get("EVENTGEN_CONTROLLER", "localhost")
-        self.logger.info(config["EVENTGEN_CONTROLLER"])
-        payload = {'hostname': self.host}
-        data = json.dumps(payload)
-        headers = {'content-type': 'application/json'}
-
-        registered = False
-        maxBackoff = consts.BACKOFF_MAX # these should be set somewhere probably
-        currentBackoff = consts.BACKOFF_START
-        while not registered:
-            try:
-                requests.post('http://{0}:{1}/{2}'.format(config["EVENTGEN_CONTROLLER"], 9500, 'register'), data=data, headers=headers)
-                registered = True
-            except:
-                self.logger.info('could not reach controller... retrying in {} seconds'.format(currentBackoff))
-                time.sleep(currentBackoff)
-                currentBackoff *= 2
-                currentBackoff = min(maxBackoff, currentBackoff)

@@ -44,9 +44,9 @@ test_helper:
 	@echo 'Installing test requirements'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install --upgrade pip;pip install -r $(shell pwd)/requirements.txt" || true
 
-	@echo 'Installing docker-compose'
-	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
-	sudo chmod +x /usr/local/bin/docker-compose || true
+	# @echo 'Installing docker-compose'
+	# sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
+	# sudo chmod +x /usr/local/bin/docker-compose || true
 
 	@echo 'Start container with splunk'
 	docker-compose -f tests/large/provision/docker-compose.yml up &
@@ -103,12 +103,12 @@ eg_network:
 run_server: eg_network
 	docker kill eg_server || true
 	docker rm eg_server || true
-	docker run --network eg_network --name eg_server -e EVENTGEN_CONTROLLER="eg_controller" -d -p 9501:9500 eventgen:latest server
+	docker run --network eg_network --name eg_server -d -p 9501:9500 eventgen:latest server
 
 run_controller: eg_network
 	docker kill eg_controller || true
 	docker rm eg_controller || true
-	docker run --network eg_network --name eg_controller  -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
+	docker run --network eg_network --name eg_controller  -d -p 6379:6379 -p 9500:9500 eventgen:latest controller
 
 docs:
 	cd docs/; bundle install; bundle exec jekyll serve

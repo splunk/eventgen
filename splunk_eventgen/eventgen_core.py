@@ -582,7 +582,6 @@ class EventGenerator(object):
         self.config.stopping = True
         self.stopping = True
         self.force_stop = force_stop
-        print self.force_stop, '*('
 
         self.logger.info("All timers exited, joining generation queue until it's empty.")
         if force_stop:

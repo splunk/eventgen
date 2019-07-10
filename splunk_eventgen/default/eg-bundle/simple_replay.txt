@@ -1,7 +1,0 @@
-2014-01-04 01:54:34 User Tony requested log in with id: tonyl password: youwillneverguess
-2014-01-04 01:54:38 Oops wrong password
-2014-01-04 01:54:40 Tony called the customer center
-2014-01-04 01:54:45 Someone picked up
-2014-01-04 01:58:45 Call lasted for 4 minutes. Tony had a capslock on.
-
-

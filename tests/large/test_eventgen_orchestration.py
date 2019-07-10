@@ -51,8 +51,7 @@ class TestEventgenOrchestration(object):
     def setup_class(cls):
         # Build the image from scratch
         cls.client = APIClient(base_url="unix://var/run/docker.sock")
-        response = cls.client.build(path=REPO_DIR, dockerfile=os.path.join("dockerfiles", "Dockerfile"), tag=IMAGE_NAME,
-                                    rm=True, nocache=True, pull=True, stream=False)
+        response = cls.client.build(path=REPO_DIR, dockerfile=os.path.join("dockerfiles", "Dockerfile"), tag=IMAGE_NAME, rm=True, nocache=True, pull=True, stream=False)
         for line in response:
             print line,
         # Create a network for both the controller + server to run in

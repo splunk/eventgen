@@ -1,4 +1,4 @@
-FROM alpine:3.6
+FROM redis:5.0.5-alpine
 
 RUN apk --no-cache upgrade && \
 	apk add --no-cache --update \
@@ -21,7 +21,7 @@ COPY dist/* /root/splunk_eventgen.tgz
 RUN pip install /root/splunk_eventgen.tgz && \
 	rm /root/splunk_eventgen.tgz
 
-EXPOSE 9500
+EXPOSE 6379 9500
 RUN chmod a+x /sbin/entrypoint.sh
 WORKDIR /usr/lib/python2.7/site-packages/splunk_eventgen
 ENTRYPOINT ["/sbin/entrypoint.sh"]

@@ -70,6 +70,9 @@ def parse_args():
               "variables or CLI arguments, where env variables takes precedence. See help for more info."))
     service_subparser.add_argument("--role", "-r", type=str, default=None, required=True, choices=[
         "controller", "server", "standalone"], help="Define the role for this Eventgen node. Options: controller, server, standalone")
+    service_subparser.add_argument("--redis-host", type=str, default='127.0.0.1', help="Redis Host")
+    service_subparser.add_argument("--redis-port", type=str, default='6379', help="Redis Port")
+    service_subparser.add_argument("--web-server-port", type=str, default='9500', help="Port you want to run a web server on")
     # Help subparser
     # NOTE: Keep this at the end so we can use the subparser_dict.keys() to display valid commands
     help_subparser = subparsers.add_parser('help', help="Display usage on a subcommand")
@@ -178,7 +181,6 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
         shutil.rmtree(directory)
     os.chdir(cwd)
 
-
 def convert_verbosity_count_to_logging_level(verbosity):
     if verbosity == 0:
         return logging.ERROR
@@ -189,6 +191,12 @@ def convert_verbosity_count_to_logging_level(verbosity):
     else:
         return logging.ERROR
 
+def gather_env_vars(args):
+    os_vars, env_vars = dict(os.environ), {}
+    env_vars["REDIS_HOST"] = os_vars.get("REDIS_HOST") if os_vars.get("REDIS_HOST") else args.redis_host
+    env_vars["REDIS_PORT"] = os_vars.get("REDIS_PORT") if os_vars.get("REDIS_PORT") else args.redis_port
+    env_vars["WEB_SERVER_PORT"] = os_vars.get("WEB_SERVER_PORT") if os_vars.get("WEB_SERVER_PORT") else args.web_server_port
+    return env_vars
 
 def main():
     cwd = os.getcwd()
@@ -198,15 +206,16 @@ def main():
         eventgen = eventgen_core.EventGenerator(args=args)
         eventgen.start()
     elif args.subcommand == "service":
+        env_vars = gather_env_vars(args)
         if args.role == "controller":
             from eventgen_api_server.eventgen_controller import EventgenController
-            EventgenController().app_run()
+            EventgenController(env_vars=env_vars).app_run()
         elif args.role == "server":
             from eventgen_api_server.eventgen_server import EventgenServer
-            EventgenServer(mode="cluster").app_run()
+            EventgenServer(env_vars=env_vars, mode="cluster").app_run()
         elif args.role == "standalone":
             from eventgen_api_server.eventgen_server import EventgenServer
-            EventgenServer(mode="standalone").app_run()
+            EventgenServer(env_vars=env_vars, mode="standalone").app_run()
     elif args.subcommand == "build":
         if not args.destination:
             args.destination = cwd
