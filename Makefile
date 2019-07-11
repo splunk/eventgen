@@ -44,7 +44,6 @@ test_helper:
 	@echo 'Installing test requirements'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install --upgrade pip;pip install -r $(shell pwd)/requirements.txt" || true
 
-
 	@echo 'Installing docker-compose'
 	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
 	sudo chmod +x /usr/local/bin/docker-compose || true
