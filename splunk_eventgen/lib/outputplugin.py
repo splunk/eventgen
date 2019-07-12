@@ -1,8 +1,7 @@
 from __future__ import division
 
-import logging
-import logging.handlers
 from collections import deque
+from logging_config import logger
 
 
 class OutputPlugin(object):
@@ -13,8 +12,7 @@ class OutputPlugin(object):
         self._sample = sample
         self._outputMode = sample.outputMode
         self.events = None
-        self._setup_logging()
-        self.logger.debug(
+        logger.debug(
             "Starting OutputPlugin for sample '%s' with output '%s'" % (self._sample.name, self._sample.outputMode))
         self._queue = deque([])
         self.output_counter = output_counter
@@ -28,20 +26,6 @@ class OutputPlugin(object):
 
     def __repr__(self):
         return self.__str__()
-
-    # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
-    def __getstate__(self):
-        temp = self.__dict__
-        if getattr(self, 'logger', None):
-            temp.pop('logger', None)
-        return temp
-
-    def __setstate__(self, d):
-        self.__dict__ = d
-        self._setup_logging()
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen')
 
     def set_events(self, events):
         self.events = events
@@ -59,6 +43,7 @@ class OutputPlugin(object):
 
     def _output_end(self):
         pass
+
 
 def load():
     return OutputPlugin

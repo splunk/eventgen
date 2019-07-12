@@ -7,6 +7,7 @@ import time
 
 from eventgentimestamp import EventgenTimestamp
 from generatorplugin import GeneratorPlugin
+from logging_config import logger
 
 
 class ReplayGenerator(GeneratorPlugin):
@@ -99,11 +100,11 @@ class ReplayGenerator(GeneratorPlugin):
                     current_event_timestamp = self._sample.getTSFromEvent(line[self._sample.timeField])
                 except Exception:
                     try:
-                        self.logger.debug("Sample timeField {} failed to locate. Trying to locate _time field.".format(
+                        logger.debug("Sample timeField {} failed to locate. Trying to locate _time field.".format(
                             self._sample.timeField))
                         current_event_timestamp = self._sample.getTSFromEvent(line["_time"])
                     except Exception:
-                        self.logger.exception("Extracting timestamp from an event failed.")
+                        logger.exception("Extracting timestamp from an event failed.")
                         continue
 
             # Always flush the first event

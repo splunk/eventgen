@@ -1,13 +1,13 @@
 from __future__ import division
 
 import datetime
-import logging
 import threading
 import uuid
 
 import requests
 
 from outputplugin import OutputPlugin
+from logging_config import logger
 
 try:
     import boto3
@@ -51,7 +51,7 @@ class AwsS3OutputPlugin(OutputPlugin):
         OutputPlugin.__init__(self, sample, output_counter)
 
         if not boto_imported:
-            self.logger.error("There is no boto3 or botocore library available")
+            logger.error("There is no boto3 or botocore library available")
             return
 
         # disable any "requests" warnings
@@ -67,10 +67,10 @@ class AwsS3OutputPlugin(OutputPlugin):
         self.awsS3objectsuffix = sample.awsS3ObjectSuffix if hasattr(
             sample, 'awsS3ObjectSuffix') and sample.awsS3ObjectSuffix else ""
         self.awsS3bucketname = sample.awsS3BucketName
-        self.logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
+        logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
         self._client = None
         self._createConnections(sample)
-        self.logger.debug("Finished init of awsS3 plugin.")
+        logger.debug("Finished init of awsS3 plugin.")
 
     def _createConnections(self, sample):
         try:
@@ -84,13 +84,13 @@ class AwsS3OutputPlugin(OutputPlugin):
                     awsSecretKey = YOUR_SECRET_KEY
                     '''
 
-                    self.logger.error("Failed for init boto3 client: %s, you should define correct 'awsKeyId'\
+                    logger.error("Failed for init boto3 client: %s, you should define correct 'awsKeyId'\
                         and 'awsSecretKey' in eventgen conf %s" % msg)
                     raise Exception(msg)
             else:
                 self._client = boto3.client('s3', region_name=sample.awsRegion)
         except Exception as e:
-            self.logger.error("Failed for init boto3 client: exception =  %s" % e)
+            logger.error("Failed for init boto3 client: exception =  %s" % e)
             raise e
         # Try list bucket method to validate if the connection works
         try:
@@ -102,18 +102,18 @@ class AwsS3OutputPlugin(OutputPlugin):
             aws_secret_access_key = YOUR_SECRET_KEY
             '''
 
-            self.logger.error("Failed for init boto3 client, you should create "
+            logger.error("Failed for init boto3 client, you should create "
                               "'~/.aws/credentials' with credential info %s" % msg)
             raise
-        self.logger.debug("Init conn done, conn = %s" % self._client)
+        logger.debug("Init conn done, conn = %s" % self._client)
 
     def _sendPayloads(self, payload):
         numberevents = len(payload)
-        self.logger.debug("Sending %s events to s3 key" % numberevents)
+        logger.debug("Sending %s events to s3 key" % numberevents)
         self._transmitEvents(payload)
 
     def _transmitEvents(self, payloadstring):
-        self.logger.debug("Transmission called with payloadstring event number: %d " % len(payloadstring))
+        logger.debug("Transmission called with payloadstring event number: %d " % len(payloadstring))
         records = "".join(payloadstring)
         # Different key prefix for different log type
         if self.awsS3eventtype == 'elbaccesslog':
@@ -125,7 +125,7 @@ class AwsS3OutputPlugin(OutputPlugin):
         else:
             s3keyname = self.awsS3objectprefix + datetime.datetime.utcnow().isoformat() + str(
                 uuid.uuid1()) + self.awsS3objectsuffix
-        self.logger.debug("Uploading %d events into s3 key: %s " % (len(records), s3keyname))
+        logger.debug("Uploading %d events into s3 key: %s " % (len(records), s3keyname))
         if self.awsS3compressiontype == 'gz':
             import StringIO
             import gzip
@@ -135,32 +135,29 @@ class AwsS3OutputPlugin(OutputPlugin):
             records = out.getvalue()
         try:
             response = self._client.put_object(Bucket=self.awsS3bucketname, Key=s3keyname, Body=records)
-            self.logger.debug("response = %s" % response)
+            logger.debug("response = %s" % response)
         except Exception as e:
-            self.logger.error("Failed for exception: %s" % e)
-            self.logger.debug("Failed sending events to payload: %s" % (payloadstring))
+            logger.error("Failed for exception: %s" % e)
+            logger.debug("Failed sending events to payload: %s" % (payloadstring))
             raise e
 
     def flush(self, q):
-        self.logger.debug("Flush called on awsS3 plugin with length %d" % len(q))
+        logger.debug("Flush called on awsS3 plugin with length %d" % len(q))
         if len(q) > 0:
             try:
                 payload = []
-                self.logger.debug("Currently being called with %d events" % len(q))
+                logger.debug("Currently being called with %d events" % len(q))
                 for event in q:
                     if event.get('_raw') is None:
-                        self.logger.error('failure outputting event, does not contain _raw')
+                        logger.error('failure outputting event, does not contain _raw')
                     else:
                         payload.append(event['_raw'])
-                self.logger.debug("Finished processing events, sending all to AWS S3")
+                logger.debug("Finished processing events, sending all to AWS S3")
                 self._sendPayloads(payload)
             except Exception as e:
                 import traceback
-                self.logger.error(traceback.print_exc())
-                self.logger.error('failed sending events, reason: %s ' % e)
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen')
+                logger.error(traceback.print_exc())
+                logger.error('failed sending events, reason: %s ' % e)
 
 
 def load():

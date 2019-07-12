@@ -1,7 +1,5 @@
 from __future__ import division
 
-import logging
-
 from outputplugin import OutputPlugin
 
 
@@ -16,9 +14,6 @@ class StdOutOutputPlugin(OutputPlugin):
     def flush(self, q):
         for x in q:
             print x['_raw'].rstrip()
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_stdout')
 
 
 def load():

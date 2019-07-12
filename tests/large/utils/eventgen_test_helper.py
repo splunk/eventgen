@@ -25,7 +25,7 @@ class EventgenTestHelper(object):
         self.output_mode = self._get_output_mode()
         self.file_name = self._get_file_name()
         self.breaker = self._get_breaker()
-        cmd = ['splunk_eventgen', '-v', 'generate', self.conf]
+        cmd = ['splunk_eventgen', 'generate', self.conf]
         if mode == 'process':
             cmd.append('--multiprocess')
         env_var = os.environ.copy()

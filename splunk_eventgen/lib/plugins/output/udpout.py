@@ -1,8 +1,7 @@
 from __future__ import division
 
-import logging
-
 from outputplugin import OutputPlugin
+from logging_config import logger
 
 
 class UdpOutputPlugin(OutputPlugin):
@@ -25,10 +24,7 @@ class UdpOutputPlugin(OutputPlugin):
         for x in q:
             msg = x['_raw'].rstrip() + '\n'
             self.s.sendto(msg, (self._udpDestinationHost, int(self._udpDestinationPort)))
-        self.logger.info("Flushing in udpout.")
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen')
+        logger.info("Flushing in udpout.")
 
 
 def load():

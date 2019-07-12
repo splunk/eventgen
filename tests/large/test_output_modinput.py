@@ -17,7 +17,7 @@ def test_output_plugin_modinput():
     Test modinput output plugin
     """
     conf_file = os.path.join(file_dir, 'conf', 'eventgen_output_modinput.conf')
-    child = subprocess.Popen(['splunk_eventgen', '-v', 'generate', conf_file], stdout=subprocess.PIPE)
+    child = subprocess.Popen(['splunk_eventgen', 'generate', conf_file], stdout=subprocess.PIPE)
     all_events = child.communicate()[0]
 
     parts = all_events.split('<event>')

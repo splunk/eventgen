@@ -1,6 +1,5 @@
 from __future__ import division
 
-import logging
 import socket
 import struct
 
@@ -180,9 +179,6 @@ class S2SOutputPlugin(OutputPlugin):
             self.s2s = S2S(self._sample.splunkHost, self._sample.splunkPort)
         for m in q:
             self.s2s.send_event(m['index'], m['host'], m['source'], m['sourcetype'], m['_raw'], m['_time'])
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen')
 
 
 def load():

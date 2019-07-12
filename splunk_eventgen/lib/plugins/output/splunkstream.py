@@ -1,7 +1,6 @@
 from __future__ import division
 
 import httplib
-import logging
 import urllib
 from collections import deque
 from xml.dom import minidom
@@ -9,6 +8,7 @@ from xml.dom import minidom
 import httplib2
 
 from outputplugin import OutputPlugin
+from logging_config import logger
 
 
 class SplunkStreamOutputPlugin(OutputPlugin):
@@ -40,7 +40,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
         if not self._sample.sessionKey:
             try:
                 myhttp = httplib2.Http(disable_ssl_certificate_validation=True)
-                self.logger.debug("Getting session key from '%s' with user '%s' and pass '%s'" %
+                logger.debug("Getting session key from '%s' with user '%s' and pass '%s'" %
                                   (self._splunkUrl + '/services/auth/login', self._splunkUser, self._splunkPass))
                 response = myhttp.request(
                     self._splunkUrl + '/services/auth/login', 'POST', headers={}, body=urllib.urlencode({
@@ -49,14 +49,14 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                         self._splunkPass}))[1]
                 self._sample.sessionKey = minidom.parseString(response).getElementsByTagName(
                     'sessionKey')[0].childNodes[0].nodeValue
-                self.logger.debug("Got new session for splunkstream, sessionKey '%s'" % self._sample.sessionKey)
+                logger.debug("Got new session for splunkstream, sessionKey '%s'" % self._sample.sessionKey)
             except:
-                self.logger.error("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'." %
+                logger.error("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'." %
                                   self._sample.name + " Credentials are missing or wrong")
                 raise IOError("Error getting session key for non-SPLUNK_EMBEEDED for sample '%s'." % self._sample.name +
                               "Credentials are missing or wrong")
 
-        self.logger.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._sample.sessionKey,
+        logger.debug("Retrieved session key '%s' for Splunk session for sample %s'" % (self._sample.sessionKey,
                                                                                             self._sample.name))
 
     def flush(self, q):
@@ -89,7 +89,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                     except KeyError:
                         pass
 
-                    self.logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" %
+                    logger.debug("Flushing output for sample '%s' in app '%s' for queue '%s'" %
                                       (self._sample.name, self._app, self._sample.source))
                     try:
                         if self._splunkMethod == 'https':
@@ -123,12 +123,12 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                                 msg = False
 
                         splunkhttp.request("POST", url, streamout, headers)
-                        self.logger.debug(
+                        logger.debug(
                             "POSTing to url %s on %s://%s:%s with sessionKey %s" %
                             (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._sample.sessionKey))
 
                     except httplib.HTTPException, e:
-                        self.logger.error(
+                        logger.error(
                             'Error connecting to Splunk for logging for sample %s.  Exception "%s" Config: %s' %
                             (self._sample.name, e.args, self))
                         raise IOError('Error connecting to Splunk for logging for sample %s' % self._sample)
@@ -137,15 +137,12 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                         response = splunkhttp.getresponse()
                         data = response.read()
                         if response.status != 200:
-                            self.logger.error("Data not written to Splunk.  Splunk returned %s" % data)
+                            logger.error("Data not written to Splunk.  Splunk returned %s" % data)
                     except httplib.BadStatusLine:
-                        self.logger.error("Received bad status from Splunk for sample '%s'" % self._sample)
-                    self.logger.debug("Closing splunkhttp connection")
+                        logger.error("Received bad status from Splunk for sample '%s'" % self._sample)
+                    logger.debug("Closing splunkhttp connection")
                     if splunkhttp:
                         splunkhttp.close()
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen')
 
 
 def load():

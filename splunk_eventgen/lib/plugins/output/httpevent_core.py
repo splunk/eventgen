@@ -5,6 +5,7 @@ import random
 import urllib
 
 from outputplugin import OutputPlugin
+from logging_config import logger
 
 try:
     import requests
@@ -83,7 +84,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
                 if hasattr(self._sample, 'httpeventServers'):
                     self.config.httpeventServers = self._sample.httpeventServers
                 else:
-                    self.logger.error(
+                    logger.error(
                         'outputMode %s but httpeventServers not specified for sample %s' % (self.name, self._sample.name))
                     raise NoServers(
                         'outputMode %s but httpeventServers not specified for sample %s' % (self.name, self._sample.name))
@@ -102,54 +103,54 @@ class HTTPCoreOutputPlugin(OutputPlugin):
                     self.httpeventmaxsize = self._sample.httpeventMaxPayloadSize
                 else:
                     self.httpeventmaxsize = 10000
-            self.logger.debug("Currentmax size: %s " % self.httpeventmaxsize)
+            logger.debug("Currentmax size: %s " % self.httpeventmaxsize)
             if isinstance(config.httpeventServers, str):
                 self.httpeventServers = json.loads(config.httpeventServers)
             else:
                 self.httpeventServers = config.httpeventServers
-            self.logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
+            logger.debug("Setting up the connection pool for %s in %s" % (self._sample.name, self._app))
             self.createConnections()
-            self.logger.debug("Pool created.")
-            self.logger.debug("Finished init of %s plugin." % self.name)
+            logger.debug("Pool created.")
+            logger.debug("Finished init of %s plugin." % self.name)
         except Exception as e:
-            self.logger.exception(str(e))
+            logger.exception(str(e))
 
     def createConnections(self):
         self.serverPool = []
         if self.httpeventServers:
             for server in self.httpeventServers.get('servers'):
                 if not server.get('address'):
-                    self.logger.error(
+                    logger.error(
                         'requested a connection to a httpevent server, but no address specified for sample %s' %
                         self._sample.name)
                     raise ValueError(
                         'requested a connection to a httpevent server, but no address specified for sample %s' %
                         self._sample.name)
                 if not server.get('port'):
-                    self.logger.error(
+                    logger.error(
                         'requested a connection to a httpevent server, but no port specified for server %s' % server)
                     raise ValueError(
                         'requested a connection to a httpevent server, but no port specified for server %s' % server)
                 if not server.get('key'):
-                    self.logger.error(
+                    logger.error(
                         'requested a connection to a httpevent server, but no key specified for server %s' % server)
                     raise ValueError(
                         'requested a connection to a httpevent server, but no key specified for server %s' % server)
                 if not ((server.get('protocol') == 'http') or (server.get('protocol') == 'https')):
-                    self.logger.error(
+                    logger.error(
                         'requested a connection to a httpevent server, but no protocol specified for server %s' %
                         server)
                     raise ValueError(
                         'requested a connection to a httpevent server, but no protocol specified for server %s' %
                         server)
-                self.logger.debug(
+                logger.debug(
                     "Validation Passed, Creating a requests object for server: %s" % server.get('address'))
 
                 setserver = {}
                 setserver['url'] = "%s://%s:%s/services/collector" % (server.get('protocol'), server.get('address'),
                                                                       server.get('port'))
                 setserver['header'] = "Splunk %s" % server.get('key')
-                self.logger.debug("Adding server set to pool, server: %s" % setserver)
+                logger.debug("Adding server set to pool, server: %s" % setserver)
                 self.serverPool.append(setserver)
         else:
             raise NoServers('outputMode %s but httpeventServers not specified for sample %s' %(self.name, self._sample.name))
@@ -160,47 +161,47 @@ class HTTPCoreOutputPlugin(OutputPlugin):
         totalbytesexpected = 0
         totalbytessent = 0
         numberevents = len(payload)
-        self.logger.debug("Sending %s events to splunk" % numberevents)
+        logger.debug("Sending %s events to splunk" % numberevents)
         for line in payload:
-            self.logger.debug("line: %s " % line)
+            logger.debug("line: %s " % line)
             targetline = json.dumps(line)
-            self.logger.debug("targetline: %s " % targetline)
+            logger.debug("targetline: %s " % targetline)
             targetlinesize = len(targetline)
             totalbytesexpected += targetlinesize
             if (int(currentreadsize) + int(targetlinesize)) <= int(self.httpeventmaxsize):
                 stringpayload = stringpayload + targetline
                 currentreadsize = currentreadsize + targetlinesize
-                self.logger.debug("stringpayload: %s " % stringpayload)
+                logger.debug("stringpayload: %s " % stringpayload)
             else:
-                self.logger.debug("Max size for payload hit, sending to splunk then continuing.")
+                logger.debug("Max size for payload hit, sending to splunk then continuing.")
                 try:
                     self._transmitEvents(stringpayload)
                     totalbytessent += len(stringpayload)
                     currentreadsize = 0
                     stringpayload = targetline
                 except Exception as e:
-                    self.logger.exception(str(e))
+                    logger.exception(str(e))
                     raise e
         else:
             try:
                 totalbytessent += len(stringpayload)
-                self.logger.debug(
+                logger.debug(
                     "End of for loop hit for sending events to splunk, total bytes sent: %s ---- out of %s -----" %
                     (totalbytessent, totalbytesexpected))
                 self._transmitEvents(stringpayload)
             except Exception as e:
-                self.logger.exception(str(e))
+                logger.exception(str(e))
                 raise e
 
     def _transmitEvents(self, payloadstring):
         targetServer = []
-        self.logger.debug("Transmission called with payloadstring: %s " % payloadstring)
+        logger.debug("Transmission called with payloadstring: %s " % payloadstring)
         if self.httpeventoutputmode == "mirror":
             targetServer = self.serverPool
         else:
             targetServer.append(random.choice(self.serverPool))
         for server in targetServer:
-            self.logger.debug("Selected targetServer object: %s" % targetServer)
+            logger.debug("Selected targetServer object: %s" % targetServer)
             url = server['url']
             headers = {}
             headers['Authorization'] = server['header']
@@ -211,16 +212,12 @@ class HTTPCoreOutputPlugin(OutputPlugin):
                 self.active_sessions.append(
                     self.session.post(url=url, data=payloadstring, headers=headers, verify=False))
             except Exception as e:
-                self.logger.error("Failed for exception: %s" % e)
-                self.logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" %
+                logger.error("Failed for exception: %s" % e)
+                logger.error("Failed sending events to url: %s  sourcetype: %s  size: %s" %
                                   (url, self.lastsourcetype, payloadsize))
-                self.logger.debug(
+                logger.debug(
                     "Failed sending events to url: %s  headers: %s payload: %s" % (url, headers, payloadstring))
                 raise e
-
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen_httpeventout')
 
 
 def load():

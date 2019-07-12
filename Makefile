@@ -51,7 +51,7 @@ test_helper:
 	@echo 'Start container with splunk'
 	docker-compose -f tests/large/provision/docker-compose.yml up &
 
-	sleep 80
+	sleep 120
 	@echo 'Provision splunk container'
 	docker-compose -f tests/large/provision/docker-compose.yml exec -T splunk sh -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk enable listen 9997 -auth admin:changeme;/opt/splunk/bin/splunk restart'
 
