@@ -492,7 +492,6 @@ class EventgenServerAPI(ApiBlueprint):
 
         conf_dict['.*']['sampleDir'] = SAMPLE_DIR_PATH
         conf_dict['.*']['outputMode'] = 'httpevent'
-        conf_dict['.*']['threading'] = 'process'
 
         self.set_conf(conf_dict)
     
@@ -500,6 +499,10 @@ class EventgenServerAPI(ApiBlueprint):
         if data.get("servers"):
             conf_dict = self.get_conf()
             conf_dict['.*']['httpeventServers'] = {"servers": data.get("servers")}
+            if 'global' not in conf_dict.keys():
+                conf_dict['global'] = {}
+            conf_dict['global']['threading'] = 'process'
+            conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
             self.set_conf(conf_dict)
         else:
             # If hec_servers information doesn't exist, do service discovery
@@ -560,4 +563,8 @@ class EventgenServerAPI(ApiBlueprint):
         
             conf_dict = self.get_conf()
             conf_dict['.*']['httpeventServers'] = {"servers": self.discovered_servers}
+            if 'global' not in conf_dict.keys():
+                conf_dict['global'] = {}
+            conf_dict['global']['threading'] = 'process'
+            conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
             self.set_conf(conf_dict)
