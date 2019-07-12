@@ -114,12 +114,12 @@ class EventgenServerAPI(ApiBlueprint):
             
         @bp.route('/status', methods=['GET'])
         def http_get_status():
-            try:
-                response = self.get_status()
-                return Response(json.dumps(response), mimetype='application/json', status=200)
-            except Exception as e:
-                self.logger.error(e)
-                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+            # try:
+            response = self.get_status()
+            return Response(json.dumps(response), mimetype='application/json', status=200)
+            # except Exception as e:
+            #     self.logger.error(e)
+            #     return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
             
         @bp.route('/conf', methods=['GET', 'POST', 'PUT'])
         def http_conf():
@@ -300,11 +300,23 @@ class EventgenServerAPI(ApiBlueprint):
             response["QUEUE_STATUS"]['SAMPLE_QUEUE']['UNFINISHED_TASK'] = self.eventgen.eventgen_core_object.sampleQueue.unfinished_tasks
             response["QUEUE_STATUS"]['SAMPLE_QUEUE']['QUEUE_LENGTH'] = self.eventgen.eventgen_core_object.sampleQueue.qsize()
         if hasattr(self.eventgen.eventgen_core_object, "outputQueue"):
-            response["QUEUE_STATUS"]['OUTPUT_QUEUE']['UNFINISHED_TASK'] = self.eventgen.eventgen_core_object.outputQueue.unfinished_tasks
-            response["QUEUE_STATUS"]['OUTPUT_QUEUE']['QUEUE_LENGTH'] = self.eventgen.eventgen_core_object.outputQueue.qsize()
+            try:
+                response["QUEUE_STATUS"]['OUTPUT_QUEUE']['UNFINISHED_TASK'] = self.eventgen.eventgen_core_object.outputQueue.unfinished_tasks
+            except:
+                response["QUEUE_STATUS"]['OUTPUT_QUEUE']['UNFINISHED_TASK'] = "N/A"
+            try:
+                response["QUEUE_STATUS"]['OUTPUT_QUEUE']['QUEUE_LENGTH'] = self.eventgen.eventgen_core_object.outputQueue.qsize()
+            except:
+                response["QUEUE_STATUS"]['OUTPUT_QUEUE']['QUEUE_LENGTH'] = "N/A"
         if hasattr(self.eventgen.eventgen_core_object, "workerQueue"):
-            response["QUEUE_STATUS"]['WORKER_QUEUE']['UNFINISHED_TASK'] = self.eventgen.eventgen_core_object.workerQueue.unfinished_tasks
-            response["QUEUE_STATUS"]['WORKER_QUEUE']['QUEUE_LENGTH'] = self.eventgen.eventgen_core_object.workerQueue.qsize()
+            try:
+                response["QUEUE_STATUS"]['WORKER_QUEUE']['UNFINISHED_TASK'] = self.eventgen.eventgen_core_object.workerQueue.unfinished_tasks
+            except:
+                response["QUEUE_STATUS"]['WORKER_QUEUE']['UNFINISHED_TASK'] = "N/A"
+            try:
+                response["QUEUE_STATUS"]['WORKER_QUEUE']['QUEUE_LENGTH'] = self.eventgen.eventgen_core_object.workerQueue.qsize()
+            except:
+                response["QUEUE_STATUS"]['WORKER_QUEUE']['QUEUE_LENGTH'] = "N/A"
         return response
 
     def get_throughput(self):
