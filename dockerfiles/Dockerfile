@@ -20,7 +20,8 @@ RUN apk --no-cache upgrade && \
 	ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa && \
 	mkdir -p /var/run/sshd && \
 	mkdir -p /root/.ssh && \
-	chmod 0700 /root/.ssh
+	chmod 0700 /root/.ssh && \
+	passwd -u root
 
 COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh

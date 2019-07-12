@@ -27,7 +27,7 @@ PidFile /var/run/sshd.pid
 PrintMotd no
 Protocol 2
 PubKeyAuthentication yes
-StrictModes yes
+StrictModes no
 Subsystem sftp /usr/lib/openssh/sftp-server
 SyslogFacility AUTH
 TcpKeepalive yes
