@@ -636,14 +636,22 @@ class EventGenerator(object):
             # If all queues are not empty, eventgen is running.
             # If all queues are empty and all tasks are finished, eventgen is not running.
             # If all queues are empty and there is an unfinished task, eventgen is running.
-            if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty() \
-                    and self.sampleQueue.unfinished_tasks <= 0 \
-                    and self.outputQueue.unfinished_tasks <= 0 \
-                    and self.workerQueue.unfinished_tasks <= 0:
-                self.logger.info("Queues are all empty and there are no pending tasks")
-                return self.started
+            if not self.args.multiprocess:
+                if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty() \
+                        and self.sampleQueue.unfinished_tasks <= 0 \
+                        and self.outputQueue.unfinished_tasks <= 0 \
+                        and self.workerQueue.unfinished_tasks <= 0:
+                    self.logger.info("Queues are all empty and there are no pending tasks")
+                    return self.started
+                else:
+                    return True
             else:
-                return True
+                if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty() \
+                        and self.sampleQueue.unfinished_tasks <= 0:
+                    self.logger.info("Queues are all empty and there are no pending tasks")
+                    return self.started
+                else:
+                    return True
         return False
 
     def check_done(self):
