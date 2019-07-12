@@ -1,6 +1,7 @@
 from config import ConfigRater
 from timeparser import timeParserTimeMath
 from Queue import Full
+from logging_config import logger
 
 class BackfillRater(ConfigRater):
     name = 'BackfillRater'
@@ -8,7 +9,7 @@ class BackfillRater(ConfigRater):
 
     def __init__(self, sample):
         super(BackfillRater, self).__init__(sample)
-        self.logger.debug('Starting BackfillRater for %s' % sample.name if sample is not None else "None")
+        logger.debug('Starting BackfillRater for %s' % sample.name if sample is not None else "None")
         self.sample = sample
         self.samplerater = None
 
@@ -30,7 +31,7 @@ class BackfillRater(ConfigRater):
                                                   ret=realtime)
             while backfillearliest < realtime:
                 if self.executions == int(self.end):
-                    self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
+                    logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
                         self.end), self.sample.name))
                     break
                 et = backfillearliest
@@ -43,12 +44,12 @@ class BackfillRater(ConfigRater):
                     self.generatorQueue.put(genPlugin)
                     self.executions += 1
                 except Full:
-                    self.logger.warning("Generator Queue Full. Skipping current generation.")
+                    logger.warning("Generator Queue Full. Skipping current generation.")
                 backfillearliest = lt
             self.sample.backfilldone = True
 
         except Exception as e:
-            self.logger.error("Failed queuing backfill, exception: {0}".format(e))
+            logger.error("Failed queuing backfill, exception: {0}".format(e))
 
 def load():
     return BackfillRater

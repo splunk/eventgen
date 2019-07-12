@@ -14,18 +14,14 @@ class PerDayVolume(ConfigRater):
     def __init__(self, sample):
         super(PerDayVolume, self).__init__(sample)
         # Logger already setup by config, just get an instance
-        self._setup_logging()
         logger.debug('Starting PerDayVolumeRater for %s' % sample.name if sample is not None else "None")
         self.previous_count_left = 0
         self.raweventsize = 0
-        # TODO: Check if you need these
-        #self._sample = sample
-        #self._generatorWorkers = self._sample.config.generatorWorkers
 
     def queue_it(self, count):
         count = count + self.previous_count_left
         if 0 < count < self.raweventsize:
-            self.logger.info("current interval size is {}, which is smaller than a raw event size {}.".
+            logger.info("current interval size is {}, which is smaller than a raw event size {}.".
                              format(count, self.raweventsize) + "Wait for the next turn.")
             self.update_options(previous_count_left=count)
         else:
@@ -41,7 +37,7 @@ class PerDayVolume(ConfigRater):
         try:
             self.generatorQueue.put(genPlugin)
         except Full:
-            self.logger.warning("Generator Queue Full. Skipping current generation.")
+            logger.warning("Generator Queue Full. Skipping current generation.")
 
     def rate(self):
         perdayvolume = float(self.sample.perDayVolume)
@@ -49,7 +45,7 @@ class PerDayVolume(ConfigRater):
         perdayvolume = perdayvolume * 1024 * 1024 * 1024
         interval = self.sample.interval
         if self.sample.interval == 0:
-            self.logger.debug('Running perDayVolume as if for 24hr period.')
+            logger.debug('Running perDayVolume as if for 24hr period.')
             interval = 86400
         logger.debug('Current perDayVolume: %f,  Sample interval: %s' % (perdayvolume, interval))
         intervalsperday = (86400 / interval)
