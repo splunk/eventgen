@@ -11,6 +11,7 @@ RUN apk --no-cache upgrade && \
 	libxml2-dev \
 	libxslt-dev \
 	bash \
+	sudo \
 	curl && \
 	pip install --upgrade pip && \
 	rm -rf /tmp/* && \
