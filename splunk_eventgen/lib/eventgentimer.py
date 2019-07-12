@@ -46,11 +46,9 @@ class Timer(object):
         if self.sample is not None:
             rater_class = self.config.getPlugin('rater.' + self.sample.rater, self.sample)
             backrater_class = self.config.getPlugin('rater.backfill', self.sample)
-            splitrater_class = self.config.getPlugin('rater.splitrater', self.sample)
             perdayrater_class = self.config.getPlugin('rater.perdayvolume', self.sample)
             self.rater = rater_class(self.sample)
             self.backrater = backrater_class(self.sample)
-            self.splitrater = splitrater_class(self.sample)
             self.perdayrater = perdayrater_class(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
             self.outputPlugin = self.config.getPlugin('output.' + self.sample.outputMode, self.sample)

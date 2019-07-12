@@ -88,13 +88,13 @@ class Config(object):
                     'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
                     'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort',
                     'verbosity', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse',
-                    'outputCounter', 'sequentialTimestamp', 'extendIndexes', 'disableLoggingQueue']
+                    'outputCounter', 'sequentialTimestamp', 'extendIndexes', 'disableLoggingQueue', 'splitSample']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = [
         'static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'seqfile', 'integerid']
     validOutputModes = []
-    _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength']
+    _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splitSample']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = [
         'disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp',
@@ -107,7 +107,7 @@ class Config(object):
         'fileMaxBytes', 'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype',
         'host', 'hostRegex', 'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
         'monthOfYearRate', 'perDayVolume', 'sessionKey', 'generator', 'rater', 'timeField', 'maxQueueLength',
-        'maxIntervalsBeforeFlush', 'autotimestamp']
+        'maxIntervalsBeforeFlush', 'autotimestamp', 'splitSample']
     _complexSettings = {'sampletype': ['raw', 'csv'], 'mode': ['sample', 'replay'], 'threading': ['thread', 'process']}
 
     def __init__(self, configfile=None, sample=None, override_outputter=False, override_count=False,
