@@ -197,6 +197,7 @@ We'll cover one more substitution type, mvfile:
     token.7.token = zip=(\d+)
     token.7.replacementType = mvfile
     token.7.replacement = $SPLUNK_HOME/etc/apps/SA-Eventgen/samples/markets.sample:1
+
 Mvfile is a multi-value file.  Because sometimes we need to replace more than one token based on the same random choice, we implemented the mvfile replacement type.  Mvfile will make a selection per event, and then re-use the same selection for all tokens in the event.  This allows us to replace City, State and Zip code together as you can see from the example above.  It can also be used to substitute the same choice into multiple tokens in the same event if that's required, as you can reuse the same file:column notation multiple times if you so choose.
 
 Go take a look at the full file now.  You'll see we've built a model of 8 tokens we're replacing for every event.  We've modeled a set of business transactions without needing to write a single line of code.  Go ahead and run the tutorial and take a look at the output in Splunk (note to run this example, you'll need to set $SPLUNK_HOME and Eventgen app will need to be installed as SA-Eventgen)
@@ -219,6 +220,7 @@ If you look at sample.mobilemusic.csv, you'll see the CSV file has fields for in
 The second challenge we encountered with transaction modeling was that we wanted to rate these transactions by hour of day and day of week like we do any other event type.  Without `sampletype = csv`, we'd create a multi-line event by changing breaker to be something like breaker = `[\r*\n\r*\n]` to say we only want to break the event when there's two newlines.  However, sampletype=csv prevents this because we have one entry per line in the CSV.  So we added a new directive called bundlelines.
 
     bundlelines = true
+
 Bundlelines does exactly what we mentioned in the background by changing breaker for this group of events and creating a multiline event out of the CSV lines.  This allows us to rate by time of day and day of week properly with the whole CSV entry.
 
 ### The third challenge and result: replaytimestamp

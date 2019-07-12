@@ -9,6 +9,7 @@ from jinja2 import nodes
 from jinja2.ext import Extension
 
 from generatorplugin import GeneratorPlugin
+from logging_config import logger
 try:
     import ujson as json
 except:
@@ -204,7 +205,7 @@ class JinjaGenerator(GeneratorPlugin):
                 target_template_dir = os.path.join(sample_dir, template_dir)
             else:
                 target_template_dir = template_dir
-            self.logger.info('set jinja template path to %s', target_template_dir)
+            logger.info('set jinja template path to %s', target_template_dir)
 
             if not hasattr(self._sample, "jinja_target_template"):
                 raise CantFindTemplate("Template to load not specified in eventgen conf for stanza.  Skipping Stanza")
@@ -252,9 +253,9 @@ class JinjaGenerator(GeneratorPlugin):
                             try:
                                 target_line = json.loads(line)
                             except ValueError as e:
-                                self.logger.error("Unable to parse Jinja's return.  Line: {0}".format(line))
-                                self.logger.error("Parse Failure Reason: {0}".format(e.message))
-                                self.logger.error(
+                                logger.error("Unable to parse Jinja's return.  Line: {0}".format(line))
+                                logger.error("Parse Failure Reason: {0}".format(e.message))
+                                logger.error(
                                     "Please note, you must meet the requirements for json.loads in python if you have" +
                                     "not installed ujson. Native python does not support multi-line events.")
                                 continue
@@ -277,19 +278,19 @@ class JinjaGenerator(GeneratorPlugin):
                                 target_line["index"] = self._sample.index
                             lines_out.append(target_line)
                 except TypeError as e:
-                    self.logger.exception(str(e))
+                    logger.exception(str(e))
                 self.end_of_cycle = True
                 self._increment_count(lines_out)
                 self._out.bulksend(lines_out)
             endTime = datetime.datetime.now()
             timeDiff = endTime - startTime
             timeDiffFrac = "%d.%06d" % (timeDiff.seconds, timeDiff.microseconds)
-            self.logger.debugv("Interval complete, flushing feed")
+            logger.debug("Interval complete, flushing feed")
             self._out.flush(endOfInterval=True)
-            self.logger.info("Generation of sample '%s' completed in %s seconds." % (self._sample.name, timeDiffFrac))
+            logger.info("Generation of sample '%s' completed in %s seconds." % (self._sample.name, timeDiffFrac))
             return 0
         except Exception as e:
-            self.logger.exception(str(e))
+            logger.exception(str(e))
             return 1
 
 

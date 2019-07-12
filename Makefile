@@ -24,10 +24,13 @@ image: setup_eventgen egg
 	rm splunk_eventgen/default/eventgen_engine.conf || true
 	docker build -f dockerfiles/Dockerfile . -t eventgen
 
-test: egg image test_helper run_tests test_collection_cleanup
+test: image test_helper run_tests test_collection_cleanup
 
 test_helper:
 	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} eventgen:latest cat
+
+	@echo 'Install libxml2'
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "apk add --no-cache --update libxml2-dev libxslt-dev"
 
 	@echo 'Creating dirs needed for tests'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "mkdir -p $(shell pwd) " || true
@@ -39,7 +42,18 @@ test_helper:
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip install dist/splunk_eventgen*.tar.gz" || true
 
 	@echo 'Installing test requirements'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install -r $(shell pwd)/tests/requirements.txt" || true
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install --upgrade pip;pip install -r $(shell pwd)/requirements.txt" || true
+
+	@echo 'Installing docker-compose'
+	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
+	sudo chmod +x /usr/local/bin/docker-compose || true
+
+	@echo 'Start container with splunk'
+	docker-compose -f tests/large/provision/docker-compose.yml up &
+
+	sleep 120
+	@echo 'Provision splunk container'
+	docker-compose -f tests/large/provision/docker-compose.yml exec -T splunk sh -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk enable listen 9997 -auth admin:changeme;/opt/splunk/bin/splunk restart'
 
 run_tests:
 	@echo 'Running the super awesome tests'
@@ -57,6 +71,9 @@ test_collection_cleanup:
 
 	@echo 'Stopping test container'
 	docker stop ${EVENTGEN_TEST_IMAGE} || true
+
+	@echo 'Stopping splunk container'
+	docker-compose -f tests/large/provision/docker-compose.yml down || true
 
 clean:
 	rm *.spl || true
@@ -91,7 +108,7 @@ run_server: eg_network
 run_controller: eg_network
 	docker kill eg_controller || true
 	docker rm eg_controller || true
-	docker run --name eg_controller --network eg_network -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
+	docker run --network eg_network --name eg_controller  -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
 
 docs:
 	cd docs/; bundle install; bundle exec jekyll serve

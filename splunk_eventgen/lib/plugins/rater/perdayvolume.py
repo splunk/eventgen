@@ -4,6 +4,7 @@ from Queue import Full
 import datetime
 import random
 from config import ConfigRater
+from logging_config import logger
 
 
 class PerDayVolume(ConfigRater):
@@ -14,9 +15,12 @@ class PerDayVolume(ConfigRater):
         super(PerDayVolume, self).__init__(sample)
         # Logger already setup by config, just get an instance
         self._setup_logging()
-        self.logger.debug('Starting PerDayVolumeRater for %s' % sample.name if sample is not None else "None")
+        logger.debug('Starting PerDayVolumeRater for %s' % sample.name if sample is not None else "None")
         self.previous_count_left = 0
         self.raweventsize = 0
+        # TODO: Check if you need these
+        #self._sample = sample
+        #self._generatorWorkers = self._sample.config.generatorWorkers
 
     def queue_it(self, count):
         count = count + self.previous_count_left
@@ -47,16 +51,16 @@ class PerDayVolume(ConfigRater):
         if self.sample.interval == 0:
             self.logger.debug('Running perDayVolume as if for 24hr period.')
             interval = 86400
-        self.logger.debug('Current perDayVolume: %f,  Sample interval: %s' % (perdayvolume, interval))
+        logger.debug('Current perDayVolume: %f,  Sample interval: %s' % (perdayvolume, interval))
         intervalsperday = (86400 / interval)
         perintervalvolume = (perdayvolume / intervalsperday)
         count = self.sample.count
         rateFactor = self.adjust_rate_factor()
-        self.logger.debug("Size per interval: %s, rate factor to adjust by: %s" % (perintervalvolume, rateFactor))
+        logger.debug("Size per interval: %s, rate factor to adjust by: %s" % (perintervalvolume, rateFactor))
         ret = int(round(perintervalvolume * rateFactor, 0))
         if rateFactor != 1.0:
-            self.logger.debug("Original count: %s Rated count: %s Rate factor: %s" % (count, ret, rateFactor))
-        self.logger.debug("Finished rating, interval: {0}s, generation rate: {1} MB/interval".format(
+            logger.debug("Original count: %s Rated count: %s Rate factor: %s" % (count, ret, rateFactor))
+        logger.debug("Finished rating, interval: {0}s, generation rate: {1} MB/interval".format(
             interval, round((ret / 1024 / 1024), 4)))
         return ret
 

@@ -9,8 +9,8 @@ def eventgen_test_helper():
     created_instances = []
     EventgenTestHelper.make_result_dir()
 
-    def _create_eventgen_test_helper_instance(conf, timeout=None):
-        instance = EventgenTestHelper(conf, timeout)
+    def _create_eventgen_test_helper_instance(conf, timeout=None, mode=None, env=None):
+        instance = EventgenTestHelper(conf, timeout, mode, env)
         created_instances.append(instance)
         return instance
     yield _create_eventgen_test_helper_instance
