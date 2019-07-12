@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+/usr/sbin/sshd
 
 if [ "$#" = 0 ]; then
 	tail -F -n0 /etc/hosts && wait
