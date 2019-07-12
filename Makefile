@@ -44,9 +44,9 @@ test_helper:
 	@echo 'Installing test requirements'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install --upgrade pip;pip install -r $(shell pwd)/requirements.txt" || true
 
-	# @echo 'Installing docker-compose'
-	# sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
-	# sudo chmod +x /usr/local/bin/docker-compose || true
+	@echo 'Installing docker-compose'
+	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
+	sudo chmod +x /usr/local/bin/docker-compose || true
 
 	@echo 'Start container with splunk'
 	docker-compose -f tests/large/provision/docker-compose.yml up &
@@ -109,6 +109,14 @@ run_controller: eg_network
 	docker kill eg_controller || true
 	docker rm eg_controller || true
 	docker run --network eg_network --name eg_controller  -d -p 6379:6379 -p 9500:9500 eventgen:latest controller
+
+run_standalone:
+	docker kill eg_standalone || true
+	docker rm eg_standalone || true
+	docker run --name eg_standalone  -d -p 9500:9500 eventgen:latest standalone
+
+run_local_standalone:
+	python -m splunk_eventgen service -r standalone
 
 docs:
 	cd docs/; bundle install; bundle exec jekyll serve

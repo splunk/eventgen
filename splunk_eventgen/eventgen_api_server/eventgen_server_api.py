@@ -205,14 +205,15 @@ class EventgenServerAPI(ApiBlueprint):
         
         @bp.route('/setup', methods=['POST'])
         def http_post_setup():
-            try:
-                self.stop(force_stop=True)
-                self.clean_bundle_conf()
-                self.setup_http(request.get_json(force=True))
-                return Response(json.dumps(self.get_conf()), mimetype='application/json', status=200)
-            except Exception as e:
-                self.logger.error(e)
-                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+            # try:
+            print request.get_json(force=True)
+            self.stop(force_stop=True)
+            self.clean_bundle_conf()
+            self.setup_http(request.get_json(force=True))
+            return Response(json.dumps(self.get_conf()), mimetype='application/json', status=200)
+            # except Exception as e:
+            #     self.logger.error(e)
+            #     return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
 
         return bp
 
@@ -266,8 +267,9 @@ class EventgenServerAPI(ApiBlueprint):
 
         for stanza, kv_pairs in request_body.iteritems():
             for key, value in kv_pairs.iteritems():
-                if stanza in conf_dict.keys():
-                    conf_dict[stanza][key] = value
+                if stanza not in conf_dict.keys():
+                    conf_dict[stanza] = {}
+                conf_dict[stanza][key] = value
         
         self.set_conf(conf_dict)
     
@@ -534,10 +536,10 @@ class EventgenServerAPI(ApiBlueprint):
                     if new_key:
                         key = create_new_hec_key(formatted_hostname)
                 except (socket.gaierror, requests.ConnectionError):
-                    self.log.warning('failed to reach %s, skip...' % host)
+                    self.logger.warning('failed to reach %s, skip...' % host)
                     continue
                 except (ValueError, KeyError):
-                    self.log.warning('failed to setup hec token for %s, skip...' % host)
+                    self.logger.warning('failed to setup hec token for %s, skip...' % host)
                     continue
 
                 self.discovered_servers.append({"protocol": str(protocol), "address": str(formatted_hostname), "port": str(hec_port), "key": str(key)})
@@ -556,6 +558,6 @@ class EventgenServerAPI(ApiBlueprint):
                 except socket.gaierror:
                     break
         
-            conf_dict = get_conf()
+            conf_dict = self.get_conf()
             conf_dict['.*']['httpeventServers'] = {"servers": self.discovered_servers}
             self.set_conf(conf_dict)
