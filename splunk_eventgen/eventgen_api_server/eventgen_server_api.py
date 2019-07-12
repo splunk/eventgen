@@ -114,12 +114,12 @@ class EventgenServerAPI(ApiBlueprint):
             
         @bp.route('/status', methods=['GET'])
         def http_get_status():
-            # try:
-            response = self.get_status()
-            return Response(json.dumps(response), mimetype='application/json', status=200)
-            # except Exception as e:
-            #     self.logger.error(e)
-            #     return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+            try: 
+                response = self.get_status()
+                return Response(json.dumps(response), mimetype='application/json', status=200)
+            except Exception as e:
+                self.logger.error(e)
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
             
         @bp.route('/conf', methods=['GET', 'POST', 'PUT'])
         def http_conf():
@@ -205,15 +205,14 @@ class EventgenServerAPI(ApiBlueprint):
         
         @bp.route('/setup', methods=['POST'])
         def http_post_setup():
-            # try:
-            print request.get_json(force=True)
-            self.stop(force_stop=True)
-            self.clean_bundle_conf()
-            self.setup_http(request.get_json(force=True))
-            return Response(json.dumps(self.get_conf()), mimetype='application/json', status=200)
-            # except Exception as e:
-            #     self.logger.error(e)
-            #     return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+            try:
+                self.stop(force_stop=True)
+                self.clean_bundle_conf()
+                self.setup_http(request.get_json(force=True))
+                return Response(json.dumps(self.get_conf()), mimetype='application/json', status=200)
+            except Exception as e:
+                self.logger.error(e)
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
 
         return bp
 
@@ -361,7 +360,7 @@ class EventgenServerAPI(ApiBlueprint):
             ratio = float(target_volume) / float(self.total_volume)
             for stanza, kv_pair in conf_dict.iteritems():
                 if isinstance(kv_pair, dict):
-                    if stanza != '.*' and "perDayVolume" in kv_pair.keys():
+                    if '.*' not in stanza and "perDayVolume" in kv_pair.keys():
                         conf_dict[stanza]["perDayVolume"] = round(float(conf_dict[stanza]["perDayVolume"]) * ratio, 2)
         else:
             # If there is no total_volume existing, divide the volume equally into stanzas
@@ -372,7 +371,7 @@ class EventgenServerAPI(ApiBlueprint):
                 stanza_num -= 1
             divided_volume = float(target_volume) / stanza_num
             for stanza, kv_pair in conf_dict.iteritems():
-                if isinstance(kv_pair, dict) and stanza != '.*':
+                if isinstance(kv_pair, dict) and stanza != '.*' not in stanza:
                     conf_dict[stanza]["perDayVolume"] = divided_volume
 
         self.set_conf(conf_dict)
@@ -503,18 +502,17 @@ class EventgenServerAPI(ApiBlueprint):
                         kv_pair['token.{}.replacement'.format(token_num)] = os.path.join(SAMPLE_DIR_PATH, existing_path[existing_path.rfind('/')+1:])
 
         conf_dict['.*']['sampleDir'] = SAMPLE_DIR_PATH
-        conf_dict['.*']['outputMode'] = 'httpevent'
-
         self.set_conf(conf_dict)
     
     def setup_http(self, data):
         if data.get("servers"):
             conf_dict = self.get_conf()
-            conf_dict['.*']['httpeventServers'] = {"servers": data.get("servers")}
             if 'global' not in conf_dict.keys():
                 conf_dict['global'] = {}
             conf_dict['global']['threading'] = 'process'
             conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
+            conf_dict['global']['outputMode'] = 'httpevent'
+            conf_dict['global']['httpeventServers'] = {"servers": data.get("servers")}
             self.set_conf(conf_dict)
         else:
             # If hec_servers information doesn't exist, do service discovery
@@ -574,9 +572,10 @@ class EventgenServerAPI(ApiBlueprint):
                     break
         
             conf_dict = self.get_conf()
-            conf_dict['.*']['httpeventServers'] = {"servers": self.discovered_servers}
             if 'global' not in conf_dict.keys():
                 conf_dict['global'] = {}
             conf_dict['global']['threading'] = 'process'
             conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
+            conf_dict['global']['outputMode'] = 'httpevent'
+            conf_dict['global']['httpeventServers'] = {"servers": self.discovered_servers}
             self.set_conf(conf_dict)
