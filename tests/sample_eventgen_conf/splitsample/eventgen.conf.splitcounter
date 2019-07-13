@@ -7,7 +7,7 @@ interval = 1
 randomizeEvents = true
 end = 1
 count = 33
-splitSample = 3
+splitSample = 2
 
 token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp

@@ -137,7 +137,7 @@ class Timer(object):
                     self.executions += 1
 
             except Exception as e:
-                self.logger.exception(str(e))
+                logger.exception(str(e))
                 if self.stopping:
                     end = True
                 pass
@@ -157,12 +157,12 @@ class Timer(object):
                 # timer thread
                 if not self.endts:
                     if self.executions >= int(self.end):
-                        self.logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
+                        logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
                             self.end), self.sample.name))
                         self.stopping = True
                         end = True
                 elif lt >= self.endts:
-                    self.logger.info("End Time '%s' reached, ending generation of sample '%s'" % (self.sample.endts,
+                    logger.info("End Time '%s' reached, ending generation of sample '%s'" % (self.sample.endts,
                                                                                                   self.sample.name))
                     self.stopping = True
                     end = True
