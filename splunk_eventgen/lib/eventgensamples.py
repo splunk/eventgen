@@ -85,7 +85,7 @@ class Sample(object):
     end = None
     queueable = None
     autotimestamp = None
-    extendIndexes = []
+    extendIndexes = None
 
     # Internal fields
     sampleLines = None
@@ -102,6 +102,7 @@ class Sample(object):
         self.name = name
         self.tokens = []
         self._lockedSettings = []
+        self.index_list = []
         self.backfilldone = False
 
     def updateConfig(self, config):
@@ -399,21 +400,23 @@ class Sample(object):
                 for i in xrange(0, len(self.sampleDict)):
                     if len(self.sampleDict[i]['_raw']) < 1 or self.sampleDict[i]['_raw'][-1] != '\n':
                         self.sampleDict[i]['_raw'] += '\n'
-        if type(self.extendIndexes) is not list and len(self.extendIndexes):
+        if self.extendIndexes:
             try:
-                index_list = []
                 for index_item in self.extendIndexes.split(','):
                     index_item = index_item.strip()
                     if ':' in index_item:
                         extend_indexes_count = int(index_item.split(':')[-1])
                         extend_indexes_prefix = index_item.split(':')[0] + "{}"
-                        index_list.extend([extend_indexes_prefix.format(_i) for _i in range(extend_indexes_count)])
+                        self.index_list.extend([extend_indexes_prefix.format(_i) for _i in range(extend_indexes_count)])
                     elif len(index_item):
-                        index_list.append(index_item)
-                self.extendIndexes = index_list
+                        self.index_list.append(index_item)
             except Exception:
                 logger.error("Failed to parse extendIndexes, using index={} now.".format(self.index))
-                self.extendIndexes = []
+                self.index_list = []
+            finally:
+                # only read the extendIndexes configure once.
+                self.extendIndexes = None
+
     def get_loaded_sample(self):
         if self.sampletype != 'csv' and os.path.getsize(self.filePath) > 10000000:
             self._openSampleFile()
