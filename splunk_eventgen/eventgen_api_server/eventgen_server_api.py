@@ -268,6 +268,9 @@ class EventgenServerAPI(ApiBlueprint):
             for key, value in kv_pairs.iteritems():
                 if stanza not in conf_dict.keys():
                     conf_dict[stanza] = {}
+                if stanza == "global" and key == "index":
+                    for stanza, kv_pairs in conf_dict.iteritems():
+                        conf_dict[stanza]["index"] = value
                 conf_dict[stanza][key] = value
         
         self.set_conf(conf_dict)
