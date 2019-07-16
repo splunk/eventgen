@@ -13,6 +13,10 @@ RUN apk --no-cache upgrade && \
 	bash \
 	sudo \
 	openssh \
+	tar \
+	acl \
+	g++ \
+	git \
 	curl && \
 	pip install --upgrade pip && \
 	rm -rf /tmp/* && \
@@ -21,7 +25,8 @@ RUN apk --no-cache upgrade && \
 	mkdir -p /var/run/sshd && \
 	mkdir -p /root/.ssh && \
 	chmod 0700 /root/.ssh && \
-	passwd -u root
+	passwd -u root && \
+	pip install git+git://github.com/esnme/ultrajson.git
 
 COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
