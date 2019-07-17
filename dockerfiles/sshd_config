@@ -28,7 +28,7 @@ PrintMotd no
 Protocol 2
 PubKeyAuthentication yes
 StrictModes no
-Subsystem sftp /usr/lib/openssh/sftp-server
+Subsystem sftp /usr/lib/ssh/sftp-server
 SyslogFacility AUTH
 TcpKeepalive yes
 UseDns no
