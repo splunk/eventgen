@@ -193,9 +193,9 @@ def convert_verbosity_count_to_logging_level(verbosity):
 
 def gather_env_vars(args):
     os_vars, env_vars = dict(os.environ), {}
-    env_vars["REDIS_HOST"] = os_vars.get("REDIS_HOST") if os_vars.get("REDIS_HOST") else args.redis_host
-    env_vars["REDIS_PORT"] = os_vars.get("REDIS_PORT") if os_vars.get("REDIS_PORT") else args.redis_port
-    env_vars["WEB_SERVER_PORT"] = os_vars.get("WEB_SERVER_PORT") if os_vars.get("WEB_SERVER_PORT") else args.web_server_port
+    env_vars["REDIS_HOST"] = os.environ.get("REDIS_HOST", args.redis_host)
+    env_vars["REDIS_PORT"] = os.environ.get("REDIS_PORT", args.redis_port)
+    env_vars["WEB_SERVER_PORT"] = os.environ.get("WEB_SERVER_PORT", args.web_server_port)
     return env_vars
 
 def main():

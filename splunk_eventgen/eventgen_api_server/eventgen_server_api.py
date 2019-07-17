@@ -218,7 +218,7 @@ class EventgenServerAPI(ApiBlueprint):
 
     def get_index(self):
         home_page = '''*** Eventgen WSGI ***\nHost: {0}\nEventgen Status: {1}\nEventgen Config file exists: {2}\nEventgen Config file path: {3}\nTotal volume: {4}\nWorker Queue Status: {5}\nSample Queue Status: {6}\nOutput Queue Status: {7}\n'''
-        status = get_status()
+        status = self.get_status()
         eventgen_status = "running" if status["EVENTGEN_STATUS"] else "stopped"
         host = status["EVENTGEN_HOST"]
         configured = status["CONFIGURED"]
