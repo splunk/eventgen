@@ -438,8 +438,6 @@ class EventGenerator(object):
             except Empty:
                 stopping = genconfig['stopping']
             except Exception as e:
-                if self.force_stop:
-                    break
                 root.exception(e)
                 raise e
         else:
