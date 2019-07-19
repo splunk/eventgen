@@ -255,7 +255,7 @@ class EventgenServerAPI(ApiBlueprint):
         with open(eventgen_core_object.CUSTOM_CONFIG_PATH, 'w+') as conf_content:
             config.write(conf_content)
 
-        self.eventgen.check_and_configure_eventgen()
+        self.eventgen.refresh_eventgen_core_object()
     
     def edit_conf(self, request_body):
         conf_dict = self.get_conf()
@@ -481,17 +481,12 @@ class EventgenServerAPI(ApiBlueprint):
             conf_dict['.*'] = {}
 
         # 1. Remove sampleDir from individual stanza and set a global sampleDir
-        # 2. Remove outputMode from individual stanza and set a global outputMode to httpevent
-        # 3. Change token sample path to a local sample path
-        # 4. Remove httpeventServers from individual stanza
+        # 2. Change token sample path to a local sample path
         for stanza, kv_pair in conf_dict.iteritems():
             if stanza != ".*":
                 if 'sampleDir' in kv_pair:
                     del kv_pair['sampleDir']
-                if 'outputMode' in kv_pair:
-                    del kv_pair['outputMode']
-                if 'httpeventServers' in kv_pair:
-                    del kv_pair['httpeventServers']
+                
             for key, value in kv_pair.iteritems():
                 if 'replacementType' in key and value in ['file', 'mvfile', 'seqfile']:
                     token_num = key[key.find('.')+1:key.rfind('.')]
@@ -508,6 +503,11 @@ class EventgenServerAPI(ApiBlueprint):
             conf_dict = self.get_conf()
             if 'global' not in conf_dict.keys():
                 conf_dict['global'] = {}
+            for stanza, kv_pair in conf_dict.iteritems():
+                if 'outputMode' in kv_pair:
+                    del kv_pair['outputMode']
+                if 'httpeventServers' in kv_pair:
+                    del kv_pair['httpeventServers']
             conf_dict['global']['threading'] = 'process'
             conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
             conf_dict['global']['outputMode'] = 'httpevent'
@@ -573,6 +573,11 @@ class EventgenServerAPI(ApiBlueprint):
             conf_dict = self.get_conf()
             if 'global' not in conf_dict.keys():
                 conf_dict['global'] = {}
+            for stanza, kv_pair in conf_dict.iteritems():
+                if 'outputMode' in kv_pair:
+                    del kv_pair['outputMode']
+                if 'httpeventServers' in kv_pair:
+                    del kv_pair['httpeventServers']
             conf_dict['global']['threading'] = 'process'
             conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
             conf_dict['global']['outputMode'] = 'httpevent'
