@@ -7,6 +7,7 @@ import configparser
 
 # $EVENTGEN_HOME/tests/large
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+project_dir = os.path.dirname(os.path.dirname(base_dir))
 result_dir = os.path.join(base_dir, 'results')
 # change working directory so that 'splunk_eventgen' call in the project root directory
 os.chdir(os.path.dirname(os.path.dirname(base_dir)))
@@ -18,16 +19,20 @@ class EventgenTestHelper(object):
         if not os.path.isdir(result_dir):
             os.makedirs(result_dir)
 
-    def __init__(self, conf, timeout=None, mode=None):
+    def __init__(self, conf, timeout=None, mode=None, env=None):
         self.conf = os.path.join(base_dir, 'conf', conf)
         self.config, self.section = self._read_conf(self.conf)
         self.output_mode = self._get_output_mode()
         self.file_name = self._get_file_name()
         self.breaker = self._get_breaker()
-        cmd = ['splunk_eventgen', '-v', 'generate', self.conf]
+        cmd = ['splunk_eventgen', 'generate', self.conf]
         if mode == 'process':
             cmd.append('--multiprocess')
-        self.process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        env_var = os.environ.copy()
+        if env is not None:
+            for k, v in env.iteritems():
+                env_var[k] = v
+        self.process = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env_var)
         if timeout:
             timer = Timer(timeout, self.kill)
             timer.start()
@@ -50,6 +55,15 @@ class EventgenTestHelper(object):
                 assert False
         elif self.output_mode == 'file':
             with open(os.path.join(result_dir, self.file_name), 'r') as f:
+                output = f.read()
+        elif self.output_mode == 'spool':
+            spool_dir_config = self.config.get(self.section, 'spoolDir', fallback=None)
+            spool_file_config = self.config.get(self.section, 'spoolFile', fallback=None)
+            if os.path.isabs(spool_dir_config):
+                self.file_name = os.path.join(spool_dir_config, spool_file_config)
+            else:
+                self.file_name = os.path.join(project_dir, spool_dir_config, spool_file_config)
+            with open(self.file_name, 'r') as f:
                 output = f.read()
         else:
             output = ''

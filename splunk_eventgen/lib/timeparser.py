@@ -1,5 +1,5 @@
+from logging_config import logger
 import datetime
-import logging
 import math
 import os
 import re
@@ -14,9 +14,6 @@ import sys
 path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
 sys.path.append(path_prepend + '/python_dateutil-1.4.1-py2.7.egg')
 import dateutil.parser as dateutil_parser  # noqa isort:skip
-
-# If we're inside eventgen, we'll have a global logger, if not set one up
-logging.getLogger('eventgen')
 
 
 # 5-5-2012 CS  Replacing TimeParser with our own code to remove Splunk dependency
@@ -132,7 +129,7 @@ def timeParserTimeMath(plusminus, num, unit, ret):
         elif unit in ('w', 'week', 'weeks'):
             td = datetime.timedelta(days=(int(num) * 7))
         elif re.match('w[0-6]', unit) is not None:
-            logging.error('Day of week is only available in snap-to.  Time string: %s' % td)
+            logger.error('Day of week is only available in snap-to.  Time string: %s' % td)
             return False
         # Normalize out all year/quarter/months to months and do the math on that
         elif unit in ('mon', 'month', 'months') or unit in ('q', 'qtr', 'qtrs', 'quarter', 'quarters') or \
@@ -165,10 +162,10 @@ def timeParserTimeMath(plusminus, num, unit, ret):
                                             ret.microsecond)
 
     except ValueError:
-        logging.error('Cannot parse relative time string')
+        logger.error('Cannot parse relative time string')
         import traceback
         stack = traceback.format_exc()
-        logging.debug('%s', stack)
+        logger.debug('%s', stack)
         return False
 
     if td is not None:

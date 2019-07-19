@@ -5,7 +5,6 @@
 
 from __future__ import division
 
-import logging
 import sys
 from xml.sax.saxutils import escape
 
@@ -44,9 +43,6 @@ class ModInputOutputPlugin(OutputPlugin):
 
         sys.stdout.write(out)
         sys.stdout.flush()
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen')
 
 
 def load():

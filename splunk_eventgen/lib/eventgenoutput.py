@@ -5,6 +5,7 @@ import logging
 import logging.handlers
 import time
 from Queue import Full
+from logging_config import logger
 
 
 # TODO: Figure out why we load plugins from here instead of the base plugin class.
@@ -20,7 +21,6 @@ class Output(object):
         self._outputMode = sample.outputMode
         self.MAXQUEUELENGTH = sample.maxQueueLength
         self._queue = []
-        self._setup_logging()
         self.output_counter = None
 
     def __str__(self):
@@ -32,20 +32,6 @@ class Output(object):
 
     def __repr__(self):
         return self.__str__()
-
-    # loggers can't be pickled due to the lock object, remove them before we try to pickle anything.
-    def __getstate__(self):
-        temp = self.__dict__
-        if getattr(self, 'logger', None):
-            temp.pop('logger', None)
-        return temp
-
-    def __setstate__(self, d):
-        self.__dict__ = d
-        self._setup_logging()
-
-    def _setup_logging(self):
-        self.logger = logging.getLogger('eventgen')
 
     def _update_outputqueue(self, queue):
         self.outputQueue = queue
@@ -81,7 +67,7 @@ class Output(object):
                 self.flush()
         except Exception as e:
             # We don't want to exit if there's a single bad event
-            self.logger.error("Caught Exception {} while appending/flushing output queue. There may be a ".format(e) +
+            logger.error("Caught Exception {} while appending/flushing output queue. There may be a ".format(e) +
                               "faulty event or token replacement in your sample.")
 
     def flush(self, endOfInterval=False):
@@ -108,7 +94,7 @@ class Output(object):
         flushing = True
         if flushing:
             q = self._queue
-            self.logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
+            logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
             self._queue = []
             outputer = self.outputPlugin(self._sample, self.output_counter)
             outputer.updateConfig(self.config)
@@ -122,7 +108,7 @@ class Output(object):
                 try:
                     self.outputQueue.put(outputer)
                 except Full:
-                    self.logger.warning("Output Queue full, looping again")
+                    logger.warning("Output Queue full, looping again")
             else:
                 if self.config.splunkEmbedded:
                     tmp = [len(s['_raw']) for s in q]
