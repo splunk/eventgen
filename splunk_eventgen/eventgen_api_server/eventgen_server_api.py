@@ -16,7 +16,6 @@ import requests
 from requests.packages.urllib3.util.retry import Retry
 import threading
 
-from constants import Constants
 from api_blueprint import ApiBlueprint
 import eventgen_core_object
 
@@ -25,8 +24,6 @@ INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "default"))
 SAMPLE_DIR_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "samples"))
-
-consts = Constants()
 
 class EventgenServerAPI(ApiBlueprint):
     def __init__(self, eventgen, redis_connector, host, mode='standalone'):
@@ -81,7 +78,6 @@ class EventgenServerAPI(ApiBlueprint):
                 self.set_bundle(body.get("url", ''))
                 self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('bundle', request_method, response=self.get_conf()))
             elif job == 'setup':
-                self.reset()
                 self.clean_bundle_conf()
                 self.setup_http(body)
                 self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('setup', request_method, response=self.get_conf()))

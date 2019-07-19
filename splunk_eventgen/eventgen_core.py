@@ -7,6 +7,8 @@ import logging.config
 import os
 import sys
 import time
+import subprocess
+import signal
 from Queue import Empty, Queue
 from threading import Thread
 
@@ -84,6 +86,8 @@ class EventGenerator(object):
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
 
+        self.workerPool = []
+
 
     def _load_config(self, configfile, **kwargs):
         '''
@@ -128,6 +132,7 @@ class EventGenerator(object):
             generator_worker_count = self.config.generatorWorkers
 
         # TODO: Probably should destroy pools better so processes are cleaned.
+        self.kill_processes()
         self._setup_pools(generator_worker_count)
 
     def _reload_plugins(self):
@@ -590,8 +595,7 @@ class EventGenerator(object):
         # if we're in multiprocess, make sure we don't add more generators after the timers stopped.
         if self.args.multiprocess:
             if force_stop:
-                for worker in self.workerPool:
-                    worker.terminate()
+                self.kill_processes()
             else:
                 self.genconfig["stopping"] = True
                 for worker in self.workerPool:
@@ -658,3 +662,16 @@ class EventGenerator(object):
         :return: if eventgen jobs are finished, return True else False
         '''
         return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty() and self.workerQueue.unfinished_tasks <= 0
+
+    def kill_processes(self):
+        if self.args.multiprocess:
+            try:
+                self.manager.shutdown()
+            except:
+                pass
+            for worker in self.workerPool:
+                try:
+                    os.kill(int(worker.pid), signal.SIGTERM)
+                except:
+                    continue
+                

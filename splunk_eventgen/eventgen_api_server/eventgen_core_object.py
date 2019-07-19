@@ -23,6 +23,7 @@ class EventgenCoreObject():
             self.logger.info("Configured Eventgen from {}".format(CUSTOM_CONFIG_PATH))
 
     def refresh_eventgen_core_object(self):
+        self.eventgen_core_object.kill_processes()
         self.eventgen_core_object = eventgen_core.EventGenerator(self._create_args())
         self.configured = False
         self.configfile = None
