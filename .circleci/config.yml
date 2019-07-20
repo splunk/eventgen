@@ -39,7 +39,7 @@ jobs:
           command: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_PASSWORD
       - run:
           name: Build Docker image
-          command: pushd package; docker build -f dockerfiles/Dockerfile -t $IMAGE_ACCOUNT/$IMAGE_NAME:build .
+          command: docker build -f dockerfiles/Dockerfile -t $IMAGE_ACCOUNT/$IMAGE_NAME:build .
       - run:
           name: Tag Docker image
           command: docker tag $IMAGE_ACCOUNT/$IMAGE_NAME:build $IMAGE_ACCOUNT/$IMAGE_NAME:$CIRCLE_SHA1
