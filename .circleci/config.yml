@@ -26,7 +26,8 @@ jobs:
           path: /home/circleci/project/htmlcov
   build_docker:
     environment:
-      IMAGE_NAME: rfaircloth/eventgen
+      IMAGE_ACCOUNT: rfaircloth
+      IMAGE_NAME: eventgen
     docker:
       - image: circleci/buildpack-deps:stretch
     steps:
@@ -38,19 +39,19 @@ jobs:
           command: docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run:
           name: Build Docker image
-          command: pushd package; docker build -f dockerfiles/Dockerfile -t $IMAGE_NAME:build .
+          command: pushd package; docker build -f dockerfiles/Dockerfile -t $IMAGE_ACCOUNT/$IMAGE_NAME:build .
       - run:
           name: Tag Docker image
-          command: docker tag $IMAGE_NAME:build $IMAGE_NAME:$CIRCLE_SHA1
+          command: docker tag $IMAGE_ACCOUNT/$IMAGE_NAME:build $IMAGE_ACCOUNT/$IMAGE_NAME:$CIRCLE_SHA1
       - run:
           name: Tag Docker image
-          command: docker tag $IMAGE_NAME:build $IMAGE_NAME:edge
+          command: docker tag $IMAGE_ACCOUNT/$IMAGE_NAME:build $IMAGE_ACCOUNT/$IMAGE_NAME:edge
       - run:
           name: Push Docker image
-          command: docker push $IMAGE_NAME:$CIRCLE_SHA1
+          command: docker push $IMAGE_ACCOUNT/$IMAGE_NAME:$CIRCLE_SHA1
       - run:
           name: Push Docker image
-          command: docker push $IMAGE_NAME:edge
+          command: docker push $IMAGE_ACCOUNT/$IMAGE_NAME:edge
 
 workflows:
   version: 2
