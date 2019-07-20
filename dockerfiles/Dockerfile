@@ -1,7 +1,23 @@
-FROM redis:5.0.5-alpine
+FROM python:2
+
+COPY requirements.txt /tmp
+
+RUN pip install -r /tmp/requirements.txt
+
+COPY . /usr/src/app/
+
+RUN cd /usr/src/app && \
+    make && \
+    mkdir -p /usr/src/dist && \
+    cp /usr/src/app/dist/* /usr/src/dist/ && \
+    ls /usr/src/dist
+
+FROM redis:5-alpine
 
 RUN apk --no-cache upgrade && \
 	apk add --no-cache --update \
+	python2 \
+	py2-pip \
 	python2-dev \
 	py2-pip \
 	gcc \
@@ -10,29 +26,17 @@ RUN apk --no-cache upgrade && \
 	openssl-dev \
 	libxml2-dev \
 	libxslt-dev \
-	bash \
-	sudo \
-	openssh \
-	tar \
-	acl \
-	g++ \
-	git \
-	curl && \
+	curl  && \
 	pip install --upgrade pip && \
 	rm -rf /tmp/* && \
-	rm -rf /var/cache/apk/* && \
-	ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa && \
-	mkdir -p /var/run/sshd && \
-	mkdir -p /root/.ssh && \
-	chmod 0700 /root/.ssh && \
-	passwd -u root && \
-	pip install git+git://github.com/esnme/ultrajson.git
+	rm -rf /var/cache/apk/*
 
-COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
-COPY dist/* /root/splunk_eventgen.tgz
-RUN pip install /root/splunk_eventgen.tgz && \
-	rm /root/splunk_eventgen.tgz
+COPY --from=0 /usr/src/dist/* /tmp/splunk_eventgen.tgz
+
+RUN ls /tmp && \
+    pip install /tmp/splunk_eventgen.tgz && \
+	rm /tmp/splunk_eventgen.tgz
 
 EXPOSE 2222 6379 9500
 RUN chmod a+x /sbin/entrypoint.sh
