@@ -26,7 +26,8 @@ RUN apk --no-cache upgrade && \
 	openssl-dev \
 	libxml2-dev \
 	libxslt-dev \
-	curl  && \
+	curl \
+	bash && \
 	pip install --upgrade pip && \
 	rm -rf /tmp/* && \
 	rm -rf /var/cache/apk/*
