@@ -36,7 +36,7 @@ jobs:
           docker_layer_caching: true
       - run:
           name: Docker Login
-          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+          command: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_PASS
       - run:
           name: Build Docker image
           command: pushd package; docker build -f dockerfiles/Dockerfile -t $IMAGE_ACCOUNT/$IMAGE_NAME:build .
