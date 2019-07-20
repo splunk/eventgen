@@ -549,4 +549,3 @@ class EventGenerator(object):
                     os.kill(int(worker.pid), signal.SIGTERM)
                 except:
                     continue
-                

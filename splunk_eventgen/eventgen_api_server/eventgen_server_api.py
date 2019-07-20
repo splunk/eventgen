@@ -25,6 +25,7 @@ FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "default"))
 SAMPLE_DIR_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "samples"))
 
+
 class EventgenServerAPI(ApiBlueprint):
     def __init__(self, eventgen, redis_connector, host, mode='standalone'):
         ApiBlueprint.__init__(self)
@@ -100,7 +101,6 @@ class EventgenServerAPI(ApiBlueprint):
                 self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('reset', request_method, response=message))
                 self.reset()
 
-            
     def _create_blueprint(self):
         bp = flask.Blueprint('server_api', __name__)
 
@@ -437,7 +437,6 @@ class EventgenServerAPI(ApiBlueprint):
             self.set_conf(config_dict)
             self.eventgen.configured = True
             self.logger.info("Configured Eventgen with the downloaded bundle.")
-        
 
     def download_bundle(self, url):
         bundle_path = os.path.join(DEFAULT_PATH, "eg-bundle.tgz")

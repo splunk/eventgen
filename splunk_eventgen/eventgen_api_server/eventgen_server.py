@@ -1,17 +1,13 @@
 from flask import Flask
-import os
-import threading
+
 import socket
 import logging
-import json
-import time
-import requests
 
 from eventgen_server_api import EventgenServerAPI
 import eventgen_core_object
 
-class EventgenServer():
 
+class EventgenServer:
     def __init__(self, *args, **kwargs):  
         self.eventgen = eventgen_core_object.EventgenCoreObject()      
         self.mode = kwargs.get('mode', 'standalone')
