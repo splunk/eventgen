@@ -24,10 +24,39 @@ jobs:
           path: /home/circleci/project/tests/test-reports
       - store_artifacts:
           path: /home/circleci/project/htmlcov
+  build_docker:
+    build:
+        environment:
+          IMAGE_NAME: rfaircloth/eventgen
+        docker:
+          - image: circleci/buildpack-deps:stretch
+        steps:
+          - checkout
+          - setup_remote_docker:
+              docker_layer_caching: true
+          - run:
+              name: Docker Login
+              command: docker login -u $DOCKER_USER -p $DOCKER_PASS
+          - run:
+              name: Build Docker image
+              command: pushd package; docker build -f dockerfiles/Dockerfile -t $IMAGE_NAME:build .
+          - run:
+              name: Tag Docker image
+              command: docker tag $IMAGE_NAME:build $IMAGE_NAME:$CIRCLE_SHA1
+          - run:
+              name: Tag Docker image
+              command: docker tag $IMAGE_NAME:build $IMAGE_NAME:edge
+          - run:
+              name: Push Docker image
+              command: docker push $IMAGE_NAME:$CIRCLE_SHA1
+          - run:
+              name: Push Docker image
+              command: docker push $IMAGE_NAME:edge
 
 workflows:
   version: 2
   run_tests:
     jobs:
       - test_eventgen
+      - build_docker
 
