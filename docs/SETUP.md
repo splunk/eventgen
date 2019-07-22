@@ -105,16 +105,11 @@ $ splunk_eventgen -v generate path/to/eventgen.conf
 
 Please follow these instructions to run an Eventgen cluster on your Docker environment:
 
-  <!-- 1. Install and run [RabbitMQ](https://www.rabbitmq.com/download.html) locally
-  2. Install [Eventgen PyPI module](SETUP.md#pypi-setup) -->
 1. `make image`
 2. Create a Docker network: `docker network create --attchable --driver bridge eg_network`
 3. To set up a controller, run `docker run --network eg_network --name eg_controller  -d -p 6379:6379 -p 9500:9500 eventgen:latest controller`
-4. To set up a server, run `splunk_eventgen service --role server`
-5. By default, the controller and server will try to locate RabbitMQ on pyamqp://localhost:5672 using credentials guest/guest and RabbitMQ's web UI at http://localhost:15672.  If you're running another rabbitMQ server, you may error out.
-6. You can change any of those parameters using the CLI - for instance, if your RabbitMQ is accessible on rabbit-mq.company.com with credentials i don'admin/changeme you should run `splunk_eventgen service --role controller --amqp-host rabbit-mq.company.com --amqp-user admin --amqp-pass changeme`
-7. Please see `splunk_eventgen service --help` for additional CLI options
-8. **NOTE:** Running the controller and server on the same machine will cause port collisions for Eventgen web server. To mitigate this, you can tell the server to run on a separate port using `splunk_eventgen service --web-server-address 0.0.0.0:9501`
+4. To set up a server, run `docker run --network eg_network --name eg_server -e REDIS_HOST=eg_controller -d -p 9501:9500 eventgen:latest server`
+* Note that REDIS_HOST needs to be a resolvable host address to the controoler. Also, --name should be used to differientiate a server from another.
 
 ---
 
