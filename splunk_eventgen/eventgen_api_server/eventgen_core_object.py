@@ -53,5 +53,5 @@ class EventgenCoreObject():
         args.verbosity = 20
         args.wsgi = True
         args.modinput_mode = False
-        args.generator_queue_size = 500
+        args.generator_queue_size = 1500
         return args
