@@ -203,7 +203,7 @@ class TestEventgenOrchestration(object):
                 output = json.loads(response.content)
             current_retry += 1
             time.sleep(10)
-        assert output[TestEventgenOrchestration.server_id[:12]]["perDayVolume"] = 0.0
+        assert output[TestEventgenOrchestration.server_id[:12]]["perDayVolume"] == 0.0
 
     def test_controller_set_volume_invalid_request(self):
         r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
@@ -214,12 +214,16 @@ class TestEventgenOrchestration(object):
         r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport), json={
             "perDayVolume": 10})
         assert r.status_code == 200
+        output = json.loads(r.content)
+        assert output[TestEventgenOrchestration.server_id[:12]]["perDayVolume"] == 10
 
     def test_controller_set_volume_with_volume_and_target(self):
         r = requests.post(
             "http://127.0.0.1:{}/volume/{}".format(self.controller_eventgen_webport,
-                                                   TestEventgenOrchestration.server_id[:12]), json={"perDayVolume": 10})
+                                                   TestEventgenOrchestration.server_id[:12]), json={"perDayVolume": 20})
         assert r.status_code == 200
+        output = json.loads(r.content)
+        assert output[TestEventgenOrchestration.server_id[:12]]["perDayVolume"] == 20
     
     def test_controller_stop(self):
         r = requests.post("http://127.0.0.1:{}/stop".format(self.controller_eventgen_webport))

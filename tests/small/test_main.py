@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(FILE_DIR, "..", "..", "..", "splunk_eventgen"))
 
 def test_gather_env_vars():
     args = MagicMock()
-    args.redis_host= "127.0.0.1"
+    args.redis_host = "127.0.0.1"
     args.redis_port = "6379"
     args.web_server_port = '9500'
     obj = gather_env_vars(args)
