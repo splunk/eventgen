@@ -542,11 +542,10 @@ class EventGenerator(object):
         if self.args.multiprocess:
             try:
                 self.manager.shutdown()
+                for worker in self.workerPool:
+                    try: os.kill(int(worker.pid), signal.SIGTERM)
+                    except: continue
             except:
                 pass
-            for worker in self.workerPool:
-                try:
-                    os.kill(int(worker.pid), signal.SIGTERM)
-                except:
-                    continue
+            
                 
