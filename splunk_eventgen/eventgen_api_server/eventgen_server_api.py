@@ -390,7 +390,10 @@ class EventgenServerAPI(ApiBlueprint):
     def stop(self, force_stop=False):
         response = {}
         if self.eventgen.eventgen_core_object.check_running():
-            self.eventgen.eventgen_core_object.stop(force_stop=force_stop)
+            try:
+                self.eventgen.eventgen_core_object.stop(force_stop=force_stop)
+            except:
+                pass
             response['message'] = "Eventgen is stopped."
         else:
             response['message'] = "There is no Eventgen process running."
