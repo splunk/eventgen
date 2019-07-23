@@ -173,7 +173,6 @@ class TestEventgenOrchestration(object):
         r = requests.post("http://127.0.0.1:{}/bundle".format(self.controller_eventgen_webport), json={
             "url": "http://server.com/bundle.tgz"})
         assert r.status_code == 200
-        assert "Bundle event dispatched to all with url http://server.com/bundle.tgz" in r.content
 
     def test_controller_bundle_with_url_and_target(self):
         r = requests.post(
@@ -181,8 +180,6 @@ class TestEventgenOrchestration(object):
                                                    TestEventgenOrchestration.server_id[:12]), json={
                                                        "url": "http://server.com/bundle.tgz"})
         assert r.status_code == 200
-        assert "Bundle event dispatched to {} with url http://server.com/bundle.tgz".format(
-            TestEventgenOrchestration.server_id[:12]) in r.content
 
     def test_controller_get_volume(self):
         max_retry = 5
@@ -229,6 +226,10 @@ class TestEventgenOrchestration(object):
         assert "Eventgen is stopping" in r.content
 
     # Server tests #
+
+    def test_server_reset(self):
+        r = requests.post("http://127.0.0.1:{}/reset".format(self.server_eventgen_webport))
+        assert r.status_code == 200
 
     def test_server_root(self):
         r = requests.get("http://127.0.0.1:{}".format(self.server_eventgen_webport))
