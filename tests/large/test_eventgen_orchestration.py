@@ -153,15 +153,6 @@ class TestEventgenOrchestration(object):
         assert r.status_code == 200
         assert "Eventgen already started" in r.content
 
-    def test_controller_stop(self):
-        r = requests.post("http://127.0.0.1:{}/stop".format(self.controller_eventgen_webport))
-        assert r.status_code == 200
-
-    def test_controller_stop_with_target(self):
-        r = requests.post("http://127.0.0.1:{}/stop/{}".format(self.controller_eventgen_webport,
-                                                               TestEventgenOrchestration.server_id[:12]))
-        assert r.status_code == 200
-
     def test_controller_restart(self):
         r = requests.post("http://127.0.0.1:{}/restart".format(self.controller_eventgen_webport))
         assert r.status_code == 200
