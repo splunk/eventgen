@@ -109,7 +109,7 @@ Please follow these instructions to run an Eventgen cluster on your Docker envir
 2. Create a Docker network: `docker network create --attchable --driver bridge eg_network`
 3. To set up a controller, run `docker run --network eg_network --name eg_controller  -d -p 6379:6379 -p 9500:9500 eventgen:latest controller`
 4. To set up a server, run `docker run --network eg_network --name eg_server -e REDIS_HOST=eg_controller -d -p 9501:9500 eventgen:latest server`
-* Note that REDIS_HOST needs to be a resolvable host address to the controoler. Also, --name should be used to differientiate a server from another.
+* Note that REDIS_HOST needs to be a resolvable host address to the controller. Also, --name should be used to differientiate a server from another.
 
 ---
 
