@@ -402,8 +402,7 @@ class EventgenServerAPI(ApiBlueprint):
     def restart(self):
         response = {}
         if self.eventgen.eventgen_core_object.check_running():
-            self.stop(force_stop=True)
-            time.sleep(0.1)
+            self.reset()
             self.start()
             response['message'] = "Eventgen has successfully restarted."
         else:
@@ -414,9 +413,9 @@ class EventgenServerAPI(ApiBlueprint):
     def reset(self):
         response = {}
         self.stop(force_stop=True)
-        time.sleep(0.3)
+        time.sleep(0.1)
         self.eventgen.refresh_eventgen_core_object()
-        self.total_volume = 0.0
+        self.get_volume()
         response['message'] = "Eventgen has been reset."
         return response
 

@@ -486,11 +486,8 @@ class EventGenerator(object):
                         time.sleep(2)
                         count += 1
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
-        if force_stop:
-            self.logger.info("Forcibly stopping Eventgen: Deleting outputQueue.")
-            del self.outputQueue
-            self._create_output_threadpool()
-        self.outputQueue.join()
+        if not self.args.multiprocess and not force_stop:
+            self.outputQueue.join()
         self.logger.info("All items fully processed. Cleaning up internal processes.")
         self.started = False
         self.stopping = False
@@ -506,7 +503,6 @@ class EventGenerator(object):
 
     def check_running(self):
         '''
-
         :return: if eventgen is running, return True else False
         '''
         if hasattr(self, "outputQueue") and hasattr(self, "sampleQueue") and hasattr(self, "workerQueue"):
@@ -541,10 +537,11 @@ class EventGenerator(object):
     def kill_processes(self):
         if self.args.multiprocess:
             try:
-                self.manager.shutdown()
                 for worker in self.workerPool:
-                    try: os.kill(int(worker.pid), signal.SIGTERM)
+                    try: os.kill(int(worker.pid), signal.SIGKILL)
                     except: continue
+                del self.outputQueue
+                self.manager.shutdown()
             except:
                 pass
             
