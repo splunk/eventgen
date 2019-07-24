@@ -37,7 +37,7 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
     name = 'httpevent'
 
     def __init__(self, sample, output_counter=None):
-        super(HTTPEventOutputPlugin,self).__init__(sample,output_counter)
+        super(HTTPEventOutputPlugin, self).__init__(sample,output_counter)
 
     def flush(self, q):
         logger.debug("Flush called on httpevent plugin")

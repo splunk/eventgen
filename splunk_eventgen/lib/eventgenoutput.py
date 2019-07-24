@@ -5,7 +5,7 @@ import logging
 import logging.handlers
 import time
 from Queue import Full
-from logging_config import logger
+from logging_config import logger, metrics_logger
 
 
 # TODO: Figure out why we load plugins from here instead of the base plugin class.
@@ -75,7 +75,6 @@ class Output(object):
         Flushes output buffer, unless endOfInterval called, and then only flush if we've been called
         more than maxIntervalsBeforeFlush tunable.
         """
-        flushing = False
         # TODO: Fix interval flushing somehow with a queue, not sure I even want to support this feature anymore.
         '''if endOfInterval:
             logger.debugv("Sample calling flush, checking increment against maxIntervalsBeforeFlush")
@@ -113,8 +112,7 @@ class Output(object):
                 if self.config.splunkEmbedded:
                     tmp = [len(s['_raw']) for s in q]
                     if len(tmp) > 0:
-                        metrics = logging.getLogger('eventgen_metrics')
-                        metrics.info({
+                        metrics_logger.info({
                             'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 'sample':
                             self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)})
                     tmp = None

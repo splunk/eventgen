@@ -10,9 +10,6 @@ import logging
 import os
 import shutil
 import sys
-import time
-
-import requests
 
 FILE_LOCATION = os.path.dirname(os.path.abspath(__file__))
 path_prepend = os.path.join(FILE_LOCATION, 'lib')
@@ -125,6 +122,7 @@ def parse_args():
             args.configfile = None
     return args
 
+
 def exclude_function(filename):
     # removing any hidden . files.
     last_index = filename.rfind('/')
@@ -136,10 +134,12 @@ def exclude_function(filename):
     else:
         return False
 
+
 def make_tarfile(output_filename, source_dir):
     import tarfile
     with tarfile.open(output_filename, "w:gz") as tar:
         tar.add(source_dir, arcname=os.path.basename(source_dir), exclude=exclude_function)
+
 
 def build_splunk_app(dest, source=os.getcwd(), remove=True):
     import imp
@@ -181,6 +181,7 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
         shutil.rmtree(directory)
     os.chdir(cwd)
 
+
 def convert_verbosity_count_to_logging_level(verbosity):
     if verbosity == 0:
         return logging.ERROR
@@ -191,12 +192,14 @@ def convert_verbosity_count_to_logging_level(verbosity):
     else:
         return logging.ERROR
 
+
 def gather_env_vars(args):
     os_vars, env_vars = dict(os.environ), {}
     env_vars["REDIS_HOST"] = os.environ.get("REDIS_HOST", args.redis_host)
     env_vars["REDIS_PORT"] = os.environ.get("REDIS_PORT", args.redis_port)
     env_vars["WEB_SERVER_PORT"] = os.environ.get("WEB_SERVER_PORT", args.web_server_port)
     return env_vars
+
 
 def main():
     cwd = os.getcwd()
