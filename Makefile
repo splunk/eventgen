@@ -44,6 +44,10 @@ test_helper:
 	@echo 'Installing test requirements'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install --upgrade pip;pip install -r $(shell pwd)/requirements.txt" || true
 
+	@echo 'Make simulated app dir and sample for modular input test'
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); cd ../..; mkdir -p modinput_test_app/samples/" || true
+	docker cp tests/large/sample/film.json ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/../../modinput_test_app/samples
+
 	@echo 'Installing docker-compose'
 	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
 	sudo chmod +x /usr/local/bin/docker-compose || true
@@ -57,7 +61,7 @@ test_helper:
 
 run_tests:
 	@echo 'Running the super awesome tests'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python tests/run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}" || true
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}" || true
 
 test_collection_cleanup:
 	@echo 'Collecting results'
