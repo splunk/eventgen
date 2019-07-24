@@ -254,7 +254,7 @@ class TestEventgenOrchestration(object):
         output = json.loads(r.content)
         assert output
         assert output['EVENTGEN_STATUS'] == 0
-        assert output['TOTAL_VOLUME'] == 0
+        assert output['TOTAL_VOLUME'] == 20
 
     def test_server_get_and_set_conf(self):
         r = requests.get("http://127.0.0.1:{}/conf".format(self.server_eventgen_webport))
