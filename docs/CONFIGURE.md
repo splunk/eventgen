@@ -34,12 +34,12 @@ Configuration files are based on Splunk / Python configuration files. This style
 sample you wish to create, followed by key = value tuning options for that sample. 
 ```
 [<sample file name>]
-    * This stanza defines a given sample file contained within the samples directory.
-    * This stanza can be specified as a PCRE.
-    configurationkey = configuration value
+* This stanza defines a given sample file contained within the samples directory.
+* This stanza can be specified as a PCRE.
+configurationkey = configuration value
     
 [windbag]
-  count=100
+count=100
 ```
 Stanza names are one of the most important early configurations because they are used to find your sample file. Stanza names will perform a
 search for the stanza name as a file, located in the current directory, the default samples directory, or a sample directory specified by the user. If no matching sample is found, Eventgen
