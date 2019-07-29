@@ -25,9 +25,8 @@ FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "default"))
 SAMPLE_DIR_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "samples"))
 
-class EventgenServerAPI(ApiBlueprint):
+class EventgenServerAPI():
     def __init__(self, eventgen, redis_connector, host, mode='standalone'):
-        ApiBlueprint.__init__(self)
         self.bp = self._create_blueprint()
         self.eventgen = eventgen
         
@@ -42,6 +41,9 @@ class EventgenServerAPI(ApiBlueprint):
             self.redis_connector = redis_connector
             self._channel_listener()
             self.logger.info("Initialized the channel listener. Cluster mode ready.")
+    
+    def get_blueprint(self):
+        return self.bp
     
     def _channel_listener(self):
         def start_listening(self):

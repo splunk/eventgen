@@ -11,10 +11,9 @@ from api_blueprint import ApiBlueprint
 
 INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
 
-class EventgenControllerAPI(ApiBlueprint):
+class EventgenControllerAPI():
 
     def __init__(self, redis_connector, host):
-        ApiBlueprint.__init__(self)
         self.bp = self.__create_blueprint()
         self.redis_connector = redis_connector
         self.host = host
@@ -23,6 +22,9 @@ class EventgenControllerAPI(ApiBlueprint):
         self.logger.info("Initialized the EventgenControllerAPI Blueprint")
 
         self.interval = 0.001
+    
+    def get_blueprint(self):
+        return self.bp
     
     def __create_blueprint(self):
         bp = Blueprint('api', __name__)
