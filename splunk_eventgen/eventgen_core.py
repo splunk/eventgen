@@ -200,7 +200,7 @@ class EventGenerator(object):
                             has over 10 generators working, additional samples won't run until the first ones end.
         :return:
         '''
-        if self.args.multiprocess:
+        if  self.config.multiprocess:
             import multiprocessing
             self.manager = multiprocessing.Manager()
             if self.config.disableLoggingQueue:
@@ -233,7 +233,7 @@ class EventGenerator(object):
                     worker.start()
 
     def _create_generator_workers(self, workercount=20):
-        if self.args.multiprocess:
+        if self.config.multiprocess:
             import multiprocessing
             self.workerPool = []
             for worker in xrange(workercount):
@@ -465,7 +465,7 @@ class EventGenerator(object):
             self._create_generator_pool()
         self.workerQueue.join()
         # if we're in multiprocess, make sure we don't add more generators after the timers stopped.
-        if self.args.multiprocess:
+        if self.config.multiprocess:
             if force_stop:
                 self.kill_processes()
             else:
@@ -483,7 +483,7 @@ class EventGenerator(object):
                         time.sleep(2)
                         count += 1
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
-        if not self.args.multiprocess and not force_stop:
+        if not self.config.multiprocess and not force_stop:
             self.outputQueue.join()
         self.logger.info("All items fully processed. Cleaning up internal processes.")
         self.started = False
@@ -506,7 +506,7 @@ class EventGenerator(object):
             # If all queues are not empty, eventgen is running.
             # If all queues are empty and all tasks are finished, eventgen is not running.
             # If all queues are empty and there is an unfinished task, eventgen is running.
-            if not self.args.multiprocess:
+            if not self.config.multiprocess:
                 if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty() \
                         and self.sampleQueue.unfinished_tasks <= 0 \
                         and self.outputQueue.unfinished_tasks <= 0 \
@@ -532,7 +532,7 @@ class EventGenerator(object):
         return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty() and self.workerQueue.unfinished_tasks <= 0
 
     def kill_processes(self):
-        if self.args.multiprocess:
+        if self.config.multiprocess:
             try:
                 for worker in self.workerPool:
                     try: os.kill(int(worker.pid), signal.SIGKILL)
