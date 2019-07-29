@@ -6,7 +6,6 @@ import logging.config
 import os
 import sys
 import time
-import subprocess
 import signal
 from Queue import Empty, Queue
 from threading import Thread
