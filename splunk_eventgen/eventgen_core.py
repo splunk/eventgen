@@ -532,14 +532,14 @@ class EventGenerator(object):
         return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty() and self.workerQueue.unfinished_tasks <= 0
 
     def kill_processes(self):
-        if self.config.multiprocess:
-            try:
+        try:
+            if self.config.multiprocess:
                 for worker in self.workerPool:
                     try: os.kill(int(worker.pid), signal.SIGKILL)
                     except: continue
                 del self.outputQueue
                 self.manager.shutdown()
-            except:
-                pass
+        except:
+            pass
             
                 
