@@ -16,7 +16,6 @@ import requests
 from requests.packages.urllib3.util.retry import Retry
 import threading
 
-from api_blueprint import ApiBlueprint
 import eventgen_core_object
 
 INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})

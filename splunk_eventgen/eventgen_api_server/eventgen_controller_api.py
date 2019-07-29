@@ -7,8 +7,6 @@ import json
 import requests
 import logging
 
-from api_blueprint import ApiBlueprint
-
 INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
 
 class EventgenControllerAPI():
