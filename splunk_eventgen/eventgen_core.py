@@ -64,8 +64,6 @@ class EventGenerator(object):
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
 
-        self.workerPool = []
-
     def _load_config(self, configfile, **kwargs):
         '''
         This method will use a configfile and set self.confg as a processeded config object,
