@@ -99,7 +99,7 @@ class EventGenerator(object):
                 new_args["verbosity"] = args.verbosity
         self.config = Config(configfile, **new_args)
         self.config.parse()
-        self.args.multiprocess = "process" if self.config.threading else self.args.multiprocess
+        self.args.multiprocess = True if self.config.threading == "process" else self.args.multiprocess
         self._reload_plugins()
         if "args" in kwargs and getattr(kwargs["args"], "generators"):
             generator_worker_count = kwargs["args"].generators
@@ -107,7 +107,8 @@ class EventGenerator(object):
             generator_worker_count = self.config.generatorWorkers
 
         # TODO: Probably should destroy pools better so processes are cleaned.
-        self.kill_processes()
+        if self.args.multiprocess:
+            self.kill_processes()
         self._setup_pools(generator_worker_count)
 
     def _reload_plugins(self):
