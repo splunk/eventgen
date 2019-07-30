@@ -1,24 +1,35 @@
+6.5.0
+- Added metrics output mode
+- Fixed regex token replacement issue
+- Added test coverage information
+- Increased functional test coverage
+- Eventgen server complete revamp and standalone mode support
+- Added contributor license
+- Updated Dockerfile
+- Added documentation
+- Fixed bugs / stability / optimized speed
+
 6.4.0
-- Fix exception log error
-- Fix CircleCI status badage error
-- Fix navigation error for app if installed with Splunk Stream
-- Fix generatorWorkers not working error
-- Fix interval error when end = 1
-- Fix fileName in global stanza error
-- Add 3rd party libs in SA-Eventgen App
-- Add httpeventAllowFailureCount for httpevent
-- Add 3rd party libs in license credit
-- Disable logging queue in multiprocess mode
-- Change implementation of extendIndex for better performance
+- Fixed exception log error
+- Fixed CircleCI status badage error
+- Fixed navigation error for app if installed with Splunk Stream
+- Fixed generatorWorkers not working error
+- Fixed interval error when end = 1
+- Fixed fileName in global stanza error
+- Added 3rd party libs in SA-Eventgen App
+- Added httpeventAllowFailureCount for httpevent
+- Added 3rd party libs in license credit
+- Disabled logging queue in multiprocess mode
+- Changed implementation of extendIndex for better performance
 
 6.3.6
-- Add functional tests for jinja template and modular input feature
-- Fix default jinja template directory is not correctly resolved when sampleDir is set issue
-- Fix verbose flag not working in splunk_eventgen command line issue
-- Fix index, source, sourcetype are not correct when using splunkstream mode issue
-- Fix ssh to container issue
-- Fix perdayvolume without end setting error
-- Update documentation for better reading and remove unrelated part
+- Added functional tests for jinja template and modular input feature
+- Fixed default jinja template directory is not correctly resolved when sampleDir is set issue
+- Fixed verbose flag not working in splunk_eventgen command line issue
+- Fixed index, source, sourcetype are not correct when using splunkstream mode issue
+- Fixed ssh to container issue
+- Fixed perdayvolume without end setting error
+- Updated documentation for better reading and remove unrelated part
 
 6.3.5
 - Added extendIndexes feature to support a list of indexes
