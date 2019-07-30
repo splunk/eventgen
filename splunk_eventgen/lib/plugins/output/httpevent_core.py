@@ -42,7 +42,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
         OutputPlugin.__init__(self, sample, output_counter)
 
     # TODO: make workers a param that can be set in eventgen.conf
-    def _setup_REST_workers(self, session=None, workers=10):
+    def _setup_REST_workers(self, session=None, workers=20):
         # disable any "requests" warnings
         requests.packages.urllib3.disable_warnings()
         # Bind passed in samples to the outputter.

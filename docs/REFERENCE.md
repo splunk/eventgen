@@ -605,8 +605,12 @@ Note, "TARGET_NAME" is a variable that should be replaced by the hostname of Eve
     * Starts target Eventgen instance's data generation
 * ```POST /stop```
     * Stops all Eventgen instances' data generation
+    * body is optional; default is false. Setting force to true will destroy current Queues and trying to hard stop a running Eventgen object by causing errors.
+        * Format: ```{"force": true}``` or ```{"force": false}```
 * ```POST /stop/<TARGET_NAME>```
     * Stops target Eventgen instance's data generation
+    * body is optional; default is false. Setting force to true will destroy current Queues and trying to hard stop a running Eventgen object by causing errors.
+        * Format: ```{"force": true}``` or ```{"force": false}```
 * ```POST /restart```
     * Restarts all Eventgen instances' data generation
 * ```POST /restart/<TARGET_NAME>```
@@ -651,6 +655,7 @@ Note, "TARGET_NAME" is a variable that should be replaced by the hostname of Eve
             * Default values
                 * mode: "roundrobin"
                 * hostname_template: "idx{0}"
+                * hosts: [] # list of host addresses
                 * protocol: "https"
                 * key: "00000000-0000-0000-0000-000000000000"
                 * key_name: "eventgen"
@@ -664,6 +669,7 @@ Note, "TARGET_NAME" is a variable that should be replaced by the hostname of Eve
             * Default values
                 * mode: "roundrobin"
                 * hostname_template: "idx{0}"
+                * hosts: [] # list of host addresses
                 * protocol: "https"
                 * key: "00000000-0000-0000-0000-000000000000"
                 * key_name: "eventgen"
@@ -703,3 +709,17 @@ Note, "TARGET_NAME" is a variable that should be replaced by the hostname of Eve
         ```
         $ curl http://localhost:9500/volume/egx1 -X POST -d '{"perDayVolume": 200}'
         ```
+* ```POST /reset```
+    * Stops a running Eventgen run, reset the Eventgen Core Object, and reconfigure the server.
+    * Example:
+        ```
+        $ curl http://localhost:9500/reset -X POST
+        ```
+
+* ```POST /reset/<TARGET_NAME>```
+    * Stops a running Eventgen run, reset the Eventgen Core Object, and reconfigure the server.
+    * Example:
+        ```
+        $ curl http://localhost:9500/reset/egx1 -X POST
+        ```
+

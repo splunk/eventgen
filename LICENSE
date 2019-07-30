@@ -220,7 +220,6 @@ The following components are provided under the Apache License 2.0. See project 
     (Apache License 2.0) pyOpenSSL (https://github.com/pyca/pyopenssl/blob/master/LICENSE)
     (Apache License 2.0) docker (https://github.com/docker/docker-py/blob/master/LICENSE)
     (Apache License 2.0) requests-futures (https://github.com/ross/requests-futures/blob/master/LICENSE)
-    (Apache License 2.0) nameko (https://github.com/nameko/nameko/blob/master/LICENSE.txt)
 
 ========================================================================
 MIT licenses
@@ -244,7 +243,6 @@ BSD-style licenses
 The following components are provided under a BSD-style license. See project link for details.
 
     (BSD 2-Clause "Simplified" License) mock (https://github.com/testing-cabal/mock/blob/master/LICENSE.txt)
-    (BSD 3-Clause) pyrabbit (https://github.com/bkjones/pyrabbit/blob/master/LICENSE)
     (BSD 3-Clause) logutils (https://opensource.org/licenses/BSD-3-Clause)
     (BSD 3-Clause) jinja2 (https://github.com/pallets/jinja/blob/master/LICENSE)
     (BSD 3-Clause) ujson(https://github.com/esnme/ultrajson/blob/master/LICENSE.txt)

@@ -1,11 +1,12 @@
 #!/bin/bash
 
 set -e
+/usr/sbin/sshd
 
 if [ "$#" = 0 ]; then
 	tail -F -n0 /etc/hosts && wait
 elif [ "$1" = "controller" ]; then
-	rabbitmq-server &
+	redis-server &
 	splunk_eventgen service --role controller &
 	tail -F -n0 /etc/hosts && wait
 elif [ "$1" = "server" ]; then

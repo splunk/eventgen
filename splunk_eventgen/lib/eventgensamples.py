@@ -359,6 +359,8 @@ class Sample(object):
                 self._closeSampleFile()
                 self.sampleDict = []
                 for line in self.sampleLines:
+                    if line == '\n':
+                        continue
                     if line and line[-1] != '\n':
                         line = line + '\n'
                     self.sampleDict.append({

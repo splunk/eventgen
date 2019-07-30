@@ -46,11 +46,16 @@ Given the complexity and the reimplementation of a number of features during ref
 
     python -m splunk_eventgen generate tests/<dir>/<test>.conf
 
-# Server-Controller Architecture
+# Controller-Server Architecture
 
-This is a new feature included in version >= 6.0 Traditionally, it has been difficult to configure multiple Eventgen instances at the same time. The performance of a single Eventgen instance is often limited in its architecture and compute power of the host machine.
-Therefore, it is inevitable that we will need to use more than one Eventgen instance for larger data generation. We introduce server-controller architecture to do this in a more user friendly way.
+This is a new feature included in version >= 6.0 Traditionally, it has been difficult to configure multiple Eventgen instances at the same time. The performance of a single Eventgen instance is often limited in its architecture and compute power of the host machine. We introduce Controller-Server architecture to support scalable Eventgen deployment.
 
-In Server-Controller Architecture, we may have one or multiple servers (Eventgen instances), one controller and one instance of RabbitMQ. It is ok to run RabbitMQ locally with the controller.
-The Servers and controller are communicating via RabbitMQ, where the controller has a capability to broadcast incoming requests to the servers and aggregate the results to output to the users.
+In this Architecture, we may have one or multiple servers (Eventgen instances), one controller and one instance of Redis (which lives inside of the same container as the controller). You don't have to worry about setting up Redis yourself. Redis is used for communication between Controller and Servers.
+
+In order to get setup, I would recommend building a Docker image locally using ``make image`` command.
+Then, start a single instance of Controller (using ``controller`` as the container argument). You may start any number of servers (using ``server`` as the container argument) with env var ``REDIS_HOST`` and ``REDIS_PORT`` that points to the controller's host address and Redis port (by default ``6379``).
+
+# Standalone Architecture
+
+Users can also set up Standalone Eventgen servers without a controller (using ``standalone`` as the container argument). Standalone mode allows users to use the same backend API calls.
 

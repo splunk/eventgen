@@ -107,12 +107,20 @@ eg_network:
 run_server: eg_network
 	docker kill eg_server || true
 	docker rm eg_server || true
-	docker run --network eg_network --name eg_server -e EVENTGEN_AMQP_HOST="eg_controller" -d -p 9501:9500 eventgen:latest server
+	docker run --network eg_network --name eg_server -e REDIS_HOST=eg_controller -d -p 9501:9500 eventgen:latest server
 
 run_controller: eg_network
 	docker kill eg_controller || true
 	docker rm eg_controller || true
-	docker run --network eg_network --name eg_controller  -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
+	docker run --network eg_network --name eg_controller  -d -p 6379:6379 -p 9500:9500 eventgen:latest controller
+
+run_standalone:
+	docker kill eg_standalone || true
+	docker rm eg_standalone || true
+	docker run --name eg_standalone  -d -p 9500:9500 eventgen:latest standalone
+
+run_local_standalone:
+	python -m splunk_eventgen service -r standalone
 
 docs:
 	cd docs/; bundle install; bundle exec jekyll serve
