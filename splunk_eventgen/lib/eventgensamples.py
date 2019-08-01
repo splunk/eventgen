@@ -1,17 +1,16 @@
 # TODO Move config settings to plugins
-
-from __future__ import division, with_statement
-
 import csv
 import datetime
 import os
 import pprint
 import re
 import sys
-import urllib
+import urllib.request
+import urllib.parse
+import urllib.error
 
-from timeparser import timeParser
-from logging_config import logger
+from .timeparser import timeParser
+from .logging_config import logger
 
 
 class Sample(object):
@@ -214,7 +213,7 @@ class Sample(object):
         """Saves state of all integer IDs of this sample to a file so when we restart we'll pick them up"""
         for token in self.tokens:
             if token.replacementType == 'integerid':
-                stateFile = open(os.path.join(self.sampleDir, 'state.' + urllib.pathname2url(token.token)), 'w')
+                stateFile = open(os.path.join(self.sampleDir, 'state.' + urllib.request.pathname2url(token.token)), 'w')
                 stateFile.write(token.replacement)
                 stateFile.close()
 
@@ -375,12 +374,12 @@ class Sample(object):
                 self.sampleDict = []
                 self.sampleLines = []
                 # Fix to load large csv files, work with python 2.5 onwards
-                csv.field_size_limit(sys.maxint)
+                csv.field_size_limit(sys.maxsize)
                 csvReader = csv.DictReader(self._sampleFH)
                 for line in csvReader:
                     if '_raw' in line:
                         # Use conf-defined values for these params instead of sample-defined ones
-                        current_line_keys = line.keys()
+                        current_line_keys = list(line.keys())
                         if "host" not in current_line_keys:
                             line["host"] = self.host
                         if "hostRegex" not in current_line_keys:
@@ -399,7 +398,7 @@ class Sample(object):
                 logger.debug("Finished creating sampleDict & sampleLines for sample '%s'.  Len sampleDict: %d" %
                                   (self.name, len(self.sampleDict)))
 
-                for i in xrange(0, len(self.sampleDict)):
+                for i in range(0, len(self.sampleDict)):
                     if len(self.sampleDict[i]['_raw']) < 1 or self.sampleDict[i]['_raw'][-1] != '\n':
                         self.sampleDict[i]['_raw'] += '\n'
         if self.extendIndexes:

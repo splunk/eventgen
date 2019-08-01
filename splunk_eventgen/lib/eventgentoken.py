@@ -1,7 +1,4 @@
 # TODO: Handle timestamp generation for modinput and set sample.timestamp properly for timestamp replacement
-
-from __future__ import division, with_statement
-
 import datetime
 import json
 import os
@@ -9,11 +6,13 @@ import pprint
 import random
 import re
 import time
-import urllib
+import urllib.request
+import urllib.parse
+import urllib.error
 import uuid
 
-from timeparser import timeDelta2secs
-from logging_config import logger
+from .timeparser import timeDelta2secs
+from .logging_config import logger
 
 
 class Token(object):
@@ -327,7 +326,7 @@ class Token(object):
                         # Generate a random ASCII between dec 33->126
                         replacement += chr(random.randint(33, 126))
                         # Practice safe strings
-                        replacement = re.sub('%[0-9a-fA-F]+', '', urllib.quote(replacement))
+                        replacement = re.sub('%[0-9a-fA-F]+', '', urllib.parse.quote(replacement))
 
                     return replacement
                 else:

@@ -1,5 +1,3 @@
-from __future__ import division
-
 from outputplugin import OutputPlugin
 from logging_config import logger
 

@@ -1,5 +1,3 @@
-from __future__ import division
-
 import datetime
 import threading
 import uuid
@@ -127,9 +125,9 @@ class AwsS3OutputPlugin(OutputPlugin):
                 uuid.uuid1()) + self.awsS3objectsuffix
         logger.debug("Uploading %d events into s3 key: %s " % (len(records), s3keyname))
         if self.awsS3compressiontype == 'gz':
-            import StringIO
+            import io
             import gzip
-            out = StringIO.StringIO()
+            out = io.StringIO()
             with gzip.GzipFile(fileobj=out, mode="w") as f:
                 f.write(records)
             records = out.getvalue()

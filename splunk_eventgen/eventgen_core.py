@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 import imp
 import logging
@@ -7,14 +7,14 @@ import os
 import sys
 import time
 import signal
-from Queue import Empty, Queue
+from queue import Empty, Queue
 from threading import Thread
 
-from lib.eventgenconfig import Config
-from lib.eventgenexceptions import PluginNotLoaded
-from lib.eventgentimer import Timer
-from lib.outputcounter import OutputCounter
-from lib.logging_config import logger
+from .lib.eventgenconfig import Config
+from .lib.eventgenexceptions import PluginNotLoaded
+from .lib.eventgentimer import Timer
+from .lib.outputcounter import OutputCounter
+from .lib.logging_config import logger
 
 lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.insert(0, lib_path_prepend)
@@ -238,7 +238,7 @@ class EventGenerator(object):
         if self.args.multiprocess:
             import multiprocessing
             self.workerPool = []
-            for worker in xrange(workercount):
+            for worker in range(workercount):
                 # builds a list of tuples to use the map function
                 process = multiprocessing.Process(target=self._proc_worker_do_work, args=(
                     self.workerQueue,
@@ -544,4 +544,3 @@ class EventGenerator(object):
         except:
             pass
             
-                

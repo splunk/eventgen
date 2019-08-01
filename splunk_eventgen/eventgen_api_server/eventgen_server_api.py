@@ -2,10 +2,9 @@ import flask
 from flask import Response, request
 import socket
 import json
-import ConfigParser
+import configparser
 import os
 import time
-import requests
 import zipfile
 import tarfile
 import glob
@@ -13,10 +12,9 @@ import shutil
 import collections
 import logging
 import requests
-from requests.packages.urllib3.util.retry import Retry
 import threading
 
-import eventgen_core_object
+from . import eventgen_core_object
 
 INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
 
@@ -24,7 +22,8 @@ FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "default"))
 SAMPLE_DIR_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "samples"))
 
-class EventgenServerAPI():
+
+class EventgenServerAPI:
     def __init__(self, eventgen, redis_connector, host, mode='standalone'):
         self.bp = self._create_blueprint()
         self.eventgen = eventgen
@@ -101,7 +100,6 @@ class EventgenServerAPI():
                 self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('reset', request_method, response=message))
                 self.reset()
 
-            
     def _create_blueprint(self):
         bp = flask.Blueprint('server_api', __name__)
 
@@ -230,7 +228,7 @@ class EventgenServerAPI():
     def get_conf(self):
         response = collections.OrderedDict()
         if self.eventgen.configured:
-            config = ConfigParser.ConfigParser()
+            config = configparser.ConfigParser()
             config.optionxform = str
             config_path = self.eventgen.configfile
             if os.path.isfile(config_path):
@@ -242,18 +240,18 @@ class EventgenServerAPI():
         return response
     
     def set_conf(self, request_body):
-        config = ConfigParser.ConfigParser({}, collections.OrderedDict)
+        config = configparser.ConfigParser({}, collections.OrderedDict)
         config.optionxform = str
 
-        for sample in request_body.iteritems():
+        for sample in request_body.items():
             config.add_section(sample[0])
-            for pair in sample[1].iteritems():
+            for pair in sample[1].items():
                 value = pair[1]
                 if type(value) == dict:
                     value = json.dumps(value)
                 config.set(sample[0], pair[0], value)
 
-        with open(eventgen_core_object.CUSTOM_CONFIG_PATH, 'w+') as conf_content:
+        with open(eventgen_core_object.CUSTOM_CONFIG_PATH, 'wb+') as conf_content:
             config.write(conf_content)
 
         self.eventgen.refresh_eventgen_core_object()
@@ -261,12 +259,12 @@ class EventgenServerAPI():
     def edit_conf(self, request_body):
         conf_dict = self.get_conf()
 
-        for stanza, kv_pairs in request_body.iteritems():
-            for key, value in kv_pairs.iteritems():
-                if stanza not in conf_dict.keys():
+        for stanza, kv_pairs in request_body.items():
+            for key, value in kv_pairs.items():
+                if stanza not in conf_dict:
                     conf_dict[stanza] = {}
                 if stanza == "global" and key == "index":
-                    for stanza, kv_pairs in conf_dict.iteritems():
+                    for stanza, kv_pairs in conf_dict.items():
                         conf_dict[stanza]["index"] = value
                 conf_dict[stanza][key] = value
         
@@ -343,8 +341,8 @@ class EventgenServerAPI():
         config = self.get_conf()
         total_volume = 0.0
         volume_distribution = {}
-        for stanza in config.keys():
-            if isinstance(config[stanza], dict) and "perDayVolume" in config[stanza].keys():
+        for stanza in list(config.keys()):
+            if isinstance(config[stanza], dict) and "perDayVolume" in list(config[stanza].keys()):
                 total_volume += float(config[stanza]["perDayVolume"])
                 volume_distribution[stanza] = float(config[stanza]["perDayVolume"])
 
@@ -358,20 +356,20 @@ class EventgenServerAPI():
         conf_dict = self.get_conf()
         if self.get_volume()['perDayVolume'] != 0:
             ratio = float(target_volume) / float(self.total_volume)
-            for stanza, kv_pair in conf_dict.iteritems():
+            for stanza, kv_pair in conf_dict.items():
                 if isinstance(kv_pair, dict):
-                    if '.*' not in stanza and "perDayVolume" in kv_pair.keys():
+                    if '.*' not in stanza and "perDayVolume" in list(kv_pair.keys()):
                         conf_dict[stanza]["perDayVolume"] = round(float(conf_dict[stanza]["perDayVolume"]) * ratio, 2)
         else:
             # If there is no total_volume existing, divide the volume equally into stanzas
-            stanza_num = len(conf_dict.keys())
-            if '.*' in conf_dict.keys():
+            stanza_num = len(list(conf_dict.keys()))
+            if '.*' in conf_dict:
                 stanza_num -= 1
-            if 'global' in conf_dict.keys():
+            if 'global' in conf_dict:
                 stanza_num -= 1
             divided_volume = float(target_volume) / stanza_num
-            for stanza, kv_pair in conf_dict.iteritems():
-                if isinstance(kv_pair, dict) and stanza != 'global' and '.*' not in stanza:
+            for stanza, kv_pair in conf_dict.items():
+                if isinstance(kv_pair, dict) and stanza != '.*' not in stanza:
                     conf_dict[stanza]["perDayVolume"] = divided_volume
 
         self.set_conf(conf_dict)
@@ -433,14 +431,13 @@ class EventgenServerAPI():
 
         if os.path.isfile(os.path.join(bundle_dir, "default", "eventgen.conf")):
             self.eventgen.configured = False
-            config = ConfigParser.ConfigParser()
+            config = configparser.ConfigParser()
             config.optionxform = str
             config.read(os.path.join(bundle_dir, "default", "eventgen.conf"))
             config_dict = {s: collections.OrderedDict(config.items(s)) for s in config.sections()}
             self.set_conf(config_dict)
             self.eventgen.configured = True
             self.logger.info("Configured Eventgen with the downloaded bundle.")
-        
 
     def download_bundle(self, url):
         bundle_path = os.path.join(DEFAULT_PATH, "eg-bundle.tgz")
@@ -477,17 +474,17 @@ class EventgenServerAPI():
     def clean_bundle_conf(self):
         conf_dict = self.get_conf()
 
-        if ".*" not in conf_dict.keys():
+        if ".*" not in conf_dict:
             conf_dict['.*'] = {}
 
         # 1. Remove sampleDir from individual stanza and set a global sampleDir
         # 2. Change token sample path to a local sample path
-        for stanza, kv_pair in conf_dict.iteritems():
+        for stanza, kv_pair in conf_dict.items():
             if stanza != ".*":
                 if 'sampleDir' in kv_pair:
                     del kv_pair['sampleDir']
                 
-            for key, value in kv_pair.iteritems():
+            for key, value in kv_pair.items():
                 if 'replacementType' in key and value in ['file', 'mvfile', 'seqfile']:
                     token_num = key[key.find('.')+1:key.rfind('.')]
                     if not token_num: continue
@@ -501,9 +498,9 @@ class EventgenServerAPI():
     def setup_http(self, data):
         if data.get("servers"):
             conf_dict = self.get_conf()
-            if 'global' not in conf_dict.keys():
+            if 'global' not in conf_dict:
                 conf_dict['global'] = {}
-            for stanza, kv_pair in conf_dict.iteritems():
+            for stanza, kv_pair in conf_dict.items():
                 if 'outputMode' in kv_pair:
                     del kv_pair['outputMode']
                 if 'httpeventServers' in kv_pair:
@@ -571,9 +568,9 @@ class EventgenServerAPI():
                     break
         
             conf_dict = self.get_conf()
-            if 'global' not in conf_dict.keys():
+            if 'global' not in conf_dict:
                 conf_dict['global'] = {}
-            for stanza, kv_pair in conf_dict.iteritems():
+            for stanza, kv_pair in conf_dict.items():
                 if 'outputMode' in kv_pair:
                     del kv_pair['outputMode']
                 if 'httpeventServers' in kv_pair:

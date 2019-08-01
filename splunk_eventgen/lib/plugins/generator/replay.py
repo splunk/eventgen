@@ -1,7 +1,4 @@
 # TODO Add timestamp detection for common timestamp format
-
-from __future__ import division
-
 import datetime
 import time
 

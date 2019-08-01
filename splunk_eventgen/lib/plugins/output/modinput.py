@@ -1,10 +1,3 @@
-# import sys, os
-# path_prepend = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# sys.path.append(path_prepend)
-# from eventgenoutputtemplates import OutputTemplate
-
-from __future__ import division
-
 import sys
 from xml.sax.saxutils import escape
 

@@ -3,14 +3,14 @@ import socket
 import os
 import logging
 
-from eventgen_controller_api import EventgenControllerAPI
-from redis_connector import RedisConnector
+from .eventgen_controller_api import EventgenControllerAPI
+from .redis_connector import RedisConnector
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = os.path.join(FILE_PATH, '..', 'logs')
 
-class EventgenController():
 
+class EventgenController:
     def __init__(self, *args, **kwargs):
         self.env_vars = kwargs.get('env_vars')
         

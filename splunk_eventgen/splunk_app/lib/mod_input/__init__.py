@@ -676,7 +676,7 @@ class ModularInput(object):
 
         success = False
         try:
-            with open(os.path.join(checkpoint_dir, filename), 'w') as fp:
+            with open(os.path.join(checkpoint_dir, filename), 'wb') as fp:
                 json.dump(data, fp)
                 success = True
         except IOError:
@@ -717,7 +717,7 @@ class ModularInput(object):
 
         try:
             if os.path.isfile(checkpoint_path):
-                with open(checkpoint_path, 'r') as fp:
+                with open(checkpoint_path, 'rb') as fp:
                     data = json.load(fp)
         except (IOError, ValueError) as e:
             logger.exception(

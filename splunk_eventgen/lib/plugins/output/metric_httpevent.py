@@ -1,6 +1,4 @@
-from __future__ import division
-
-from httpevent_core import HTTPCoreOutputPlugin
+from .httpevent_core import HTTPCoreOutputPlugin
 from logging_config import logger
 
 try:
@@ -12,7 +10,7 @@ except ImportError:
     pass
 try:
     import ujson as json
-except:
+except ImportError:
     import json
 
 

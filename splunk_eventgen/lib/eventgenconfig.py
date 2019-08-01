@@ -1,5 +1,3 @@
-from __future__ import division
-
 import datetime
 import json
 import logging.handlers
@@ -8,13 +6,15 @@ import pprint
 import random
 import re
 import types
-import urllib
-from ConfigParser import ConfigParser
+import urllib.request
+import urllib.parse
+import urllib.error
+from configparser import ConfigParser
 
-from eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
-from eventgensamples import Sample
-from eventgentoken import Token
-from logging_config import logger
+from .eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
+from .eventgensamples import Sample
+from .eventgentoken import Token
+from .logging_config import logger
 
 # 4/21/14 CS  Adding a defined constant whether we're running in standalone mode or not
 #             Standalone mode is when we know we're Splunk embedded but we want to force
@@ -268,11 +268,11 @@ class Config(object):
 
         stanza_map = {}
         stanza_list = []
-        for stanza in self._confDict.keys():
+        for stanza in self._confDict:
             stanza_list.append(stanza)
             stanza_map[stanza] = []
 
-        for stanza, settings in self._confDict.iteritems():
+        for stanza, settings in self._confDict.items():
             for stanza_item in stanza_list:
                 if stanza != stanza_item and re.match(stanza, stanza_item):
                     stanza_map[stanza_item].append(stanza)
@@ -340,7 +340,7 @@ class Config(object):
                             else:
                                 break
 
-                        keys = settings.keys()
+                        keys = list(settings.keys())
                         for k, v in self._confDict[global_stanza].items():
                             if 'token' not in k and k not in keys:
                                 kv_pair_items.append((k, v))
@@ -357,7 +357,7 @@ class Config(object):
                         # Token indices could be out of order, so we must check to
                         # see whether we have enough items in the list to update the token
                         # In general this will keep growing the list by whatever length we need
-                        if (key.find("host.") > -1):
+                        if key.find("host.") > -1:
                             # logger.info("hostToken.{} = {}".format(value[1],oldvalue))
                             if not isinstance(s.hostToken, Token):
                                 s.hostToken = Token(s)
@@ -367,7 +367,7 @@ class Config(object):
                         else:
                             if len(s.tokens) <= value[0]:
                                 x = (value[0] + 1) - len(s.tokens)
-                                s.tokens.extend([None for num in xrange(0, x)])
+                                s.tokens.extend([None for num in range(0, x)])
                             if not isinstance(s.tokens[value[0]], Token):
                                 s.tokens[value[0]] = Token(s)
                             # logger.info("token[{}].{} = {}".format(value[0],value[1],oldvalue))
@@ -385,7 +385,7 @@ class Config(object):
                 # because they come over multiple lines
                 # Don't error out at this point, just log it and remove the token and move on
                 deleteidx = []
-                for i in xrange(0, len(s.tokens)):
+                for i in range(0, len(s.tokens)):
                     t = s.tokens[i]
                     # If the index doesn't exist at all
                     if t is None:
@@ -397,7 +397,7 @@ class Config(object):
                         logger.error("Token at index %s invalid" % i)
                         deleteidx.append(i)
                 newtokens = []
-                for i in xrange(0, len(s.tokens)):
+                for i in range(0, len(s.tokens)):
                     if i not in deleteidx:
                         newtokens.append(s.tokens[i])
                 s.tokens = newtokens
@@ -509,7 +509,7 @@ class Config(object):
             for token in s.tokens:
                 if token.replacementType == 'integerid':
                     try:
-                        stateFile = open(os.path.join(s.sampleDir, 'state.' + urllib.pathname2url(token.token)), 'rU')
+                        stateFile = open(os.path.join(s.sampleDir, 'state.' + urllib.request.pathname2url(token.token)), 'rU')
                         token.replacement = stateFile.read()
                         stateFile.close()
                     # The file doesn't exist, use the default value in the config

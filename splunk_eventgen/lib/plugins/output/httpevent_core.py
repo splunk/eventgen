@@ -1,8 +1,7 @@
-from __future__ import division
-
-import logging
 import random
-import urllib
+import urllib.request
+import urllib.parse
+import urllib.error
 
 from outputplugin import OutputPlugin
 from logging_config import logger
@@ -16,7 +15,7 @@ except ImportError:
     pass
 try:
     import ujson as json
-except:
+except ImportError:
     import json
 
 
@@ -59,7 +58,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
         :param value: string
         :return: urlencoded string
         '''
-        return urllib.quote(value)
+        return urllib.parse.quote(value)
 
     @staticmethod
     def _bg_convert_json(sess, resp):

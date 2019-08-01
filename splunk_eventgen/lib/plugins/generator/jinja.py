@@ -1,5 +1,3 @@
-from __future__ import division
-
 import datetime
 import os
 import random
@@ -12,7 +10,7 @@ from generatorplugin import GeneratorPlugin
 from logging_config import logger
 try:
     import ujson as json
-except:
+except ImportError:
     import json as json
 
 
@@ -259,7 +257,7 @@ class JinjaGenerator(GeneratorPlugin):
                                     "Please note, you must meet the requirements for json.loads in python if you have" +
                                     "not installed ujson. Native python does not support multi-line events.")
                                 continue
-                            current_line_keys = target_line.keys()
+                            current_line_keys = list(target_line.keys())
                             if "_time" not in current_line_keys:
                                 # TODO: Add a custom exception here
                                 raise Exception("No _time field supplied, please add time to your jinja template.")

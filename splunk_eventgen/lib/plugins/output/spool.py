@@ -1,10 +1,3 @@
-# import sys, os
-# path_prepend = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# sys.path.append(path_prepend)
-# from eventgenoutputtemplates import OutputTemplate
-
-from __future__ import division
-
 import os
 import time
 
@@ -37,7 +30,7 @@ class SpoolOutputPlugin(OutputPlugin):
             data = ''.join(event['_raw'] for event in q if event.get('_raw'))
             while True:
                 try:
-                    with open(self.spoolPath, 'a') as dst:
+                    with open(self.spoolPath, 'ab') as dst:
                         dst.write(data)
                     break
                 except:
