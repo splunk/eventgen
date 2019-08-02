@@ -9,7 +9,7 @@ import types
 import urllib.request
 import urllib.parse
 import urllib.error
-from configparser import ConfigParser
+from configparser import RawConfigParser
 
 from .eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
 from .eventgensamples import Sample
@@ -128,7 +128,7 @@ class Config(object):
         self.override_backfill = override_backfill
         self.override_end = override_end
         self.verbosity = verbosity
-        if override_generators >= 0:
+        if override_generators is not None and override_generators >= 0:
             self.generatorWorkers = override_generators
         if override_outputqueue:
             self.useOutputQueue = False
@@ -141,7 +141,7 @@ class Config(object):
             # 1/11/14 CS Adding a initial config parsing step (this does this twice now, oh well, just runs once
             # per execution) so that I can get config before calling parse()
 
-            c = ConfigParser()
+            c = RawConfigParser()
             c.optionxform = str
             c.read([os.path.join(self.grandparentdir, 'default', 'eventgen.conf')])
 
@@ -867,7 +867,7 @@ class Config(object):
         else:
             logger.info('Retrieving eventgen configurations with ConfigParser()')
             # We assume we're in a bin directory and that there are default and local directories
-            conf = ConfigParser()
+            conf = RawConfigParser()
             # Make case sensitive
             conf.optionxform = str
             conffiles = []

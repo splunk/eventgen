@@ -2,8 +2,8 @@ FROM redis:5.0.5-alpine
 
 RUN apk --no-cache upgrade && \
 	apk add --no-cache --update \
-	python2-dev \
-	py2-pip \
+	python3 \
+	python3-dev \
 	gcc \
 	libc-dev \
 	libffi-dev \
@@ -18,7 +18,7 @@ RUN apk --no-cache upgrade && \
 	g++ \
 	git \
 	curl && \
-	pip install --upgrade pip && \
+	pip3 install --upgrade pip && \
 	rm -rf /tmp/* && \
 	rm -rf /var/cache/apk/* && \
 	ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa && \
@@ -26,12 +26,12 @@ RUN apk --no-cache upgrade && \
 	mkdir -p /root/.ssh && \
 	chmod 0700 /root/.ssh && \
 	passwd -u root && \
-	pip install git+git://github.com/esnme/ultrajson.git
+	pip3 install git+git://github.com/esnme/ultrajson.git
 
 COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
 COPY dist/* /root/splunk_eventgen.tgz
-RUN pip install /root/splunk_eventgen.tgz && \
+RUN pip3 install /root/splunk_eventgen.tgz && \
 	rm /root/splunk_eventgen.tgz
 
 EXPOSE 2222 6379 9500

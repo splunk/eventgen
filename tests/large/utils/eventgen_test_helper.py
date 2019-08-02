@@ -30,7 +30,7 @@ class EventgenTestHelper(object):
             cmd.append('--multiprocess')
         env_var = os.environ.copy()
         if env is not None:
-            for k, v in env.iteritems():
+            for k, v in env.items():
                 env_var[k] = v
         self.process = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env_var)
         if timeout:
@@ -54,7 +54,7 @@ class EventgenTestHelper(object):
             if stderr:
                 assert False
         elif self.output_mode == 'file':
-            with open(os.path.join(result_dir, self.file_name), 'r') as f:
+            with open(os.path.join(result_dir, self.file_name), 'rb') as f:
                 output = f.read()
         elif self.output_mode == 'spool':
             spool_dir_config = self.config.get(self.section, 'spoolDir', fallback=None)
@@ -63,7 +63,7 @@ class EventgenTestHelper(object):
                 self.file_name = os.path.join(spool_dir_config, spool_file_config)
             else:
                 self.file_name = os.path.join(project_dir, spool_dir_config, spool_file_config)
-            with open(self.file_name, 'r') as f:
+            with open(self.file_name, 'rb') as f:
                 output = f.read()
         else:
             output = ''
@@ -72,7 +72,7 @@ class EventgenTestHelper(object):
             self.breaker = self.breaker[1:]
         if self.breaker[-1] == '$':
             self.breaker = self.breaker[:-1]
-        results = re.split(self.breaker, output)
+        results = re.split(self.breaker, output.decode("UTF-8"))
         return [x for x in results if x != ""]
 
     def tear_down(self):

@@ -53,23 +53,23 @@ class TestEventgenOrchestration(object):
         cls.client = APIClient(base_url="unix://var/run/docker.sock")
         response = cls.client.build(path=REPO_DIR, dockerfile=os.path.join("dockerfiles", "Dockerfile"), tag=IMAGE_NAME, rm=True, nocache=True, pull=True, stream=False)
         for line in response:
-            print line,
+            print(line, end=' ')
         # Create a network for both the controller and server to run in
         cls.client.create_network(NETWORK_NAME, driver="bridge", attachable=True)
         networking_config = cls.client.create_networking_config({NETWORK_NAME: cls.client.create_endpoint_config()})
         # Start the controller
-        print 'creating controller'
+        print('creating controller')
         host_config = cls.client.create_host_config(auto_remove=True, publish_all_ports=True)
         container = cls.client.create_container(image=IMAGE_NAME, command="controller", host_config=host_config,
                                                 networking_config=networking_config)
         cls.client.start(container["Id"])
         TestEventgenOrchestration.controller_id = container["Id"]
-        print container["Id"]
+        print(container["Id"])
         cls.controller_container = cls.client.inspect_container(container["Id"])
         cls.controller_eventgen_webport = cls.controller_container["NetworkSettings"]["Ports"]["9500/tcp"][0][
             "HostPort"]
         # Start the server
-        print 'creating server'
+        print('creating server')
         redis_host = container["Id"][:12]
         container = cls.client.create_container(
             image=IMAGE_NAME, command="server", environment=["REDIS_HOST={}".format(redis_host)], 
@@ -77,19 +77,19 @@ class TestEventgenOrchestration(object):
             networking_config=networking_config)
         cls.client.start(container["Id"])
         TestEventgenOrchestration.server_id = container["Id"]
-        print container["Id"]
+        print(container["Id"])
         cls.server_container = cls.client.inspect_container(container["Id"])
         cls.server_eventgen_webport = cls.server_container["NetworkSettings"]["Ports"]["9500/tcp"][0]["HostPort"]
 
         # Wait for the controller to be available
-        print "Waiting for Eventgen Controller to become available."
+        print("Waiting for Eventgen Controller to become available.")
         wait_for_response("http://127.0.0.1:{}".format(cls.controller_eventgen_webport))
-        print "Eventgen Controller has become available."
+        print("Eventgen Controller has become available.")
 
         # Wait for the server to be available
-        print "Waiting for Eventgen Server to become available."
+        print("Waiting for Eventgen Server to become available.")
         wait_for_response("http://127.0.0.1:{}".format(cls.server_eventgen_webport))
-        print "Eventgen Server has become available."
+        print("Eventgen Server has become available.")
         time.sleep(30)
 
         cls.test_json = {
