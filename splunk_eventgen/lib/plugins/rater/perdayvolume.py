@@ -1,6 +1,6 @@
 import datetime
 import random
-from .config import ConfigRater
+from config import ConfigRater
 from logging_config import logger
 
 

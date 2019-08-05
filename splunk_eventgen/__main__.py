@@ -4,16 +4,29 @@ import logging
 import os
 import shutil
 import sys
+import json
 
 FILE_LOCATION = os.path.dirname(os.path.abspath(__file__))
 path_prepend = os.path.join(FILE_LOCATION, 'lib')
 sys.path.append(path_prepend)
 
-from . import __version__  # noqa isort:skip
-from . import eventgen_core  # noqa isort:skip
-from .lib.logging_config import logger  # noqa isort:skip
+from eventgen_core import EventGenerator  # noqa isort:skip
+from logging_config import logger  # noqa isort:skip
 
-EVENTGEN_VERSION = __version__
+VERSION_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "version.json")
+
+
+def _get_version():
+    """
+    @return: Version Number
+    """
+    with open(VERSION_FILE, 'rb') as fp:
+        json_data = json.load(fp)
+        version = json_data['version']
+    return version
+
+
+EVENTGEN_VERSION = _get_version()
 
 
 def parse_args():
@@ -200,7 +213,7 @@ def main():
     args = parse_args()
     args.verbosity = convert_verbosity_count_to_logging_level(args.verbosity)
     if args.subcommand == "generate":
-        eventgen = eventgen_core.EventGenerator(args=args)
+        eventgen = EventGenerator(args=args)
         eventgen.start()
     elif args.subcommand == "service":
         env_vars = gather_env_vars(args)

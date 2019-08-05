@@ -9,8 +9,8 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
-from .timeparser import timeParser
-from .logging_config import logger
+from timeparser import timeParser
+from logging_config import logger
 
 
 class Sample(object):

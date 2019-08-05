@@ -11,7 +11,7 @@ try:
     from requests import Session
     from requests_futures.sessions import FuturesSession
     from concurrent.futures import ThreadPoolExecutor
-except ImportError:
+except:
     pass
 try:
     import ujson as json

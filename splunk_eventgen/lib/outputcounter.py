@@ -1,6 +1,6 @@
 import time
 
-from .logging_config import logger
+from logging_config import logger
 
 
 class OutputCounter(object):

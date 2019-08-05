@@ -11,8 +11,8 @@ import urllib.parse
 import urllib.error
 import uuid
 
-from .timeparser import timeDelta2secs
-from .logging_config import logger
+from timeparser import timeDelta2secs
+from logging_config import logger
 
 
 class Token(object):

@@ -1,5 +1,5 @@
 from collections import deque
-from .logging_config import logger
+from logging_config import logger
 
 
 class OutputPlugin(object):

@@ -10,10 +10,10 @@ from xml.parsers.expat import ExpatError
 
 import httplib2
 
-from .eventgenoutput import Output
-from .eventgentimestamp import EventgenTimestamp
-from .timeparser import timeParser
-from .logging_config import logger
+from eventgenoutput import Output
+from eventgentimestamp import EventgenTimestamp
+from timeparser import timeParser
+from logging_config import logger
 
 
 class GeneratorPlugin(object):

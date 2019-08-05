@@ -1,8 +1,8 @@
 import time
 from queue import Full
 
-from .timeparser import timeParserTimeMath
-from .logging_config import logger
+from timeparser import timeParserTimeMath
+from logging_config import logger
 
 
 class Timer(object):

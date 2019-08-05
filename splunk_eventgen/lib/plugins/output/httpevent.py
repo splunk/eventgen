@@ -1,4 +1,4 @@
-from .httpevent_core import HTTPCoreOutputPlugin
+from httpevent_core import HTTPCoreOutputPlugin
 from logging_config import logger
 
 try:

@@ -11,10 +11,10 @@ import urllib.parse
 import urllib.error
 from configparser import RawConfigParser
 
-from .eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
-from .eventgensamples import Sample
-from .eventgentoken import Token
-from .logging_config import logger
+from eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
+from eventgensamples import Sample
+from eventgentoken import Token
+from logging_config import logger
 
 # 4/21/14 CS  Adding a defined constant whether we're running in standalone mode or not
 #             Standalone mode is when we know we're Splunk embedded but we want to force

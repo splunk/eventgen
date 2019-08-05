@@ -10,11 +10,11 @@ import signal
 from queue import Empty, Queue
 from threading import Thread
 
-from .lib.eventgenconfig import Config
-from .lib.eventgenexceptions import PluginNotLoaded
-from .lib.eventgentimer import Timer
-from .lib.outputcounter import OutputCounter
-from .lib.logging_config import logger
+from lib.eventgenconfig import Config
+from lib.eventgenexceptions import PluginNotLoaded
+from lib.eventgentimer import Timer
+from lib.outputcounter import OutputCounter
+from lib.logging_config import logger
 
 lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.insert(0, lib_path_prepend)
