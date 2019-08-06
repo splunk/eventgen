@@ -10,10 +10,10 @@ from xml.parsers.expat import ExpatError
 
 import httplib2
 
-from eventgenoutput import Output
-from eventgentimestamp import EventgenTimestamp
-from timeparser import timeParser
-from logging_config import logger
+from splunk_eventgen.lib.eventgenoutput import Output
+from splunk_eventgen.lib.eventgentimestamp import EventgenTimestamp
+from splunk_eventgen.lib.timeparser import timeParser
+from splunk_eventgen.lib.logging_config import logger
 
 
 class GeneratorPlugin(object):

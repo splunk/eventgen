@@ -3,8 +3,8 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
-from outputplugin import OutputPlugin
-from logging_config import logger
+from splunk_eventgen.lib.outputplugin import OutputPlugin
+from splunk_eventgen.lib.logging_config import logger
 
 try:
     import requests

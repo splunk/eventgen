@@ -1,7 +1,7 @@
 import datetime
 import time
 from queue import Full
-from logging_config import logger, metrics_logger
+from splunk_eventgen.lib.logging_config import logger, metrics_logger
 
 
 # TODO: Figure out why we load plugins from here instead of the base plugin class.

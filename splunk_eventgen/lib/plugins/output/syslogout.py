@@ -1,7 +1,7 @@
 import logging
 import logging.handlers
 
-from outputplugin import OutputPlugin
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 # Dict of flags to gate adding the syslogHandler only once to the given singleton logger
 loggerInitialized = {}

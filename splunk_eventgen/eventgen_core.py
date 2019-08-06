@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 import imp
+import importlib.util
 import logging
 import logging.config
 import os
@@ -10,14 +11,20 @@ import signal
 from queue import Empty, Queue
 from threading import Thread
 
-from lib.eventgenconfig import Config
-from lib.eventgenexceptions import PluginNotLoaded
-from lib.eventgentimer import Timer
-from lib.outputcounter import OutputCounter
-from lib.logging_config import logger
+from splunk_eventgen.lib.eventgenconfig import Config
+from splunk_eventgen.lib.eventgenexceptions import PluginNotLoaded
+from splunk_eventgen.lib.eventgentimer import Timer
+from splunk_eventgen.lib.outputcounter import OutputCounter
+from splunk_eventgen.lib.logging_config import logger
 
 lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
 sys.path.insert(0, lib_path_prepend)
+generator_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib', 'plugins', 'generator')
+output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib', 'plugins', 'output')
+rater_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib', 'plugins', 'rater')
+sys.path.insert(0, generator_path)
+sys.path.insert(0, output_path)
+sys.path.insert(0, rater_path)
 # Since i'm including a new library but external sources may not have access to pip (like splunk embeded), I need to
 # be able to load this library directly from src if it's not installed.
 try:
@@ -202,7 +209,7 @@ class EventGenerator(object):
                             has over 10 generators working, additional samples won't run until the first ones end.
         :return:
         '''
-        if  self.args.multiprocess:
+        if self.args.multiprocess:
             import multiprocessing
             self.manager = multiprocessing.Manager()
             if self.config.disableLoggingQueue:
@@ -374,10 +381,15 @@ class EventGenerator(object):
                     try:
                         # Import the module
                         # module = imp.load_source(base, filename)
+
                         mod_name, mod_path, mod_desc = imp.find_module(base, [dirname])
                         # TODO: Probably need to adjust module.load() to be added later so this can be pickled.
                         module = imp.load_module(base, mod_name, mod_path, mod_desc)
                         plugin = module.load()
+
+                        # spec = importlib.util.spec_from_file_location(base, filename)
+                        # plugin = importlib.util.module_from_spec(spec)
+                        # spec.loader.exec_module(plugin)
 
                         # set plugin to something like output.file or generator.default
                         pluginname = plugintype + '.' + base
@@ -407,7 +419,7 @@ class EventGenerator(object):
                     except ValueError:
                         self.logger.error("Error loading plugin '%s' of type '%s'" % (base, plugintype))
                     except ImportError as ie:
-                        self.logger.warning("Could not load plugin: %s, skipping" % mod_name.name)
+                        self.logger.warning("Could not load plugin: %s, skipping" % base)
                         self.logger.exception(ie)
                     except Exception as e:
                         self.logger.exception(str(e))

@@ -2,7 +2,7 @@ import datetime
 import pprint
 import sys
 
-from outputplugin import OutputPlugin
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class CounterOutputPlugin(OutputPlugin):

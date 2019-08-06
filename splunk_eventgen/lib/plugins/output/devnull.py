@@ -1,4 +1,4 @@
-from outputplugin import OutputPlugin
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class DevNullOutputPlugin(OutputPlugin):

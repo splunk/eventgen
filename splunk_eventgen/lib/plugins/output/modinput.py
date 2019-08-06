@@ -1,7 +1,7 @@
 import sys
 from xml.sax.saxutils import escape
 
-from outputplugin import OutputPlugin
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class ModInputOutputPlugin(OutputPlugin):

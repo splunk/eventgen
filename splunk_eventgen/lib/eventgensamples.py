@@ -9,8 +9,8 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
-from timeparser import timeParser
-from logging_config import logger
+from splunk_eventgen.lib.timeparser import timeParser
+from splunk_eventgen.lib.logging_config import logger
 
 
 class Sample(object):
@@ -303,7 +303,7 @@ class Sample(object):
 
     def _openSampleFile(self):
         logger.debug("Opening sample '%s' in app '%s'" % (self.name, self.app))
-        self._sampleFH = open(self.filePath, 'rU')
+        self._sampleFH = open(self.filePath, 'r')
 
     def _closeSampleFile(self):
         logger.debug("Closing sample '%s' in app '%s'" % (self.name, self.app))

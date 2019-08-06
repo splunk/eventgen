@@ -11,10 +11,10 @@ import urllib.parse
 import urllib.error
 from configparser import RawConfigParser
 
-from eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
-from eventgensamples import Sample
-from eventgentoken import Token
-from logging_config import logger
+from splunk_eventgen.lib.eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
+from splunk_eventgen.lib.eventgensamples import Sample
+from splunk_eventgen.lib.eventgentoken import Token
+from splunk_eventgen.lib.logging_config import logger
 
 # 4/21/14 CS  Adding a defined constant whether we're running in standalone mode or not
 #             Standalone mode is when we know we're Splunk embedded but we want to force
@@ -69,7 +69,7 @@ class Config(object):
     # the config files
     threading = None
     disabled = None
-    blacklist = ".*\.part"
+    blacklist = r".*\.part"
 
     __generatorworkers = []
     __outputworkers = []
@@ -218,7 +218,7 @@ class Config(object):
             try:
                 import splunk.auth
                 splunkUrl = splunk.auth.splunk.getLocalServerInfo()
-                results = re.match('(http|https)://([^:/]+):(\d+).*', splunkUrl)
+                results = re.match(r'(http|https)://([^:/]+):(\d+).*', splunkUrl)
                 splunkMethod = results.groups()[0]
                 splunkHost = results.groups()[1]
                 splunkPort = results.groups()[2]
@@ -683,7 +683,7 @@ class Config(object):
                         if '_time' in s.sampleDict[0]:
                             logger.debug("Found _time field, checking if default timestamp exists")
                             t = Token()
-                            t.token = "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}"
+                            t.token = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}"
                             t.replacementType = "timestamp"
                             t.replacement = "%Y-%m-%dT%H:%M:%S.%f"
 
@@ -741,7 +741,7 @@ class Config(object):
         string = string.replace("'", "\\'")
         string = string.replace(" ", "_")
         string = string.replace("\t", "t")
-        string = re.sub("[^,;\-#\$%&+./:=\?@\\\'|*\n\r\"(){}<>\[\]\^!]", "", string, flags=re.M)
+        string = re.sub(r"[^,;\-#\$%&+./:=\?@\\\'|*\n\r\"(){}<>\[\]\^!]", "", string, flags=re.M)
         return string
 
     def _validateSetting(self, stanza, key, value):
@@ -750,7 +750,7 @@ class Config(object):
         If we've read a token, which is a complex config, returns a tuple of parsed values."""
         logger.debug("Validating setting for '%s' with value '%s' in stanza '%s'" % (key, value, stanza))
         if key.find('token.') > -1:
-            results = re.match('token\.(\d+)\.(\w+)', key)
+            results = re.match(r'token\.(\d+)\.(\w+)', key)
             if results is not None:
                 groups = results.groups()
                 if groups[1] not in self._validTokenTypes:
@@ -764,15 +764,15 @@ class Config(object):
                                           (value, groups[0], stanza))
                         raise ValueError("Could not parse token index '%s' token type '%s' in stanza '%s'" %
                                          (groups[0], groups[1], stanza))
-                return (int(groups[0]), groups[1])
+                return int(groups[0]), groups[1]
         elif key.find('host.') > -1:
-            results = re.match('host\.(\w+)', key)
+            results = re.match(r'host\.(\w+)', key)
             if results is not None:
                 groups = results.groups()
                 if groups[0] not in self._validHostTokens:
                     logger.error("Could not parse host token type '%s' in stanza '%s'" % (groups[0], stanza))
                     raise ValueError("Could not parse host token type '%s' in stanza '%s'" % (groups[0], stanza))
-                return (groups[0], value)
+                return groups[0], value
         elif key in self._validSettings:
             if key in self._intSettings:
                 try:

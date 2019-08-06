@@ -148,7 +148,7 @@ class DurationField(Field):
     The string is converted to an integer indicating the number of seconds.
     """
 
-    DURATION_RE = re.compile("(?P<duration>[0-9]+)\s*(?P<units>[a-z]*)", re.IGNORECASE)
+    DURATION_RE = re.compile(r"(?P<duration>[0-9]+)\s*(?P<units>[a-z]*)", re.IGNORECASE)
 
     MINUTE = 60
     HOUR = 3600
@@ -265,7 +265,7 @@ class IntervalField(Field):
     # cron field.
 
     cron_rx = re.compile(
-        '''
+        r'''
         (
              \d{1,2}                    # A digit.
             |\d{1,2}-\d{1,2}            # A range.
@@ -396,7 +396,7 @@ class SeverityField(Field):
     # same value as "CRITICAL".
     SEVERITIES = {'DEBUG': 10, 'INFO': 20, 'WARN': 30, 'ERROR': 40, 'CRITICAL': 50}
 
-    SEVERITIES_BY_INT = {v: k for k, v in SEVERITIES.iteritems()}
+    SEVERITIES_BY_INT = {v: k for k, v in SEVERITIES.items()}
 
     def to_python(self, value):
 

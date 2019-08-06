@@ -11,11 +11,7 @@ def test_modular_input(mocker, capsys):
     # eventgen base directory
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-    # insert modular input directory to the sys path
-    mod_input_path = os.path.join(base_dir, 'splunk_eventgen', 'splunk_app', 'bin')
-    sys.path.insert(0, mod_input_path)
-
-    from modinput_eventgen import Eventgen
+    from splunk_eventgen.splunk_app.bin.modinput_eventgen import Eventgen
 
     # input xml stream used to start modular input
     input_stream_path = os.path.join(base_dir, 'tests', 'large', 'splunk', 'input.xml')

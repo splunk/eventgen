@@ -1,7 +1,7 @@
 import socket
 import struct
 
-from outputplugin import OutputPlugin
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class S2S:

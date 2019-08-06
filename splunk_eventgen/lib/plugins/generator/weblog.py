@@ -1,7 +1,7 @@
 import random
 import time
 
-from generatorplugin import GeneratorPlugin
+from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
 
 
 class WeblogGenerator(GeneratorPlugin):

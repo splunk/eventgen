@@ -1,4 +1,4 @@
-from logging_config import logger
+from splunk_eventgen.lib.logging_config import logger
 import datetime
 import math
 import os
@@ -46,8 +46,8 @@ def timeParser(ts='now', timezone=datetime.timedelta(days=1), now=None, utcnow=N
 
             unitsre = "(seconds|second|secs|sec|minutes|minute|min|hours|hour|hrs|hr|days|day|weeks|week|w[0-6]|" + \
                       "months|month|mon|quarters|quarter|qtrs|qtr|years|year|yrs|yr|s|h|m|d|w|y|w|q)"
-            reltimere = "(?i)(?P<plusminus>[+-]*)(?P<num>\d{1,})(?P<unit>" + unitsre + "{1})(([\@](?P<snapunit>" + \
-                        unitsre + "{1})((?P<snapplusminus>[+-])(?P<snaprelnum>\d+)(?P<snaprelunit>" + unitsre + \
+            reltimere = r"(?i)(?P<plusminus>[+-]*)(?P<num>\d{1,})(?P<unit>" + unitsre + r"{1})(([\@](?P<snapunit>" + \
+                        unitsre + r"{1})((?P<snapplusminus>[+-])(?P<snaprelnum>\d+)(?P<snaprelunit>" + unitsre + \
                         "{1}))*)*)"
 
             results = re.match(reltimere, ts)

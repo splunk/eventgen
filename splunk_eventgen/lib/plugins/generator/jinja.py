@@ -6,8 +6,8 @@ import time
 from jinja2 import nodes
 from jinja2.ext import Extension
 
-from generatorplugin import GeneratorPlugin
-from logging_config import logger
+from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
+from splunk_eventgen.lib.logging_config import logger
 try:
     import ujson as json
 except ImportError:

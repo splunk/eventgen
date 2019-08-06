@@ -3,8 +3,8 @@
 import datetime
 import random
 
-from generatorplugin import GeneratorPlugin
-from logging_config import logger
+from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
+from splunk_eventgen.lib.logging_config import logger
 
 
 class DefaultGenerator(GeneratorPlugin):
