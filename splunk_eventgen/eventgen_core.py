@@ -17,14 +17,6 @@ from splunk_eventgen.lib.eventgentimer import Timer
 from splunk_eventgen.lib.outputcounter import OutputCounter
 from splunk_eventgen.lib.logging_config import logger
 
-lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
-sys.path.insert(0, lib_path_prepend)
-generator_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib', 'plugins', 'generator')
-output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib', 'plugins', 'output')
-rater_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib', 'plugins', 'rater')
-sys.path.insert(0, generator_path)
-sys.path.insert(0, output_path)
-sys.path.insert(0, rater_path)
 # Since i'm including a new library but external sources may not have access to pip (like splunk embeded), I need to
 # be able to load this library directly from src if it's not installed.
 try:
@@ -549,10 +541,11 @@ class EventGenerator(object):
         try:
             if self.args.multiprocess:
                 for worker in self.workerPool:
-                    try: os.kill(int(worker.pid), signal.SIGKILL)
-                    except: continue
+                    try:
+                        os.kill(int(worker.pid), signal.SIGKILL)
+                    except:
+                        continue
                 del self.outputQueue
                 self.manager.shutdown()
         except:
             pass
-            

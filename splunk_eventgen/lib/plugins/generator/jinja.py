@@ -109,7 +109,7 @@ class JinjaTime(Extension):
         target_var_name = {"time_now": "time_now", "time_slice": "time_target"}
         tag = parser.stream.current.value
         name_base = target_var_name[tag]
-        lineno = parser.stream.next().lineno
+        lineno = next(parser.stream).lineno
         args, kwargs = self.parse_args(parser)
         task_list = []
         epoch_name = name_base + "_epoch"
