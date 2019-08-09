@@ -61,7 +61,7 @@ test_helper:
 
 run_tests:
 	@echo 'Running the super awesome tests'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}" || true
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python3 run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}" || true
 
 test_collection_cleanup:
 	@echo 'Collecting results'

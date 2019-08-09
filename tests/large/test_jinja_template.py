@@ -71,7 +71,7 @@ def test_jinja_template_advance(eventgen_test_helper):
     }
 
     firstline_pattern = re.compile(
-        "^({}) \[admin\] test jinja template advance, switch=True, seq: (\\d+)/3".format(ts_regex))
+        r"^({}) \[admin\] test jinja template advance, switch=True, seq: (\\d+)/3".format(ts_regex))
     secondline_pattern = re.compile("^    this is the 2nd line, seq:(\\d+)/3")
     thirdline_pattern = re.compile("^this is the 3rd line, seq:(\\d+)/3")
     for i in range(3):

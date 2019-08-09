@@ -1,16 +1,12 @@
-import atexit
 from flask import Blueprint, Response, request
-import os
-import socket
 import time
 import json
-import requests
 import logging
 
 INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
 
-class EventgenControllerAPI():
 
+class EventgenControllerAPI:
     def __init__(self, redis_connector, host):
         self.bp = self.__create_blueprint()
         self.redis_connector = redis_connector

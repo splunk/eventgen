@@ -36,5 +36,5 @@ RUN pip3 install /root/splunk_eventgen.tgz && \
 
 EXPOSE 2222 6379 9500
 RUN chmod a+x /sbin/entrypoint.sh
-WORKDIR /usr/lib/python2.7/site-packages/splunk_eventgen
+WORKDIR /usr/lib/python3.7/site-packages/splunk_eventgen
 ENTRYPOINT ["/sbin/entrypoint.sh"]
