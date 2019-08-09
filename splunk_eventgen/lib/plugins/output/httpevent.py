@@ -1,5 +1,5 @@
-from httpevent_core import HTTPCoreOutputPlugin
-from logging_config import logger
+from splunk_eventgen.lib.plugins.output.httpevent_core import HTTPCoreOutputPlugin
+from splunk_eventgen.lib.logging_config import logger
 
 try:
     import requests

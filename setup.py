@@ -41,6 +41,7 @@ setup(
     description='Splunk Event Generator to produce real-time, representative data',
     long_description=long_description,
     author='Splunk, Inc.',
+    python_requires='>3.7.0',
     classifiers=[
         'Development Status :: 5 - Production/Stable', 'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries :: Python Modules', 'Topic :: Software Development :: Build Tools',

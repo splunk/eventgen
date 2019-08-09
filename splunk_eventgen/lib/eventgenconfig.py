@@ -509,7 +509,7 @@ class Config(object):
             for token in s.tokens:
                 if token.replacementType == 'integerid':
                     try:
-                        stateFile = open(os.path.join(s.sampleDir, 'state.' + urllib.request.pathname2url(token.token)), 'rU')
+                        stateFile = open(os.path.join(s.sampleDir, 'state.' + urllib.request.pathname2url(token.token)), 'r')
                         token.replacement = stateFile.read()
                         stateFile.close()
                     # The file doesn't exist, use the default value in the config
