@@ -47,7 +47,7 @@ class EventgenServerAPI:
         def start_listening(self):
             while True:
                 message = self.redis_connector.pubsub.get_message()
-                if message and type(message.get('data')) == str:
+                if message and type(message.get('data')) == bytes:
                     data = json.loads(message.get('data'))
                     self.logger.info("Message Recieved {}".format(message['data']))
                     if data['target'] == 'all' or data['target'] == self.host:

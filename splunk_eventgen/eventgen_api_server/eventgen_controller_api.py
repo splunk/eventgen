@@ -11,10 +11,8 @@ class EventgenControllerAPI:
         self.bp = self.__create_blueprint()
         self.redis_connector = redis_connector
         self.host = host
-
         self.logger = logging.getLogger("eventgen_controller")
         self.logger.info("Initialized the EventgenControllerAPI Blueprint")
-
         self.interval = 0.001
     
     def get_blueprint(self):
@@ -38,7 +36,7 @@ class EventgenControllerAPI:
                 else:
                     time.sleep(self.interval)
                     message = self.redis_connector.pubsub.get_message()
-                    if message and type(message.get('data')) == str:
+                    if message and type(message.get('data')) == bytes:
                         status_response = json.loads(message.get('data'))
                         response[status_response['host']] = status_response['response']
                         response_num += 1
