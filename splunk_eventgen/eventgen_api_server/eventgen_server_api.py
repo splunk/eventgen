@@ -249,9 +249,9 @@ class EventgenServerAPI:
                 value = pair[1]
                 if type(value) == dict:
                     value = json.dumps(value)
-                config.set(sample[0], pair[0], value)
+                config.set(sample[0], pair[0], str(value))
 
-        with open(eventgen_core_object.CUSTOM_CONFIG_PATH, 'wb+') as conf_content:
+        with open(eventgen_core_object.CUSTOM_CONFIG_PATH, 'w+') as conf_content:
             config.write(conf_content)
 
         self.eventgen.refresh_eventgen_core_object()
