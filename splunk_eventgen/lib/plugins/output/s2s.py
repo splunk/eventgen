@@ -33,7 +33,7 @@ class S2S:
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.connect((host, int(port)))
 
-    def _encode_sig(self, serverName='s2s-api', mgmtPort='9997'):
+    def _encode_sig(self, serverName='s2s-api'.encode('utf-8'), mgmtPort='9997'.encode('utf-8')):
         """
         Create Signature element of the S2S Message.  Signature is C struct:
 
@@ -46,7 +46,7 @@ class S2S:
         """
         if not self.signature_sent:
             self.signature_sent = True
-            return struct.pack('!128s256s16s', '--splunk-cooked-mode-v2--', serverName, mgmtPort)
+            return struct.pack('!128s256s16s', '--splunk-cooked-mode-v2--'.encode('utf-8'), serverName, mgmtPort).decode('utf-8')
         else:
             return ''
 
@@ -57,8 +57,8 @@ class S2S:
         Wire protocol has an unsigned integer of the length of the string followed
         by a null terminated string.
         """
-        tosend = str(tosend)
-        return struct.pack('!I%ds' % (len(tosend) + 1), len(tosend) + 1, tosend)
+        tosend = str(tosend).encode('utf-8')
+        return struct.pack('!I%ds' % (len(tosend) + 1), len(tosend) + 1, tosend).decode('utf-8')
 
     def _encode_key_value(self, key='', value=''):
         """
@@ -129,9 +129,9 @@ class S2S:
         # Create buffer, starting with the signature
         buf = sig
         # Add 32 bit integer with the size of the msg, calculated earlier
-        buf += struct.pack('!I', msg_size)
+        buf += struct.pack('!I', msg_size).decode('utf-8')
         # Add number of map entries, which is 5, index, host, source, sourcetype, raw
-        buf += struct.pack('!I', maps)
+        buf += struct.pack('!I', maps).decode('utf-8')
         # Add the map entries, index, source, sourcetype, host, raw
         buf += encoded_index
         buf += encoded_host if encoded_host else ''
@@ -141,7 +141,7 @@ class S2S:
         buf += encoded_done
         buf += encoded_raw
         # Add dummy zero
-        buf += struct.pack('!I', 0)
+        buf += struct.pack('!I', 0).decode('utf-8')
         # Add trailer raw
         buf += encoded_raw_trailer
         return buf
@@ -152,7 +152,7 @@ class S2S:
         """
         if len(_raw) > 0:
             e = self._encode_event(index, host, source, sourcetype, _raw, _time)
-            self.s.sendall(e)
+            self.s.sendall(e.encode('utf-8'))
 
     def close(self):
         """

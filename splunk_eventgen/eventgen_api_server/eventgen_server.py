@@ -3,8 +3,8 @@ from flask import Flask
 import socket
 import logging
 
-from .eventgen_server_api import EventgenServerAPI
-from . import eventgen_core_object
+from splunk_eventgen.eventgen_api_server.eventgen_server_api import EventgenServerAPI
+from splunk_eventgen.eventgen_api_server import eventgen_core_object
 
 
 class EventgenServer:

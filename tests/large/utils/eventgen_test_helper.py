@@ -72,6 +72,10 @@ class EventgenTestHelper(object):
             self.breaker = self.breaker[1:]
         if self.breaker[-1] == '$':
             self.breaker = self.breaker[:-1]
+
+        if isinstance(output, bytes):
+            output = output.decode("UTF-8")
+
         results = re.split(self.breaker, output)
         return [x for x in results if x != ""]
 

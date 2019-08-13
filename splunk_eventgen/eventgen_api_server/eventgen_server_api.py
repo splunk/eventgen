@@ -14,7 +14,7 @@ import logging
 import requests
 import threading
 
-from . import eventgen_core_object
+from splunk_eventgen.eventgen_api_server import eventgen_core_object
 
 INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
 

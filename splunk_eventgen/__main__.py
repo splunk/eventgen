@@ -219,13 +219,13 @@ def main():
     elif args.subcommand == "service":
         env_vars = gather_env_vars(args)
         if args.role == "controller":
-            from .eventgen_api_server.eventgen_controller import EventgenController
+            from splunk_eventgen.eventgen_api_server.eventgen_controller import EventgenController
             EventgenController(env_vars=env_vars).app_run()
         elif args.role == "server":
-            from .eventgen_api_server.eventgen_server import EventgenServer
+            from splunk_eventgen.eventgen_api_server.eventgen_server import EventgenServer
             EventgenServer(env_vars=env_vars, mode="cluster").app_run()
         elif args.role == "standalone":
-            from .eventgen_api_server.eventgen_server import EventgenServer
+            from splunk_eventgen.eventgen_api_server.eventgen_server import EventgenServer
             EventgenServer(env_vars=env_vars, mode="standalone").app_run()
     elif args.subcommand == "build":
         if not args.destination:

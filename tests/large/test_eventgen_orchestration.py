@@ -51,7 +51,7 @@ class TestEventgenOrchestration(object):
     def setup_class(cls):
         # Build the image from scratch
         cls.client = APIClient(base_url="unix://var/run/docker.sock")
-        response = cls.client.build(path=REPO_DIR, dockerfile=os.path.join("dockerfiles", "Dockerfile"), tag=IMAGE_NAME, rm=True, nocache=True, pull=True, stream=False)
+        response = cls.client.build(path=REPO_DIR, dockerfile=os.path.join("dockerfiles", "Dockerfile"), tag=IMAGE_NAME, rm=True, nocache=True, pull=True)
         for line in response:
             print(line, end=' ')
         # Create a network for both the controller and server to run in
@@ -116,14 +116,14 @@ class TestEventgenOrchestration(object):
     def test_controller_root(self):
         r = requests.get("http://127.0.0.1:{}/".format(self.controller_eventgen_webport))
         assert r.status_code == 200
-        assert "running_eventgen_controller" in r.content
+        assert b"running_eventgen_controller" in r.content
 
     def test_controller_index(self):
         r = requests.get("http://127.0.0.1:{}/index".format(self.controller_eventgen_webport))
         assert r.status_code == 200
-        assert "Eventgen Controller" in r.content
-        assert "Host: " in r.content
-        assert "You are running Eventgen Controller" in r.content
+        assert b"Eventgen Controller" in r.content
+        assert b"Host: " in r.content
+        assert b"You are running Eventgen Controller" in r.content
 
     def test_controller_status(self):
         max_retry = 5
@@ -140,34 +140,34 @@ class TestEventgenOrchestration(object):
     def test_controller_conf(self):
         r = requests.post("http://127.0.0.1:{}/conf".format(self.controller_eventgen_webport), json=self.test_json)
         assert r.status_code == 200
-        assert "windbag" in r.content
+        assert b"windbag" in r.content
 
     def test_controller_start(self):
         r = requests.post("http://127.0.0.1:{}/start".format(self.controller_eventgen_webport))
         assert r.status_code == 200
-        assert "Eventgen has successfully started" in r.content
+        assert b"Eventgen has successfully started" in r.content
 
     def test_controller_start_with_target(self):
         r = requests.post("http://127.0.0.1:{}/start/{}".format(self.controller_eventgen_webport,
                                                                 TestEventgenOrchestration.server_id[:12]))
         assert r.status_code == 200
-        assert "Eventgen already started" in r.content
+        assert b"Eventgen already started" in r.content
 
     def test_controller_restart(self):
         r = requests.post("http://127.0.0.1:{}/restart".format(self.controller_eventgen_webport))
         assert r.status_code == 200
-        assert "Eventgen is restarting" in r.content
+        assert b"Eventgen is restarting" in r.content
 
     def test_controller_restart_with_target(self):
         r = requests.post("http://127.0.0.1:{}/restart/{}".format(self.controller_eventgen_webport,
                                                                TestEventgenOrchestration.server_id[:12]))
         assert r.status_code == 200
-        assert "Eventgen is restarting" in r.content
+        assert b"Eventgen is restarting" in r.content
 
     def test_controller_bundle_invalid_request(self):
         r = requests.post("http://127.0.0.1:{}/bundle".format(self.controller_eventgen_webport))
         assert r.status_code == 500
-        assert "Internal Error Occurred" in r.content
+        assert b"Internal Error Occurred" in r.content
 
     def test_controller_bundle_with_url(self):
         r = requests.post("http://127.0.0.1:{}/bundle".format(self.controller_eventgen_webport), json={
@@ -196,7 +196,7 @@ class TestEventgenOrchestration(object):
     def test_controller_set_volume_invalid_request(self):
         r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport))
         assert r.status_code == 500
-        assert "Internal Error Occurred" in r.content
+        assert b"Internal Error Occurred" in r.content
 
     def test_controller_set_volume_with_volume(self):
         r = requests.post("http://127.0.0.1:{}/volume".format(self.controller_eventgen_webport), json={
@@ -217,13 +217,13 @@ class TestEventgenOrchestration(object):
         r = requests.post("http://127.0.0.1:{}/stop".format(self.controller_eventgen_webport))
         assert r.status_code == 200
         assert r.status_code == 200
-        assert "Eventgen is stopping" in r.content
+        assert b"Eventgen is stopping" in r.content
 
     def test_controller_stop_with_target(self):
         r = requests.post("http://127.0.0.1:{}/stop/{}".format(self.controller_eventgen_webport,
                                                                TestEventgenOrchestration.server_id[:12]))
         assert r.status_code == 200
-        assert "Eventgen is stopping" in r.content
+        assert b"Eventgen is stopping" in r.content
 
     # Server tests #
 
@@ -234,19 +234,19 @@ class TestEventgenOrchestration(object):
     def test_server_root(self):
         r = requests.get("http://127.0.0.1:{}".format(self.server_eventgen_webport))
         assert r.status_code == 200
-        assert "running_eventgen_server" in r.content
+        assert b"running_eventgen_server" in r.content
 
     def test_server_index(self):
         r = requests.get("http://127.0.0.1:{}/index".format(self.server_eventgen_webport))
         assert r.status_code == 200
-        assert "Host: " in r.content
-        assert "Eventgen Status" in r.content
-        assert "Eventgen Config file exists" in r.content
-        assert "Eventgen Config file path" in r.content
-        assert "Total volume:" in r.content
-        assert "Worker Queue Status" in r.content
-        assert "Sample Queue Status" in r.content
-        assert "Output Queue Status" in r.content
+        assert b"Host: " in r.content
+        assert b"Eventgen Status" in r.content
+        assert b"Eventgen Config file exists" in r.content
+        assert b"Eventgen Config file path" in r.content
+        assert b"Total volume:" in r.content
+        assert b"Worker Queue Status" in r.content
+        assert b"Sample Queue Status" in r.content
+        assert b"Output Queue Status" in r.content
 
     def test_server_status(self):
         r = requests.get("http://127.0.0.1:{}/status".format(self.server_eventgen_webport))
@@ -272,22 +272,22 @@ class TestEventgenOrchestration(object):
     def test_server_start(self):
         r = requests.post("http://127.0.0.1:{}/start".format(self.server_eventgen_webport), timeout=5)
         assert r.status_code == 200
-        assert "Eventgen has successfully started" in r.content
+        assert b"Eventgen has successfully started" in r.content
 
     def test_server_restart(self):
         r = requests.post("http://127.0.0.1:{}/restart".format(self.server_eventgen_webport))
         assert r.status_code == 200
-        assert "Eventgen has successfully restarted" in r.content
+        assert b"Eventgen has successfully restarted" in r.content
 
     def test_server_stop(self):
         r = requests.post("http://127.0.0.1:{}/stop".format(self.server_eventgen_webport))
         assert r.status_code == 200
-        assert "Eventgen is stopped" in r.content
+        assert b"Eventgen is stopped" in r.content
 
     def test_server_bundle(self):
         r = requests.post("http://127.0.0.1:{}/bundle".format(self.server_eventgen_webport))
         assert r.status_code == 500
-        assert "Internal Error Occurred" in r.content
+        assert b"Internal Error Occurred" in r.content
 
     def test_server_get_and_set_volume(self):
         # Must initialize a stanza with the perDayVolume setting before hitting the /volume endpoint
