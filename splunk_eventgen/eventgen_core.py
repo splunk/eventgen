@@ -17,17 +17,6 @@ from splunk_eventgen.lib.eventgentimer import Timer
 from splunk_eventgen.lib.outputcounter import OutputCounter
 from splunk_eventgen.lib.logging_config import logger
 
-# Since i'm including a new library but external sources may not have access to pip (like splunk embeded), I need to
-# be able to load this library directly from src if it's not installed.
-try:
-    import logutils
-    import logutils.handlers
-except ImportError:
-    path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib', 'logutils_src')
-    sys.path.append(path_prepend)
-    import logutils
-    import logutils.queue
-
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
 EVENTGEN_ENGINE_CONF_PATH = os.path.abspath(os.path.join(FILE_PATH, "default", "eventgen_engine.conf"))
@@ -209,8 +198,8 @@ class EventGenerator(object):
             else:
                 # TODO crash caused by logging Thread https://github.com/splunk/eventgen/issues/217
                 self.loggingQueue = self.manager.Queue()
-                self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
-                self.logging_pool.start()
+                self.logging_thread = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
+                self.logging_thread.start()
             # since we're now in multiprocess, we need to use better queues.
             self.workerQueue = multiprocessing.JoinableQueue(maxsize=self._generator_queue_size)
             self.genconfig = self.manager.dict()
@@ -299,8 +288,8 @@ class EventGenerator(object):
         root = logging.getLogger()
         root.setLevel(logging.DEBUG)
         if logging_queue is not None:
-            # TODO https://github.com/splunk/eventgen/issues/217
-            qh = logutils.queue.QueueHandler(logging_queue)
+            # TODO: validate https://github.com/splunk/eventgen/issues/217
+            qh = logging.handlers.QueueHandler(logging_queue)
             root.addHandler(qh)
         else:
             root.addHandler(logging.StreamHandler())
@@ -327,7 +316,6 @@ class EventGenerator(object):
         while not self.stopping:
             try:
                 record = loggingQueue.get(timeout=10)
-                logger = logging.getLogger(record.name)
                 logger.handle(record)
                 loggingQueue.task_done()
             except Empty:
