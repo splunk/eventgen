@@ -31,17 +31,15 @@ class PerDayVolumeGenerator(GeneratorPlugin):
 
         # Create a counter for the current byte size of the read in samples
         currentSize = 0
-        # Replace event tokens before calculating the size of the event
-        updated_sample_dict = GeneratorPlugin.replace_tokens(self, self._sample.sampleDict, earliest, latest)
 
         # If we're random, fill random events from sampleDict into eventsDict
         eventsDict = []
         if self._sample.randomizeEvents:
-            sdlen = len(updated_sample_dict)
+            sdlen = len(self._sample.sampleDict)
             logger.debug("Random filling eventsDict for sample '%s' in app '%s' with %d bytes" %
                                (self._sample.name, self._sample.app, size))
             while currentSize < size:
-                currentevent = updated_sample_dict[random.randint(0, sdlen - 1)]
+                currentevent = self._sample.sampleDict[random.randint(0, sdlen - 1)]
                 eventsDict.append(currentevent)
                 currentSize += len(currentevent['_raw'])
 
@@ -51,8 +49,8 @@ class PerDayVolumeGenerator(GeneratorPlugin):
                 "Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" %
                 (self._sample.name, self._sample.app, size))
             while currentSize <= size:
-                sizeofsample = sum(len(sample['_raw']) for sample in updated_sample_dict)
-                eventsDict.extend(updated_sample_dict)
+                sizeofsample = sum(len(sample['_raw']) for sample in self._sample.sampleDict)
+                eventsDict.extend(self._sample.sampleDict)
                 currentSize += sizeofsample
 
         # Otherwise fill count events into eventsDict or keep making copies of events out of sampleDict until
@@ -63,28 +61,28 @@ class PerDayVolumeGenerator(GeneratorPlugin):
             # or i've read the entire file.
             linecount = 0
             currentreadsize = 0
-            linesinfile = len(updated_sample_dict)
+            linesinfile = len(self._sample.sampleDict)
             logger.debug("Lines in files: %s " % linesinfile)
             while currentreadsize <= size:
                 targetline = linecount % linesinfile
                 sizeremaining = size - currentreadsize
-                targetlinesize = len(updated_sample_dict[targetline]['_raw'])
+                targetlinesize = len(self._sample.sampleDict[targetline]['_raw'])
                 if size < targetlinesize:
                     logger.error(
                         "Size is too small for sample {}. We need {} bytes but size of one event is {} bytes.".format(
                             self._sample.name, size, targetlinesize))
                     break
-                if targetlinesize <= sizeremaining or targetlinesize * .9 <= sizeremaining:
+                if targetlinesize <= sizeremaining:
                     currentreadsize += targetlinesize
-                    eventsDict.append(updated_sample_dict[targetline])
+                    eventsDict.append(self._sample.sampleDict[targetline])
                 else:
                     break
                 linecount += 1
             logger.debug("Events fill complete for sample '%s' in app '%s' length %d" %
                                (self._sample.name, self._sample.app, len(eventsDict)))
 
-        # Ignore token replacement here because we completed it at the beginning of event generation
-        GeneratorPlugin.build_events(self, eventsDict, startTime, earliest, latest, ignore_tokens=True)
+        # build the events and replace tokens
+        GeneratorPlugin.build_events(self, eventsDict, startTime, earliest, latest)
 
 
 def load():
