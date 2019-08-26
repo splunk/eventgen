@@ -9,7 +9,6 @@ pytest-mock>=1.10.4
 boto3
 requests>=2.18.4
 requests[security]
-logutils>=0.3.4.1
 ujson>=1.35
 pyyaml
 httplib2
