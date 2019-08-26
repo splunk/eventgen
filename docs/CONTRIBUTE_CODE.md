@@ -5,8 +5,16 @@ If you want to contribute code to eventgen, please read over the following guide
 
 ## Pull request guidelines
 
-
 If you want to contribute to an eventgen repo, please use a GitHub pull request. This is the fastest way for us to evaluate your code and to merge it into the code base. Please don’t file an issue with snippets of code. Doing so means that we need to manually merge the changes in and update any appropriate tests. That decreases the likelihood that your code is going to get included in a timely manner. Please use pull requests.
+
+
+## Release versioning guidelines
+
+Major Release — Increment the first digit by 1 if the new features break backwards compatibility/current features
+
+Minor Release — Increment the middle digit by 1 if the new features don’t break any existing features and are compatible with the app in it’s current state
+
+Patch Release — Increment the last digit by 1 if you’re publishing bug/patch fixes to your app
 
 ### Get started
 
@@ -14,8 +22,8 @@ If you’d like to work on a pull request and you’ve never submitted code befo
 1. fork eventgen to your github workspace
 2. If you want to fix bugs or make enhancement, please make sure there is a issue in eventgen project. Refer [this guide](FILE_ISSUES.md) to create a issue.
 
-
 After that, you’re ready to start working on code.
+
 
 ### Working on the code
 
@@ -75,6 +83,7 @@ The message summary should be a one-sentence description of the change, and it m
 
 **Note**: please squash you changes in one commit before firing the pull request. One commit in one PR keeps the git history clean.
 
+
 #### Step 3: Rebase onto upstream
 
 Before you send the pull request, be sure to rebase onto the upstream source. This ensures your code is running on the latest available code. We prefer rebase instead of merge when upstream changes. Rebase keeps the git history clearer.
@@ -82,6 +91,7 @@ Before you send the pull request, be sure to rebase onto the upstream source. Th
 git fetch upstream
 git rebase upstream/master
 ```
+
 
 #### Step 4: Run the tests
 
@@ -101,6 +111,7 @@ Next, push your changes to your clone:
 git push origin fix/issue123
 ```
 
+
 #### Step 6: Submit the pull request
 
 Before creating a pull request, here are some recommended **check points**. 
@@ -116,7 +127,6 @@ Before creating a pull request, here are some recommended **check points**.
 
 Next, create a pull request from your branch to the eventgen develop branch.
 Mark @lephino , @arctan5x , @jmeixensperger , @li-wu , @GordonWang as the reviewers.
-
 
 
 ## Code style and formatting tools
