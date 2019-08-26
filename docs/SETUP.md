@@ -149,7 +149,12 @@ $ cd ${SPLUNK_HOME}/etc/apps
 ```
 
 ### First Run
-If SA-Eventgen App is correctly installed, there is no additional configuration required. SA-Eventgen app will automatically identify with any apps with eventgen.conf.
+If your `SA-Eventgen` is 7.0+, you need to add a new parameter under `[general]` stanza in `$SPLUNK_HOME/etc/system/local/server.conf`:
+```
+[general]
+python.version = python3
+```
+Then `SA-Eventgen` app will automatically identify with any apps with `eventgen.conf`.
 
 To start generating data, simply enable the SA-Eventgen modinput by going to Settings > Data Inputs > SA-Eventgen and by clicking "enable" on the default modular input stanza.
 

@@ -127,34 +127,32 @@ def parse_args():
     return args
 
 
-def exclude_function(filename):
+def filter_function(tarinfo):
     # removing any hidden . files.
-    last_index = filename.rfind('/')
+    last_index = tarinfo.name.rfind('/')
     if last_index != -1:
-        if filename[last_index + 1:].startswith('.'):
-            return True
-    if filename.endswith('.pyo') or filename.endswith('.pyc'):
-        return True
+        if tarinfo.name[last_index + 1:].startswith('.'):
+            return None
+    if tarinfo.name.endswith('.pyo') or tarinfo.name.endswith('.pyc') or '/splunk_app' in tarinfo.name:
+        return None
     else:
-        return False
+        return tarinfo
 
 
 def make_tarfile(output_filename, source_dir):
     import tarfile
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname=os.path.basename(source_dir), exclude=exclude_function)
+        tar.add(source_dir, arcname=os.path.basename(source_dir), filter=filter_function)
 
 
 def build_splunk_app(dest, source=os.getcwd(), remove=True):
-    import imp
     cwd = os.getcwd()
     os.chdir(source)
     directory = os.path.join(dest, 'SA-Eventgen')
     target_file = os.path.join(dest, 'sa_eventgen_{}.spl'.format(EVENTGEN_VERSION))
-    module_file, module_path, module_description = imp.find_module('splunk_eventgen')
-    splunk_app = os.path.join(module_path, 'splunk_app')
+    splunk_app = os.path.join(FILE_LOCATION, 'splunk_app')
     splunk_app_samples = os.path.join(splunk_app, "samples")
-    shutil.copytree(os.path.join(module_path, "samples"), splunk_app_samples)
+    shutil.copytree(os.path.join(FILE_LOCATION, "samples"), splunk_app_samples)
     try:
         shutil.copytree(splunk_app, directory)
     except OSError as e:
@@ -165,9 +163,9 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
         else:
             raise
     directory_lib_dir = os.path.join(directory, 'lib', 'splunk_eventgen')
-    shutil.copytree(module_path, directory_lib_dir)
+    shutil.copytree(FILE_LOCATION, directory_lib_dir)
     directory_default_dir = os.path.join(directory, 'default', 'eventgen.conf')
-    eventgen_conf = os.path.join(module_path, 'default', 'eventgen.conf')
+    eventgen_conf = os.path.join(FILE_LOCATION, 'default', 'eventgen.conf')
     shutil.copyfile(eventgen_conf, directory_default_dir)
 
     # install 3rd lib dependencies

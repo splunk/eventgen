@@ -126,7 +126,7 @@ docs:
 	cd docs/; bundle install; bundle exec jekyll serve
 
 build_spl: clean
-	python -m splunk_eventgen build --destination ./
+	python3 -m splunk_eventgen build --destination ./
 
 lint:
 ifeq ($(NEWLY_ADDED_PY_FILES), )
