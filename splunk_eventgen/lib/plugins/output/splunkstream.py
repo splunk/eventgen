@@ -30,12 +30,16 @@ class SplunkStreamOutputPlugin(OutputPlugin):
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-        from eventgenconfig import Config
+        from splunk_eventgen.lib.eventgenconfig import Config
         globals()['c'] = Config()
 
         self._splunkUrl, self._splunkMethod, self._splunkHost, self._splunkPort = c.getSplunkUrl(self._sample)  # noqa
         self._splunkUser = self._sample.splunkUser
         self._splunkPass = self._sample.splunkPass
+
+        # Cancel SSL verification
+        import ssl
+        ssl._create_default_https_context = ssl._create_unverified_context
 
         if not self._sample.sessionKey:
             try:

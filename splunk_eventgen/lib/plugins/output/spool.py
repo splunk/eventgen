@@ -30,10 +30,11 @@ class SpoolOutputPlugin(OutputPlugin):
             data = ''.join(event['_raw'] for event in q if event.get('_raw'))
             while True:
                 try:
-                    with open(self.spoolPath, 'ab') as dst:
+                    with open(self.spoolPath, 'a') as dst:
                         dst.write(data)
                     break
-                except:
+                except Exception as e:
+                    logger.error(str(e))
                     time.sleep(0.1)
             logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
 
