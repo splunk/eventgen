@@ -464,10 +464,7 @@ class EventgenServerAPI():
             zipf = zipfile.ZipFile(path)
             for info in zipf.infolist():
                 old_file_name = info.filename
-                if info.filename.find('/') == len(info.filename) - 1:
-                    info.filename = "eg-bundle/"
-                else:
-                    info.filename = "eg-bundle/" + info.filename[info.filename.find('/') + 1:]
+                info.filename = "eg-bundle/" + info.filename
                 zipf.extract(info, os.path.dirname(path))
             output = os.path.join(os.path.dirname(path), 'eg-bundle')
             zipf.close()
