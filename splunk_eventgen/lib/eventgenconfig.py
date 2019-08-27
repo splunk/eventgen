@@ -813,6 +813,8 @@ class Config(object):
                     logger.debug("Calling function for setting '%s' with value '%s'" % (key, value))
                     value = complexSetting(value)
                 elif isinstance(complexSetting, list):
+                    if key == 'threading' and self.threading == 'process':
+                        value = self.threading
                     if value not in complexSetting:
                         logger.error(
                             "Setting '%s' is invalid for value '%s' in stanza '%s'" % (key, value, stanza))

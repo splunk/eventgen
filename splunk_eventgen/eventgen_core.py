@@ -6,6 +6,7 @@ import logging.config
 import os
 import sys
 import time
+import signal
 from Queue import Empty, Queue
 from threading import Thread
 
@@ -44,6 +45,7 @@ class EventGenerator(object):
         :param args: __main__ parse_args() object.
         '''
         self.stopping = False
+        self.force_stop = False
         self.started = False
         self.completed = False
         self.config = None
@@ -97,6 +99,7 @@ class EventGenerator(object):
                 new_args["verbosity"] = args.verbosity
         self.config = Config(configfile, **new_args)
         self.config.parse()
+        self.args.multiprocess = True if self.config.threading == "process" else self.args.multiprocess
         self._reload_plugins()
         if "args" in kwargs and getattr(kwargs["args"], "generators"):
             generator_worker_count = kwargs["args"].generators
@@ -104,6 +107,8 @@ class EventGenerator(object):
             generator_worker_count = self.config.generatorWorkers
 
         # TODO: Probably should destroy pools better so processes are cleaned.
+        if self.args.multiprocess:
+            self.kill_processes()
         self._setup_pools(generator_worker_count)
 
     def _reload_plugins(self):
@@ -197,7 +202,7 @@ class EventGenerator(object):
                             has over 10 generators working, additional samples won't run until the first ones end.
         :return:
         '''
-        if self.args.multiprocess:
+        if  self.args.multiprocess:
             import multiprocessing
             self.manager = multiprocessing.Manager()
             if self.config.disableLoggingQueue:
@@ -283,6 +288,8 @@ class EventGenerator(object):
             except Empty:
                 pass
             except Exception as e:
+                if self.force_stop:
+                    break
                 self.logger.exception(str(e))
                 raise e
 
@@ -327,6 +334,8 @@ class EventGenerator(object):
             except Empty:
                 pass
             except Exception as e:
+                if self.force_stop:
+                    break
                 self.logger.exception(str(e))
                 raise e
 
@@ -445,30 +454,39 @@ class EventGenerator(object):
             self.logger.exception(str(e))
             raise e
 
-    def stop(self):
+    def stop(self, force_stop=False):
         # empty the sample queue:
         self.config.stopping = True
         self.stopping = True
+        self.force_stop = force_stop
 
         self.logger.info("All timers exited, joining generation queue until it's empty.")
+        if force_stop:
+            self.logger.info("Forcibly stopping Eventgen: Deleting workerQueue.")
+            del self.workerQueue
+            self._create_generator_pool()
         self.workerQueue.join()
         # if we're in multiprocess, make sure we don't add more generators after the timers stopped.
         if self.args.multiprocess:
-            self.genconfig["stopping"] = True
-            for worker in self.workerPool:
-                count = 0
-                # We wait for a minute until terminating the worker
-                while worker.exitcode is None and count != 20:
-                    if count == 30:
-                        self.logger.info("Terminating worker {0}".format(worker._name))
-                        worker.terminate()
-                        count = 0
-                        break
-                    self.logger.info("Worker {0} still working, waiting for it to finish.".format(worker._name))
-                    time.sleep(2)
-                    count += 1
+            if force_stop:
+                self.kill_processes()
+            else:
+                self.genconfig["stopping"] = True
+                for worker in self.workerPool:
+                    count = 0
+                    # We wait for a minute until terminating the worker
+                    while worker.exitcode is None and count != 20:
+                        if count == 30:
+                            self.logger.info("Terminating worker {0}".format(worker._name))
+                            worker.terminate()
+                            count = 0
+                            break
+                        self.logger.info("Worker {0} still working, waiting for it to finish.".format(worker._name))
+                        time.sleep(2)
+                        count += 1
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
-        self.outputQueue.join()
+        if not self.args.multiprocess and not force_stop:
+            self.outputQueue.join()
         self.logger.info("All items fully processed. Cleaning up internal processes.")
         self.started = False
         self.stopping = False
@@ -484,21 +502,28 @@ class EventGenerator(object):
 
     def check_running(self):
         '''
-
         :return: if eventgen is running, return True else False
         '''
         if hasattr(self, "outputQueue") and hasattr(self, "sampleQueue") and hasattr(self, "workerQueue"):
             # If all queues are not empty, eventgen is running.
             # If all queues are empty and all tasks are finished, eventgen is not running.
             # If all queues are empty and there is an unfinished task, eventgen is running.
-            if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty() \
-                    and self.sampleQueue.unfinished_tasks <= 0 \
-                    and self.outputQueue.unfinished_tasks <= 0 \
-                    and self.workerQueue.unfinished_tasks <= 0:
-                self.logger.info("Queues are all empty and there are no pending tasks")
-                return self.started
+            if not self.args.multiprocess:
+                if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty() \
+                        and self.sampleQueue.unfinished_tasks <= 0 \
+                        and self.outputQueue.unfinished_tasks <= 0 \
+                        and self.workerQueue.unfinished_tasks <= 0:
+                    self.logger.info("Queues are all empty and there are no pending tasks")
+                    return self.started
+                else:
+                    return True
             else:
-                return True
+                if self.outputQueue.empty() and self.sampleQueue.empty() and self.workerQueue.empty() \
+                        and self.sampleQueue.unfinished_tasks <= 0:
+                    self.logger.info("Queues are all empty and there are no pending tasks")
+                    return self.started
+                else:
+                    return True
         return False
 
     def check_done(self):
@@ -507,3 +532,16 @@ class EventGenerator(object):
         :return: if eventgen jobs are finished, return True else False
         '''
         return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty() and self.workerQueue.unfinished_tasks <= 0
+
+    def kill_processes(self):
+        try:
+            if self.args.multiprocess:
+                for worker in self.workerPool:
+                    try: os.kill(int(worker.pid), signal.SIGKILL)
+                    except: continue
+                del self.outputQueue
+                self.manager.shutdown()
+        except:
+            pass
+            
+                

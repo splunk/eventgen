@@ -1,6 +1,5 @@
 import os
 import sys
-from shutil import copyfile, rmtree
 
 
 def test_modular_input(mocker, capsys):
@@ -16,13 +15,6 @@ def test_modular_input(mocker, capsys):
     mod_input_path = os.path.join(base_dir, 'splunk_eventgen', 'splunk_app', 'bin')
     sys.path.insert(0, mod_input_path)
 
-    # create needed sample file
-    simulated_splunk_etc_dir = os.path.dirname(os.path.dirname(base_dir))
-    sample_path = os.path.join(simulated_splunk_etc_dir, 'modinput_test_app', 'samples')
-    # os.mkdir(os.path.join(simulated_splunk_etc_dir, 'modinput_test_app'), 0666)
-    os.makedirs(sample_path, 0o777)
-    copyfile(os.path.join(base_dir, 'tests', 'large', 'sample', 'film.json'), os.path.join(sample_path, 'film.json'))
-
     from modinput_eventgen import Eventgen
 
     # input xml stream used to start modular input
@@ -35,9 +27,7 @@ def test_modular_input(mocker, capsys):
     # capture the generated events from std out
     captured = capsys.readouterr()
     assert "<stream>" in captured.out
-    # assert "<data>" in captured.out
-    # assert "<event>" in captured.out
+    assert "<data>" in captured.out
+    assert "<event>" in captured.out
 
-    # remove above created simulated app folder
-    rmtree(os.path.join(simulated_splunk_etc_dir, 'modinput_test_app'))
 

@@ -86,7 +86,6 @@ class Sample(object):
     queueable = None
     autotimestamp = None
     extendIndexes = None
-    index_list = []
 
     # Internal fields
     sampleLines = None
@@ -103,6 +102,7 @@ class Sample(object):
         self.name = name
         self.tokens = []
         self._lockedSettings = []
+        self.index_list = []
         self.backfilldone = False
 
     def updateConfig(self, config):
@@ -359,6 +359,8 @@ class Sample(object):
                 self._closeSampleFile()
                 self.sampleDict = []
                 for line in self.sampleLines:
+                    if line == '\n':
+                        continue
                     if line and line[-1] != '\n':
                         line = line + '\n'
                     self.sampleDict.append({

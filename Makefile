@@ -44,6 +44,10 @@ test_helper:
 	@echo 'Installing test requirements'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install --upgrade pip;pip install -r $(shell pwd)/requirements.txt" || true
 
+	@echo 'Make simulated app dir and sample for modular input test'
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); cd ../..; mkdir -p modinput_test_app/samples/" || true
+	docker cp tests/large/sample/film.json ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/../../modinput_test_app/samples
+
 	@echo 'Installing docker-compose'
 	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
 	sudo chmod +x /usr/local/bin/docker-compose || true
@@ -53,11 +57,11 @@ test_helper:
 
 	sleep 120
 	@echo 'Provision splunk container'
-	docker-compose -f tests/large/provision/docker-compose.yml exec -T splunk sh -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk enable listen 9997 -auth admin:changeme;/opt/splunk/bin/splunk restart'
+	docker-compose -f tests/large/provision/docker-compose.yml exec -T splunk sh -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk enable listen 9997 -auth admin:changeme;/opt/splunk/bin/splunk add index test_0;/opt/splunk/bin/splunk add index test_1;/opt/splunk/bin/splunk restart'
 
 run_tests:
 	@echo 'Running the super awesome tests'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python tests/run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}" || true
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}" || true
 
 test_collection_cleanup:
 	@echo 'Collecting results'
@@ -103,12 +107,20 @@ eg_network:
 run_server: eg_network
 	docker kill eg_server || true
 	docker rm eg_server || true
-	docker run --network eg_network --name eg_server -e EVENTGEN_AMQP_HOST="eg_controller" -d -p 9501:9500 eventgen:latest server
+	docker run --network eg_network --name eg_server -e REDIS_HOST=eg_controller -d -p 9501:9500 eventgen:latest server
 
 run_controller: eg_network
 	docker kill eg_controller || true
 	docker rm eg_controller || true
-	docker run --network eg_network --name eg_controller  -d -p 5672:5672 -p 15672:15672 -p 9500:9500 eventgen:latest controller
+	docker run --network eg_network --name eg_controller  -d -p 6379:6379 -p 9500:9500 eventgen:latest controller
+
+run_standalone:
+	docker kill eg_standalone || true
+	docker rm eg_standalone || true
+	docker run --name eg_standalone  -d -p 9500:9500 eventgen:latest standalone
+
+run_local_standalone:
+	python -m splunk_eventgen service -r standalone
 
 docs:
 	cd docs/; bundle install; bundle exec jekyll serve
