@@ -143,7 +143,8 @@ class Timer(object):
                 pass
 
             # Sleep until we're supposed to wake up and generate more events
-            self.countdown = self.interval
+            if self.countdown == 0:
+                self.countdown = self.interval
 
             # 8/20/15 CS Adding support for ending generation at a certain time
 
@@ -167,6 +168,5 @@ class Timer(object):
                     self.stopping = True
                     end = True
 
-            else:
-                time.sleep(self.time)
-                self.countdown -= self.time
+            time.sleep(self.time)
+            self.countdown -= self.time
