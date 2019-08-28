@@ -8,40 +8,40 @@ The primary source of configuration done in Eventgen is governed by the `eventge
 The INI format of `eventgen.conf` can have one or more stanzas. Each stanza name is a sample file it will be reading from. There a number of options available in each stanza. For instance, breaking down this tutorial file option-by-option, we can see how this file will be used to set up Eventgen:
 
 ```
-    [sample.tutorial1]
-    mode = replay
-    sampletype = csv
-    timeMultiple = 2
-    backfill = -15m
-    backfillSearch = index=main sourcetype=splunkd
+[sample.tutorial1]
+mode = replay
+sampletype = csv
+timeMultiple = 2
+backfill = -15m
+backfillSearch = index=main sourcetype=splunkd
 
-    outputMode = splunkstream
-    splunkHost = localhost
-    splunkUser = admin
-    splunkPass = changeme
+outputMode = splunkstream
+splunkHost = localhost
+splunkUser = admin
+splunkPass = changeme
 
-    token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
-    token.0.replacementType = timestamp
-    token.0.replacement = %Y-%m-%d %H:%M:%S,%f
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
+token.0.replacementType = timestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S,%f
 ```
 
 ```
-    [sample.tutorial1]
+[sample.tutorial1]
 ```
 This is the stanza name and the name of the sample file in Eventgen or your bundle that you want to read from. You can also specify a regex here to match multiple files of similar extensions/naming conventions.
 
 ```
-    mode = replay
+mode = replay
 ```
 Specify replay mode. This will leak out events at the same timing as they appear in the file (with intervals between events like they occurred in the source file). Default mode is sample, so this is required for replay mode.
 
 ```
-    sampletype = csv
+sampletype = csv
 ```
 Specify that the input file is in CSV format, rather than a plain text file. With CSV input, we'll look for index, host, source, and sourcetype on a per event basis rather than setting them for the file as a whole.
 
 ```
-    timeMultiple = 2
+timeMultiple = 2
 ```
 This will slow down the replay by a factor of 2 by multiplying all time intervals between events by 2.
 For example, let's assume that you have 3 events generated like below:
@@ -55,33 +55,33 @@ Applying timeMultiple=2 would instead generate 3 events like below:
 12:05:14 helloworld3
 
 ```
-    backfill = -15m
+backfill = -15m
 ```
 Eventgen will startup and immediately fill in the last 15 minutes worth of events from this file. This is in Splunk relative time notation, and can be any valid relative time specifier (**NOTE:** the longer you set this, the longer it will take to get started).
 
 ```
-    backfillSearch = index=main sourcetype=splunkd
+backfillSearch = index=main sourcetype=splunkd
 ```
 A search to run to find the last events generated for this stanza. If this returns any results inside the backfill time window, eventgen will shorten the time window to start at the time of the last event it saw (**NOTE:** this only works with outputMode=splunkstream)
 
 ```
-    outputMode = splunkstream
+outputMode = splunkstream
 ```
 There are various outputModes available (see the [spec](REFERENCE.md#eventgenconfspec)). The splunkstream mode will output via the Splunk [receivers/stream](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTinput#receivers.2Fstream) endpoint straight into Splunk. This allows us to specify things like index, host, source and sourcetype to Splunk at index time. In this case, we're getting those values directly from our sample rather than specifying them here in eventgen.conf.
 
 ```
-    splunkHost = localhost
-    splunkUser = admin
-    splunkPass = changeme
+splunkHost = localhost
+splunkUser = admin
+splunkPass = changeme
 ```
 Parameters for setting up outputMode = splunkstream. This is only required if we want to run Eventgen outside of Splunk. As a Splunk App and running as a scripted input, eventgen will gather this information from Splunk itself. Since we'll be running this from the command line for the tutorial, please customize your username and password in the tutorial.
 Note:
 >When using outputMode=splunkstream for running Eventgen outside of Splunk, use parameter `PYTHONHTTPSVERIFY=0` to ignore the SSL error: `SSLError: [SSL: CERTIFICATE_VERIFY_FAILED]`
 
 ```
-    token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
-    token.0.replacementType = replaytimestamp
-    token.0.replacement = %Y-%m-%d %H:%M:%S,%f
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
+token.0.replacementType = replaytimestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S,%f
 ```
 All sets of token replacement lines will look very similar, with different regular expressions and strptime formats. This is a replaytimestamp replacement, which will find the timestamp specified by the regular expression and replace it with a current (or relative to the first event) time based on the stprtime format. Generally you'll define a regular expression and a strptime format to match.
 For more information see [regular expressions](http://lmgtfy.com/?q=regex) and [striptime](http://lmgtfy.com/?q=strptime). You can also read more about the different replacement types on the [reference page](REFERENCE.md#eventgenconfspec).
