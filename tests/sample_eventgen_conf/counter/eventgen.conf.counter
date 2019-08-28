@@ -114,3 +114,17 @@
 #count_by = 1
 #end = 1
 #outputMode = stdout
+
+[100multiproc]
+# outputs 100 events by counting up by 1, but with a custom output line, and splitting into multiprocess
+# Please note, that in order to use mutliprocessing, you must change from the default rater, not the generator.
+# This rater will then correctly set the generator plugin.  This will always divide into 4 processes regardless
+# of generator worker count.
+count_template = {event_ts}-0700 Printing event {current_count} of {end_count}
+rater = counter
+start_count = 1
+splitSample = 4
+end_count = 100
+count_by = 1
+end = 1
+outputMode = stdout
