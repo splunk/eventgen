@@ -151,7 +151,7 @@ class EventgenServerAPI():
         @bp.route('/start', methods=['POST'])
         def http_post_start():
             try:
-                response = self.start()
+                response = self.start(join_after_start=False)
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
                 self.logger.error(e)
