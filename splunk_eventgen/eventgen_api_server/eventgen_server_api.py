@@ -369,7 +369,7 @@ class EventgenServerAPI:
                 stanza_num -= 1
             divided_volume = float(target_volume) / stanza_num
             for stanza, kv_pair in conf_dict.items():
-                if isinstance(kv_pair, dict) and stanza != '.*' not in stanza:
+                if isinstance(kv_pair, dict) and stanza != 'global' and '.*' not in stanza:
                     conf_dict[stanza]["perDayVolume"] = divided_volume
 
         self.set_conf(conf_dict)
