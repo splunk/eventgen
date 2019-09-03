@@ -35,7 +35,7 @@ class EventgenControllerAPI():
             if not response_number_target:
                 response_number_target = int(self.redis_connector.message_connection.pubsub_numsub(self.redis_connector.servers_channel)[0][1])
             response_num = 0
-            countdown = 1.5 / self.interval
+            countdown = 60 / self.interval
             for i in range(0, int(countdown)):
                 if response_num == response_number_target:
                     break

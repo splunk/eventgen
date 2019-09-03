@@ -444,6 +444,11 @@ class EventgenServerAPI():
 
     def download_bundle(self, url):
         bundle_path = os.path.join(DEFAULT_PATH, "eg-bundle.tgz")
+        try:
+            os.remove(bundle_path)
+            shutil.rmtree(os.path.join(os.path.dirname(bundle_path), 'eg-bundle'))
+        except:
+            pass
         r = requests.get(url, stream=True)
         with open(bundle_path, 'wb') as f:
             for chunk in r.iter_content(chunk_size=None):
@@ -457,9 +462,17 @@ class EventgenServerAPI():
         output = ''
         if tarfile.is_tarfile(path):
             tar = tarfile.open(path)
+            foldername = ''
+            for name in tar.getnames():
+                if '/' not in name:
+                    foldername = name
+                    break
             output = os.path.join(os.path.dirname(path), os.path.commonprefix(tar.getnames()))
             tar.extractall(path=os.path.dirname(path))
             tar.close()
+            if foldername:
+                os.rename(os.path.join(os.path.dirname(path), foldername), os.path.join(os.path.dirname(path), 'eg-bundle'))
+                output = os.path.join(os.path.dirname(path), 'eg-bundle')
         elif zipfile.is_zipfile(path):
             zipf = zipfile.ZipFile(path)
             for info in zipf.infolist():
