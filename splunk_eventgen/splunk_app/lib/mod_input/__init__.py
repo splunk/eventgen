@@ -1,6 +1,3 @@
-"""
-Copyright (C) 2005 - 2018 Splunk Inc. All Rights Reserved.
-"""
 import argparse
 import getpass
 import hashlib
@@ -131,7 +128,10 @@ class ModularInput(object):
         IntervalField("interval", "Interval", "The interval the script will be run on"),
         Field("name", "Stanza name", "The name of the stanza for this modular input"),
         Field("source", "Source", "The source for events created by this modular input"),
-        Field("sourcetype", "Stanza name", "The name of the stanza for this modular input")]
+        Field("sourcetype", "Stanza name", "The name of the stanza for this modular input"),
+        # added for Splunk 8.0.0 support
+        Field("python.version", "Python version", "Python version to run this modular input")
+    ]
 
     checkpoint_dir = None
 

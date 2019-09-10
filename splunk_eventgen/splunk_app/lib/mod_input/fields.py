@@ -1,6 +1,3 @@
-'''
-Copyright (C) 2005 - 2018 Splunk Inc. All Rights Reserved.
-'''
 import json
 import re
 
