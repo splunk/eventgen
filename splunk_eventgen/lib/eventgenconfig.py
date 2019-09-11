@@ -88,6 +88,7 @@ class Config(object):
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
                     'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
                     'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort',
+                    'syslogDestinationHost', 'syslogDestinationPort', 'syslogAddHeader',
                     'verbosity', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse',
                     'outputCounter', 'sequentialTimestamp', 'extendIndexes', 'disableLoggingQueue']
     _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
@@ -99,7 +100,7 @@ class Config(object):
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = [
         'disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp',
-        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp', 'disableLoggingQueue']
+        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp', 'disableLoggingQueue', 'syslogAddHost']
     _jsonSettings = [
         'hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps']
     _defaultableSettings = [
