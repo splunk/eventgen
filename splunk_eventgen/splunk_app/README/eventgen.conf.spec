@@ -129,6 +129,9 @@ syslogDestinationPort = <port>
     * Defaults to port 1514
     * Only supports UDP ports
 
+syslogAddHeader = true | false
+    * Defaults to false
+
 tcpDestinationHost = <host>
     * Defaults to 127.0.0.1
 

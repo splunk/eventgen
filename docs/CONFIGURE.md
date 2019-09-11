@@ -420,6 +420,14 @@ specifically be supported by all plugins. Plugins that write to files like spool
     * Only supports UDP ports
     * Required
 
+    syslogAddHeader = true | false
+    * Controls whether syslog messages should be prefixed with an RFC3164 compliant header
+      including the host value defined for the sample.
+    * Useful in situations where you want to output generated events to syslog and make it
+      possible for the receiving syslog server to use the sample's defined host value instead of
+      the hostname of the host that eventgen is running on.
+    * Defaults to false
+
 ###### tcpout
     tcpDestinationHost = <host>
     * Defaults to 127.0.0.1
