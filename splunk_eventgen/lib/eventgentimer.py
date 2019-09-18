@@ -1,4 +1,5 @@
 import time
+import copy
 from Queue import Full
 
 from timeparser import timeParserTimeMath
@@ -132,7 +133,10 @@ class Timer(object):
                             break
                         et = backfillearliest
                         lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
-                        genPlugin = self.generatorPlugin(sample=self.sample)
+                        copy_sample = copy.copy(self.sample)
+                        tokens = copy.deepcopy(self.sample.tokens)
+                        copy_sample.tokens = tokens
+                        genPlugin = self.generatorPlugin(sample=copy_sample)
                         # need to make sure we set the queue right if we're using multiprocessing or thread modes
                         genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                         genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
@@ -176,7 +180,10 @@ class Timer(object):
                             logger.info("Starting '%d' generatorWorkers for sample '%s'" %
                                              (self.sample.config.generatorWorkers, self.sample.name))
                             for worker_id in range(self.config.generatorWorkers):
-                                genPlugin = self.generatorPlugin(sample=self.sample)
+                                copy_sample = copy.copy(self.sample)
+                                tokens = copy.deepcopy(self.sample.tokens)
+                                copy_sample.tokens = tokens
+                                genPlugin = self.generatorPlugin(sample=copy_sample)
                                 # Adjust queue for threading mode
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                                 genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
