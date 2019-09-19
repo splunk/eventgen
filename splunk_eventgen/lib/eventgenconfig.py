@@ -100,7 +100,7 @@ class Config(object):
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = [
         'disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp',
-        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp', 'disableLoggingQueue', 'syslogAddHost']
+        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp', 'disableLoggingQueue', 'syslogAddHeader']
     _jsonSettings = [
         'hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps']
     _defaultableSettings = [
