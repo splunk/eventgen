@@ -382,8 +382,10 @@ specifically be supported by all plugins. Plugins that write to files like spool
     * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
 
     host = <host>
-    * ONLY VALID WITH outputMode SPLUNKSTREAM
-    * Set event host in Splunk to <host>. Defaults to 127.0.0.1 if none specified.
+    * When outputMode is splunkstream, set event host in Splunk to <host>.
+    * When outputMode is syslogout and syslogAddHeader is set to true, add initial header with hostname <host>,
+      see syslogAddHeader for details.
+    * Defaults to 127.0.0.1 if none specified.
 
     host.token = <regular expression>
     * PCRE expression used to identify the host name (or partial name) for replacement.
