@@ -8,6 +8,9 @@ from outputplugin import OutputPlugin
 # Dict of flags to gate adding the syslogHandler only once to the given singleton logger
 loggerInitialized = {}
 
+
+# This filter never returns False, because its purpose is just to add the host field so it's
+# available to the logging formatter.
 class HostFilter(logging.Filter):
     def __init__(self, host):
         self.host = host
