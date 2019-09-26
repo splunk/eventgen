@@ -98,6 +98,7 @@ class Output(object):
             outputer = self.outputPlugin(self._sample, self.output_counter)
             outputer.updateConfig(self.config)
             outputer.set_events(q)
+            del q
             # When an outputQueue is used, it needs to run in a single threaded nature which requires to be put back
             # into the outputqueue so a single thread worker can execute it. When an outputQueue is not used, it can be
             # ran by multiple processes or threads. Therefore, no need to put the outputer back into the Queue. Just
@@ -106,6 +107,7 @@ class Output(object):
             if self.outputPlugin.useOutputQueue or self.config.useOutputQueue:
                 try:
                     self.outputQueue.put(outputer)
+                    del outputer
                 except Full:
                     logger.warning("Output Queue full, looping again")
             else:
@@ -117,3 +119,4 @@ class Output(object):
                             self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)})
                     tmp = None
                 outputer.run()
+                del outputer
