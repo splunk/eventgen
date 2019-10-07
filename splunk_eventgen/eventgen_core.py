@@ -531,7 +531,7 @@ class EventGenerator(object):
 
         :return: if eventgen jobs are finished, return True else False
         '''
-        return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty() and self.workerQueue.unfinished_tasks <= 0
+        return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty()
 
     def kill_processes(self):
         try:
@@ -543,5 +543,3 @@ class EventGenerator(object):
                 self.manager.shutdown()
         except:
             pass
-            
-                
