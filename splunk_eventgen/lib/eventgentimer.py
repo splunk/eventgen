@@ -26,7 +26,7 @@ class Timer(object):
     countdown = None
 
     # Added by CS 5/7/12 to emulate threading.Timer
-    def __init__(self, time, sample=None, config=None, genqueue=None, outputqueue=None, loggingqueue=None):
+    def __init__(self, time, sample=None, config=None, genqueue=None, outputqueue=None, loggingqueue=None, pool=None):
         # Logger already setup by config, just get an instance
         # setup default options
         self.profiler = config.profiler
@@ -36,6 +36,7 @@ class Timer(object):
         self.endts = getattr(self.sample, "endts", None)
         self.generatorQueue = genqueue
         self.outputQueue = outputqueue
+        self.pool = pool
         self.time = time
         self.stopping = False
         self.countdown = 0
@@ -141,7 +142,10 @@ class Timer(object):
                         genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                         genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
                         try:
-                            self.generatorQueue.put(genPlugin, True, 3)
+                            if self.pool is not None:
+                                self.pool.apply_async(run_task, args=(genPlugin,))
+                            else:
+                                self.generatorQueue.put(genPlugin, True, 3)
                             self.executions += 1
                             backfillearliest = lt
                         except Full:
@@ -189,7 +193,11 @@ class Timer(object):
                                 genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
 
                                 try:
-                                    self.generatorQueue.put(genPlugin)
+                                    if self.pool is not None:
+                                        self.pool.apply_async(run_task, args=(genPlugin,))
+                                    else:
+                                        self.generatorQueue.put(genPlugin)
+
                                     logger.debug(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
                                                        "with et '{3}' and lt '{4}'").format(
                                                           worker_id, round((count / 1024.0 / 1024), 4),
@@ -231,3 +239,7 @@ class Timer(object):
             else:
                 time.sleep(self.time)
                 self.countdown -= self.time
+
+
+def run_task(generator_plugin):
+    generator_plugin.run()
