@@ -371,7 +371,7 @@ class EventgenServerAPI():
                 stanza_num -= 1
             divided_volume = float(target_volume) / stanza_num
             for stanza, kv_pair in conf_dict.iteritems():
-                if isinstance(kv_pair, dict) and stanza != '.*' not in stanza:
+                if isinstance(kv_pair, dict) and stanza != 'global' and '.*' not in stanza:
                     conf_dict[stanza]["perDayVolume"] = divided_volume
 
         self.set_conf(conf_dict)
@@ -392,7 +392,7 @@ class EventgenServerAPI():
         response = {}
         if self.eventgen.eventgen_core_object.check_running():
             try:
-                self.eventgen.eventgen_core_object.stop(force_stop=force_stop)
+                self.eventgen.eventgen_core_object.stop()
             except:
                 pass
             response['message'] = "Eventgen is stopped."
@@ -444,6 +444,11 @@ class EventgenServerAPI():
 
     def download_bundle(self, url):
         bundle_path = os.path.join(DEFAULT_PATH, "eg-bundle.tgz")
+        try:
+            os.remove(bundle_path)
+            shutil.rmtree(os.path.join(os.path.dirname(bundle_path), 'eg-bundle'))
+        except:
+            pass
         r = requests.get(url, stream=True)
         with open(bundle_path, 'wb') as f:
             for chunk in r.iter_content(chunk_size=None):
@@ -457,17 +462,22 @@ class EventgenServerAPI():
         output = ''
         if tarfile.is_tarfile(path):
             tar = tarfile.open(path)
+            foldername = ''
+            for name in tar.getnames():
+                if '/' not in name:
+                    foldername = name
+                    break
             output = os.path.join(os.path.dirname(path), os.path.commonprefix(tar.getnames()))
             tar.extractall(path=os.path.dirname(path))
             tar.close()
+            if foldername:
+                os.rename(os.path.join(os.path.dirname(path), foldername), os.path.join(os.path.dirname(path), 'eg-bundle'))
+                output = os.path.join(os.path.dirname(path), 'eg-bundle')
         elif zipfile.is_zipfile(path):
             zipf = zipfile.ZipFile(path)
             for info in zipf.infolist():
                 old_file_name = info.filename
-                if info.filename.find('/') == len(info.filename) - 1:
-                    info.filename = "eg-bundle/"
-                else:
-                    info.filename = "eg-bundle/" + info.filename[info.filename.find('/') + 1:]
+                info.filename = "eg-bundle/" + info.filename
                 zipf.extract(info, os.path.dirname(path))
             output = os.path.join(os.path.dirname(path), 'eg-bundle')
             zipf.close()

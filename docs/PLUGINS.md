@@ -16,29 +16,37 @@ Plugins inherit from a base plugin class and are placed in their appropriate dir
 Let's take a look at the simplest plugin available to us, the Devnull output plugin:
 
 ```python
-from __future__ import division
 from outputplugin import OutputPlugin
-import sys
+from logging_config import logger
+
 
 class DevNullOutputPlugin(OutputPlugin):
+    name = 'devnull'
     MAXQUEUELENGTH = 1000
+    useOutputQueue = True
 
-    def __init__(self, sample):
-        OutputPlugin.__init__(self, sample)
+    def __init__(self, sample, output_counter=None):
+        OutputPlugin.__init__(self, sample, output_counter)
         self.firsttime = True
 
     def flush(self, q):
+        logger.info('flush data to devnull')
         if self.firsttime:
             self.f = open('/dev/null', 'w')
+            self.firsttime = False
         buf = '\n'.join(x['_raw'].rstrip() for x in q)
         self.f.write(buf)
+
 
 def load():
     """Returns an instance of the plugin"""
     return DevNullOutputPlugin
+
 ```
 
-First, we import the OutputPlugin superclass. For output plugins, they define a constant MAXQUEUELENGTH to determine the maximum amount of items in queue before forcing a queue flush.
+First, we import the OutputPlugin superclass. For output plugins, they define a constant `MAXQUEUELENGTH` to determine the maximum amount of items in queue before forcing a queue flush.
+
+`useOutputQueue` is set to `True` here to use the output queue which functions as a reduce step when you need to maintain a single thread or a limited number of threads outputting data
 
 ``__init__()`` is very simple. It calls its superclass init and sets one variable, firsttime. ``flush()`` is also very simple.
 If it's the first time, open the file /dev/null, otherwise, output the queue by writing it to the already open file.
@@ -56,26 +64,26 @@ class SplunkStreamOutputPlugin(OutputPlugin):
     intSettings = [ 'splunkPort' ]
 ```
 
-MAXQUEUELENGTH should look normal, but these other class variables need a little explanation.
+`MAXQUEUELENGTH` should look normal, but these other class variables need a little explanation.
 
 ### Configuration Validation
 Config validation is a modular system in Eventgen, and plugins must be allowed to specify additional configuration parameters that the main Eventgen will consider valid and store.
-*Note that eventgen.conf.spec generation is not yet automated, which means plugins must ship with the default distribution and eventgen.conf.spec must be maintained manually.*
+> Note that `eventgen.conf.spec` generation is not yet automated, which means plugins must ship with the default distribution and eventgen.conf.spec must be maintained manually.
 Eventually spec file generation will be automated as well.
 
 The main configuration of Eventgen validates itself by a list of configuration parameters assigned by type, and each of the configuration parameters is validated by that type.
 The settings list is required:
 
-* validSettings 				|  Defines the list of valid settings for this plugin
+* validSettings: Defines the list of valid settings for this plugin
 
 The following lists are optional and likely to be used by many plugins:
 
-* intSettings			|   Will validate the settings as integers
-* floatSettings			|   Will validate the settings as floating point numbers
-* boolSettings			|   Will validate the settings as booleans
-* jsonSettings			|   Will validate the settings as a JSON string
-* defaultableSettings	|   Settings which can be specified in the [global] stanza and will pass down to individual stanzas
-* complexSettings       |   A dictionary of lists or function callbacks, containing a setting name with list of valid options or a callback function to validate the setting.
+* intSettings: Will validate the settings as integers
+* floatSettings: Will validate the settings as floating point numbers
+* boolSettings: Will validate the settings as booleans
+* jsonSettings: Will validate the settings as a JSON string
+* defaultableSettings: Settings which can be specified in the [global] stanza and will pass down to individual stanzas
+* complexSettings: A dictionary of lists or function callbacks, containing a setting name with list of valid options or a callback function to validate the setting.
 
 ## Methods required per plugin type
 
@@ -83,7 +91,7 @@ Each plugin type will define a different method required.
 
 **Plugin Type** | **Method** | **Returns** | **Notes**
 --- | --- | --- | ---
-Rater | ``rate()`` | Integer count of events to generate | n/a
+Rater | ``rate()`` | Integer count of events to generate | N/A
 Generator | ``gen(count, earliest, latest) `` | Success (0) | Events get put into an output queue by calling the Sample's ``send()`` or ``bulksend()`` methods in the output object.
 Output | ``flush(q)`` | Success (0) | Gets a deque list q to operate upon and output as configured.
 
@@ -92,48 +100,46 @@ Output | ``flush(q)`` | Success (0) | Gets a deque list q to operate upon and ou
 We reviewed a simple Output Plugin earlier, let's look at a simple Generator Plugin:
 
 ```python
-from __future__ import division
+import datetime
+from datetime import timedelta
+
 from generatorplugin import GeneratorPlugin
-import os
-import logging
-import datetime, time
-import itertools
-from collections import deque
+from logging_config import logger
+
 
 class WindbagGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
-        # Logger already setup by config, just get an instance
-        logger = logging.getLogger('eventgen')
-        globals()['logger'] = logger
-
-        from eventgenconfig import Config
-        globals()['c'] = Config()
-
-    def gen(self, count, earliest, latest):
-        l = [ {'_raw': '2014-01-05 23:07:08 WINDBAG Event 1 of 100000'} for i in xrange(count) ]
-
-        self._out.bulksend(l)
+    def gen(self, count, earliest, latest, samplename=None):
+        if count < 0:
+            logger.warning('Sample size not found for count=-1 and generator=windbag, defaulting to count=60')
+            count = 60
+        time_interval = timedelta.total_seconds((latest - earliest)) / count
+        for i in xrange(count):
+            current_time_object = earliest + datetime.timedelta(0, time_interval * (i + 1))
+            msg = '{0} -0700 WINDBAG Event {1} of {2}'.format(current_time_object, (i + 1), count)
+            self._out.send(msg)
         return 0
+
 
 def load():
     return WindbagGenerator
+
 ```
 
-For this generator plugin, notice we inherit from GeneratorPlugin instead of OutputPlugin. This plugin is also quite simple.
-In its ``__init__()`` method, it calls the superclass ``__init__()`` and it sets up two global variables, c, which holds the config
-(and is a Singleton pattern which can be instantiated many times) and a copy of the logger which we'll use for logging in most plugins.
+For this generator plugin, notice we inherit from `GeneratorPlugin` instead of `OutputPlugin`. This plugin is also quite simple.
 
-Secondly, it defines a gen() method, which generates ``count`` events between ``earliest`` and ``latest`` time. In this case, we ignore the timestamp and return just event text.
-Then we call bulksend. This plugin has several performance optimizations: using a list constructor instead of a loop and using bulksend instead of send.
+Secondly, it defines a `gen()` method, which generates ``count`` events between ``earliest`` and ``latest`` time. In this case, we ignore the timestamp and return just event text.
+Then we call `bulksend`. This plugin has several performance optimizations: using a list constructor instead of a loop and using bulksend instead of send.
 Let's see how this could be implemented in a slightly less performant but easier to understand way:
 
 ```python
-    def gen(self, count, earliest, latest):
-        for x in xrange(count):
-            self._sample.send({ '_raw': '2014-01-05 23:07:08 WINDBAG Event 1 of 100000' })
-
+    def gen(self, count, earliest, latest, samplename=None):
+        for i in xrange(count):
+            current_time_object = earliest + datetime.timedelta(0, time_interval * (i + 1))
+            msg = '{0} -0700 WINDBAG Event {1} of {2}'.format(current_time_object, (i + 1), count)
+            self._out.send(msg)
         return 0
 ```
 
