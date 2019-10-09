@@ -28,7 +28,7 @@ def timeParser(ts='now', timezone=datetime.timedelta(days=1), now=None, utcnow=N
                 return now()
         else:
             if utcnow is None:
-                return datetime.datetime.now()
+                return datetime.datetime.utcnow() + timezone
             else:
                 return utcnow() + timezone
     else:

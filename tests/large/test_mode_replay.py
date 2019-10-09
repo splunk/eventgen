@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 import time
 
@@ -77,3 +77,15 @@ def test_mode_replay_csv(eventgen_test_helper):
     events = eventgen_test_helper('eventgen_replay_csv.conf').get_events()
     # assert the events equals to the sample csv file
     assert len(events) == 10
+
+
+def test_mode_replay_with_timezone(eventgen_test_helper):
+    """Test normal replay mode with sampletype = csv which will get _raw row from the sample"""
+    events = eventgen_test_helper('eventgen_replay_csv_with_tz.conf').get_events()
+    # assert the events equals to the sample csv file
+    assert len(events) == 4
+    now_ts = datetime.utcnow() + timedelta(hours=-1)
+    for event in events:
+        event_ts = datetime.strptime(event.split(' ')[0], '%Y-%m-%dT%H:%M:%S,%f')
+        d = now_ts - event_ts
+        assert d.seconds < 60, 'timestamp with timezone check fails.'

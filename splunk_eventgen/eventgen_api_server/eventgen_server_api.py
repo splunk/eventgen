@@ -390,7 +390,7 @@ class EventgenServerAPI:
         response = {}
         if self.eventgen.eventgen_core_object.check_running():
             try:
-                self.eventgen.eventgen_core_object.stop(force_stop=force_stop)
+                self.eventgen.eventgen_core_object.stop()
             except:
                 pass
             response['message'] = "Eventgen is stopped."

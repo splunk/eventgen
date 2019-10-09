@@ -8,4 +8,4 @@ end = 1
 outputMode = syslogout
 syslogDestinationHost = 127.0.0.1
 syslogDestinationPort = 9999
-syslogAddHeader = false
+syslogAddHeader = true
