@@ -105,7 +105,7 @@ You are running Eventgen Controller.\n'''
         
         @bp.route('/setup', methods=['POST'], defaults={'target': 'all'})
         @bp.route('/setup/<string:target>', methods=['POST'])
-        def http_target_setup(target):
+        def http_setup(target):
             try:
                 message_uuid = publish_message('setup', request.method, body=request.get_json(force=True), target=target)
                 return Response(json.dumps(gather_response('setup', message_uuid=message_uuid, response_number_target=0 if target == 'all' else 1)), mimetype='application/json', status=200)
