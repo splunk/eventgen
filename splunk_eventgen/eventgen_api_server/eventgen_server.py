@@ -25,7 +25,7 @@ class EventgenServer():
         self.app = self._create_app()
 
     def app_run(self):
-        self.app.run(host="0.0.0.0", port=9501, threaded=True)
+        self.app.run(host="0.0.0.0", port=int(self.env_vars.get('WEB_SERVER_PORT')), threaded=True)
     
     def _create_app(self):
         app = Flask(__name__)
