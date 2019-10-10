@@ -56,11 +56,11 @@ class EventgenControllerAPI():
                     if message and type(message.get('data')) == str:
                         server_response = json.loads(message.get('data'))
                         self.logger.info(server_response)
-                        message_uuid = server_response.get('message_uuid')
-                        if message_uuid:
-                            if message_uuid not in self.server_responses:
-                                self.server_responses[message_uuid] = {}
-                            self.server_responses[message_uuid][server_response['host']] = server_response['response']
+                        response_message_uuid = server_response.get('message_uuid')
+                        if response_message_uuid:
+                            if response_message_uuid not in self.server_responses:
+                                self.server_responses[response_message_uuid] = {}
+                            self.server_responses[response_message_uuid][server_response['host']] = server_response['response']
             return self.server_responses.get(message_uuid, {})
 
         @bp.route('/index', methods=['GET'])
