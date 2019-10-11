@@ -2,6 +2,9 @@ from flask import Flask
 import socket
 import os
 import logging
+import requests
+import time
+import threading
 
 from eventgen_controller_api import EventgenControllerAPI
 from redis_connector import RedisConnector
@@ -21,6 +24,7 @@ class EventgenController():
         self.redis_connector.register_myself(hostname=self.host, role=self.role)
 
         self._setup_loggers()
+        self.connections_healthcheck()
         self.logger = logging.getLogger('eventgen_server')
         self.logger.info('Initialized Eventgen Controller: hostname [{}]'.format(self.host))
 
@@ -40,6 +44,15 @@ class EventgenController():
             
         return app
     
+    def connections_healthcheck(self):
+        def start_checking():
+            while True:
+                time.sleep(60 * 30)
+                requests.get("http://{}:{}/healthcheck".format("0.0.0.0", int(self.env_vars.get('WEB_SERVER_PORT'))))
+        thread = threading.Thread(target=start_checking)
+        thread.daemon = True
+        thread.start()
+
     def _setup_loggers(self):
         log_path = os.path.join(FILE_PATH, 'logs')
         eventgen_controller_logger_path = os.path.join(LOG_PATH, 'eventgen-controller.log')
