@@ -47,7 +47,7 @@ class EventgenControllerAPI:
                 else:
                     time.sleep(self.interval)
                     message = self.redis_connector.pubsub.get_message()
-                    if message and type(message.get('data')) == str:
+                    if message and type(message.get('data')) == bytes:
                         server_response = json.loads(message.get('data'))
                         self.logger.info(server_response)
                         response_message_uuid = server_response.get('message_uuid')
