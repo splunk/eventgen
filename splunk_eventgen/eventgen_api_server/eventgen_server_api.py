@@ -218,7 +218,7 @@ class EventgenServerAPI():
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
 
         @bp.route('/healthcheck', methods=['GET'])
-        def redis_connection_health():
+        def http_get_healthcheck():
             try:
                 return Response(json.dumps(self.healthcheck()), mimetype='application/json', status=200)
             except Exception as e:

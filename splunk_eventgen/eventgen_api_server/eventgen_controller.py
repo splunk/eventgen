@@ -48,7 +48,10 @@ class EventgenController():
         def start_checking():
             while True:
                 time.sleep(60 * 30)
-                requests.get("http://{}:{}/healthcheck".format("0.0.0.0", int(self.env_vars.get('WEB_SERVER_PORT'))))
+                try:
+                    requests.get("http://{}:{}/healthcheck".format("0.0.0.0", int(self.env_vars.get('WEB_SERVER_PORT'))))
+                except Exception as e:
+                    self.logger.error(str(e))
         thread = threading.Thread(target=start_checking)
         thread.daemon = True
         thread.start()
