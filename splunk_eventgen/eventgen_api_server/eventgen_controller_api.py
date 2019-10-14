@@ -176,7 +176,6 @@ You are running Eventgen Controller.\n'''
                 except Exception as connection_error:
                     self.logger.error(connection_error)
                     return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-
             try:
                 message_uuid = publish_message('healthcheck', request.method, target=target)
                 return Response(json.dumps(gather_response('healthcheck', message_uuid=message_uuid, response_number_target=0 if target == 'all' else 1)), mimetype='application/json', status=200)
