@@ -168,6 +168,16 @@ You are running Eventgen Controller.\n'''
         @bp.route('/healthcheck/<string:target>', methods=['GET'])
         def http_healthcheck(target):
             try:
+                self.redis_connector.pubsub.check_health()
+            except Exception as e:
+                self.logger.info("Connection to Redis failed: {}, re-registering".format(str(e)))
+                try:
+                    self.redis_connector.register_myself(hostname=self.host, role='controller')
+                except Exception as connection_error:
+                    self.logger.error(connection_error)
+                    return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+
+            try:
                 message_uuid = publish_message('healthcheck', request.method, target=target)
                 return Response(json.dumps(gather_response('healthcheck', message_uuid=message_uuid, response_number_target=0 if target == 'all' else 1)), mimetype='application/json', status=200)
             except Exception as e:
