@@ -59,7 +59,7 @@ class EventgenServerAPI():
         thread = threading.Thread(target=start_listening, args=(self,))
         thread.daemon = True                            
         thread.start()
-    
+
     def format_message(self, job, request_method, response, message_uuid):
         return json.dumps({'job': job, 'request_method': request_method, 'response': response, 'host': self.host, 'message_uuid': message_uuid})
 
@@ -102,6 +102,10 @@ class EventgenServerAPI():
                 message = {'message': 'Eventgen is resetting. Might take some time to reset.'}
                 self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('reset', request_method, response=message, message_uuid=message_uuid))
                 self.reset()
+            elif job == 'healthcheck':
+                response = self.healthcheck()
+                message = self.format_message('healthcheck', request_method, response=response, message_uuid=message_uuid)
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, message)    
 
             
     def _create_blueprint(self):
@@ -209,6 +213,14 @@ class EventgenServerAPI():
                 self.clean_bundle_conf()
                 self.setup_http(request.get_json(force=True))
                 return Response(json.dumps(self.get_conf()), mimetype='application/json', status=200)
+            except Exception as e:
+                self.logger.error(e)
+                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
+
+        @bp.route('/healthcheck', methods=['GET'])
+        def redis_connection_health():
+            try:
+                return Response(json.dumps(self.healthcheck()), mimetype='application/json', status=200)
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
@@ -420,6 +432,17 @@ class EventgenServerAPI():
         self.eventgen.refresh_eventgen_core_object()
         self.get_volume()
         response['message'] = "Eventgen has been reset."
+        return response
+
+    def healthcheck(self):
+        response = {}
+        try:
+            self.redis_connector.pubsub.check_health()
+            response['message'] = "Connections are healthy"
+        except Exception as e:
+            self.logger.error("Connection to Redis failed: {}, re-registering".format(str(e)))
+            self.redis_connector.register_myself(hostname=self.host, role="server")
+            response['message'] = "Connections unhealthy - re-established connections"
         return response
 
     def set_bundle(self, url):
