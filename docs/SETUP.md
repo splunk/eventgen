@@ -21,7 +21,7 @@ Below are the two major ways to use Eventgen - as a PyPI module and as a Splunk 
 
 * Install / Use Eventgen as a [Python (PyPI) package](#pypi-installation)
 
-    Benefits:
+  Benefits:
   * Support for threading / multiprocessing
   * Support for a centralized service that can controll and run multiple threading workers
   * Able to run a larger amount of datavolume with less overhead
@@ -29,14 +29,15 @@ Below are the two major ways to use Eventgen - as a PyPI module and as a Splunk 
   * Exposes more of the plugin system
   * Includes/installs the Jinja2 templating engine
   
-  Draw Backs:
+  Drawbacks:
   * More complex installation
-  * You have to run the "build" command to produce a Splunk app
+  * You have to run the `build` command to produce a Splunk app
   * Harder to troubleshoot (especially in multiprocess mode)
 
 ---
 
-## <a name="pypi-installation"></a>PyPI Installation / First Run
+<a id="pypi-installation"></a>
+## PyPI Installation / First Run
 
 To use Eventgen as a PyPI module, you need to either download/clone the source code or install direct from github. 
 
@@ -44,7 +45,7 @@ To use Eventgen as a PyPI module, you need to either download/clone the source c
 ```
 $ git clone https://www.github.com/splunk/eventgen
 ```
-Depending on your desired case, you may wish to use a specific branch.  Eventgen's branching model will always have the "master" branch as the most stable and released version of Eventgen, while the "develop" branch will contain the bleeding edge codeline.
+Depending on your desired case, you may wish to use a specific branch.  Eventgen's branching model will always have the `master` branch as the most stable and released version of Eventgen, while the `develop` branch will contain the bleeding edge codeline.
 To select your codeline, simply checkout your desired branch (develop is selected by default).
 
 ```
@@ -113,11 +114,12 @@ Please follow these instructions to run an Eventgen cluster on your Docker envir
 
 ---
 
-## <a name="splunk-app-installation"></a>Splunk App Installation / First Run
+<a id="splunk-app-installation"></a>
+## Splunk App Installation / First Run
 
 To use Eventgen as a Splunk app, you need a SPL file. This SPL file can be obtained in one of two ways:
-1. Through running the "build" process of the splunk_eventgen pypi module
-2. Downloading the SPL direct from [splunkbase](https://splunkbase.splunk.com/app/1924/): 
+1. Through running the `build` process of the splunk_eventgen pypi module
+2. Downloading the SPL direct from [splunkbase](https://splunkbase.splunk.com/app/1924/)
 
 ###### Gerating the SPL file
 In order to generate the SPL file, install Eventgen through PyPI with the instruction above.
@@ -163,5 +165,7 @@ Make sure the bundle app permission is global. You can config this in two ways:
 []
 export=system
 ```
+
+You can use this [sample bundle](https://github.com/splunk/eventgen/tree/develop/tests/sample_bundle.zip) to have a quick start for data generation.
 
 ---

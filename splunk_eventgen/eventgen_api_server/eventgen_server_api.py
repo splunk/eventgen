@@ -65,7 +65,7 @@ class EventgenServerAPI:
     def _delegate_jobs(self, job, request_method, body, message_uuid):
         if not job: return
         else:
-            self.logger.info("Deleted {} {} {} {}".format(job, request_method, body, message_uuid))
+            self.logger.info("Delegated {} {} {} {}".format(job, request_method, body, message_uuid))
             if job == 'status':
                 response = self.get_status()
                 message = self.format_message('status', request_method, response=response, message_uuid=message_uuid)
