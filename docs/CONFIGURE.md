@@ -1,5 +1,5 @@
 
-## Configure ##
+## Configure
 
 After you have installed Eventgen by the method of your choosing, you may be asking some of the following questions:
 * How much data should Eventgen send?
@@ -20,12 +20,12 @@ In addition, common use cases work around bundling these relevant files.
 Because Eventgen configs can be tightly coupled with custom sample files, they can be bundled up into a package itself, in the format:
 ```
 bundle/
-	default/
-		eventgen.conf
-	samples/
-		users.sample
-		hosts.sample
-		firewall.logs
+    default/
+        eventgen.conf
+    samples/
+        users.sample
+        hosts.sample
+        firewall.logs
 ```
 
 
@@ -36,7 +36,7 @@ sample you wish to create, followed by key = value tuning options for that sampl
 [<sample file name>]
 * This stanza defines a given sample file contained within the samples directory.
 * This stanza can be specified as a PCRE.
-configurationkey = configuration value
+<configuration key> = <configuration value>
     
 [windbag]
 count=100
