@@ -310,7 +310,7 @@ class Config(object):
                         last_token_number = int(key[6])
 
                 # Apply global tokens to the current stanza
-                kv_pair_items = settings.items()
+                kv_pair_items = list(settings.items())
                 if stanza in stanza_map:
                     for global_stanza in stanza_map[stanza]:
                         i = 0
