@@ -288,7 +288,7 @@ class EventGenerator(object):
         root.setLevel(logging.DEBUG)
         if logging_queue is not None:
             # TODO https://github.com/splunk/eventgen/issues/217
-            qh = logutils.queue.QueueHandler(logging_queue)
+            qh = logging.handlers.QueueHandler(logging_queue)
             root.addHandler(qh)
         else:
             root.addHandler(logging.StreamHandler())
