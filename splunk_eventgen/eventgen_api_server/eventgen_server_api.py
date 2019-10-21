@@ -27,7 +27,6 @@ class EventgenServerAPI:
     def __init__(self, eventgen, redis_connector, host, mode='standalone'):
         self.bp = self._create_blueprint()
         self.eventgen = eventgen
-        
         self.logger = logging.getLogger('eventgen_server')
         self.logger.info("Initialized the EventgenServerAPI Blueprint")
 
@@ -242,7 +241,7 @@ class EventgenServerAPI:
     def get_conf(self):
         response = collections.OrderedDict()
         if self.eventgen.configured:
-            config = configparser.ConfigParser()
+            config = configparser.RawConfigParser()
             config.optionxform = str
             config_path = self.eventgen.configfile
             if os.path.isfile(config_path):
@@ -254,7 +253,7 @@ class EventgenServerAPI:
         return response
     
     def set_conf(self, request_body):
-        config = configparser.ConfigParser({}, collections.OrderedDict)
+        config = configparser.RawConfigParser({}, collections.OrderedDict)
         config.optionxform = str
 
         for sample in request_body.items():
@@ -456,7 +455,7 @@ class EventgenServerAPI:
 
         if os.path.isfile(os.path.join(bundle_dir, "default", "eventgen.conf")):
             self.eventgen.configured = False
-            config = configparser.ConfigParser()
+            config = configparser.RawConfigParser()
             config.optionxform = str
             config.read(os.path.join(bundle_dir, "default", "eventgen.conf"))
             config_dict = {s: collections.OrderedDict(config.items(s)) for s in config.sections()}

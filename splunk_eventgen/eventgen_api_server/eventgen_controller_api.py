@@ -41,7 +41,7 @@ class EventgenControllerAPI:
             else:
                 countdown = 5
             for i in range(0, int(countdown / self.interval)):
-                response_num = len(self.server_responses.get(message_uuid, {}).keys())
+                response_num = len(list(self.server_responses.get(message_uuid, {}).keys()))
                 if response_num == response_number_target:
                     break
                 else:
