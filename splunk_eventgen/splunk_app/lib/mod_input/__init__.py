@@ -194,7 +194,7 @@ class ModularInput(object):
         valid_elements = ['host', 'index', 'source', 'sourcetype', 'time', 'data']
 
         # Append the valid child elements. Invalid elements will be dropped.
-        for element in filter(lambda x: x in valid_elements, params.keys()):
+        for element in [x for x in list(params.keys()) if x in valid_elements]:
             event.appendChild(self._create_formatter_textnode(doc, element, params[element]))
 
         if close:
@@ -438,7 +438,7 @@ class ModularInput(object):
             all_args[a.name] = a
 
         # Convert and check the parameters
-        for name, value in parameters.items():
+        for name, value in list(parameters.items()):
 
             # If the argument was found, then validate and convert it
             if name in all_args:
@@ -755,7 +755,7 @@ class ModularInput(object):
 
         # Validate all stanza parameters.
         stanzas = []
-        for stanza_name, unclean_stanza in input_config.configuration.items():
+        for stanza_name, unclean_stanza in list(input_config.configuration.items()):
             try:
                 stanzas.append(self.validate_parameters(unclean_stanza))
             except FieldValidationException as e:
