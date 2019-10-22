@@ -33,13 +33,11 @@ class EventgenCoreObject():
     def _create_args(self):
         args = argparse.Namespace()
         args.daemon = False
-        args.verbosity = None
         args.version = False
         args.backfill = None
         args.count = None
         args.devnull = False
         args.disableOutputQueue = False
-        args.end = None
         args.generators = None
         args.interval = None
         args.keepoutput = False
