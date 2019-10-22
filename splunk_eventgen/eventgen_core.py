@@ -46,7 +46,7 @@ class EventGenerator(object):
         self._generator_queue_size = getattr(self.args, 'generator_queue_size', 500)
         if self._generator_queue_size < 0:
             self._generator_queue_size = 0
-        self.logger.info("Set generator queue size", queue_size=self._generator_queue_size)
+        self.logger.info("Set generator queue size:{}".format(self._generator_queue_size))
 
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
@@ -227,10 +227,12 @@ class EventGenerator(object):
             self.workerPool = []
             for worker in range(workercount):
                 # builds a list of tuples to use the map function
+                disable_logging = True if self.args and self.args.disable_logging else False
                 process = multiprocessing.Process(target=self._proc_worker_do_work, args=(
                     self.workerQueue,
                     self.loggingQueue,
                     self.genconfig,
+                    disable_logging
                 ))
                 self.workerPool.append(process)
                 process.start()
@@ -238,6 +240,9 @@ class EventGenerator(object):
             pass
 
     def _setup_loggers(self, args=None):
+        if args and args.disable_logging:
+            logger.handlers = []
+            logger.addHandler(logging.NullHandler())
         self.logger = logger
         self.loggingQueue = None
         if args and args.verbosity:
@@ -281,7 +286,7 @@ class EventGenerator(object):
                 raise e
 
     @staticmethod
-    def _proc_worker_do_work(work_queue, logging_queue, config):
+    def _proc_worker_do_work(work_queue, logging_queue, config, disable_logging):
         genconfig = config
         stopping = genconfig['stopping']
         root = logging.getLogger()
@@ -291,7 +296,10 @@ class EventGenerator(object):
             qh = logging.handlers.QueueHandler(logging_queue)
             root.addHandler(qh)
         else:
-            root.addHandler(logging.StreamHandler())
+            if disable_logging:
+                root.addHandler(logging.NullHandler())
+            else:
+                root.addHandler(logging.StreamHandler())
         while not stopping:
             try:
                 root.info("Checking for work")

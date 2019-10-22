@@ -57,6 +57,8 @@ def parse_args():
     generate_subparser.add_argument(
         "--generator-queue-size", type=int, default=500, help="the max queue size for the "
         "generator queue, timer object puts all the generator tasks into this queue, default max size is 500")
+    generate_subparser.add_argument("--disable-logging", action="store_true",
+                                    help="disable logging")
     # Build subparser
     build_subparser = subparsers.add_parser('build', help="Will build different forms of sa-eventgen")
     build_subparser.add_argument("--mode", type=str, default="splunk-app",

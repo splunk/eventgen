@@ -20,7 +20,7 @@ INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "default"))
-SAMPLE_DIR_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "samples"))
+SAMPLE_DIR_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "serverSamples"))
 
 
 class EventgenServerAPI:
@@ -449,6 +449,8 @@ class EventgenServerAPI:
         bundle_dir = self.unarchive_bundle(self.download_bundle(url))
 
         if os.path.isdir(os.path.join(bundle_dir, "samples")):
+            if not os.path.exists(SAMPLE_DIR_PATH):
+                os.makedirs(SAMPLE_DIR_PATH)
             for file in glob.glob(os.path.join(bundle_dir, "samples", "*")):
                 shutil.copy(file, SAMPLE_DIR_PATH)
             self.logger.info("Copied all samples to the sample directory.")

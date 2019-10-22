@@ -16,7 +16,7 @@ class EventgenServer:
         self.role = 'server'
 
         self.logger = logging.getLogger('eventgen_server')
-        self.logger.info('Initialized Eventgen Controller: hostname [{}]'.format(self.host))
+        self.logger.info('Initialized Eventgen Server: hostname [{}]'.format(self.host))
 
         if self.mode != 'standalone':
             from splunk_eventgen.eventgen_api_server.redis_connector import RedisConnector
