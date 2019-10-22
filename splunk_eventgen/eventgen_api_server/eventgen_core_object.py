@@ -54,4 +54,5 @@ class EventgenCoreObject():
         args.wsgi = True
         args.modinput_mode = False
         args.generator_queue_size = 1500
+        args.disable_logging = True
         return args
