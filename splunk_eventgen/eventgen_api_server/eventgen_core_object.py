@@ -48,7 +48,7 @@ class EventgenCoreObject():
         args.sample = None
         args.version = False
         args.subcommand = 'generate'
-        args.verbosity = 10
+        args.verbosity = 20
         args.wsgi = True
         args.modinput_mode = False
         args.generator_queue_size = 1500
