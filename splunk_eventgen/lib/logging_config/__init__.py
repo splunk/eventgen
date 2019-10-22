@@ -1,30 +1,8 @@
 import os
-
-import structlog
 import logging.config
 
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'logs')
 DEFAULT_LOGGING_LEVEL = "DEBUG"
-
-structlog.configure(
-    processors=[
-        structlog.processors.UnicodeEncoder(encoding='utf-8', errors='backslashreplace'),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-    ],
-    context_class=structlog.threadlocal.wrap_dict(dict),
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
-)
-
-pre_chain = [
-    # Add the log level and a timestamp to the event_dict if the log entry
-    # is not from structlog.
-    structlog.stdlib.add_log_level,
-    structlog.processors.TimeStamper(fmt='iso'),
-]
 
 LOGGING_CONFIG = {
     'version': 1,
@@ -35,11 +13,6 @@ LOGGING_CONFIG = {
             'format': '%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s',
             'datefmt': '%Y-%m-%d %H:%M:%S'
         },
-        'json_struct': {
-            "()": structlog.stdlib.ProcessorFormatter,
-            "foreign_pre_chain": pre_chain,
-            "processor": structlog.processors.JSONRenderer(sort_keys=True),
-        }
     },
 
     'filters': {
@@ -86,7 +59,7 @@ LOGGING_CONFIG = {
         'eventgen_metrics': {
             'class': 'logging.handlers.RotatingFileHandler',
             'level': DEFAULT_LOGGING_LEVEL,
-            'formatter': 'json_struct',
+            'formatter': 'default',
             'filters': [],
             'maxBytes': 1024 * 1024,
             'filename': os.path.join(LOG_DIR, 'eventgen-metrics.log')
@@ -94,7 +67,7 @@ LOGGING_CONFIG = {
         'eventgen_server': {
             'class': 'logging.handlers.RotatingFileHandler',
             'level': DEFAULT_LOGGING_LEVEL,
-            'formatter': 'json_struct',
+            'formatter': 'default',
             'filters': [],
             'maxBytes': 1024 * 1024,
             'filename': os.path.join(LOG_DIR, 'eventgen-server.log')
@@ -126,8 +99,7 @@ LOGGING_CONFIG = {
 }
 
 logging.config.dictConfig(LOGGING_CONFIG)
-
-logger = structlog.get_logger('eventgen')
-controller_logger = structlog.get_logger('eventgen_controller')
-server_logger = structlog.get_logger('eventgen_server')
-metrics_logger = structlog.get_logger('eventgen_metrics')
+logger = logging.getLogger('eventgen')
+controller_logger = logging.getLogger('eventgen_controller')
+server_logger = logging.getLogger('eventgen_server')
+metrics_logger = logging.getLogger('eventgen_metrics')

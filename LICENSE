@@ -214,7 +214,6 @@ Apache License 2.0
 ========================================================================
 The following components are provided under the Apache License 2.0. See project link for details.
 
-    (Apache License 2.0) structlog (https://github.com/hynek/structlog/blob/master/LICENSE.apache2)
     (Apache License 2.0) boto3 (https://github.com/boto/boto3/blob/master/LICENSE)
     (Apache License 2.0) requests (https://github.com/kennethreitz/requests/blob/master/LICENSE)
     (Apache License 2.0) pyOpenSSL (https://github.com/pyca/pyopenssl/blob/master/LICENSE)
