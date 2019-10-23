@@ -276,6 +276,9 @@ class EventGenerator(object):
                 work_queue.task_done()
             except Empty:
                 pass
+            except EOFError as ef:
+                self.logger.exception(str(ef))
+                continue
             except Exception as e:
                 self.logger.exception(str(e))
                 raise e
@@ -292,6 +295,9 @@ class EventGenerator(object):
                 work_queue.task_done()
             except Empty:
                 pass
+            except EOFError as ef:
+                self.logger.exception(str(ef))
+                continue
             except Exception as e:
                 if self.force_stop:
                     break

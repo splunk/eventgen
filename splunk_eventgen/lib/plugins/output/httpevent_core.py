@@ -208,7 +208,6 @@ class HTTPCoreOutputPlugin(OutputPlugin):
             headers['content-type'] = 'application/json'
             try:
                 payloadsize = len(payloadstring)
-                # response = requests.post(url, data=payloadstring, headers=headers, verify=False)
                 self.active_sessions.append(
                     self.session.post(url=url, data=payloadstring, headers=headers, verify=False))
             except Exception as e:

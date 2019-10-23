@@ -37,6 +37,8 @@ class GeneratorPlugin(object):
         """Ready events for output by replacing tokens and updating the output queue"""
         # Replace tokens first so that perDayVolume evaluates the correct event length
         send_objects = self.replace_tokens(eventsDict, earliest, latest, ignore_tokens=ignore_tokens)
+        # after replace_tokens() is called, we don't need eventsDict
+        del eventsDict
         try:
             self._out.bulksend(send_objects)
             self._sample.timestamp = None
