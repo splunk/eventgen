@@ -1,17 +1,16 @@
 # TODO Move config settings to plugins
-
-from __future__ import division, with_statement
-
 import csv
 import datetime
 import os
 import pprint
 import re
 import sys
-import urllib
+import urllib.request
+import urllib.parse
+import urllib.error
 
-from timeparser import timeParser
-from logging_config import logger
+from splunk_eventgen.lib.timeparser import timeParser
+from splunk_eventgen.lib.logging_config import logger
 
 
 class Sample(object):
@@ -214,7 +213,7 @@ class Sample(object):
         """Saves state of all integer IDs of this sample to a file so when we restart we'll pick them up"""
         for token in self.tokens:
             if token.replacementType == 'integerid':
-                stateFile = open(os.path.join(self.sampleDir, 'state.' + urllib.pathname2url(token.token)), 'w')
+                stateFile = open(os.path.join(self.sampleDir, 'state.' + urllib.request.pathname2url(token.token)), 'w')
                 stateFile.write(token.replacement)
                 stateFile.close()
 
@@ -302,14 +301,6 @@ class Sample(object):
     def utcnow(self):
         return self.now(utcnow=True)
 
-    def _openSampleFile(self):
-        logger.debug("Opening sample '%s' in app '%s'" % (self.name, self.app))
-        self._sampleFH = open(self.filePath, 'rU')
-
-    def _closeSampleFile(self):
-        logger.debug("Closing sample '%s' in app '%s'" % (self.name, self.app))
-        self._sampleFH.close()
-
     def loadSample(self):
         """
         Load sample from disk into self._sample.sampleLines and self._sample.sampleDict, using cached copy if possible
@@ -317,46 +308,45 @@ class Sample(object):
         if self.sampletype == 'raw':
             # 5/27/12 CS Added caching of the sample file
             if self.sampleDict is None:
-                self._openSampleFile()
-                if self.breaker == self.config.breaker:
-                    logger.debug("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
-                    self.sampleLines = self._sampleFH.readlines()
-                # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time instead
-                # of on every generation
-                else:
-                    logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'" %
-                                      (self.breaker, self.name, self.app))
+                with open(self.filePath, 'r') as fh:
+                    if self.breaker == self.config.breaker:
+                        logger.debug("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
+                        self.sampleLines = fh.readlines()
+                    # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time
+                    # instead of on every generation
+                    else:
+                        logger.debug("Non-default breaker '%s' detected for sample '%s' in app '%s'" %
+                                          (self.breaker, self.name, self.app))
 
-                    sampleData = self._sampleFH.read()
-                    self.sampleLines = []
+                        sampleData = fh.read()
+                        self.sampleLines = []
 
-                    logger.debug("Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s" %
-                                      (self.name, self.app, len(sampleData), self.breaker))
+                        logger.debug("Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s" %
+                                          (self.name, self.app, len(sampleData), self.breaker))
 
-                    try:
-                        breakerRE = re.compile(self.breaker, re.M)
-                    except:
-                        logger.error(
-                            "Line breaker '%s' for sample '%s' in app '%s' could not be compiled; using default breaker"
-                            % (self.breaker, self.name, self.app))
-                        self.breaker = self.config.breaker
+                        try:
+                            breakerRE = re.compile(self.breaker, re.M)
+                        except:
+                            logger.error(
+                                "Line breaker '%s' for sample '%s' in app '%s' could not be compiled; using default breaker"
+                                % (self.breaker, self.name, self.app))
+                            self.breaker = self.config.breaker
 
-                    # Loop through data, finding matches of the regular expression and breaking them up into
-                    # "lines".  Each match includes the breaker itself.
-                    extractpos = 0
-                    searchpos = 0
-                    breakerMatch = breakerRE.search(sampleData, searchpos)
-                    while breakerMatch:
-                        logger.debug("Breaker found at: %d, %d" % (breakerMatch.span()[0], breakerMatch.span()[1]))
-                        # Ignore matches at the beginning of the file
-                        if breakerMatch.span()[0] != 0:
-                            self.sampleLines.append(sampleData[extractpos:breakerMatch.span()[0]])
-                            extractpos = breakerMatch.span()[0]
-                        searchpos = breakerMatch.span()[1]
+                        # Loop through data, finding matches of the regular expression and breaking them up into
+                        # "lines".  Each match includes the breaker itself.
+                        extractpos = 0
+                        searchpos = 0
                         breakerMatch = breakerRE.search(sampleData, searchpos)
-                    self.sampleLines.append(sampleData[extractpos:])
+                        while breakerMatch:
+                            logger.debug("Breaker found at: %d, %d" % (breakerMatch.span()[0], breakerMatch.span()[1]))
+                            # Ignore matches at the beginning of the file
+                            if breakerMatch.span()[0] != 0:
+                                self.sampleLines.append(sampleData[extractpos:breakerMatch.span()[0]])
+                                extractpos = breakerMatch.span()[0]
+                            searchpos = breakerMatch.span()[1]
+                            breakerMatch = breakerRE.search(sampleData, searchpos)
+                        self.sampleLines.append(sampleData[extractpos:])
 
-                self._closeSampleFile()
                 self.sampleDict = []
                 for line in self.sampleLines:
                     if line == '\n':
@@ -370,36 +360,36 @@ class Sample(object):
                                   % (len(self.sampleLines), len(self.sampleDict)))
         elif self.sampletype == 'csv':
             if self.sampleDict is None:
-                self._openSampleFile()
-                logger.debug("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
-                self.sampleDict = []
-                self.sampleLines = []
-                # Fix to load large csv files, work with python 2.5 onwards
-                csv.field_size_limit(sys.maxint)
-                csvReader = csv.DictReader(self._sampleFH)
-                for line in csvReader:
-                    if '_raw' in line:
-                        # Use conf-defined values for these params instead of sample-defined ones
-                        current_line_keys = line.keys()
-                        if "host" not in current_line_keys:
-                            line["host"] = self.host
-                        if "hostRegex" not in current_line_keys:
-                            line["hostRegex"] = self.hostRegex
-                        if "source" not in current_line_keys:
-                            line["source"] = self.source
-                        if "sourcetype" not in current_line_keys:
-                            line["sourcetype"] = self.sourcetype
-                        if "index" not in current_line_keys:
-                            line["index"] = self.index
-                        self.sampleDict.append(line)
-                        self.sampleLines.append(line['_raw'])
-                    else:
-                        logger.error("Missing _raw in line '%s'" % pprint.pformat(line))
-                self._closeSampleFile()
+                with open(self.filePath, 'r') as fh:
+                    logger.debug("Reading csv sample '%s' in app '%s'" % (self.name, self.app))
+                    self.sampleDict = []
+                    self.sampleLines = []
+                    # Fix to load large csv files, work with python 2.5 onwards
+                    csv.field_size_limit(sys.maxsize)
+                    csvReader = csv.DictReader(fh)
+                    for line in csvReader:
+                        if '_raw' in line:
+                            # Use conf-defined values for these params instead of sample-defined ones
+                            current_line_keys = list(line.keys())
+                            if "host" not in current_line_keys:
+                                line["host"] = self.host
+                            if "hostRegex" not in current_line_keys:
+                                line["hostRegex"] = self.hostRegex
+                            if "source" not in current_line_keys:
+                                line["source"] = self.source
+                            if "sourcetype" not in current_line_keys:
+                                line["sourcetype"] = self.sourcetype
+                            if "index" not in current_line_keys:
+                                line["index"] = self.index
+                            self.sampleDict.append(line)
+                            self.sampleLines.append(line['_raw'])
+                        else:
+                            logger.error("Missing _raw in line '%s'" % pprint.pformat(line))
+
                 logger.debug("Finished creating sampleDict & sampleLines for sample '%s'.  Len sampleDict: %d" %
                                   (self.name, len(self.sampleDict)))
 
-                for i in xrange(0, len(self.sampleDict)):
+                for i in range(0, len(self.sampleDict)):
                     if len(self.sampleDict[i]['_raw']) < 1 or self.sampleDict[i]['_raw'][-1] != '\n':
                         self.sampleDict[i]['_raw'] += '\n'
         if self.extendIndexes:
@@ -420,10 +410,7 @@ class Sample(object):
                 self.extendIndexes = None
 
     def get_loaded_sample(self):
-        if self.sampletype != 'csv' and os.path.getsize(self.filePath) > 10000000:
-            self._openSampleFile()
-            return self._sampleFH
-        elif self.sampletype == 'csv':
+        if self.sampletype == 'csv':
             self.loadSample()
             return self.sampleDict
         else:

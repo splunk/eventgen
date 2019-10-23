@@ -1,14 +1,14 @@
-from __future__ import division
-
-import httplib
-import urllib
+import http.client
+import urllib.request
+import urllib.parse
+import urllib.error
 from collections import deque
 from xml.dom import minidom
 
 import httplib2
 
-from outputplugin import OutputPlugin
-from logging_config import logger
+from splunk_eventgen.lib.outputplugin import OutputPlugin
+from splunk_eventgen.lib.logging_config import logger
 
 
 class SplunkStreamOutputPlugin(OutputPlugin):
@@ -30,12 +30,16 @@ class SplunkStreamOutputPlugin(OutputPlugin):
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-        from eventgenconfig import Config
+        from splunk_eventgen.lib.eventgenconfig import Config
         globals()['c'] = Config()
 
         self._splunkUrl, self._splunkMethod, self._splunkHost, self._splunkPort = c.getSplunkUrl(self._sample)  # noqa
         self._splunkUser = self._sample.splunkUser
         self._splunkPass = self._sample.splunkPass
+
+        # Cancel SSL verification
+        import ssl
+        ssl._create_default_https_context = ssl._create_unverified_context
 
         if not self._sample.sessionKey:
             try:
@@ -43,7 +47,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                 logger.debug("Getting session key from '%s' with user '%s' and pass '%s'" %
                                   (self._splunkUrl + '/services/auth/login', self._splunkUser, self._splunkPass))
                 response = myhttp.request(
-                    self._splunkUrl + '/services/auth/login', 'POST', headers={}, body=urllib.urlencode({
+                    self._splunkUrl + '/services/auth/login', 'POST', headers={}, body=urllib.parse.urlencode({
                         'username':
                         self._splunkUser, 'password':
                         self._splunkPass}))[1]
@@ -73,7 +77,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                 queues[row['source'] + '_' + row['sourcetype']].append(row)
 
             # Iterate sub-queues, each holds events for a specific source/sourcetype combo
-            for k, queue in queues.items():
+            for k, queue in list(queues.items()):
                 if len(queue) > 0:
                     streamout = ""
                     index = source = sourcetype = host = hostRegex = None
@@ -93,9 +97,9 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                                       (self._sample.name, self._app, self._sample.source))
                     try:
                         if self._splunkMethod == 'https':
-                            connmethod = httplib.HTTPSConnection
+                            connmethod = http.client.HTTPSConnection
                         else:
-                            connmethod = httplib.HTTPConnection
+                            connmethod = http.client.HTTPConnection
                         splunkhttp = connmethod(self._splunkHost, self._splunkPort)
                         splunkhttp.connect()
                         urlparams = []
@@ -109,7 +113,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                             urlparams.append(('host_regex', hostRegex))
                         if host:
                             urlparams.append(('host', host))
-                        url = '/services/receivers/simple?%s' % (urllib.urlencode(urlparams))
+                        url = '/services/receivers/simple?%s' % (urllib.parse.urlencode(urlparams))
                         headers = {'Authorization': "Splunk %s" % self._sample.sessionKey}
 
                         # Iterate each raw event string in its sub-queue
@@ -127,7 +131,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                             "POSTing to url %s on %s://%s:%s with sessionKey %s" %
                             (url, self._splunkMethod, self._splunkHost, self._splunkPort, self._sample.sessionKey))
 
-                    except httplib.HTTPException, e:
+                    except http.client.HTTPException as e:
                         logger.error(
                             'Error connecting to Splunk for logging for sample %s.  Exception "%s" Config: %s' %
                             (self._sample.name, e.args, self))
@@ -138,7 +142,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                         data = response.read()
                         if response.status != 200:
                             logger.error("Data not written to Splunk.  Splunk returned %s" % data)
-                    except httplib.BadStatusLine:
+                    except http.client.BadStatusLine:
                         logger.error("Received bad status from Splunk for sample '%s'" % self._sample)
                     logger.debug("Closing splunkhttp connection")
                     if splunkhttp:

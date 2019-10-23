@@ -2,8 +2,8 @@ import redis
 import logging
 import time
 
-class RedisConnector():
 
+class RedisConnector:
     def __init__(self, host, port):
         self.host = host
         self.port = port

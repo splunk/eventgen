@@ -1,25 +1,19 @@
-import atexit
 from flask import Blueprint, Response, request
-import os
-import socket
 import time
 import json
-import requests
 import logging
 import uuid
 
 INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
 
-class EventgenControllerAPI():
 
+class EventgenControllerAPI:
     def __init__(self, redis_connector, host):
         self.bp = self.__create_blueprint()
         self.redis_connector = redis_connector
         self.host = host
-
         self.logger = logging.getLogger("eventgen_controller")
         self.logger.info("Initialized the EventgenControllerAPI Blueprint")
-
         self.interval = 0.001
 
         self.server_responses = {}
@@ -47,13 +41,13 @@ class EventgenControllerAPI():
             else:
                 countdown = 5
             for i in range(0, int(countdown / self.interval)):
-                response_num = len(self.server_responses.get(message_uuid, {}).keys())
+                response_num = len(list(self.server_responses.get(message_uuid, {}).keys()))
                 if response_num == response_number_target:
                     break
                 else:
                     time.sleep(self.interval)
                     message = self.redis_connector.pubsub.get_message()
-                    if message and type(message.get('data')) == str:
+                    if message and type(message.get('data')) == bytes:
                         server_response = json.loads(message.get('data'))
                         self.logger.info(server_response)
                         response_message_uuid = server_response.get('message_uuid')

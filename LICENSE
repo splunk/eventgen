@@ -242,13 +242,5 @@ BSD-style licenses
 The following components are provided under a BSD-style license. See project link for details.
 
     (BSD 2-Clause "Simplified" License) mock (https://github.com/testing-cabal/mock/blob/master/LICENSE.txt)
-    (BSD 3-Clause) logutils (https://opensource.org/licenses/BSD-3-Clause)
     (BSD 3-Clause) jinja2 (https://github.com/pallets/jinja/blob/master/LICENSE)
     (BSD 3-Clause) ujson(https://github.com/esnme/ultrajson/blob/master/LICENSE.txt)
-
-========================================================================
-PSF licenses
-========================================================================
-
-The following components are provided under a PSF license. See project link for details.
-    (PSD License) futures (https://github.com/agronholm/pythonfutures/blob/master/LICENSE)

@@ -1,8 +1,6 @@
-from __future__ import division
-
 import datetime
 import random
-from logging_config import logger
+from splunk_eventgen.lib.logging_config import logger
 
 
 class ConfigRater(object):

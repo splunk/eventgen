@@ -1,7 +1,5 @@
-from __future__ import division
-
 from collections import deque
-from logging_config import logger
+from splunk_eventgen.lib.logging_config import logger
 
 
 class OutputPlugin(object):
