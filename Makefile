@@ -33,24 +33,23 @@ test_helper:
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "apk add --no-cache --update libxml2-dev libxslt-dev"
 
 	@echo 'Creating dirs needed for tests'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "mkdir -p $(shell pwd) " || true
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "mkdir -p $(shell pwd) "
 
 	@echo 'Copying orca tree into the orca container'
-	docker cp . ${EVENTGEN_TEST_IMAGE}:$(shell pwd) || true
+	docker cp . ${EVENTGEN_TEST_IMAGE}:$(shell pwd)
 
 	@echo 'Verifying contents of pip.conf'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip install dist/splunk_eventgen*.tar.gz" || true
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip install dist/splunk_eventgen*.tar.gz"
 
 	@echo 'Installing test requirements'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install --upgrade pip;pip install -r $(shell pwd)/requirements.txt" || true
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install --upgrade pip;pip install -r $(shell pwd)/requirements.txt"
 
 	@echo 'Make simulated app dir and sample for modular input test'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); cd ../..; mkdir -p modinput_test_app/samples/" || true
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); cd ../..; mkdir -p modinput_test_app/samples/"
 	docker cp tests/large/sample/film.json ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/../../modinput_test_app/samples
 
 	@echo 'Installing docker-compose'
-	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose || true
-	sudo chmod +x /usr/local/bin/docker-compose || true
+	bash install_docker_compose.sh
 
 	@echo 'Start container with splunk'
 	docker-compose -f tests/large/provision/docker-compose.yml up &
@@ -61,7 +60,8 @@ test_helper:
 
 run_tests:
 	@echo 'Running the super awesome tests'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}" || true
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python3 run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}"
+
 
 test_collection_cleanup:
 	@echo 'Collecting results'
@@ -99,7 +99,7 @@ clean:
 	docker network rm eg_network_test || true
 
 setup_eventgen:
-	curl -O splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
+	curl -k -O splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
 
 eg_network:
 	docker network create --attachable --driver bridge eg_network || true
@@ -126,15 +126,15 @@ docs:
 	cd docs/; bundle install; bundle exec jekyll serve
 
 build_spl: clean
-	python -m splunk_eventgen build --destination ./
+	python3 -m splunk_eventgen build --destination ./
 
 lint:
 ifeq ($(NEWLY_ADDED_PY_FILES), )
 	@echo 'No newly added python files. Skip...'
 else
-	@flake8 $(NEWLY_ADDED_PY_FILES) || true
+	@flake8 $(NEWLY_ADDED_PY_FILES)
 endif
-	@git diff -U0 -- '*.py' | flake8 --diff || true
+	@git diff -U0 -- '*.py' | flake8 --diff
 
 format:
 ifeq ($(CHANGED_ADDED_PY_FILES), )

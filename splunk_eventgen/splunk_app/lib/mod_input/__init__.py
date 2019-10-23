@@ -1,6 +1,3 @@
-"""
-Copyright (C) 2005 - 2018 Splunk Inc. All Rights Reserved.
-"""
 import argparse
 import getpass
 import hashlib
@@ -131,7 +128,10 @@ class ModularInput(object):
         IntervalField("interval", "Interval", "The interval the script will be run on"),
         Field("name", "Stanza name", "The name of the stanza for this modular input"),
         Field("source", "Source", "The source for events created by this modular input"),
-        Field("sourcetype", "Stanza name", "The name of the stanza for this modular input")]
+        Field("sourcetype", "Stanza name", "The name of the stanza for this modular input"),
+        # added for Splunk 8.0.0 support
+        Field("python.version", "Python version", "Python version to run this modular input")
+    ]
 
     checkpoint_dir = None
 
@@ -194,7 +194,7 @@ class ModularInput(object):
         valid_elements = ['host', 'index', 'source', 'sourcetype', 'time', 'data']
 
         # Append the valid child elements. Invalid elements will be dropped.
-        for element in filter(lambda x: x in valid_elements, params.keys()):
+        for element in [x for x in list(params.keys()) if x in valid_elements]:
             event.appendChild(self._create_formatter_textnode(doc, element, params[element]))
 
         if close:
@@ -438,7 +438,7 @@ class ModularInput(object):
             all_args[a.name] = a
 
         # Convert and check the parameters
-        for name, value in parameters.items():
+        for name, value in list(parameters.items()):
 
             # If the argument was found, then validate and convert it
             if name in all_args:
@@ -676,7 +676,7 @@ class ModularInput(object):
 
         success = False
         try:
-            with open(os.path.join(checkpoint_dir, filename), 'w') as fp:
+            with open(os.path.join(checkpoint_dir, filename), 'wb') as fp:
                 json.dump(data, fp)
                 success = True
         except IOError:
@@ -717,7 +717,7 @@ class ModularInput(object):
 
         try:
             if os.path.isfile(checkpoint_path):
-                with open(checkpoint_path, 'r') as fp:
+                with open(checkpoint_path, 'rb') as fp:
                     data = json.load(fp)
         except (IOError, ValueError) as e:
             logger.exception(
@@ -755,7 +755,7 @@ class ModularInput(object):
 
         # Validate all stanza parameters.
         stanzas = []
-        for stanza_name, unclean_stanza in input_config.configuration.items():
+        for stanza_name, unclean_stanza in list(input_config.configuration.items()):
             try:
                 stanzas.append(self.validate_parameters(unclean_stanza))
             except FieldValidationException as e:

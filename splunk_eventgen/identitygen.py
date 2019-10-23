@@ -24,18 +24,18 @@ class identityGenerator(object):
             self.last = [i.split()[0] for i in open("%s/samples/dist.all.last" % BASE_PATH, "rb").readlines()]
         except IOError:
             self.last = [
-                (''.join(random.choice(ascii_uppercase) for i in xrange(random.randint(4, 12)))) for i in xrange(100)]
+                (''.join(random.choice(ascii_uppercase) for i in range(random.randint(4, 12)))) for i in range(100)]
         try:
             self.female_first = [
                 i.split()[0] for i in open("%s/samples/dist.female.first" % BASE_PATH, "rb").readlines()]
         except IOError:
             self.female_first = [
-                (''.join(random.choice(ascii_uppercase) for i in xrange(random.randint(4, 12)))) for i in xrange(100)]
+                (''.join(random.choice(ascii_uppercase) for i in range(random.randint(4, 12)))) for i in range(100)]
         try:
             self.male_first = [i.split()[0] for i in open("%s/samples/dist.male.first" % BASE_PATH, "rb").readlines()]
         except IOError:
             self.male_first = [
-                (''.join(random.choice(ascii_uppercase) for i in xrange(random.randint(4, 12)))) for i in xrange(100)]
+                (''.join(random.choice(ascii_uppercase) for i in range(random.randint(4, 12)))) for i in range(100)]
 
     def generate(self, count):
         self.identities = []
@@ -44,7 +44,7 @@ class identityGenerator(object):
         len_last = len(self.last)
         len_male_first = len(self.male_first)
         len_female_first = len(self.female_first)
-        for i in xrange(count):
+        for i in range(count):
             gender = random.choice(["m", "f"])
             last_name = self.last[int(random.triangular(0, len_last, 0))]
             if gender == "m":
@@ -92,8 +92,7 @@ class identityGenerator(object):
         else:
             raise ValueError
 
-    def getFile(self, count=0, filename="../default", fields=["username", "first_name", "last_name"], fieldnames=[
-            "username", "first_name", "last_name"]):
+    def getFile(self, count=0, filename="../default", fields=["username", "first_name", "last_name"], fieldnames=["username", "first_name", "last_name"]):
         """
         Returns a rest endpoint to download a csv file
         """
@@ -113,7 +112,7 @@ class identityGenerator(object):
             with open(filename, "wb") as lookupFile:
                 file = csv.writer(lookupFile)
                 file.writerow(fieldnames)
-                for i in xrange(min(count + 1, len(self.identities))):  # + 1 to account for the header
+                for i in range(min(count + 1, len(self.identities))):  # + 1 to account for the header
                     row = []
                     identity = self.identities[i]
                     for field in fields:

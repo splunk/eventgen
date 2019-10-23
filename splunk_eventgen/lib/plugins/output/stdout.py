@@ -1,6 +1,4 @@
-from __future__ import division
-
-from outputplugin import OutputPlugin
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class StdOutOutputPlugin(OutputPlugin):
@@ -13,7 +11,7 @@ class StdOutOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         for x in q:
-            print x['_raw'].rstrip()
+            print(x['_raw'].rstrip())
 
 
 def load():

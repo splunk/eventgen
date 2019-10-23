@@ -1,15 +1,8 @@
-# import sys, os
-# path_prepend = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# sys.path.append(path_prepend)
-# from eventgenoutputtemplates import OutputTemplate
-
-from __future__ import division
-
 import os
 import time
 
-from outputplugin import OutputPlugin
-from logging_config import logger
+from splunk_eventgen.lib.outputplugin import OutputPlugin
+from splunk_eventgen.lib.logging_config import logger
 
 
 class SpoolOutputPlugin(OutputPlugin):
@@ -40,7 +33,8 @@ class SpoolOutputPlugin(OutputPlugin):
                     with open(self.spoolPath, 'a') as dst:
                         dst.write(data)
                     break
-                except:
+                except Exception as e:
+                    logger.error(str(e))
                     time.sleep(0.1)
             logger.debug("Queue for app '%s' sample '%s' written" % (self._app, self._sample.name))
 

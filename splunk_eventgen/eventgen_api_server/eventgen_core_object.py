@@ -7,7 +7,8 @@ import splunk_eventgen.eventgen_core as eventgen_core
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "default", "eventgen_wsgi.conf"))
 
-class EventgenCoreObject():
+
+class EventgenCoreObject:
     def __init__(self):
         self.logger = logging.getLogger('eventgen_server')
         self.eventgen_core_object = eventgen_core.EventGenerator(self._create_args())
@@ -33,13 +34,11 @@ class EventgenCoreObject():
     def _create_args(self):
         args = argparse.Namespace()
         args.daemon = False
-        args.verbosity = None
         args.version = False
         args.backfill = None
         args.count = None
         args.devnull = False
         args.disableOutputQueue = False
-        args.end = None
         args.generators = None
         args.interval = None
         args.keepoutput = False
@@ -54,4 +53,5 @@ class EventgenCoreObject():
         args.wsgi = True
         args.modinput_mode = False
         args.generator_queue_size = 1500
+        args.disable_logging = True
         return args

@@ -7,90 +7,178 @@ The primary source of configuration done in Eventgen is governed by the `eventge
 
 The INI format of `eventgen.conf` can have one or more stanzas. Each stanza name is a sample file it will be reading from. There a number of options available in each stanza. For instance, breaking down this tutorial file option-by-option, we can see how this file will be used to set up Eventgen:
 
+### Simple Configuration
+Sample conf from [sample bundle](https://github.com/splunk/eventgen/tree/develop/tests/sample_bundle.zip).
 ```
-    [sample.tutorial1]
-    mode = replay
-    sampletype = csv
-    timeMultiple = 2
-    backfill = -15m
-    backfillSearch = index=main sourcetype=splunkd
+[film.json]
+index = main
+count = 1000
+mode = sample
+end = 1
+autotimestamp = true
+sourcetype = json
+source = film.json
 
-    outputMode = splunkstream
-    splunkHost = localhost
-    splunkUser = admin
-    splunkPass = changeme
+token.0.token = "FILM_ID":(\d+)
+token.0.replacementType = integerid
+token.0.replacement = 0
 
-    token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
-    token.0.replacementType = timestamp
-    token.0.replacement = %Y-%m-%d %H:%M:%S,%f
+token.1.token = "REGION_ID":(\d+)
+token.1.replacementType = seqfile
+token.1.replacement = $SPLUNK_HOME/etc/apps/sample_conf/samples/count10.txt
 ```
 
 ```
-    [sample.tutorial1]
+[film.json]
+```
+This is the sample file name under `samples` folder.
+
+```
+index = main
+```
+Destination index of the generated data in Splunk.
+
+```
+count = 1000
+```
+Maximum number of events to generate per sample file.
+
+```
+mode = sample
+```
+In sample mode, eventgen will generate count (+/- rating) events every configured interval.
+
+```
+end = 1
+```
+After Eventgen started, it will only generate one time with 1000 events based on the configuration.
+The value is `-1` by default and the data generation will not end.
+
+```
+autotimestamp = true
+```
+Eventgen will detect timestamp from sample if any.
+
+```
+sourcetype = json
+source = film.json
+```
+Set the `sourcetype` and `source` in Splunk.
+
+```
+token.0.token = "FILM_ID":(\d+)
+token.0.replacementType = integerid
+token.0.replacement = 0
+```
+Eventgen will replace the matched token with an increasing integer id starting with 0. In this case it will generate 1000 events with `FILM_ID` with value from 0 to 999.
+
+```
+token.1.token = "REGION_ID":(\d+)
+token.1.replacementType = seqfile
+token.1.replacement = $SPLUNK_HOME/etc/apps/sample_conf/samples/count10.txt
+```
+Eventgen will replace the matched token with value from file `count10.txt` located in `samples` folder.
+
+Extract and place the `sample_bundle` under `$SPLUNK_HOME/etc/apps` folder, enable `SA-Eventgen` modular input in Splunk.
+Search with `index=main sourcetype=json source=film.json` and check the results. 
+
+### More Complicated Configuration
+
+```
+[sample.tutorial0]
+mode = replay
+timeMultiple = 2
+
+outputMode = httpevent
+httpeventServers = {"servers": [{"protocol": "https", "port": "8088", "key": "00000000-0000-0000-0000-000000000000", "address": "localhost"}]}
+end = 1
+index = main
+sourcetype = httpevent
+
+
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+token.0.replacementType = replaytimestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S
+
+token.1.token = @@integer
+token.1.replacementType = random
+token.1.replacement = integer[0:10]
+```
+
+```
+[sample.tutorial0]
 ```
 This is the stanza name and the name of the sample file in Eventgen or your bundle that you want to read from. You can also specify a regex here to match multiple files of similar extensions/naming conventions.
 
 ```
-    mode = replay
+mode = replay
 ```
-Specify replay mode. This will leak out events at the same timing as they appear in the file (with intervals between events like they occurred in the source file). Default mode is sample, so this is required for replay mode.
+Specify replay mode. This will leak out events at the same timing as they appear in the file (with intervals between events like they occurred in the source file). Default mode is `sample`, so this is required for replay mode.
 
 ```
-    sampletype = csv
-```
-Specify that the input file is in CSV format, rather than a plain text file. With CSV input, we'll look for index, host, source, and sourcetype on a per event basis rather than setting them for the file as a whole.
-
-```
-    timeMultiple = 2
+timeMultiple = 2
 ```
 This will slow down the replay by a factor of 2 by multiplying all time intervals between events by 2.
 For example, let's assume that you have 3 events generated like below:
-12:05:04 helloworld
+
+```
+12:05:04 helloworld1
 12:05:06 helloworld2
 12:05:09 helloworld3
+```
 
-Applying timeMultiple=2 would instead generate 3 events like below:
-12:05:04 helloworld
+Applying `timeMultiple=2` would instead generate 3 events like below:
+```
+12:05:04 helloworld1
 12:05:08 helloworld2
 12:05:14 helloworld3
+```
 
 ```
-    backfill = -15m
+outputMode = httpevent
 ```
-Eventgen will startup and immediately fill in the last 15 minutes worth of events from this file. This is in Splunk relative time notation, and can be any valid relative time specifier (**NOTE:** the longer you set this, the longer it will take to get started).
+There are various `outputMode` available (see the [spec](REFERENCE.md#eventgenconfspec)). The `httpevent` mode will output via the Splunk [HEC](http://dev.splunk.com/view/event-collector/SP-CAAAE6M) endpoint straight into Splunk.
+```
+httpeventServers = {"servers": [{"protocol": "https", "port": "8088", "key": "00000000-0000-0000-0000-000000000000", "address": "localhost"}]}
+```
+This is the Splunk destination server to receive the generated events. Change the detail information in your environment. Please refer [HEC](http://dev.splunk.com/view/event-collector/SP-CAAAE6M) for more detail.
 
 ```
-    backfillSearch = index=main sourcetype=splunkd
+end = 1
 ```
-A search to run to find the last events generated for this stanza. If this returns any results inside the backfill time window, eventgen will shorten the time window to start at the time of the last event it saw (**NOTE:** this only works with outputMode=splunkstream)
+Generate one time for the sample events.
 
 ```
-    outputMode = splunkstream
+index = main
+sourcetype = httpevent
 ```
-There are various outputModes available (see the [spec](REFERENCE.md#eventgenconfspec)). The splunkstream mode will output via the Splunk [receivers/stream](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTinput#receivers.2Fstream) endpoint straight into Splunk. This allows us to specify things like index, host, source and sourcetype to Splunk at index time. In this case, we're getting those values directly from our sample rather than specifying them here in eventgen.conf.
+Events destination `index` and `sourcetype` in Splunk.
 
 ```
-    splunkHost = localhost
-    splunkUser = admin
-    splunkPass = changeme
+token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+token.0.replacementType = replaytimestamp
+token.0.replacement = %Y-%m-%d %H:%M:%S
 ```
-Parameters for setting up outputMode = splunkstream. This is only required if we want to run Eventgen outside of Splunk. As a Splunk App and running as a scripted input, eventgen will gather this information from Splunk itself. Since we'll be running this from the command line for the tutorial, please customize your username and password in the tutorial.
-Note:
->When using outputMode=splunkstream for running Eventgen outside of Splunk, use parameter `PYTHONHTTPSVERIFY=0` to ignore the SSL error: `SSLError: [SSL: CERTIFICATE_VERIFY_FAILED]`
-
-```
-    token.0.token = \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}
-    token.0.replacementType = replaytimestamp
-    token.0.replacement = %Y-%m-%d %H:%M:%S,%f
-```
-All sets of token replacement lines will look very similar, with different regular expressions and strptime formats. This is a replaytimestamp replacement, which will find the timestamp specified by the regular expression and replace it with a current (or relative to the first event) time based on the stprtime format. Generally you'll define a regular expression and a strptime format to match.
+This is a `replaytimestamp` replacement, which will find the timestamp specified by the regular expression and replace it with a current (or relative to the first event) time based on the stprtime format. Generally you'll define a regular expression and a strptime format to match.
 For more information see [regular expressions](http://lmgtfy.com/?q=regex) and [striptime](http://lmgtfy.com/?q=strptime). You can also read more about the different replacement types on the [reference page](REFERENCE.md#eventgenconfspec).
 
-That's it, pretty simple!
+```
+token.1.token = @@integer
+token.1.replacementType = random
+token.1.replacement = integer[0:10]
+```
+This will replace token `@@integer` with a random integer between 0 and 10.
+
+Go to $EVENTGEN_HOME and use the following command to generate data via Eventgen:
+```
+python -m splunk_eventgen generate splunk_eventgen/README/eventgen.conf.tutorial0
+```
+
+That's it, pretty simple! Check more example conf files under `splunk_eventgen/README` folder.
 
 ---
 
-## The Sample File ##
+## The Sample File
 
 Sample files are seed files that Eventgen uses to send data. When a sample file matches the stanza in an eventgen.conf, it uses those configuration options to write data, using that sample file as a template. This flexible format lets you take real sample logs from anywhere and use it to replay/continuously feed data of the same variety. The use of tokens or regexes allow for dynamically-updated data, which is crucial for mimicking the latest timestamps or meeting specific cardinalities for fields.
 

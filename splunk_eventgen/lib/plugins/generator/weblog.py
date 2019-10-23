@@ -1,9 +1,7 @@
-from __future__ import division
-
 import random
 import time
 
-from generatorplugin import GeneratorPlugin
+from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
 
 
 class WeblogGenerator(GeneratorPlugin):
@@ -45,7 +43,7 @@ class WeblogGenerator(GeneratorPlugin):
             self._sample.sourcetype, 'host':
             self._sample.host, 'source':
             self._sample.source, '_time':
-            int(time.mktime(latest.timetuple()))} for i in xrange(count)]
+            int(time.mktime(latest.timetuple()))} for i in range(count)]
 
         self._out.bulksend(payload)
         return 0

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 import argparse
 import logging
@@ -30,17 +30,23 @@ class SimpleNamespace(dict):
 
 class Eventgen(ModularInput):
     scheme_args = {
-        'title': "SA-Eventgen", 'description': "This modular input generates data for Splunk.",
-        'use_external_validation': "true", 'streaming_mode': "xml", 'use_single_instance': "False"}
+        'title': "SA-Eventgen",
+        'description': "This modular input generates data for Splunk.",
+        'use_external_validation': "true",
+        'streaming_mode': "xml",
+        'use_single_instance': "False"
+    }
 
     def __init__(self):
         logger.debug("Setting up SA-Eventgen Modular Input")
         self.output = XMLOutputManager()
 
         self.args = [
-            VerbosityField("verbosity", "Verbosity",
+            VerbosityField("verbosity",
+                           "Verbosity",
                            "Logging Level (DEBUG(10), INFO(20), WARN(30), ERROR(40), CRITICAL(50))",
-                           required_on_create=True, required_on_edit=True)]
+                           required_on_create=True,
+                           required_on_edit=True)]
         ModularInput.__init__(self, self.scheme_args, self.args)
 
     def create_args(self):
@@ -68,6 +74,7 @@ class Eventgen(ModularInput):
         args.wsgi = False
         args.log_path = make_splunkhome_path(['var', 'log', 'splunk'])
         args.modinput_mode = True
+        args.disable_logging = False
         return args
 
     def prepare_config(self, args):

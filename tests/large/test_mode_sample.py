@@ -91,7 +91,7 @@ def test_mode_sample_latest(eventgen_test_helper):
         event_datetime = datetime.strptime(result.group(), "%Y-%m-%d %H:%M:%S")
         delter_seconds = (event_datetime - current_datetime).total_seconds()
         # assert the event time is after (now - earliest) time
-        assert delter_seconds < 16
+        assert delter_seconds < 17
 
 
 def test_mode_sample_count(eventgen_test_helper):

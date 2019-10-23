@@ -1,4 +1,6 @@
-import urllib
+import urllib.request
+import urllib.parse
+import urllib.error
 import httplib2
 from xml.dom import minidom
 import time
@@ -14,7 +16,7 @@ def get_session_key():
         BASEURL + '/services/auth/login',
         'POST',
         headers={},
-        body=urllib.urlencode({'username': USERNAME, 'password': PASSWORD})
+        body=urllib.parse.urlencode({'username': USERNAME, 'password': PASSWORD})
     )[1]
     try:
         session_key = minidom.parseString(server_content).getElementsByTagName('sessionKey')[0].childNodes[0].nodeValue
@@ -38,7 +40,7 @@ def run_search(session_key, search_query):
         BASEURL + '/services/search/jobs',
         'POST',
         headers={'Authorization': 'Splunk %s' % session_key},
-        body=urllib.urlencode({'search': search_query})
+        body=urllib.parse.urlencode({'search': search_query})
     )[1]
     # return search job id
     try:
@@ -54,7 +56,7 @@ def get_search_response(session_key, search_job_id):
         BASEURL + '/services/search/jobs/%s/results' % search_job_id,
         'GET',
         headers={'Authorization': 'Splunk %s' % session_key},
-        body=urllib.urlencode({'output_mode': 'json'})
+        body=urllib.parse.urlencode({'output_mode': 'json'})
     )
     try:
         return json.loads(results[1])['results']

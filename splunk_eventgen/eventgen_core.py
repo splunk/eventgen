@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 import imp
 import logging
@@ -6,28 +6,16 @@ import logging.config
 import os
 import sys
 import time
-from Queue import Empty, Queue
+from queue import Empty, Queue
+import signal
 from threading import Thread
 import multiprocessing
 
-from lib.eventgenconfig import Config
-from lib.eventgenexceptions import PluginNotLoaded
-from lib.eventgentimer import Timer
-from lib.outputcounter import OutputCounter
-from lib.logging_config import logger
-
-lib_path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
-sys.path.insert(0, lib_path_prepend)
-# Since i'm including a new library but external sources may not have access to pip (like splunk embeded), I need to
-# be able to load this library directly from src if it's not installed.
-try:
-    import logutils
-    import logutils.handlers
-except ImportError:
-    path_prepend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib', 'logutils_src')
-    sys.path.append(path_prepend)
-    import logutils
-    import logutils.queue
+from splunk_eventgen.lib.eventgenconfig import Config
+from splunk_eventgen.lib.eventgenexceptions import PluginNotLoaded
+from splunk_eventgen.lib.eventgentimer import Timer
+from splunk_eventgen.lib.outputcounter import OutputCounter
+from splunk_eventgen.lib.logging_config import logger
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))
@@ -58,7 +46,7 @@ class EventGenerator(object):
         self._generator_queue_size = getattr(self.args, 'generator_queue_size', 500)
         if self._generator_queue_size < 0:
             self._generator_queue_size = 0
-        self.logger.info("Set generator queue size", queue_size=self._generator_queue_size)
+        self.logger.info("Set generator queue size:{}".format(self._generator_queue_size))
 
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
@@ -140,7 +128,7 @@ class EventGenerator(object):
         # APPPERF-263: be greedy when scanning plugin dir (eat all the pys)
         self._initializePlugins(plugindir, pluginsdict, plugintype)
 
-    def _setup_pools(self, generator_worker_count=20):
+    def _setup_pools(self, generator_worker_count):
         '''
         This method is an internal method called on init to generate pools needed for processing.
 
@@ -150,8 +138,7 @@ class EventGenerator(object):
         self._create_generator_pool()
         self._create_timer_threadpool()
         self._create_output_threadpool()
-        if self.args.multiprocess:
-            self.pool = multiprocessing.Pool(generator_worker_count, maxtasksperchild=1000000)
+        self._create_generator_workers(generator_worker_count)
 
     def _create_timer_threadpool(self, threadcount=100):
         '''
@@ -163,13 +150,11 @@ class EventGenerator(object):
         '''
         self.sampleQueue = Queue(maxsize=0)
         num_threads = threadcount
-        self.timer_thread_pool = []
         for i in range(num_threads):
             worker = Thread(target=self._worker_do_work, args=(
                 self.sampleQueue,
                 self.loggingQueue,
             ), name="TimeThread{0}".format(i))
-            self.timer_thread_pool.append(worker)
             worker.setDaemon(True)
             worker.start()
 
@@ -188,13 +173,11 @@ class EventGenerator(object):
         else:
             self.outputQueue = Queue(maxsize=500)
         num_threads = threadcount
-        self.output_thread_pool = []
         for i in range(num_threads):
             worker = Thread(target=self._worker_do_work, args=(
                 self.outputQueue,
                 self.loggingQueue,
             ), name="OutputThread{0}".format(i))
-            self.output_thread_pool.append(worker)
             worker.setDaemon(True)
             worker.start()
 
@@ -214,8 +197,8 @@ class EventGenerator(object):
             else:
                 # TODO crash caused by logging Thread https://github.com/splunk/eventgen/issues/217
                 self.loggingQueue = self.manager.Queue()
-                self.logging_pool = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
-                self.logging_pool.start()
+                self.logging_thread = Thread(target=self.logger_thread, args=(self.loggingQueue, ), name="LoggerThread")
+                self.logging_thread.start()
             # since we're now in multiprocess, we need to use better queues.
             self.workerQueue = multiprocessing.JoinableQueue(maxsize=self._generator_queue_size)
             self.genconfig = self.manager.dict()
@@ -238,7 +221,28 @@ class EventGenerator(object):
                     worker.setDaemon(True)
                     worker.start()
 
+    def _create_generator_workers(self, workercount=20):
+        if self.args.multiprocess:
+            import multiprocessing
+            self.workerPool = []
+            for worker in range(workercount):
+                # builds a list of tuples to use the map function
+                disable_logging = True if self.args and self.args.disable_logging else False
+                process = multiprocessing.Process(target=self._proc_worker_do_work, args=(
+                    self.workerQueue,
+                    self.loggingQueue,
+                    self.genconfig,
+                    disable_logging
+                ))
+                self.workerPool.append(process)
+                process.start()
+        else:
+            pass
+
     def _setup_loggers(self, args=None):
+        if args and args.disable_logging:
+            logger.handlers = []
+            logger.addHandler(logging.NullHandler())
         self.logger = logger
         self.loggingQueue = None
         if args and args.verbosity:
@@ -281,11 +285,44 @@ class EventGenerator(object):
                 self.logger.exception(str(e))
                 raise e
 
+    @staticmethod
+    def _proc_worker_do_work(work_queue, logging_queue, config, disable_logging):
+        genconfig = config
+        stopping = genconfig['stopping']
+        root = logging.getLogger()
+        root.setLevel(logging.DEBUG)
+        if logging_queue is not None:
+            # TODO https://github.com/splunk/eventgen/issues/217
+            qh = logging.handlers.QueueHandler(logging_queue)
+            root.addHandler(qh)
+        else:
+            if disable_logging:
+                root.addHandler(logging.NullHandler())
+            else:
+                root.addHandler(logging.StreamHandler())
+        while not stopping:
+            try:
+                root.info("Checking for work")
+                item = work_queue.get(timeout=10)
+                item.logger = root
+                item._out.updateConfig(item.config)
+                item.run()
+                work_queue.task_done()
+                stopping = genconfig['stopping']
+                item.logger.debug("Current Worker Stopping: {0}".format(stopping))
+            except Empty:
+                stopping = genconfig['stopping']
+            except Exception as e:
+                root.exception(e)
+                raise e
+        else:
+            root.info("Stopping Process")
+            sys.exit(0)
+
     def logger_thread(self, loggingQueue):
         while not self.stopping:
             try:
                 record = loggingQueue.get(timeout=10)
-                logger = logging.getLogger(record.name)
                 logger.handle(record)
                 loggingQueue.task_done()
             except Empty:
@@ -331,10 +368,15 @@ class EventGenerator(object):
                     try:
                         # Import the module
                         # module = imp.load_source(base, filename)
+
                         mod_name, mod_path, mod_desc = imp.find_module(base, [dirname])
                         # TODO: Probably need to adjust module.load() to be added later so this can be pickled.
                         module = imp.load_module(base, mod_name, mod_path, mod_desc)
                         plugin = module.load()
+
+                        # spec = importlib.util.spec_from_file_location(base, filename)
+                        # plugin = importlib.util.module_from_spec(spec)
+                        # spec.loader.exec_module(plugin)
 
                         # set plugin to something like output.file or generator.default
                         pluginname = plugintype + '.' + base
@@ -364,7 +406,7 @@ class EventGenerator(object):
                     except ValueError:
                         self.logger.error("Error loading plugin '%s' of type '%s'" % (base, plugintype))
                     except ImportError as ie:
-                        self.logger.warning("Could not load plugin: %s, skipping" % mod_name.name)
+                        self.logger.warning("Could not load plugin: %s, skipping" % base)
                         self.logger.exception(ie)
                     except Exception as e:
                         self.logger.exception(str(e))
@@ -383,12 +425,8 @@ class EventGenerator(object):
                 self.logger.info("Creating timer object for sample '%s' in app '%s'" % (s.name, s.app))
                 # This is where the timer is finally sent to a queue to be processed.  Needs to move to this object.
                 try:
-                    if self.args.multiprocess:
-                        t = Timer(1.0, sample=s, config=self.config, genqueue=self.workerQueue,
-                                  outputqueue=self.outputQueue, loggingqueue=self.loggingQueue, pool=self.pool)
-                    else:
-                        t = Timer(1.0, sample=s, config=self.config, genqueue=self.workerQueue,
-                                  outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
+                    t = Timer(1.0, sample=s, config=self.config, genqueue=self.workerQueue,
+                              outputqueue=self.outputQueue, loggingqueue=self.loggingQueue)
                 except PluginNotLoaded as pnl:
                     self._load_custom_plugins(pnl)
                     t = Timer(1.0, sample=s, config=self.config, genqueue=self.workerQueue,
@@ -421,12 +459,6 @@ class EventGenerator(object):
         self.stopping = True
         self.force_stop = force_stop
 
-        # join timer thread and output thread
-        for output_thread in self.output_thread_pool:
-            output_thread.join()
-        for timer_thread in self.timer_thread_pool:
-            timer_thread.join()
-
         self.logger.info("All timers exited, joining generation queue until it's empty.")
         if force_stop:
             self.logger.info("Forcibly stopping Eventgen: Deleting workerQueue.")
@@ -439,8 +471,18 @@ class EventGenerator(object):
                 self.kill_processes()
             else:
                 self.genconfig["stopping"] = True
-                self.pool.close()
-                self.pool.join()
+                for worker in self.workerPool:
+                    count = 0
+                    # We wait for a minute until terminating the worker
+                    while worker.exitcode is None and count != 20:
+                        if count == 30:
+                            self.logger.info("Terminating worker {0}".format(worker._name))
+                            worker.terminate()
+                            count = 0
+                            break
+                        self.logger.info("Worker {0} still working, waiting for it to finish.".format(worker._name))
+                        time.sleep(2)
+                        count += 1
 
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         if not self.args.multiprocess and not force_stop:
@@ -492,9 +534,14 @@ class EventGenerator(object):
         return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty()
 
     def kill_processes(self):
-        if self.args.multiprocess and hasattr(self, "pool"):
-            self.pool.close()
-            self.pool.terminate()
-            self.pool.join()
-            del self.outputQueue
-            self.manager.shutdown()
+        try:
+            if self.args.multiprocess:
+                for worker in self.workerPool:
+                    try:
+                        os.kill(int(worker.pid), signal.SIGKILL)
+                    except:
+                        continue
+                del self.outputQueue
+                self.manager.shutdown()
+        except:
+            pass

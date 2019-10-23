@@ -20,7 +20,7 @@ def test_jinja_template_simple(eventgen_test_helper):
         event_datetime = datetime.datetime.strptime(result.group(1), ts_format)
         delta_seconds = (event_datetime - current_datetime).total_seconds()
         # assert the event time is after (now - earliest) time
-        assert delta_seconds >= -3 and delta_seconds < 3, 'fail to check event ```{}```'.format(event)
+        assert -3 <= delta_seconds < 3, 'fail to check event ```{}```'.format(event)
         assert loop == int(result.group(2)), 'fail to check event ```{}```'.format(event)
         loop += 1
 
@@ -40,7 +40,7 @@ def test_jinja_template_dir_conf(eventgen_test_helper):
         event_datetime = datetime.datetime.strptime(result.group(1), ts_format)
         delta_seconds = (event_datetime - current_datetime).total_seconds()
         # assert the event time is after (now - earliest) time
-        assert delta_seconds >= -3 and delta_seconds < 3
+        assert -3 <= delta_seconds < 3
         assert loop == int(result.group(2))
         loop += 1
 
