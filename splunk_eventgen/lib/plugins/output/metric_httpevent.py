@@ -1,18 +1,9 @@
-from __future__ import division
+from splunk_eventgen.lib.plugins.output.httpevent_core import HTTPCoreOutputPlugin
+from splunk_eventgen.lib.logging_config import logger
 
-from httpevent_core import HTTPCoreOutputPlugin
-from logging_config import logger
-
-try:
-    import requests
-    from requests import Session
-    from requests_futures.sessions import FuturesSession
-    from concurrent.futures import ThreadPoolExecutor
-except ImportError:
-    pass
 try:
     import ujson as json
-except:
+except ImportError:
     import json
 
 

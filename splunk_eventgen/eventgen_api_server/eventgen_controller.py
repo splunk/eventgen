@@ -6,14 +6,14 @@ import requests
 import time
 import threading
 
-from eventgen_controller_api import EventgenControllerAPI
-from redis_connector import RedisConnector
+from splunk_eventgen.eventgen_api_server.eventgen_controller_api import EventgenControllerAPI
+from splunk_eventgen.eventgen_api_server.redis_connector import RedisConnector
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = os.path.join(FILE_PATH, '..', 'logs')
 
-class EventgenController():
 
+class EventgenController:
     def __init__(self, *args, **kwargs):
         self.env_vars = kwargs.get('env_vars')
         
@@ -25,7 +25,7 @@ class EventgenController():
 
         self._setup_loggers()
         self.connections_healthcheck()
-        self.logger = logging.getLogger('eventgen_server')
+        self.logger = logging.getLogger('eventgen_controller')
         self.logger.info('Initialized Eventgen Controller: hostname [{}]'.format(self.host))
 
         self.app = self._create_app()

@@ -1,9 +1,7 @@
-from __future__ import division
-
 import datetime
 import random
-from config import ConfigRater
-from logging_config import logger
+from splunk_eventgen.lib.plugins.rater.config import ConfigRater
+from splunk_eventgen.lib.logging_config import logger
 
 
 class PerDayVolume(ConfigRater):

@@ -1,4 +1,4 @@
-# Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
+# Copyright (C) 2005-2019 Splunk Inc. All Rights Reserved.
 #
 # This file contains all possible options for an eventgen.conf file.  Use this file to configure
 # Splunk's event generation properties.

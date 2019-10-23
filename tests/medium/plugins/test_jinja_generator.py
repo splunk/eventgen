@@ -11,7 +11,7 @@ OUTPUT_FILE = 'test_jinja_generator_file_output.result'
 
 class TestJinjaGenerator(object):
     def test_jinja_generator_to_file(self):
-        configfile = "tests/sample_eventgen_conf/jinja/eventgen.conf.jinja_basic"
+        configfile = os.path.join(FILE_DIR, "..", "..", "sample_eventgen_conf", "jinja", "eventgen.conf.jinja_basic")
         testargs = ["eventgen", "generate", configfile]
         file_output_path = os.path.abspath(os.path.join(FILE_DIR, '..', '..', '..', OUTPUT_FILE))
         # remove the result file if it exists
@@ -35,3 +35,7 @@ class TestJinjaGenerator(object):
                 assert "I like little windbags" in output_line
                 assert "Im at: {0} out of: 10".format(line_count) in output_line
                 line_count += 1
+
+        # tear down
+        if os.path.isfile(file_output_path):
+            os.remove(file_output_path)

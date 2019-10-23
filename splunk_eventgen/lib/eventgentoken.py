@@ -1,7 +1,4 @@
 # TODO: Handle timestamp generation for modinput and set sample.timestamp properly for timestamp replacement
-
-from __future__ import division, with_statement
-
 import datetime
 import json
 import os
@@ -9,11 +6,13 @@ import pprint
 import random
 import re
 import time
-import urllib
+import urllib.request
+import urllib.parse
+import urllib.error
 import uuid
 
-from timeparser import timeDelta2secs
-from logging_config import logger
+from splunk_eventgen.lib.timeparser import timeDelta2secs
+from splunk_eventgen.lib.logging_config import logger
 
 
 class Token(object):
@@ -170,35 +169,35 @@ class Token(object):
             if self._integerMatch is not None:
                 integerMatch = self._integerMatch
             else:
-                integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
+                integerRE = re.compile(r'integer\[([-]?\d+):([-]?\d+)\]', re.I)
                 integerMatch = integerRE.match(self.replacement)
                 self._integerMatch = integerMatch
 
             if self._floatMatch is not None:
                 floatMatch = self._floatMatch
             else:
-                floatRE = re.compile('float\[(-?\d+|-?\d+\.(\d+)):(-?\d+|-?\d+\.(\d+))\]', re.I)
+                floatRE = re.compile(r'float\[(-?\d+|-?\d+\.(\d+)):(-?\d+|-?\d+\.(\d+))\]', re.I)
                 floatMatch = floatRE.match(self.replacement)
                 self._floatMatch = floatMatch
 
             if self._stringMatch is not None:
                 stringMatch = self._stringMatch
             else:
-                stringRE = re.compile('string\((\d+)\)', re.I)
+                stringRE = re.compile(r'string\((\d+)\)', re.I)
                 stringMatch = stringRE.match(self.replacement)
                 self._stringMatch = stringMatch
 
             if self._hexMatch is not None:
                 hexMatch = self._hexMatch
             else:
-                hexRE = re.compile('hex\((\d+)\)', re.I)
+                hexRE = re.compile(r'hex\((\d+)\)', re.I)
                 hexMatch = hexRE.match(self.replacement)
                 self._hexMatch = hexMatch
 
             if self._listMatch is not None:
                 listMatch = self._listMatch
             else:
-                listRE = re.compile('list(\[[^\]]+\])', re.I)
+                listRE = re.compile(r'list(\[[^\]]+\])', re.I)
                 listMatch = listRE.match(self.replacement)
                 self._listMatch = listMatch
 
@@ -327,7 +326,7 @@ class Token(object):
                         # Generate a random ASCII between dec 33->126
                         replacement += chr(random.randint(33, 126))
                         # Practice safe strings
-                        replacement = re.sub('%[0-9a-fA-F]+', '', urllib.quote(replacement))
+                        replacement = re.sub('%[0-9a-fA-F]+', '', urllib.parse.quote(replacement))
 
                     return replacement
                 else:
