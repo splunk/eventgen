@@ -1,18 +1,13 @@
 from splunk_eventgen.lib.logging_config import logger
 import datetime
 import math
-import os
 import re
 # Hack to allow distributing python modules since Splunk doesn't have setuptools
 # We create the egg outside of Splunk (with a copy of python2.7 and using Python only modules
 # To avoid being platform specific) and then append the egg path and import the module
 # If we get a lot of these we'll move the eggs from bin to lib
 #
-# python-dateutil acquired from http://labix.org/python-dateutil.  BSD Licensed
-import sys
 
-path_prepend = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib')
-sys.path.append(path_prepend + '/python_dateutil-1.4.1-py2.7.egg')
 import dateutil.parser as dateutil_parser  # noqa isort:skip
 
 
