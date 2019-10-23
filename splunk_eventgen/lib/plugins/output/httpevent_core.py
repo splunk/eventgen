@@ -1,22 +1,21 @@
-from __future__ import division
-
-import logging
 import random
-import urllib
+import urllib.request
+import urllib.parse
+import urllib.error
 
-from outputplugin import OutputPlugin
-from logging_config import logger
+from splunk_eventgen.lib.outputplugin import OutputPlugin
+from splunk_eventgen.lib.logging_config import logger
 
 try:
     import requests
     from requests import Session
     from requests_futures.sessions import FuturesSession
     from concurrent.futures import ThreadPoolExecutor
-except ImportError:
+except:
     pass
 try:
     import ujson as json
-except:
+except ImportError:
     import json
 
 
@@ -59,7 +58,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
         :param value: string
         :return: urlencoded string
         '''
-        return urllib.quote(value)
+        return urllib.parse.quote(value)
 
     @staticmethod
     def _bg_convert_json(sess, resp):

@@ -59,7 +59,7 @@ def test_time_parser_time_math(plusminus, num, unit, ret, expect):
     Case 1: input "0s" -- the time parser should return now
     Case 2: input "123" -- unit is the empty string, behavior <TBD>
     '''
-    check_datetime_equal(timeparser.timeParserTimeMath(plusminus, num, unichr, ret), expect)
+    check_datetime_equal(timeparser.timeParserTimeMath(plusminus, num, chr, ret), expect)
 
 
 def mock_now():

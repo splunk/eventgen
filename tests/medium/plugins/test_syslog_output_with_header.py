@@ -31,7 +31,7 @@ class TestSyslogOutputWithHeaderPlugin(object):
                 syslogoutput = SyslogOutOutputPlugin(sample)
 
                 eventgen.start()
-                for i in xrange(1, 6):
+                for i in range(1, 6):
                     appearance = False
                     for logger_call in syslogoutput._l.info.call_args_list:
                         if "WINDBAG Event {} of 5".format(i) in str(logger_call):

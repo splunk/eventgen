@@ -60,7 +60,8 @@ test_helper:
 
 run_tests:
 	@echo 'Running the super awesome tests'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}"
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); python3 run_tests.py ${SMALL} ${MEDIUM} ${LARGE} ${XLARGE}"
+
 
 test_collection_cleanup:
 	@echo 'Collecting results'
@@ -125,7 +126,7 @@ docs:
 	cd docs/; bundle install; bundle exec jekyll serve
 
 build_spl: clean
-	python -m splunk_eventgen build --destination ./
+	python3 -m splunk_eventgen build --destination ./
 
 lint:
 ifeq ($(NEWLY_ADDED_PY_FILES), )

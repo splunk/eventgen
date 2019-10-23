@@ -1,19 +1,19 @@
-from __future__ import division
-
 import datetime
 import pprint
 import time
 import random
-import urllib
+import urllib.request
+import urllib.parse
+import urllib.error
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
 import httplib2
 
-from eventgenoutput import Output
-from eventgentimestamp import EventgenTimestamp
-from timeparser import timeParser
-from logging_config import logger
+from splunk_eventgen.lib.eventgenoutput import Output
+from splunk_eventgen.lib.eventgentimestamp import EventgenTimestamp
+from splunk_eventgen.lib.timeparser import timeParser
+from splunk_eventgen.lib.logging_config import logger
 
 
 class GeneratorPlugin(object):
@@ -127,7 +127,7 @@ class GeneratorPlugin(object):
 
                     results = httplib2.Http(disable_ssl_certificate_validation=True).request(
                         s.backfillSearchUrl + '/services/search/jobs', 'POST', headers={
-                            'Authorization': 'Splunk %s' % s.sessionKey}, body=urllib.urlencode({
+                            'Authorization': 'Splunk %s' % s.sessionKey}, body=urllib.parse.urlencode({
                                 'search': s.backfillSearch, 'earliest_time': s.backfill, 'exec_mode': 'oneshot'}))[1]
                     try:
                         temptime = minidom.parseString(results).getElementsByTagName('text')[0].childNodes[0].nodeValue

@@ -1,8 +1,5 @@
-'''
-Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
-'''
-
-from __future__ import division
+from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.eventgen_core import EventGenerator
 
 import argparse
 import errno
@@ -10,16 +7,23 @@ import logging
 import os
 import shutil
 import sys
+import json
 
 FILE_LOCATION = os.path.dirname(os.path.abspath(__file__))
-path_prepend = os.path.join(FILE_LOCATION, 'lib')
-sys.path.append(path_prepend)
+VERSION_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "version.json")
 
-import __init__ as splunk_eventgen_init  # noqa isort:skip
-import eventgen_core  # noqa isort:skip
-from logging_config import logger  # noqa isort:skip
 
-EVENTGEN_VERSION = splunk_eventgen_init.__version__
+def _get_version():
+    """
+    @return: Version Number
+    """
+    with open(VERSION_LOCATION, 'rb') as fp:
+        json_data = json.load(fp)
+        version = json_data['version']
+    return version
+
+
+EVENTGEN_VERSION = _get_version()
 
 
 def parse_args():
@@ -75,7 +79,7 @@ def parse_args():
     # Help subparser
     # NOTE: Keep this at the end so we can use the subparser_dict.keys() to display valid commands
     help_subparser = subparsers.add_parser('help', help="Display usage on a subcommand")
-    helpstr = "Help on a specific command, valid commands are: " + ", ".join(subparser_dict.keys() + ["help"])
+    helpstr = "Help on a specific command, valid commands are: " + ", ".join(list(subparser_dict.keys()) + ["help"])
     help_subparser.add_argument("command", nargs='?', default="default", help=helpstr)
     # add subparsers to the subparser dict, this will be used later for usage / help statements.
     subparser_dict['generate'] = generate_subparser
@@ -107,7 +111,7 @@ def parse_args():
         sys.exit(0)
 
     if args.subcommand == "help":
-        if args.command in subparser_dict.keys():
+        if args.command in list(subparser_dict.keys()):
             subparser_dict[args.command].print_help()
         else:
             parser.print_help()
@@ -125,34 +129,32 @@ def parse_args():
     return args
 
 
-def exclude_function(filename):
+def filter_function(tarinfo):
     # removing any hidden . files.
-    last_index = filename.rfind('/')
+    last_index = tarinfo.name.rfind('/')
     if last_index != -1:
-        if filename[last_index + 1:].startswith('.'):
-            return True
-    if filename.endswith('.pyo') or filename.endswith('.pyc'):
-        return True
+        if tarinfo.name[last_index + 1:].startswith('.'):
+            return None
+    if tarinfo.name.endswith('.pyo') or tarinfo.name.endswith('.pyc') or '/splunk_app' in tarinfo.name:
+        return None
     else:
-        return False
+        return tarinfo
 
 
 def make_tarfile(output_filename, source_dir):
     import tarfile
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(source_dir, arcname=os.path.basename(source_dir), exclude=exclude_function)
+        tar.add(source_dir, arcname=os.path.basename(source_dir), filter=filter_function)
 
 
 def build_splunk_app(dest, source=os.getcwd(), remove=True):
-    import imp
     cwd = os.getcwd()
     os.chdir(source)
     directory = os.path.join(dest, 'SA-Eventgen')
     target_file = os.path.join(dest, 'sa_eventgen_{}.spl'.format(EVENTGEN_VERSION))
-    module_file, module_path, module_description = imp.find_module('splunk_eventgen')
-    splunk_app = os.path.join(module_path, 'splunk_app')
+    splunk_app = os.path.join(FILE_LOCATION, 'splunk_app')
     splunk_app_samples = os.path.join(splunk_app, "samples")
-    shutil.copytree(os.path.join(module_path, "samples"), splunk_app_samples)
+    shutil.copytree(os.path.join(FILE_LOCATION, "samples"), splunk_app_samples)
     try:
         shutil.copytree(splunk_app, directory)
     except OSError as e:
@@ -163,9 +165,9 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
         else:
             raise
     directory_lib_dir = os.path.join(directory, 'lib', 'splunk_eventgen')
-    shutil.copytree(module_path, directory_lib_dir)
+    shutil.copytree(FILE_LOCATION, directory_lib_dir)
     directory_default_dir = os.path.join(directory, 'default', 'eventgen.conf')
-    eventgen_conf = os.path.join(module_path, 'default', 'eventgen.conf')
+    eventgen_conf = os.path.join(FILE_LOCATION, 'default', 'eventgen.conf')
     shutil.copyfile(eventgen_conf, directory_default_dir)
 
     # install 3rd lib dependencies
@@ -208,18 +210,18 @@ def main():
     args = parse_args()
     args.verbosity = convert_verbosity_count_to_logging_level(args.verbosity)
     if args.subcommand == "generate":
-        eventgen = eventgen_core.EventGenerator(args=args)
+        eventgen = EventGenerator(args=args)
         eventgen.start()
     elif args.subcommand == "service":
         env_vars = gather_env_vars(args)
         if args.role == "controller":
-            from eventgen_api_server.eventgen_controller import EventgenController
+            from splunk_eventgen.eventgen_api_server.eventgen_controller import EventgenController
             EventgenController(env_vars=env_vars).app_run()
         elif args.role == "server":
-            from eventgen_api_server.eventgen_server import EventgenServer
+            from splunk_eventgen.eventgen_api_server.eventgen_server import EventgenServer
             EventgenServer(env_vars=env_vars, mode="cluster").app_run()
         elif args.role == "standalone":
-            from eventgen_api_server.eventgen_server import EventgenServer
+            from splunk_eventgen.eventgen_api_server.eventgen_server import EventgenServer
             EventgenServer(env_vars=env_vars, mode="standalone").app_run()
     elif args.subcommand == "build":
         if not args.destination:

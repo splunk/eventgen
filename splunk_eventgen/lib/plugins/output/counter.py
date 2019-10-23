@@ -2,7 +2,7 @@ import datetime
 import pprint
 import sys
 
-from outputplugin import OutputPlugin
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class CounterOutputPlugin(OutputPlugin):
@@ -37,7 +37,7 @@ class CounterOutputPlugin(OutputPlugin):
             CounterOutputPlugin.lastPrintAt = CounterOutputPlugin.flushCount
 
     def _print_info(self, msg):
-        print >> sys.stderr, '{} {}'.format(datetime.datetime.now(), msg)
+        print('{} {}'.format(datetime.datetime.now(), msg), file=sys.stderr)
 
 
 def load():

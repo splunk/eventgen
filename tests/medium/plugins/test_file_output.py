@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 import os
@@ -14,7 +14,7 @@ FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class TestFileOutputPlugin(object):
     def test_output_data_to_file(self):
-        configfile = "tests/sample_eventgen_conf/medium_test/eventgen.conf.fileoutput"
+        configfile = os.path.join(FILE_DIR, "..", "..", "sample_eventgen_conf", "medium_test", "eventgen.conf.fileoutput")
         testargs = ["eventgen", "generate", configfile]
         with patch.object(sys, 'argv', testargs):
             pargs = parse_args()
@@ -32,3 +32,7 @@ class TestFileOutputPlugin(object):
                     break
                 assert "WINDBAG Event {} of 5".format(line_count) in output_line
                 line_count += 1
+
+        # tear down
+        if os.path.isfile(file_output_path):
+            os.remove(file_output_path)

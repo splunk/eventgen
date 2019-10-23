@@ -12,13 +12,13 @@ def test_token_replacement(eventgen_test_helper):
     # assert the events size is 10 since end = 1
     assert len(events) == 10
 
-    with open(os.path.join(base_dir, 'sample', 'id.csv'), 'rb') as f:
+    with open(os.path.join(base_dir, 'sample', 'id.csv'), 'rt') as f:
         id_content = f.read()
-    with open(os.path.join(base_dir, 'sample', 'ip.csv'), 'rb') as f:
+    with open(os.path.join(base_dir, 'sample', 'ip.csv'), 'rt') as f:
         ip_content = f.read()
-    with open(os.path.join(base_dir, 'sample', 'cp.csv'), 'rb') as f:
+    with open(os.path.join(base_dir, 'sample', 'cp.csv'), 'rt') as f:
         cp_content = f.read()
-    with open(os.path.join(base_dir, 'sample', 'city.csv'), 'rb') as f:
+    with open(os.path.join(base_dir, 'sample', 'city.csv'), 'rt') as f:
         reader = csv.reader(f)
         country = []
         city = []

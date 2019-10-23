@@ -1,6 +1,6 @@
 import json
 import os
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 
 import pytest
 

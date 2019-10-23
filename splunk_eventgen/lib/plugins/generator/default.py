@@ -1,13 +1,10 @@
 # TODO: Sample object is incredibly overloaded and not threadsafe. Need to make it simpler to get a copy without the
 # whole object get a copy of whats needed without the whole object.
-
-from __future__ import division
-
 import datetime
 import random
 
-from generatorplugin import GeneratorPlugin
-from logging_config import logger
+from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
+from splunk_eventgen.lib.logging_config import logger
 
 
 class DefaultGenerator(GeneratorPlugin):
@@ -38,7 +35,7 @@ class DefaultGenerator(GeneratorPlugin):
             logger.debug(
                 "Bundlelines, filling eventsDict for sample '%s' in app '%s' with %d copies of sampleDict" %
                 (self._sample.name, self._sample.app, count))
-            for x in xrange(count):
+            for x in range(count):
                 eventsDict.extend(self._sample.sampleDict)
 
         # Otherwise fill count events into eventsDict or keep making copies of events out of sampleDict until

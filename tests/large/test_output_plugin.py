@@ -1,4 +1,4 @@
-from utils.splunk_search_util import get_session_key, preprocess_search, run_search, get_search_response
+from tests.large.utils.splunk_search_util import get_session_key, preprocess_search, run_search, get_search_response
 
 
 def test_plugin_devnull(eventgen_test_helper):

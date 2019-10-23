@@ -1,13 +1,11 @@
-from __future__ import division
-
 import datetime
 import threading
 import uuid
 
 import requests
 
-from outputplugin import OutputPlugin
-from logging_config import logger
+from splunk_eventgen.lib.outputplugin import OutputPlugin
+from splunk_eventgen.lib.logging_config import logger
 
 try:
     import boto3
@@ -127,9 +125,9 @@ class AwsS3OutputPlugin(OutputPlugin):
                 uuid.uuid1()) + self.awsS3objectsuffix
         logger.debug("Uploading %d events into s3 key: %s " % (len(records), s3keyname))
         if self.awsS3compressiontype == 'gz':
-            import StringIO
+            import io
             import gzip
-            out = StringIO.StringIO()
+            out = io.StringIO()
             with gzip.GzipFile(fileobj=out, mode="w") as f:
                 f.write(records)
             records = out.getvalue()

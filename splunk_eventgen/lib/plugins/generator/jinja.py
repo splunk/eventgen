@@ -1,5 +1,3 @@
-from __future__ import division
-
 import datetime
 import os
 import random
@@ -8,11 +6,11 @@ import time
 from jinja2 import nodes
 from jinja2.ext import Extension
 
-from generatorplugin import GeneratorPlugin
-from logging_config import logger
+from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
+from splunk_eventgen.lib.logging_config import logger
 try:
     import ujson as json
-except:
+except ImportError:
     import json as json
 
 
@@ -111,7 +109,7 @@ class JinjaTime(Extension):
         target_var_name = {"time_now": "time_now", "time_slice": "time_target"}
         tag = parser.stream.current.value
         name_base = target_var_name[tag]
-        lineno = parser.stream.next().lineno
+        lineno = next(parser.stream).lineno
         args, kwargs = self.parse_args(parser)
         task_list = []
         epoch_name = name_base + "_epoch"
@@ -259,7 +257,7 @@ class JinjaGenerator(GeneratorPlugin):
                                     "Please note, you must meet the requirements for json.loads in python if you have" +
                                     "not installed ujson. Native python does not support multi-line events.")
                                 continue
-                            current_line_keys = target_line.keys()
+                            current_line_keys = list(target_line.keys())
                             if "_time" not in current_line_keys:
                                 # TODO: Add a custom exception here
                                 raise Exception("No _time field supplied, please add time to your jinja template.")
