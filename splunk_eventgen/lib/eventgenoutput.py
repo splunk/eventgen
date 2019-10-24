@@ -71,21 +71,6 @@ class Output(object):
         Flushes output buffer, unless endOfInterval called, and then only flush if we've been called
         more than maxIntervalsBeforeFlush tunable.
         """
-        # TODO: Fix interval flushing somehow with a queue, not sure I even want to support this feature anymore.
-        '''if endOfInterval:
-            logger.debugv("Sample calling flush, checking increment against maxIntervalsBeforeFlush")
-            c.intervalsSinceFlush[self._sample.name].increment()
-            if c.intervalsSinceFlush[self._sample.name].value() >= self._sample.maxIntervalsBeforeFlush:
-                logger.debugv("Exceeded maxIntervalsBeforeFlush, flushing")
-                flushing = True
-                c.intervalsSinceFlush[self._sample.name].clear()
-            else:
-                logger.debugv("Not enough events to flush, passing flush routine.")
-        else:
-            logger.debugv("maxQueueLength exceeded, flushing")
-            flushing = True'''
-
-        # TODO: This is set this way just for the time being while I decide if we want this feature.
         flushing = True
         if flushing:
             q = self._queue
@@ -113,3 +98,5 @@ class Output(object):
                             self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)})
                     tmp = None
                 outputer.run()
+            q = None
+            

@@ -11,7 +11,7 @@ class StdOutOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         for x in q:
-            print(x['_raw'].rstrip())
+            print(x.get('_raw', '').rstrip())
 
 
 def load():
