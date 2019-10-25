@@ -34,7 +34,8 @@ class EventgenServerAPI:
         self.host = host
 
         self.interval = 0.01
-        if mode != 'standalone':
+        self.mode = mode
+        if self.mode != 'standalone':
             self.redis_connector = redis_connector
             self._channel_listener()
             self.logger.info("Initialized the channel listener. Cluster mode ready.")
@@ -433,13 +434,16 @@ class EventgenServerAPI:
 
     def healthcheck(self):
         response = {}
-        try:
-            self.redis_connector.pubsub.check_health()
-            response['message'] = "Connections are healthy"
-        except Exception as e:
-            self.logger.error("Connection to Redis failed: {}, re-registering".format(str(e)))
-            self.redis_connector.register_myself(hostname=self.host, role="server")
-            response['message'] = "Connections unhealthy - re-established connections"
+        if self.mode != 'standalone':
+            try:
+                self.redis_connector.pubsub.check_health()
+                response['message'] = "Connections are healthy"
+            except Exception as e:
+                self.logger.error("Connection to Redis failed: {}, re-registering".format(str(e)))
+                self.redis_connector.register_myself(hostname=self.host, role="server")
+                response['message'] = "Connections unhealthy - re-established connections"
+        else:
+            response['message'] = "Standalone {} is healthy".format(self.host)
         return response
 
     def set_bundle(self, url):
