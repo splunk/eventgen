@@ -4,6 +4,8 @@ RUN apk --no-cache upgrade && \
 	apk add --no-cache --update \
 	python3 \
 	python3-dev \
+	python2-dev \
+      py2-pip \
 	gcc \
 	libc-dev \
 	libffi-dev \
@@ -26,7 +28,10 @@ RUN apk --no-cache upgrade && \
 	mkdir -p /root/.ssh && \
 	chmod 0700 /root/.ssh && \
 	passwd -u root && \
-	pip3 install git+git://github.com/esnme/ultrajson.git
+	pip3 install git+git://github.com/esnme/ultrajson.git && \
+	# install dependencies of conduct2 used by perf
+      pip2 install filelock twisted requests queuelib ujson psutil crochet msgpack-python unidecode attrdict service_identity && \
+      pip2 install git+git://github.com/esnme/ultrajson.git
 
 COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
