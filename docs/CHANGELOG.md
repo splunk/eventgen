@@ -1,3 +1,7 @@
+**7.0.1**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/7.0.1)
+
 6.5.0
 - Added metrics output mode
 - Fixed regex token replacement issue
