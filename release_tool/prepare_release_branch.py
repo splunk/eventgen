@@ -95,12 +95,29 @@ def replace_version(ver):
                 fp.write(f'version = {ver}\n')
             else:
                 fp.write(f'{lstr}\n')
+    logging.info(f'verison is replaced with {ver}.')
 
-def commit_version_files(ver):
+
+def update_changelog(ver):
+    changelog_file = os.path.join(root_repo_dir, 'docs', 'CHANGELOG.md')
+    content = None
+    with open(changelog_file, 'r') as fp:
+        content = fp.readlines()
+    new_content = f'**{ver}**:\n\n' + f'- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/{ver})\n\n'
+    with open(changelog_file, 'w') as fp:
+        fp.write(new_content)
+        for l in content:
+            fp.write(l)
+    logging.info('CHANGELOG.md is updated.')
+
+
+def commit_updated_files(ver):
     ver_json_file = os.path.join('splunk_eventgen', 'version.json')
     app_conf = os.path.join('splunk_eventgen', 'splunk_app', 'default', 'app.conf')
+    changelog = os.path.join('docs', 'CHANGELOG.md')
     run_sh_cmd(['git', 'add', ver_json_file])
     run_sh_cmd(['git', 'add', app_conf])
+    run_sh_cmd(['git', 'add', changelog])
     run_sh_cmd(['git', 'commit', '-m', f'update eventgen version to {ver}'], False)
     logging.info('committed version files.')
 
@@ -139,9 +156,9 @@ if __name__ == '__main__':
         run_sh_cmd(['git', 'checkout', release_branch])
 
     replace_version(arg_values.version_str)
-    logging.info(f'verison is replaced with {arg_values.version_str}.')
+    update_changelog(arg_values.version_str)
 
-    commit_version_files(arg_values.version_str)
+    commit_updated_files(arg_values.version_str)
 
     run_sh_cmd(['git', 'push', 'origin', release_branch])
     logging.info(f'release branch {release_branch} is pushed to remote repo.')
