@@ -36,7 +36,9 @@ COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
 COPY dist/* /root/splunk_eventgen.tgz
 RUN pip3 install /root/splunk_eventgen.tgz && \
-	rm /root/splunk_eventgen.tgz
+	rm /root/splunk_eventgen.tgz && \
+	pip3 uninstall ujson -y && \
+	pip3 install git+https://github.com/esnme/ultrajson.git
 
 EXPOSE 2222 6379 9500
 RUN chmod a+x /sbin/entrypoint.sh
