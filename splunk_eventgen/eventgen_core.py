@@ -422,11 +422,61 @@ class EventGenerator(object):
                         raise e
         return ret
 
+    def _refresh_access_token(self):
+        """
+        This function is for acquiring SCP access token
+        """
+        from threading import Timer
+        import requests
+        import json
+
+        if hasattr(self.config, "client_credentials") and hasattr(self.config, "auth_url"):
+            Timer(1800, self._refresh_access_token).start() # refresh access token every half hour
+            client_credentials = json.loads(self.config.client_credentials)
+            auth_url = self.config.auth_url
+            n_retry = 0
+
+            while True:
+                n_retry += 1
+                if n_retry > 100:
+                    logger.info("Have been refetching access token over 100 times. Time to give up!")
+                    self.stop(force_stop=True)
+                    break
+
+                try:
+                    res = requests.post(auth_url, data=client_credentials, timeout=5) # timeout for avoiding hung process
+                    
+                    if res.status_code != 200:
+                        logger.error("status %d: %s" % (res.status_code, res.text))
+
+                        logger.info("Refetching access token...")
+
+                        continue
+
+                    access_token = res.json()['access_token']
+
+                except Exception as e:
+                    logger.error(e)
+                    logger.info("Connection Error occurs, refetching access token...")
+                    continue
+
+                finally:
+                    logger.info("Successfully acquired scp access token")
+                    logger.debug(access_token)
+                    logger.info("Dispatching access token to all samples...")
+                    for s in self.config.samples:
+                        setattr(s, "access_token", access_token) # Store access token in Sample instance
+                    logger.info("All set")
+                    break
+
     def start(self, join_after_start=True):
         self.stopping = False
         self.started = True
         self.config.stopping = False
         self.completed = False
+
+        self._refresh_access_token() # Added to acquire or refresh SCP access token
+
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
