@@ -80,7 +80,7 @@ class PerDayVolumeGenerator(GeneratorPlugin):
                                (self._sample.name, self._sample.app, len(eventsDict)))
 
         # build the events and replace tokens
-        GeneratorPlugin.build_events(self, eventsDict, startTime, earliest, latest)
+        self.build_events(eventsDict, startTime, earliest, latest)
 
 
 def load():
