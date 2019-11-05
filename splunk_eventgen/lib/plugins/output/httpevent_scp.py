@@ -1,17 +1,19 @@
 """
-Output plugin for SCP REST endpoint
+Custom plugin for REST API endpoint
 
-Author: Ericsson(Che-Lun) Tsao from Performance Engineering (ctsao@splunk.com)
+Author: Ericsson Tsao
 
-[README]
-In the global section of configuration file, one has to specify client credentials(in json format) and auth api
-=> client_credentials = {"client_id" : "***************","client_secret" : "*************","grant_type" : "client_credentials"}
-=> auth_url = https://auth.playground.scp.splunk.com/token
+Ingest API
+Code	Description
+200	The event was sent successfully.
+400	The request isn't valid.
+401	The user isn't authenticated.
+403	The operation is unauthorized.
+404	The resource wasn't found.
+422	Unprocessable entity in request.
+429	Too many requests were sent.
+500	An internal service error occurred.
 
-As for stanza section, api url has to be specified, e.g...
-=> generator = scpgen
-=> outputMode = httpevent_scp
-=> api_url = https://api.playground.scp.splunk.com/mytenant/ingest/v1beta2/events
 """
 
 from __future__ import division
@@ -20,19 +22,15 @@ from outputplugin import OutputPlugin
 
 import logging
 import requests
+from datetime import datetime as dt
 import time
 import sys
 import os
-
-from logging_config import logger
 
 try:
     import ujson as json
 except:
     import json
-
-class NoAPIEndpoint(Exception):
-    pass
 
 class RESTOutputPlugin(OutputPlugin):
     useOutputQueue = False
@@ -42,52 +40,70 @@ class RESTOutputPlugin(OutputPlugin):
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-        self.api_url = getattr(self._sample, "api_url")
+        self.api_url = getattr(self._sample, "api_url", "https://api.playground.scp.splunk.com/botest4/ingest/v1beta2/events")
 
-        if self.api_url is None:
-            raise NoAPIEndpoint("Please speccify your REST endpoint of SCP")
+	self.f = open("/root/test-eventgen/logs/output_%s" % (os.getpid()), 'a+')
 
     def flush(self, events):
-        """
-        :param events: a list of multiple payloads, format of payload refers to "temp_event" of "lib/plugin/generator/scpgenplugin.py"
-        """
+        # ingest events to api endpoint
+        # @para events : List
 
-        data = json.dumps(events) # A JSON array per SCP ingest API requirement
+        headers = {
+            'Authorization' : 'Bearer %s' % getattr(self._sample, "access_token"),
+            'Content-Type' : "application/json"
+        }
 
-        n_retry = 0
+        data = json.dumps(events)
 
-        while True:
-            n_retry += 1
-            if n_retry > 100:
-                logger.info("Have been resending events over 100 times, now exiting...")
-                break
-
-            headers = {
-                'Authorization' : 'Bearer %s' % getattr(self._sample, "access_token"),
-                'Content-Type' : "application/json"
-            }
-
+        # request data format should be a string of a JSON array 
+        # e.g. [{"body" : "test1"}, {"body": "test2"}, ...]
+	while True:
             try:
                 res = requests.post(self.api_url, headers=headers, data=data, timeout=3)
-
-                if res.status_code != 200:
-                    logger.error("status %s %s" % (res.status_code, res.text))                
-
+    
+                while res.status_code != 200:
+                    start_time = time.time()
+                    #logger.error("status %s %s\n" % (res.status_code, res.text))                
+		    self.f.write("%s status %s %s\n" % (dt.now(), res.status_code, res.text))
+                    #if res.status_code != 429 and res.status_code != 500:
+                    # skip errors that caused by too many requests and internal server error
+                        #logger.error("status %s %s\n" % (res.status_code, res.text))
+                        # sys.exit()
+                        # self._stop(force_stop=True)
                     if res.status_code == 401 or res.status_code == 403:
-                        logger.error("authrization issue occurs")
-
+                        #logger.error("authrization issue occurs")
+			self.f.write("%s authrization issue occurs\n" % dt.now())
+    
                     time.sleep(0.1)
-
-                    continue
-
+    
+                    res = requests.post(
+                            self.api_url, 
+                            headers={
+                                'Authorization' : 'Bearer %s' % getattr(self._sample, "access_token"),
+                            'Content-Type' : "application/json"
+                            }, 
+                            data=data,
+			    timeout=3
+                        )
+	    
             except Exception as e:
-                logger.error(e)
-                continue
-
-            finally:
-                logger.debug("Successfully sent out %d events of %s" % (len(events), self._sample.name))
-                break
-
+                #logger.error(e)
+		time.sleep(0.1)
+      	        #logger.info("Re-ingesting events...")
+		self.f.write("%s Connection Error: %s\n" % (dt.now(), e))
+		countinue
+ 	    finally:
+	        #logger.debug("Writting events locally...")
+		"""
+	        for event in events:
+		    if event.get('body') is None or event['body'] == '\n':
+			#logger.error("No body!?!?")
+		    #logger.debug(event)
+		"""
+	        #logger.info("Successfully sent out %d events of %s" % (len(events), self._sample.name))
+		self.f.write("%s Successfully sent out %d events of %s\n" % (dt.now(), len(events), self._sample.name))
+		self.f.close()
+		break
 
 def load():
     """Returns an instance of the plugin"""

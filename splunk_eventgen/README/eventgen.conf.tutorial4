@@ -12,12 +12,21 @@ hourOfDayRate = { "0": 0.30, "1": 0.10, "2": 0.05, "3": 0.10, "4": 0.15, "5": 0.
 dayOfWeekRate = { "0": 0.97, "1": 0.95, "2": 0.90, "3": 0.97, "4": 1.0, "5": 0.99, "6": 0.55 }
 randomizeCount = 0.2
 
+# outputMode = file
+# fileName = /tmp/mobilemusic.log
+
 outputMode = splunkstream
 
 # Host/User/pass only necessary if running outside of splunk!
 splunkHost = localhost
 splunkUser = admin
 splunkPass = changeme
+
+# outputMode = stormstream
+# projectID = <projectid>
+# accessToken = <accesstoken>
+# source = eventgen
+# sourcetype = business_event
 
 token.0.token = ((\w+\s+\d+\s+\d{2}:\d{2}:\d{2}:\d{3})|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}))
 token.0.replacementType = replaytimestamp

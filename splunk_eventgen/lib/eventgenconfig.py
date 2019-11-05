@@ -88,19 +88,18 @@ class Config(object):
                     'minuteOfHourRate', 'timezone', 'dayOfMonthRate', 'monthOfYearRate', 'perDayVolume',
                     'outputWorkers', 'generator', 'rater', 'generatorWorkers', 'timeField', 'sampleDir', 'threading',
                     'profiler', 'maxIntervalsBeforeFlush', 'maxQueueLength', 'splunkMethod', 'splunkPort',
-                    'syslogDestinationHost', 'syslogDestinationPort', 'syslogAddHeader',
                     'verbosity', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse',
                     'outputCounter', 'sequentialTimestamp', 'extendIndexes', 'disableLoggingQueue']
-    _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
+    _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2, 'replacementCount': 3}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = [
-        'static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'seqfile', 'integerid']
+        'static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'seqfile', 'integerid', 'compression_test', 'custom_kw']
     validOutputModes = []
     _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength']
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
     _boolSettings = [
         'disabled', 'randomizeEvents', 'bundlelines', 'profiler', 'useOutputQueue', 'autotimestamp',
-        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp', 'disableLoggingQueue', 'syslogAddHeader']
+        'httpeventWaitResponse', 'outputCounter', 'sequentialTimestamp', 'disableLoggingQueue']
     _jsonSettings = [
         'hourOfDayRate', 'dayOfWeekRate', 'minuteOfHourRate', 'dayOfMonthRate', 'monthOfYearRate', 'autotimestamps']
     _defaultableSettings = [
@@ -497,7 +496,7 @@ class Config(object):
                         logger.debug(
                             "Overriding backfill to '%s' for sample '%s'" % (self.override_backfill, s.name))
                         s.backfill = self.override_backfill.lstrip()
-
+                    
                     if self.override_end:
                         logger.debug("Overriding end to '%s' for sample '%s'" % (self.override_end, s.name))
                         s.end = self.override_end.lstrip()

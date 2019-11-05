@@ -33,7 +33,8 @@ class ConfigRater(object):
                 logger.error('No sample found for default generator, cannot generate events')
             self._sample.count = len(self._sample.sampleDict)
         self._generatorWorkers = int(self._generatorWorkers)
-        count = self._sample.count / self._generatorWorkers
+        #count = self._sample.count / self._generatorWorkers
+	count = self._sample.count
         # 5/8/12 CS We've requested not the whole file, so we should adjust count based on
         # hourOfDay, dayOfWeek and randomizeCount configs
         rateFactor = 1.0

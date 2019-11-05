@@ -21,6 +21,8 @@ class Token(object):
     token = None
     replacementType = None
     replacement = None
+    replacementCount = None
+    global_count = None
     sample = None
     mvhash = {}
 
@@ -143,12 +145,21 @@ class Token(object):
                             s.timestamp = replacementTime
                         else:
                             replacementTime = s.timestamp
-
+                        
+                        # extended by Ericsson Tsao for ms token replacement
+                        if self.replacement == '$millisec$':
+                            return str(time.mktime(replacementTime.timetuple())).rstrip('0').rstrip('.') + str(random.randint(0, 9999)).zfill(4)
+                        if self.replacement == '$asctime$':
+                            return str(replacementTime) + ',' + str(random.randint(0, 999)).zfill(3)
+                        ###############################################################################################################################
                         replacement = self.replacement.replace(
                             '%s',
-                            str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
+                            str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.')
+                            )
+
                         replacementTime = replacementTime.strftime(replacement)
                         # replacementTime == replacement for invalid strptime specifiers
+
                         if replacementTime != self.replacement.replace('%', ''):
                             return replacementTime
                         else:
@@ -437,10 +448,45 @@ class Token(object):
                 else:
                     return replacement
         elif self.replacementType == 'integerid':
+	    """
             temp = self.replacement
             self.replacement = str(int(self.replacement) + 1)
             return temp
+	    """
+	    if self.global_count is None:
+		raise Exception('Please Specify "disableGlobalCount = false" in your sample')
+	    return str(self.global_count)
+        elif self.replacementType == 'compression_test':
+            marker = "every1 "
+	    if  (self.global_count % 10) == 0:
+                marker += 'every10 '
+            if (self.global_count % 100) == 0:
+                marker += 'every100 '
+            if (self.global_count % 1000) == 0:
+                marker += 'every1K '
+            if (self.global_count % 10000) == 0:
+                marker += 'every10K '
+            if (self.global_count % 100000) == 0:
+                marker += 'every100K '
+            if (self.global_count % 1000000) == 0:
+                marker += 'every1M '
+            if (self.global_count % 10000000) == 0:
+                marker += 'every10M '
+            if (self.global_count % 100000000) == 0:
+                marker += 'every100M '
+            if (self.global_count % 1000000000) == 0:
+                marker += 'every1B '
+            if (self.global_count % 10000000000) == 0:
+                marker += 'every10B '
+                self.placement = '0'
 
+	    return marker
+
+        elif self.replacementType == "custom_kw":
+            if self.global_count <= int(self.replacementCount):
+                return self.replacement
+            else:
+                return ''
         else:
             logger.error("Unknown replacementType '%s'; will not replace" % self.replacementType)
             return old

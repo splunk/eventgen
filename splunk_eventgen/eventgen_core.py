@@ -7,9 +7,10 @@ import os
 import sys
 import time
 import signal
+import multiprocessing
 from Queue import Empty, Queue
 from threading import Thread
-import multiprocessing
+
 
 from lib.eventgenconfig import Config
 from lib.eventgenexceptions import PluginNotLoaded
@@ -59,7 +60,7 @@ class EventGenerator(object):
         self._generator_queue_size = getattr(self.args, 'generator_queue_size', 500)
         if self._generator_queue_size < 0:
             self._generator_queue_size = 0
-        self.logger.info("Set generator queue size:{}".format(self._generator_queue_size))
+        self.logger.info("Set generator queue size", queue_size=self._generator_queue_size)
 
         if self.args and 'configfile' in self.args and self.args.configfile:
             self._load_config(self.args.configfile, args=args)
@@ -194,7 +195,7 @@ class EventGenerator(object):
             worker.setDaemon(True)
             worker.start()
 
-    def _create_generator_pool(self, workercount=20):
+    def _create_generator_pool(self, workercount=8):
         '''
         The generator pool has two main options, it can run in multiprocessing or in threading.  We check the argument
         from configuration, and then build the appropriate queue type.  Each time a timer runs for a sample, if the
@@ -203,10 +204,13 @@ class EventGenerator(object):
                             has over 10 generators working, additional samples won't run until the first ones end.
         :return:
         '''
-        if self.args.multiprocess:
+	self.gc_dict = {s.name: multiprocessing.Value('i', 0) for s in self.config.samples if getattr(s, 'disableGlobalCount', None) is not None and s.disableGlobalCount == 'false'}
+
+        if  self.args.multiprocess:
             self.manager = multiprocessing.Manager()
             if self.config.disableLoggingQueue:
                 self.loggingQueue = None
+		print "loggingQueue is disabled" 
             else:
                 # TODO crash caused by logging Thread https://github.com/splunk/eventgen/issues/217
                 self.loggingQueue = self.manager.Queue()
@@ -225,37 +229,32 @@ class EventGenerator(object):
                     self.output_counters.append(OutputCounter())
                 for i in range(worker_threads):
                     worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue,
-                                                                          self.output_counters[i]))
+                                                                          self.output_counters[i]), kwargs={'gc_dict': self.gc_dict})
                     worker.setDaemon(True)
                     worker.start()
             else:
                 for i in range(worker_threads):
-                    worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue, None))
+                    worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue, None), kwargs={'gc_dict': self.gc_dict})
                     worker.setDaemon(True)
                     worker.start()
 
-    def _create_generator_workers(self, workercount=20):
+    def _create_generator_workers(self, workercount=10):
         if self.args.multiprocess:
             import multiprocessing
             self.workerPool = []
-            for worker in range(workercount):
+            for worker in xrange(workercount):
                 # builds a list of tuples to use the map function
-                disable_logging = True if self.args and self.args.disable_logging else False
                 process = multiprocessing.Process(target=self._proc_worker_do_work, args=(
                     self.workerQueue,
                     self.loggingQueue,
                     self.genconfig,
-                    disable_logging
-                ))
+                ), kwargs={'gc_dict': self.gc_dict})
                 self.workerPool.append(process)
                 process.start()
         else:
             pass
 
     def _setup_loggers(self, args=None):
-        if args and args.disable_logging:
-            logger.handlers = []
-            logger.addHandler(logging.NullHandler())
         self.logger = logger
         self.loggingQueue = None
         if args and args.verbosity:
@@ -280,10 +279,12 @@ class EventGenerator(object):
                 self.logger.exception(str(e))
                 raise e
 
-    def _generator_do_work(self, work_queue, logging_queue, output_counter=None):
+    def _generator_do_work(self, work_queue, logging_queue, output_counter=None, **kwargs):
+	gc_dict = kwargs.get("gc_dict", {})
         while not self.stopping:
             try:
                 item = work_queue.get(timeout=10)
+		setattr(item, "gc_obj", gc_dict.get(item._sample.name))
                 startTime = time.time()
                 item.run(output_counter=output_counter)
                 totalTime = time.time() - startTime
@@ -299,30 +300,28 @@ class EventGenerator(object):
                 raise e
 
     @staticmethod
-    def _proc_worker_do_work(work_queue, logging_queue, config, disable_logging):
+    def _proc_worker_do_work(work_queue, logging_queue, config, **kwargs):
+	gc_dict = kwargs.get("gc_dict", {})
         genconfig = config
         stopping = genconfig['stopping']
         root = logging.getLogger()
-        root.setLevel(logging.DEBUG)
+        root.setLevel(logging.INFO)
         if logging_queue is not None:
             # TODO https://github.com/splunk/eventgen/issues/217
             qh = logutils.queue.QueueHandler(logging_queue)
             root.addHandler(qh)
         else:
-            if disable_logging:
-                root.addHandler(logging.NullHandler())
-            else:
-                root.addHandler(logging.StreamHandler())
+            root.addHandler(logging.StreamHandler())
         while not stopping:
             try:
-                root.info("Checking for work")
+                root.debug("Checking for work")
                 item = work_queue.get(timeout=10)
+		setattr(item, "gc_obj", gc_dict.get(item._sample.name))
                 item.logger = root
                 item._out.updateConfig(item.config)
                 item.run()
                 work_queue.task_done()
                 stopping = genconfig['stopping']
-                item.logger.debug("Current Worker Stopping: {0}".format(stopping))
             except Empty:
                 stopping = genconfig['stopping']
             except Exception as e:
@@ -422,52 +421,48 @@ class EventGenerator(object):
                         raise e
         return ret
 
-    def _refresh_access_token(self):
-        """
-        This function is for acquiring SCP access token
-        """
-        from threading import Timer
-        import requests
-        import json
+    def _refresh_access_token(self, routine=True):
+	from threading import Timer
+	import requests
+	import json
+	
+	Timer(1800, self._refresh_access_token).start() # refresh access token every half hour
+        client_credentials = json.loads(self.config.client_credentials)
+        auth_url = self.config.auth_url
+        n_retry = 0
 
-        if hasattr(self.config, "client_credentials") and hasattr(self.config, "auth_url"):
-            Timer(1800, self._refresh_access_token).start() # refresh access token every half hour
-            client_credentials = json.loads(self.config.client_credentials)
-            auth_url = self.config.auth_url
-            n_retry = 0
+        while True:
+            n_retry += 1
+            if n_retry > 100:
+	        self.logger.info("Have been refetching access token over 100 times. Time to give up!")
+                self.stop(force_stop=True)
+                break
 
-            while True:
-                n_retry += 1
-                if n_retry > 100:
-                    logger.info("Have been refetching access token over 100 times. Time to give up!")
-                    self.stop(force_stop=True)
-                    break
+            try:
+                res = requests.post(auth_url, data=client_credentials, timeout=5) # timeout for avoiding hung process
+                 
+                if res.status_code != 200:
+                    self.logger.error("status %d: %s" % (res.status_code, res.text))
 
-                try:
-                    res = requests.post(auth_url, data=client_credentials, timeout=5) # timeout for avoiding hung process
-                    
-                    if res.status_code != 200:
-                        logger.error("status %d: %s" % (res.status_code, res.text))
+                    self.logger.info("Refetching access token...")
 
-                        logger.info("Refetching access token...")
-
-                        continue
-
-                    access_token = res.json()['access_token']
-
-                except Exception as e:
-                    logger.error(e)
-                    logger.info("Connection Error occurs, refetching access token...")
                     continue
 
-                finally:
-                    logger.info("Successfully acquired scp access token")
-                    logger.debug(access_token)
-                    logger.info("Dispatching access token to all samples...")
-                    for s in self.config.samples:
-                        setattr(s, "access_token", access_token) # Store access token in Sample instance
-                    logger.info("All set")
-                    break
+                access_token = res.json()['access_token']
+
+            except Exception as e:
+                self.logger.error(e)
+                self.logger.info("Connection Error occurs, refetching access token...")
+                continue
+
+            finally:
+                self.logger.info("Successfully acquired scp access token")
+                self.logger.debug(access_token)
+                self.logger.info("Dispatching access token to all samples...")
+                for s in self.config.samples:
+                    setattr(s, "access_token", access_token) # Store access token in Sample instance
+                self.logger.info("All set")
+                break	
 
     def start(self, join_after_start=True):
         self.stopping = False
@@ -475,7 +470,8 @@ class EventGenerator(object):
         self.config.stopping = False
         self.completed = False
 
-        self._refresh_access_token() # Added to acquire or refresh SCP access token
+	if hasattr(self.config, "client_credentials") and hasattr(self.config, "auth_url"):
+	    self._refresh_access_token()
 
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")
@@ -528,6 +524,7 @@ class EventGenerator(object):
         if self.args.multiprocess:
             if force_stop:
                 self.kill_processes()
+		self.logger.info("Forcibly stopping Eventgen: Deleting workerQueue.")
             else:
                 self.genconfig["stopping"] = True
                 for worker in self.workerPool:
@@ -542,11 +539,12 @@ class EventGenerator(object):
                         self.logger.info("Worker {0} still working, waiting for it to finish.".format(worker._name))
                         time.sleep(2)
                         count += 1
-
         self.logger.info("All generators working/exited, joining output queue until it's empty.")
         if not self.args.multiprocess and not force_stop:
             self.outputQueue.join()
         self.logger.info("All items fully processed. Cleaning up internal processes.")
+	for sample_name, obj in self.gc_dict.items():
+	    self.logger.info("%s: %d events" % (sample_name, obj.value))
         self.started = False
         self.stopping = False
 
@@ -590,17 +588,17 @@ class EventGenerator(object):
 
         :return: if eventgen jobs are finished, return True else False
         '''
-        return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty()
+        return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty() and self.workerQueue.unfinished_tasks <= 0
 
     def kill_processes(self):
         try:
             if self.args.multiprocess:
                 for worker in self.workerPool:
-                    try:
-                        os.kill(int(worker.pid), signal.SIGKILL)
-                    except:
-                        continue
+                    try: os.kill(int(worker.pid), signal.SIGKILL)
+                    except: continue
                 del self.outputQueue
                 self.manager.shutdown()
         except:
             pass
+            
+                

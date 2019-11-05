@@ -14,6 +14,12 @@ class DefaultGenerator(GeneratorPlugin):
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
+        # if not hasattr(sample, "gen_count"):
+        #     setattr(sample, "gen_count", 1)
+        # else:
+        #     setattr(sample, "gen_count", getattr(sample, "gen_count") + 1)
+        # print "gen_%d got created!!!" % getattr(sample, "gen_count")
+
     def gen(self, count, earliest, latest, samplename=None):
         logger.debug("Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'" %
                           (self._sample.name, self._sample.app, count, earliest, latest))

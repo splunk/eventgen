@@ -68,7 +68,6 @@ class Eventgen(ModularInput):
         args.wsgi = False
         args.log_path = make_splunkhome_path(['var', 'log', 'splunk'])
         args.modinput_mode = True
-        args.disable_logging = False
         return args
 
     def prepare_config(self, args):

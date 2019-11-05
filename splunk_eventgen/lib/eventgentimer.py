@@ -1,10 +1,8 @@
 import time
-import copy
 from Queue import Full
 
 from timeparser import timeParserTimeMath
 from logging_config import logger
-
 
 class Timer(object):
     """
@@ -29,6 +27,7 @@ class Timer(object):
     def __init__(self, time, sample=None, config=None, genqueue=None, outputqueue=None, loggingqueue=None):
         # Logger already setup by config, just get an instance
         # setup default options
+
         self.profiler = config.profiler
         self.config = config
         self.sample = sample
@@ -48,6 +47,7 @@ class Timer(object):
             self.rater = rater_class(self.sample)
             self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
             self.outputPlugin = self.config.getPlugin('output.' + self.sample.outputMode, self.sample)
+
             if self.sample.timeMultiple < 0:
                 logger.error("Invalid setting for timeMultiple: {}, value should be positive".format(
                     self.sample.timeMultiple))
@@ -133,10 +133,7 @@ class Timer(object):
                             break
                         et = backfillearliest
                         lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
-                        copy_sample = copy.copy(self.sample)
-                        tokens = copy.deepcopy(self.sample.tokens)
-                        copy_sample.tokens = tokens
-                        genPlugin = self.generatorPlugin(sample=copy_sample)
+                        genPlugin = self.generatorPlugin(sample=self.sample)
                         # need to make sure we set the queue right if we're using multiprocessing or thread modes
                         genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                         genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
@@ -179,11 +176,9 @@ class Timer(object):
                             # Spawn workers at the beginning of job rather than wait for next interval
                             logger.info("Starting '%d' generatorWorkers for sample '%s'" %
                                              (self.sample.config.generatorWorkers, self.sample.name))
-                            for worker_id in range(self.config.generatorWorkers):
-                                copy_sample = copy.copy(self.sample)
-                                tokens = copy.deepcopy(self.sample.tokens)
-                                copy_sample.tokens = tokens
-                                genPlugin = self.generatorPlugin(sample=copy_sample)
+                            #for worker_id in range(self.config.generatorWorkers):
+			    for worker_id in range(1):
+                                genPlugin = self.generatorPlugin(sample=self.sample)
                                 # Adjust queue for threading mode
                                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                                 genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
@@ -195,7 +190,7 @@ class Timer(object):
                                                           worker_id, round((count / 1024.0 / 1024), 4),
                                                           self.sample.name, et, lt))
                                 except Full:
-                                    logger.warning("Generator Queue Full. Skipping current generation.")
+                                    logger.error("Generator Queue Full. Skipping current generation.")
                             self.executions += 1
                     except Exception as e:
                         logger.exception(str(e))

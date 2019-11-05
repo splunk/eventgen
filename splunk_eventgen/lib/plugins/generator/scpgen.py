@@ -11,15 +11,12 @@ from generatorplugin import GeneratorPlugin
 from eventgentimestamp import EventgenTimestamp
 from logging_config import logger
 
-
 class SCPGen(GeneratorPlugin):
-    gc_obj = None # multiprocessing Value instance that serves as global counter
-    
     def __init__(self, sample):
         GeneratorPlugin.__init__(self, sample)
 
     def replace_tokens(self, eventsDict, earliest, latest, ignore_tokens=False):
-        """Override it to add global counter and to modify event format"""
+        """Iterate event tokens and replace them. This will help calculations for event size when tokens are used."""
         eventcount = 0
         send_events = []
         total_count = len(eventsDict)

@@ -174,7 +174,6 @@ class Sample(object):
                         ts = float(timeString) if len(timeString) < 10 else float(timeString) \
                              / (10**(len(timeString) - 10))
                         # logger.debug("Getting time for timestamp '%s'" % ts)
-                        currentTime = datetime.datetime.fromtimestamp(ts)
                     else:
                         # logger.debug("Getting time for timeFormat '%s' and timeString '%s'" %
                         #                   (timeFormat, timeString))

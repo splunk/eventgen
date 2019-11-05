@@ -1,7 +1,8 @@
 import time
 
-from logging_config import logger
-
+# from logging_config import logger
+import logging
+logger = logging.getLogger('scp_eventgen.outputcounter')
 
 class OutputCounter(object):
     '''

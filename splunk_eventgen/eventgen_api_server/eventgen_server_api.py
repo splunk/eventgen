@@ -22,7 +22,7 @@ INTERNAL_ERROR_RESPONSE = json.dumps({"message": "Internal Error Occurred"})
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "default"))
-SAMPLE_DIR_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "serverSamples"))
+SAMPLE_DIR_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "samples"))
 
 class EventgenServerAPI():
     def __init__(self, eventgen, redis_connector, host, mode='standalone'):
@@ -52,60 +52,54 @@ class EventgenServerAPI():
                     data = json.loads(message.get('data'))
                     self.logger.info("Message Recieved {}".format(message['data']))
                     if data['target'] == 'all' or data['target'] == self.host:
-                        thread = threading.Thread(target=self._delegate_jobs, args=(data.get('job'), data.get('request_method'), data.get('body'), data.get('message_uuid')))
+                        thread = threading.Thread(target=self._delegate_jobs, args=(data.get('job'), data.get('request_method'), data.get('body')))
                         thread.daemon = True                            
                         thread.start()
                 time.sleep(self.interval)
         thread = threading.Thread(target=start_listening, args=(self,))
         thread.daemon = True                            
         thread.start()
+    
+    def format_message(self, job, request_method, response):
+        return json.dumps({'job': job, 'request_method': request_method, 'response': response, 'host': self.host})
 
-    def format_message(self, job, request_method, response, message_uuid):
-        return json.dumps({'job': job, 'request_method': request_method, 'response': response, 'host': self.host, 'message_uuid': message_uuid})
-
-    def _delegate_jobs(self, job, request_method, body, message_uuid):
+    def _delegate_jobs(self, job, request_method, body):
         if not job: return
         else:
-            self.logger.info("Delegated {} {} {} {}".format(job, request_method, body, message_uuid))
             if job == 'status':
                 response = self.get_status()
-                message = self.format_message('status', request_method, response=response, message_uuid=message_uuid)
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, message)      
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('status', request_method, response=response))      
             elif job == 'conf':
                 if request_method == 'POST':
                     self.set_conf(body)
                 elif request_method == 'PUT':
                     self.edit_conf(body)
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('conf', request_method, response=self.get_conf(), message_uuid=message_uuid))
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('conf', request_method, response=self.get_conf()))
             elif job == 'bundle':
                 self.set_bundle(body.get("url", ''))
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('bundle', request_method, response=self.get_conf(), message_uuid=message_uuid))
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('bundle', request_method, response=self.get_conf()))
             elif job == 'setup':
                 self.clean_bundle_conf()
                 self.setup_http(body)
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('setup', request_method, response=self.get_conf(), message_uuid=message_uuid))
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('setup', request_method, response=self.get_conf()))
             elif job == 'volume':
                 if request_method == 'POST':
                     self.set_volume(body.get("perDayVolume", 0.0))
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('volume', request_method, response=self.get_volume(), message_uuid=message_uuid))
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('volume', request_method, response=self.get_volume()))
             elif job == 'start':
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('start', request_method, response=self.start(), message_uuid=message_uuid))
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('start', request_method, response=self.start()))
             elif job == 'stop':
                 message = {'message': 'Eventgen is stopping. Might take some time to terminate all processes.'}
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('stop', request_method, response=message, message_uuid=message_uuid))
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('stop', request_method, response=message))
                 self.stop(force_stop=True)
             elif job == 'restart':
                 message = {'message': 'Eventgen is restarting. Might take some time to restart.'}
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('restart', request_method, response=message, message_uuid=message_uuid))
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('restart', request_method, response=message))
                 self.restart()
             elif job == 'reset':
                 message = {'message': 'Eventgen is resetting. Might take some time to reset.'}
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('reset', request_method, response=message, message_uuid=message_uuid))
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, self.format_message('reset', request_method, response=message))
                 self.reset()
-            elif job == 'healthcheck':
-                response = self.healthcheck()
-                message = self.format_message('healthcheck', request_method, response=response, message_uuid=message_uuid)
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, message)    
 
             
     def _create_blueprint(self):
@@ -213,14 +207,6 @@ class EventgenServerAPI():
                 self.clean_bundle_conf()
                 self.setup_http(request.get_json(force=True))
                 return Response(json.dumps(self.get_conf()), mimetype='application/json', status=200)
-            except Exception as e:
-                self.logger.error(e)
-                return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-
-        @bp.route('/healthcheck', methods=['GET'])
-        def http_get_healthcheck():
-            try:
-                return Response(json.dumps(self.healthcheck()), mimetype='application/json', status=200)
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
@@ -434,17 +420,6 @@ class EventgenServerAPI():
         response['message'] = "Eventgen has been reset."
         return response
 
-    def healthcheck(self):
-        response = {}
-        try:
-            self.redis_connector.pubsub.check_health()
-            response['message'] = "Connections are healthy"
-        except Exception as e:
-            self.logger.error("Connection to Redis failed: {}, re-registering".format(str(e)))
-            self.redis_connector.register_myself(hostname=self.host, role="server")
-            response['message'] = "Connections unhealthy - re-established connections"
-        return response
-
     def set_bundle(self, url):
         if not url:
             return 
@@ -452,8 +427,6 @@ class EventgenServerAPI():
         bundle_dir = self.unarchive_bundle(self.download_bundle(url))
 
         if os.path.isdir(os.path.join(bundle_dir, "samples")):
-            if not os.path.exists(SAMPLE_DIR_PATH):
-                os.makedirs(SAMPLE_DIR_PATH)
             for file in glob.glob(os.path.join(bundle_dir, "samples", "*")):
                 shutil.copy(file, SAMPLE_DIR_PATH)
             self.logger.info("Copied all samples to the sample directory.")
