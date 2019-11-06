@@ -121,8 +121,9 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent
+outputMode = scpout | modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent
     * Specifies how to output log data. Modinput is default.
+    * If setting scpout, should set scpEndPoint and scpAccessToken. scpClientId, scpClientSecret, and scpRetryNum are optional.
     * If setting spool, should set spoolDir
     * If setting file, should set fileName
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod,
@@ -131,6 +132,26 @@ outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | h
     * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort
     * If setting httpevent, should set httpeventServers
     * If setting metric_httpevent, should set httpeventServers and make sure your index is a splunk metric index
+
+scpEndPoint = <host>
+    * Should be a full url to the scp endpoint
+
+scpAccessToken = <token>
+    * Should be a scp access token. Do not include "Bearer". 
+
+scpClientId = <id>
+    * optional
+    * SCP client id that is used to renew the access token if it expires during the data generation
+    * If not supplied, will not renew the access token and data transmission might fail
+
+scpClientSecret = <secret>
+    * optional
+    * SCP client secret that is used to renew the access token if it expires during the data generation
+    * If not supplied, will not renew the access token and data transmission might fail
+
+scpRetryNum = <int>
+    * optional and defaults to 0
+    * Retry a failing data transmission batch
 
 syslogDestinationHost = <host>
     * Defaults to 127.0.0.1

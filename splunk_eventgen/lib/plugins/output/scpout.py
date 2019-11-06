@@ -33,7 +33,7 @@ class SCPOutputPlugin(OutputPlugin):
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-        self.scpHttpPayloadMax = 150000 # Documentation recommends 20KB to 200KB. Going with 150KB.
+        self.scpHttpPayloadMax = 150000 # Documentation recommends 20KB to 200KB. Going with 159KB.
         self.scpEndPoint = getattr(self._sample, "scpEndPoint", None)
         self.scpAccessToken = getattr(self._sample, "scpAccessToken", None)
         self.scpClientId = getattr(self._sample, 'scpClientId', '')
@@ -58,7 +58,7 @@ class SCPOutputPlugin(OutputPlugin):
         }
 
         self.accessTokenExpired = False
-        self.tokenRenewEndPoint = "https://auth.playground.scp.splunk.com/token"
+        self.tokenRenewEndPoint = "https://auth.scp.splunk.com/token"
         self.tokenRenewBody = {
             "client_id": self.scpClientId,
             "client_secret": self.scpClientSecret,
@@ -102,11 +102,12 @@ class SCPOutputPlugin(OutputPlugin):
         return True
     
     def renewAccessToken(self):
-        res = requests.post(self.tokenRenewEndPoint, data=self.tokenRenewBody, timeout=5)
-        if res.status_code == 200:
+        response = requests.post(self.tokenRenewEndPoint, data=self.tokenRenewBody, timeout=5)
+        if response.status_code == 200:
             logger.info("Renewal of the access token succesful")
-            self.scpAccessToken = res.json()["access_token"]
-            self.renewAccessToken = False
+            self.scpAccessToken = response.json()["access_token"]
+            setattr(self._sample, "scpAccessToken", self.scpAccessToken)
+            self.accessTokenExpired = False
         else:
             logger.error("Renewal of the access token failed")
 
@@ -117,11 +118,15 @@ class SCPOutputPlugin(OutputPlugin):
             for event in events:
                 # Reformat the event to fit the scp request spec
                 # TODO: Move this logic to generator
-                event["body"] = event.pop("_raw")
-                event["timestamp"] = int(event.pop("_time") * 1000)
-                event.pop("index")
-                event["attributes"] = {}
-                event["attributes"]["hostRegex"] = event.pop("hostRegex")
+                try:
+                    event["body"] = event.pop("_raw")
+                    event["timestamp"] = int(event.pop("_time") * 1000)
+                    event.pop("index")
+                    if "attributes" not in event:
+                        event["attributes"] = {}
+                        event["attributes"]["hostRegex"] = event.pop("hostRegex")
+                except:
+                    pass
 
                 targetline = json.dumps(event)
                 targetlinesize = len(targetline)
