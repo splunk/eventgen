@@ -15,7 +15,7 @@ class EventgenCoreObject:
         self.configured = False
         self.configfile = None
         self.check_and_configure_eventgen()
-    
+
     def check_and_configure_eventgen(self):
         if os.path.isfile(CUSTOM_CONFIG_PATH):
             self.configured = True
@@ -43,7 +43,7 @@ class EventgenCoreObject:
         args.interval = None
         args.keepoutput = False
         args.modinput = False
-        args.multiprocess = True
+        args.multiprocess = False
         args.outputters = None
         args.profiler = False
         args.sample = None
@@ -53,5 +53,5 @@ class EventgenCoreObject:
         args.wsgi = True
         args.modinput_mode = False
         args.generator_queue_size = 1500
-        args.disable_logging = True
+        args.disable_logging = False
         return args

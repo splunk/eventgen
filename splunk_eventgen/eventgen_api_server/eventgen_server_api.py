@@ -39,10 +39,10 @@ class EventgenServerAPI:
             self.redis_connector = redis_connector
             self._channel_listener()
             self.logger.info("Initialized the channel listener. Cluster mode ready.")
-    
+
     def get_blueprint(self):
         return self.bp
-    
+
     def _channel_listener(self):
         def start_listening(self):
             while True:
@@ -52,11 +52,11 @@ class EventgenServerAPI:
                     self.logger.info("Message Recieved {}".format(message['data']))
                     if data['target'] == 'all' or data['target'] == self.host:
                         thread = threading.Thread(target=self._delegate_jobs, args=(data.get('job'), data.get('request_method'), data.get('body'), data.get('message_uuid')))
-                        thread.daemon = True                            
+                        thread.daemon = True
                         thread.start()
                 time.sleep(self.interval)
         thread = threading.Thread(target=start_listening, args=(self,))
-        thread.daemon = True                            
+        thread.daemon = True
         thread.start()
 
     def format_message(self, job, request_method, response, message_uuid):
@@ -69,7 +69,7 @@ class EventgenServerAPI:
             if job == 'status':
                 response = self.get_status()
                 message = self.format_message('status', request_method, response=response, message_uuid=message_uuid)
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, message)      
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, message)
             elif job == 'conf':
                 if request_method == 'POST':
                     self.set_conf(body)
@@ -104,7 +104,7 @@ class EventgenServerAPI:
             elif job == 'healthcheck':
                 response = self.healthcheck()
                 message = self.format_message('healthcheck', request_method, response=response, message_uuid=message_uuid)
-                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, message)    
+                self.redis_connector.message_connection.publish(self.redis_connector.controller_channel, message)
 
     def _create_blueprint(self):
         bp = flask.Blueprint('server_api', __name__)
@@ -112,16 +112,16 @@ class EventgenServerAPI:
         @bp.route('/index', methods=['GET'])
         def http_get_index():
             return self.get_index()
-            
+
         @bp.route('/status', methods=['GET'])
         def http_get_status():
-            try: 
+            try:
                 response = self.get_status()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-            
+
         @bp.route('/conf', methods=['GET', 'POST', 'PUT'])
         def http_conf():
             try:
@@ -133,7 +133,7 @@ class EventgenServerAPI:
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/volume', methods=['GET'])
         def http_get_volume():
             try:
@@ -142,7 +142,7 @@ class EventgenServerAPI:
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/volume', methods=['POST'])
         def http_post_volume():
             try:
@@ -151,7 +151,7 @@ class EventgenServerAPI:
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/start', methods=['POST'])
         def http_post_start():
             try:
@@ -160,7 +160,7 @@ class EventgenServerAPI:
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/stop', methods=['POST'])
         def http_post_stop():
             try:
@@ -170,7 +170,7 @@ class EventgenServerAPI:
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/restart', methods=['POST'])
         def http_post_restart():
             try:
@@ -179,7 +179,7 @@ class EventgenServerAPI:
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/reset', methods=['POST'])
         def http_post_reset():
             try:
@@ -188,7 +188,7 @@ class EventgenServerAPI:
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/bundle', methods=['POST'])
         def http_post_bundle():
             try:
@@ -198,7 +198,7 @@ class EventgenServerAPI:
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/setup', methods=['POST'])
         def http_post_setup():
             try:
@@ -247,7 +247,7 @@ class EventgenServerAPI:
                     for k, v in config.items(section):
                         response[section][k] = v
         return response
-    
+
     def set_conf(self, request_body):
         config = configparser.RawConfigParser({}, collections.OrderedDict)
         config.optionxform = str
@@ -264,7 +264,7 @@ class EventgenServerAPI:
             config.write(conf_content)
 
         self.eventgen.refresh_eventgen_core_object()
-    
+
     def edit_conf(self, request_body):
         conf_dict = self.get_conf()
 
@@ -276,9 +276,9 @@ class EventgenServerAPI:
                     for stanza, kv_pairs in conf_dict.items():
                         conf_dict[stanza]["index"] = value
                 conf_dict[stanza][key] = value
-        
+
         self.set_conf(conf_dict)
-    
+
     def get_status(self):
         response = dict()
         if self.eventgen.eventgen_core_object.check_running():
@@ -292,13 +292,13 @@ class EventgenServerAPI:
         response["TOTAL_VOLUME"] = self.total_volume
         response["QUEUE_STATUS"] = {
             'SAMPLE_QUEUE': {
-                'UNFINISHED_TASK': 'N/A', 
-                'QUEUE_LENGTH': 'N/A'}, 
+                'UNFINISHED_TASK': 'N/A',
+                'QUEUE_LENGTH': 'N/A'},
             'OUTPUT_QUEUE': {
-                'UNFINISHED_TASK': 'N/A', 
-                'QUEUE_LENGTH': 'N/A'}, 
+                'UNFINISHED_TASK': 'N/A',
+                'QUEUE_LENGTH': 'N/A'},
             'WORKER_QUEUE': {
-                'UNFINISHED_TASK': 'N/A', 
+                'UNFINISHED_TASK': 'N/A',
                 'QUEUE_LENGTH': 'N/A'}
             }
         response['THROUGHPUT_STATUS'] = self.get_throughput()
@@ -338,13 +338,13 @@ class EventgenServerAPI:
                 throughput_volume += output_counter.throughput_volume
                 throughput_count += output_counter.throughput_count
             return {
-                'TOTAL_VOLUME_MB': total_volume / (1024 * 1024), 
-                'TOTAL_COUNT': total_count, 
-                'THROUGHPUT_VOLUME_KB': throughput_volume / (1024), 
+                'TOTAL_VOLUME_MB': total_volume / (1024 * 1024),
+                'TOTAL_COUNT': total_count,
+                'THROUGHPUT_VOLUME_KB': throughput_volume / (1024),
                 'THROUGHPUT_COUNT': throughput_count}
         else:
             return empty_throughput
-    
+
     def get_volume(self):
         response = dict()
         config = self.get_conf()
@@ -360,7 +360,7 @@ class EventgenServerAPI:
         response['perDayVolume'] = self.total_volume
         response['volume_distribution'] = volume_distribution
         return response
-    
+
     def set_volume(self, target_volume):
         conf_dict = self.get_conf()
         if self.get_volume()['perDayVolume'] != 0:
@@ -394,7 +394,7 @@ class EventgenServerAPI:
             self.eventgen.eventgen_core_object.start(join_after_start=False)
             response['message'] = "Eventgen has successfully started."
         return response
-    
+
     def stop(self, force_stop=False):
         response = {}
         if self.eventgen.eventgen_core_object.check_running():
@@ -443,7 +443,7 @@ class EventgenServerAPI:
 
     def set_bundle(self, url):
         if not url:
-            return 
+            return
 
         bundle_dir = self.unarchive_bundle(self.download_bundle(url))
 
@@ -508,7 +508,7 @@ class EventgenServerAPI:
             raise Exception(msg)
         self.logger.info("Unarchived bundle to the path {}".format(path))
         return output
-    
+
     def clean_bundle_conf(self):
         conf_dict = self.get_conf()
 
@@ -521,7 +521,7 @@ class EventgenServerAPI:
             if stanza != ".*":
                 if 'sampleDir' in kv_pair:
                     del kv_pair['sampleDir']
-                
+
             for key, value in kv_pair.items():
                 if 'replacementType' in key and value in ['file', 'mvfile', 'seqfile']:
                     token_num = key[key.find('.')+1:key.rfind('.')]
@@ -532,7 +532,7 @@ class EventgenServerAPI:
 
         conf_dict['.*']['sampleDir'] = SAMPLE_DIR_PATH
         self.set_conf(conf_dict)
-    
+
     def setup_http(self, data):
         if data.get("servers"):
             conf_dict = self.get_conf()
@@ -543,9 +543,9 @@ class EventgenServerAPI:
                     del kv_pair['outputMode']
                 if 'httpeventServers' in kv_pair:
                     del kv_pair['httpeventServers']
-            conf_dict['global']['threading'] = 'process'
+            conf_dict['global']['threading'] = 'thread'
             conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
-            conf_dict['global']['outputMode'] = 'httpevent'
+            conf_dict['global']['outputMode'] = data.get("outputMode") if data.get("outputMode") else 'httpevent'
             conf_dict['global']['httpeventServers'] = {"servers": data.get("servers")}
             self.set_conf(conf_dict)
         else:
@@ -604,7 +604,7 @@ class EventgenServerAPI:
                     counter += 1
                 except socket.gaierror:
                     break
-        
+
             conf_dict = self.get_conf()
             if 'global' not in conf_dict:
                 conf_dict['global'] = {}
@@ -613,8 +613,8 @@ class EventgenServerAPI:
                     del kv_pair['outputMode']
                 if 'httpeventServers' in kv_pair:
                     del kv_pair['httpeventServers']
-            conf_dict['global']['threading'] = 'process'
+            conf_dict['global']['threading'] = 'thread'
             conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
-            conf_dict['global']['outputMode'] = 'httpevent'
+            conf_dict['global']['outputMode'] = data.get("outputMode") if data.get("outputMode") else 'httpevent'
             conf_dict['global']['httpeventServers'] = {"servers": self.discovered_servers}
             self.set_conf(conf_dict)

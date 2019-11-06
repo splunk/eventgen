@@ -17,20 +17,20 @@ class EventgenControllerAPI:
         self.interval = 0.001
 
         self.server_responses = {}
-    
+
     def get_blueprint(self):
         return self.bp
-    
+
     def __create_blueprint(self):
         bp = Blueprint('api', __name__)
-        
+
         def publish_message(job, request_method, body=None, target="all"):
             message_uuid = str(uuid.uuid4())
             formatted_message = json.dumps({'job': job, 'target': target, 'body': body, 'request_method': request_method, 'message_uuid': message_uuid})
             self.redis_connector.message_connection.publish(self.redis_connector.servers_channel, formatted_message)
             self.logger.info("Published {}".format(formatted_message))
             return message_uuid
-        
+
         def gather_response(target_job, message_uuid, response_number_target=0):
             if not response_number_target:
                 response_number_target = int(self.redis_connector.message_connection.pubsub_numsub(self.redis_connector.servers_channel)[0][1])
@@ -55,6 +55,8 @@ class EventgenControllerAPI:
                             if response_message_uuid not in self.server_responses:
                                 self.server_responses[response_message_uuid] = {}
                             self.server_responses[response_message_uuid][server_response['host']] = server_response['response']
+            if target_job == 'status':
+                self.server_responses[message_uuid] = self.calculate_throughput(data=self.server_responses[message_uuid])
             return self.server_responses.get(message_uuid, {})
 
         @bp.route('/index', methods=['GET'])
@@ -65,7 +67,7 @@ Connected Servers: {1}
 You are running Eventgen Controller.\n'''
             host = self.host
             return home_page.format(host, self.redis_connector.get_registered_servers())
-        
+
         @bp.route('/status', methods=['GET'], defaults={'target': 'all'})
         @bp.route('/status/<string:target>', methods=['GET'])
         def http_status(target):
@@ -96,7 +98,7 @@ You are running Eventgen Controller.\n'''
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/setup', methods=['POST'], defaults={'target': 'all'})
         @bp.route('/setup/<string:target>', methods=['POST'])
         def http_setup(target):
@@ -106,7 +108,7 @@ You are running Eventgen Controller.\n'''
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/volume', methods=['GET', 'POST'], defaults={'target': 'all'})
         @bp.route('/volume/<string:target>', methods=['GET', 'POST'])
         def http_volume(target):
@@ -117,7 +119,7 @@ You are running Eventgen Controller.\n'''
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/start', methods=['POST'], defaults={'target': 'all'})
         @bp.route('/start/<string:target>', methods=['POST'])
         def http_start(target):
@@ -137,7 +139,7 @@ You are running Eventgen Controller.\n'''
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/restart', methods=['POST'], defaults={'target': 'all'})
         @bp.route('/restart/<string:target>', methods=['POST'])
         def http_restart(target):
@@ -147,7 +149,7 @@ You are running Eventgen Controller.\n'''
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         @bp.route('/reset', methods=['POST'], defaults={'target': 'all'})
         @bp.route('/reset/<string:target>', methods=['POST'])
         def http_reset(target):
@@ -176,8 +178,21 @@ You are running Eventgen Controller.\n'''
             except Exception as e:
                 self.logger.error(e)
                 return Response(INTERNAL_ERROR_RESPONSE, mimetype='application/json', status=500)
-        
+
         return bp
+
+    def calculate_throughput(self, data):
+        throughput_summary = {'TOTAL_VOLUME_MB': 0, 'TOTAL_COUNT': 0, 'THROUGHPUT_VOLUME_KB': 0, 'THROUGHPUT_COUNT': 0}
+        for server_name, server_status in data.items():
+            if server_name != 'time' and 'THROUGHPUT_STATUS' in server_status:
+                server_throughput = server_status['THROUGHPUT_STATUS']
+                throughput_summary['TOTAL_VOLUME_MB'] += server_throughput['TOTAL_VOLUME_MB']
+                throughput_summary['TOTAL_COUNT'] += server_throughput['TOTAL_COUNT']
+                throughput_summary['THROUGHPUT_VOLUME_KB'] += server_throughput['THROUGHPUT_VOLUME_KB']
+                throughput_summary['THROUGHPUT_COUNT'] += server_throughput['THROUGHPUT_COUNT']
+        data['THROUGHTPUT_SUMMARY'] = throughput_summary
+        self.logger.debug("throughput summary: {}".format(throughput_summary))
+        return data
 
     def __make_error_response(self, status, message):
         return Response(json.dumps({'message': message}), status=status)
