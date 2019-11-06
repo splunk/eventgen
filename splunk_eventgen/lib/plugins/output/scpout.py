@@ -33,11 +33,12 @@ class SCPOutputPlugin(OutputPlugin):
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-        self.scpHttpPayloadMax = 100000 # Documentation recommends 20KB to 200KB. Going with 100KB.
+        self.scpHttpPayloadMax = 150000 # Documentation recommends 20KB to 200KB. Going with 150KB.
         self.scpEndPoint = getattr(self._sample, "scpEndPoint", None)
         self.scpAccessToken = getattr(self._sample, "scpAccessToken", None)
         self.scpClientId = getattr(self._sample, 'scpClientId', '')
         self.scpClientSecret = getattr(self._sample, 'scpClientSecret', '')
+        self.scpRetryNum = int(getattr(self._sample, 'scpRetryNum', 0)) # By default, retry num is 0
 
         if not self.scpEndPoint:
             raise NoSCPEndPoint("Please specify your REST endpoint for the SCP tenant")
@@ -56,6 +57,7 @@ class SCPOutputPlugin(OutputPlugin):
             "Content-Type": "application/json"
         }
 
+        self.accessTokenExpired = False
         self.tokenRenewEndPoint = "https://auth.playground.scp.splunk.com/token"
         self.tokenRenewBody = {
             "client_id": self.scpClientId,
@@ -75,36 +77,45 @@ class SCPOutputPlugin(OutputPlugin):
         self.active_sessions = []
 
     def flush(self, events):
-        self._sendHTTPEvents(events)
+        for i in range(self.scpRetryNum + 1):
+            logger.debug(f"Sending data to the scp endpoint. Num:{i}")
+            self._sendHTTPEvents(events)
 
-        accessTokenExpired = False
-
-        if self.config.httpeventWaitResponse:
-            for session in self.active_sessions:
-                response = session.result()
-                if response.status_code == 401 and "Invalid or Expired Bearer Token" in response.text:
-                    logger.error("Token is invalid or expired")
-                    accessTokenExpired = True
-                    break
-                print(response.status_code)
-                print(response.text)
-            if accessTokenExpired and self.scpRenewToken:
-                self.renewAccessToken()
+            if not self.checkResults():
+                if self.accessTokenExpired and self.scpRenewToken:
+                    self.renewAccessToken()
+                self.active_sessions = []
+            else:
+                break
+                
+    def checkResults(self):
+        for session in self.active_sessions:
+            response = session.result()
+            if response.status_code == 401 and "Invalid or Expired Bearer Token" in response.text:
+                logger.error("scpAccessToken is invalid or expired")
+                self.accessTokenExpired = True
+                return False
+            elif response.status_code != 200:
+                logger.error(f"Data transmisison failed with {response.status_code} and {response.text}")
+                return False
+        logger.debug(f"Data transmission successful")
+        return True
     
     def renewAccessToken(self):
         res = requests.post(self.tokenRenewEndPoint, data=self.tokenRenewBody, timeout=5)
         if res.status_code == 200:
             logger.info("Renewal of the access token succesful")
             self.scpAccessToken = res.json()["access_token"]
-            print(dir(res))
-
+            self.renewAccessToken = False
+        else:
+            logger.error("Renewal of the access token failed")
 
     def _sendHTTPEvents(self, events):
         currentPayloadSize = 0
         currentPayload = []
         try:
             for event in events:
-                # Reformat the event into scp endpoint event
+                # Reformat the event to fit the scp request spec
                 # TODO: Move this logic to generator
                 event["body"] = event.pop("_raw")
                 event["timestamp"] = int(event.pop("_time") * 1000)
