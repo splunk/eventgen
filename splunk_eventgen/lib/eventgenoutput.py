@@ -99,4 +99,3 @@ class Output(object):
                     tmp = None
                 outputer.run()
             q = None
-            
