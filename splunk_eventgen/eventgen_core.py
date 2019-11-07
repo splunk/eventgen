@@ -170,15 +170,14 @@ class EventGenerator(object):
             self.outputQueue = self.manager.Queue(maxsize=500)
         else:
             self.outputQueue = Queue(maxsize=500)
-        if self.config.useOutputQueue:
-            num_threads = threadcount
-            for i in range(num_threads):
-                worker = Thread(target=self._worker_do_work, args=(
-                    self.outputQueue,
-                    self.loggingQueue,
-                ), name="OutputThread{0}".format(i))
-                worker.setDaemon(True)
-                worker.start()
+        num_threads = threadcount
+        for i in range(num_threads):
+            worker = Thread(target=self._worker_do_work, args=(
+                self.outputQueue,
+                self.loggingQueue,
+            ), name="OutputThread{0}".format(i))
+            worker.setDaemon(True)
+            worker.start()
 
     def _create_generator_pool(self, workercount=20):
         '''
