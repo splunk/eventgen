@@ -349,7 +349,7 @@ class Token(object):
                 except:
                     logger.error("Could not parse json for '%s' in sample '%s'" % (listMatch.group(1), s.name))
                     return old
-                return random.SystemRandom().choice(value)
+                return random.choice(value)
 
             else:
                 logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" %
