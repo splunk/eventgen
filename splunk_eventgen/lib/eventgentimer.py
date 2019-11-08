@@ -176,6 +176,7 @@ class Timer(object):
                             logger.info(
                                 "There is no data to be generated in worker {0} because the count is {1}.".format(
                                     self.sample.config.generatorWorkers, count))
+                            self.executions += 1
                         else:
                             # Spawn workers at the beginning of job rather than wait for next interval
                             logger.info("Starting '%d' generatorWorkers for sample '%s'" %
