@@ -24,8 +24,7 @@ class EventgenCoreObject:
             self.logger.info("Configured Eventgen from {}".format(CUSTOM_CONFIG_PATH))
 
     def refresh_eventgen_core_object(self):
-        self.eventgen_core_object.kill_processes()
-        self.eventgen_core_object = eventgen_core.EventGenerator(self._create_args())
+        self.eventgen_core_object.stop(force_stop=True)
         self.configured = False
         self.configfile = None
         self.check_and_configure_eventgen()
@@ -37,6 +36,7 @@ class EventgenCoreObject:
         args.version = False
         args.backfill = None
         args.count = None
+        args.end = None
         args.devnull = False
         args.disableOutputQueue = False
         args.generators = None

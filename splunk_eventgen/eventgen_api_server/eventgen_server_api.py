@@ -164,12 +164,7 @@ class EventgenServerAPI:
         @bp.route('/stop', methods=['POST'])
         def http_post_stop():
             try:
-                force_stop = False
-                try:
-                    force_stop = True
-                except:
-                    force_stop = False
-                response = self.stop(force_stop = force_stop)
+                response = self.stop(force_stop=True)
                 self.eventgen.refresh_eventgen_core_object()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:

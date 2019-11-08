@@ -108,6 +108,7 @@ class Timer(object):
             # referenced in the config object, while, self.stopping will only stop this one.
             if self.config.stopping or self.stopping:
                 end = True
+                continue
             count = self.rater.rate()
             # First run of the generator, see if we have any backfill work to do.
             if self.countdown <= 0:
