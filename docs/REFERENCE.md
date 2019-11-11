@@ -140,17 +140,17 @@ scpAccessToken = <token>
     * Should be a scp access token. Do not include "Bearer". 
 
 scpClientId = <id>
-    * optional
+    * Optional
     * SCP client id that is used to renew the access token if it expires during the data generation
     * If not supplied, will not renew the access token and data transmission might fail
 
 scpClientSecret = <secret>
-    * optional
+    * Optional
     * SCP client secret that is used to renew the access token if it expires during the data generation
     * If not supplied, will not renew the access token and data transmission might fail
 
 scpRetryNum = <int>
-    * optional and defaults to 0
+    * Optional and defaults to 0
     * Retry a failing data transmission batch
 
 syslogDestinationHost = <host>
