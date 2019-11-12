@@ -176,7 +176,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
                 try:
                     self._transmitEvents(stringpayload)
                     totalbytessent += len(stringpayload)
-                    currentreadsize = 0
+                    currentreadsize = targetlinesize
                     stringpayload = targetline
                 except Exception as e:
                     logger.exception(str(e))
