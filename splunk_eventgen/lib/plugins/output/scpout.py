@@ -33,7 +33,7 @@ class SCPOutputPlugin(OutputPlugin):
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-        self.scpHttpPayloadMax = 150000 # Documentation recommends 20KB to 200KB. Going with 159KB.
+        self.scpHttpPayloadMax = 150000 # Documentation recommends 20KB to 200KB. Going with 150KB.
         self.scpEndPoint = getattr(self._sample, "scpEndPoint", None)
         self.scpAccessToken = getattr(self._sample, "scpAccessToken", None)
         self.scpClientId = getattr(self._sample, 'scpClientId', '')
