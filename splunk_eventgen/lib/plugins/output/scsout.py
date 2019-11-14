@@ -17,51 +17,51 @@ try:
 except:
     import json
 
-class NoSCPEndPoint(Exception):
+class NoSCSEndPoint(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
-class NoSCPAccessToken(Exception):
+class NoSCSAccessToken(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
-class SCPOutputPlugin(OutputPlugin):
+class SCSOutputPlugin(OutputPlugin):
     useOutputQueue = False
-    name = 'scpout'
+    name = 'scsout'
     MAXQUEUELENGTH = 1000
 
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-        self.scpHttpPayloadMax = 150000 # Documentation recommends 20KB to 200KB. Going with 150KB.
-        self.scpEndPoint = getattr(self._sample, "scpEndPoint", None)
-        self.scpAccessToken = getattr(self._sample, "scpAccessToken", None)
-        self.scpClientId = getattr(self._sample, 'scpClientId', '')
-        self.scpClientSecret = getattr(self._sample, 'scpClientSecret', '')
-        self.scpRetryNum = int(getattr(self._sample, 'scpRetryNum', 0)) # By default, retry num is 0
+        self.scsHttpPayloadMax = 150000 # Documentation recommends 20KB to 200KB. Going with 150KB.
+        self.scsEndPoint = getattr(self._sample, "scsEndPoint", None)
+        self.scsAccessToken = getattr(self._sample, "scsAccessToken", None)
+        self.scsClientId = getattr(self._sample, 'scsClientId', '')
+        self.scsClientSecret = getattr(self._sample, 'scsClientSecret', '')
+        self.scsRetryNum = int(getattr(self._sample, 'scsRetryNum', 0)) # By default, retry num is 0
 
-        if not self.scpEndPoint:
-            raise NoSCPEndPoint("Please specify your REST endpoint for the SCP tenant")
+        if not self.scsEndPoint:
+            raise NoSCSEndPoint("Please specify your REST endpoint for the SCS tenant")
 
-        if not self.scpAccessToken:
-            raise NoSCPAccessToken("Please specify your REST endpoint access token for the SCP tenant")
+        if not self.scsAccessToken:
+            raise NoSCSAccessToken("Please specify your REST endpoint access token for the SCS tenant")
 
-        if self.scpClientId and self.scpClientSecret:
-            logger.info("Both scpClientId and scpClientSecret are supplied. We will renew the expired token using these credentials.")
-            self.scpRenewToken = True
+        if self.scsClientId and self.scsClientSecret:
+            logger.info("Both scsClientId and scsClientSecret are supplied. We will renew the expired token using these credentials.")
+            self.scsRenewToken = True
         else:
-            self.scpRenewToken = False
+            self.scsRenewToken = False
 
         self.header = {
-            "Authorization": f"Bearer {self.scpAccessToken}",
+            "Authorization": f"Bearer {self.scsAccessToken}",
             "Content-Type": "application/json"
         }
 
         self.accessTokenExpired = False
         self.tokenRenewEndPoint = "https://auth.scp.splunk.com/token"
         self.tokenRenewBody = {
-            "client_id": self.scpClientId,
-            "client_secret": self.scpClientSecret,
+            "client_id": self.scsClientId,
+            "client_secret": self.scsClientSecret,
             "grant_type": "client_credentials"
         }
 
@@ -77,12 +77,12 @@ class SCPOutputPlugin(OutputPlugin):
         self.active_sessions = []
 
     def flush(self, events):
-        for i in range(self.scpRetryNum + 1):
-            logger.debug(f"Sending data to the scp endpoint. Num:{i}")
+        for i in range(self.scsRetryNum + 1):
+            logger.debug(f"Sending data to the scs endpoint. Num:{i}")
             self._sendHTTPEvents(events)
 
             if not self.checkResults():
-                if self.accessTokenExpired and self.scpRenewToken:
+                if self.accessTokenExpired and self.scsRenewToken:
                     self.renewAccessToken()
                 self.active_sessions = []
             else:
@@ -92,7 +92,7 @@ class SCPOutputPlugin(OutputPlugin):
         for session in self.active_sessions:
             response = session.result()
             if response.status_code == 401 and "Invalid or Expired Bearer Token" in response.text:
-                logger.error("scpAccessToken is invalid or expired")
+                logger.error("scsAccessToken is invalid or expired")
                 self.accessTokenExpired = True
                 return False
             elif response.status_code != 200:
@@ -105,8 +105,8 @@ class SCPOutputPlugin(OutputPlugin):
         response = requests.post(self.tokenRenewEndPoint, data=self.tokenRenewBody, timeout=5)
         if response.status_code == 200:
             logger.info("Renewal of the access token succesful")
-            self.scpAccessToken = response.json()["access_token"]
-            setattr(self._sample, "scpAccessToken", self.scpAccessToken)
+            self.scsAccessToken = response.json()["access_token"]
+            setattr(self._sample, "scsAccessToken", self.scsAccessToken)
             self.accessTokenExpired = False
         else:
             logger.error("Renewal of the access token failed")
@@ -116,7 +116,7 @@ class SCPOutputPlugin(OutputPlugin):
         currentPayload = []
         try:
             for event in events:
-                # Reformat the event to fit the scp request spec
+                # Reformat the event to fit the scs request spec
                 # TODO: Move this logic to generator
                 try:
                     event["body"] = event.pop("_raw")
@@ -132,17 +132,17 @@ class SCPOutputPlugin(OutputPlugin):
                 targetlinesize = len(targetline)
 
                 # Continue building a current payload if the payload is less than the max size
-                if (currentPayloadSize + targetlinesize) < self.scpHttpPayloadMax:
+                if (currentPayloadSize + targetlinesize) < self.scsHttpPayloadMax:
                     currentPayload.append(event)
                     currentPayloadSize += targetlinesize
                 else:
-                    self.active_sessions.append(self.session.post(url=self.scpEndPoint, data=json.dumps(currentPayload), headers=self.header, verify=False))
+                    self.active_sessions.append(self.session.post(url=self.scsEndPoint, data=json.dumps(currentPayload), headers=self.header, verify=False))
                     currentPayloadSize = targetlinesize
                     currentPayload = [event]
             
             # Final flush of the leftover events
             if currentPayloadSize > 0:
-                self.active_sessions.append(self.session.post(url=self.scpEndPoint, data=json.dumps(currentPayload), headers=self.header, verify=False))
+                self.active_sessions.append(self.session.post(url=self.scsEndPoint, data=json.dumps(currentPayload), headers=self.header, verify=False))
 
         except Exception as e:
             logger.exception(str(e))
@@ -151,4 +151,4 @@ class SCPOutputPlugin(OutputPlugin):
 
 def load():
     """Returns an instance of the plugin"""
-    return SCPOutputPlugin
+    return SCSOutputPlugin
