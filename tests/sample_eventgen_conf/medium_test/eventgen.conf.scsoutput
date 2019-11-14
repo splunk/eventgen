@@ -1,0 +1,14 @@
+[windbag]
+generator = windbag
+earliest = -3s
+latest = now
+interval = 3
+count = 5
+end = 1
+outputMode = scsout
+host = eventgen_scs_plugin
+source = scs_plugin_test
+sourcetype = scs_plugin_test_type
+
+scsEndPoint = http://127.0.0.1
+scsAccessToken = testToken

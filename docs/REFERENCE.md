@@ -121,9 +121,9 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = scpout | modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent
+outputMode = scsout | modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent
     * Specifies how to output log data. Modinput is default.
-    * If setting scpout, should set scpEndPoint and scpAccessToken. scpClientId, scpClientSecret, and scpRetryNum are optional.
+    * If setting scsout, should set scsEndPoint and scsAccessToken. scsClientId, scsClientSecret, and scsRetryNum are optional.
     * If setting spool, should set spoolDir
     * If setting file, should set fileName
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod,
@@ -133,23 +133,23 @@ outputMode = scpout | modinput | s2s | file | splunkstream | stdout | devnull | 
     * If setting httpevent, should set httpeventServers
     * If setting metric_httpevent, should set httpeventServers and make sure your index is a splunk metric index
 
-scpEndPoint = <host>
-    * Should be a full url to the scp endpoint
+scsEndPoint = <host>
+    * Should be a full url to the scs endpoint
 
-scpAccessToken = <token>
-    * Should be a scp access token. Do not include "Bearer". 
+scsAccessToken = <token>
+    * Should be a scs access token. Do not include "Bearer". 
 
-scpClientId = <id>
+scsClientId = <id>
     * Optional
-    * SCP client id that is used to renew the access token if it expires during the data generation
+    * SCS client id that is used to renew the access token if it expires during the data generation
     * If not supplied, will not renew the access token and data transmission might fail
 
-scpClientSecret = <secret>
+scsClientSecret = <secret>
     * Optional
-    * SCP client secret that is used to renew the access token if it expires during the data generation
+    * SCS client secret that is used to renew the access token if it expires during the data generation
     * If not supplied, will not renew the access token and data transmission might fail
 
-scpRetryNum = <int>
+scsRetryNum = <int>
     * Optional and defaults to 0
     * Retry a failing data transmission batch
 
