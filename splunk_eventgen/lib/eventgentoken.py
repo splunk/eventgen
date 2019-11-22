@@ -17,6 +17,7 @@ from splunk_eventgen.lib.logging_config import logger
 
 class Token(object):
     """Contains data and methods for replacing a token in a given sample"""
+    global_count = None
     token = None
     replacementType = None
     replacement = None
@@ -349,7 +350,7 @@ class Token(object):
                 except:
                     logger.error("Could not parse json for '%s' in sample '%s'" % (listMatch.group(1), s.name))
                     return old
-                return random.SystemRandom().choice(value)
+                return random.choice(value)
 
             else:
                 logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" %
@@ -436,9 +437,45 @@ class Token(object):
                 else:
                     return replacement
         elif self.replacementType == 'integerid':
+            """
             temp = self.replacement
             self.replacement = str(int(self.replacement) + 1)
             return temp
+            """
+            if self.global_count is None:
+                raise Exception("global count is null")
+            return str(self.global_count)
+
+        elif self.replacementType == 'compression_test':
+            marker = "every1 "
+            if (self.global_count % 10) == 0:
+                marker += 'every10 '
+            if (self.global_count % 100) == 0:
+                marker += 'every100 '
+            if (self.global_count % 1000) == 0:
+                marker += 'every1K '
+            if (self.global_count % 10000) == 0:
+                marker += 'every10K '
+            if (self.global_count % 100000) == 0:
+                marker += 'every100K '
+            if (self.global_count % 1000000) == 0:
+                marker += 'every1M '
+            if (self.global_count % 10000000) == 0:
+                marker += 'every10M '
+            if (self.global_count % 100000000) == 0:
+                marker += 'every100M '
+            if (self.global_count % 1000000000) == 0:
+                marker += 'every1B '
+            if (self.global_count % 10000000000) == 0:
+                marker += 'every10B '
+
+            return marker
+
+        elif self.replacementType == "custom_kw":
+            if self.global_count <= int(self.replacementCount):
+                return self.replacement
+            else:
+                return ''
 
         else:
             logger.error("Unknown replacementType '%s'; will not replace" % self.replacementType)

@@ -34,7 +34,8 @@ class EventgenServerAPI:
         self.host = host
 
         self.interval = 0.01
-        if mode != 'standalone':
+        self.mode = mode
+        if self.mode != 'standalone':
             self.redis_connector = redis_connector
             self._channel_listener()
             self.logger.info("Initialized the channel listener. Cluster mode ready.")
@@ -163,12 +164,7 @@ class EventgenServerAPI:
         @bp.route('/stop', methods=['POST'])
         def http_post_stop():
             try:
-                force_stop = False
-                try:
-                    force_stop = True
-                except:
-                    force_stop = False
-                response = self.stop(force_stop = force_stop)
+                response = self.stop(force_stop=True)
                 self.eventgen.refresh_eventgen_core_object()
                 return Response(json.dumps(response), mimetype='application/json', status=200)
             except Exception as e:
@@ -433,13 +429,16 @@ class EventgenServerAPI:
 
     def healthcheck(self):
         response = {}
-        try:
-            self.redis_connector.pubsub.check_health()
-            response['message'] = "Connections are healthy"
-        except Exception as e:
-            self.logger.error("Connection to Redis failed: {}, re-registering".format(str(e)))
-            self.redis_connector.register_myself(hostname=self.host, role="server")
-            response['message'] = "Connections unhealthy - re-established connections"
+        if self.mode != 'standalone':
+            try:
+                self.redis_connector.pubsub.check_health()
+                response['message'] = "Connections are healthy"
+            except Exception as e:
+                self.logger.error("Connection to Redis failed: {}, re-registering".format(str(e)))
+                self.redis_connector.register_myself(hostname=self.host, role="server")
+                response['message'] = "Connections unhealthy - re-established connections"
+        else:
+            response['message'] = "Standalone {} is healthy".format(self.host)
         return response
 
     def set_bundle(self, url):
@@ -546,7 +545,7 @@ class EventgenServerAPI:
                     del kv_pair['httpeventServers']
             conf_dict['global']['threading'] = 'process'
             conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
-            conf_dict['global']['outputMode'] = 'httpevent'
+            conf_dict['global']['outputMode'] = data.get("outputMode") if data.get("outputMode") else 'httpevent' 
             conf_dict['global']['httpeventServers'] = {"servers": data.get("servers")}
             self.set_conf(conf_dict)
         else:
@@ -616,6 +615,6 @@ class EventgenServerAPI:
                     del kv_pair['httpeventServers']
             conf_dict['global']['threading'] = 'process'
             conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
-            conf_dict['global']['outputMode'] = 'httpevent'
+            conf_dict['global']['outputMode'] = data.get("outputMode") if data.get("outputMode") else 'httpevent' 
             conf_dict['global']['httpeventServers'] = {"servers": self.discovered_servers}
             self.set_conf(conf_dict)

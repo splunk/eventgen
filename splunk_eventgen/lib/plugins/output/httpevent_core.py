@@ -176,7 +176,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
                 try:
                     self._transmitEvents(stringpayload)
                     totalbytessent += len(stringpayload)
-                    currentreadsize = 0
+                    currentreadsize = targetlinesize
                     stringpayload = targetline
                 except Exception as e:
                     logger.exception(str(e))
@@ -207,7 +207,6 @@ class HTTPCoreOutputPlugin(OutputPlugin):
             headers['content-type'] = 'application/json'
             try:
                 payloadsize = len(payloadstring)
-                # response = requests.post(url, data=payloadstring, headers=headers, verify=False)
                 self.active_sessions.append(
                     self.session.post(url=url, data=payloadstring, headers=headers, verify=False))
             except Exception as e:

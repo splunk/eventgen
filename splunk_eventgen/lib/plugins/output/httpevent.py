@@ -77,6 +77,7 @@ class HTTPEventOutputPlugin(HTTPCoreOutputPlugin):
                     payload.append(payloadFragment)
                 logger.debug("Finished processing events, sending all to splunk")
                 self._sendHTTPEvents(payload)
+                payload = []
                 if self.config.httpeventWaitResponse:
                     for session in self.active_sessions:
                         response = session.result()

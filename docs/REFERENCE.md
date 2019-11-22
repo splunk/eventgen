@@ -121,7 +121,7 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent
+outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent | scsout
     * Specifies how to output log data. Modinput is default.
     * If setting spool, should set spoolDir
     * If setting file, should set fileName
@@ -131,6 +131,23 @@ outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | h
     * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort
     * If setting httpevent, should set httpeventServers
     * If setting metric_httpevent, should set httpeventServers and make sure your index is a splunk metric index
+    * If setting scsout, please set 'generator = scsgen' as well and take a look at all scs-related parameters below
+
+scsHost = <host:port> | <api-url>
+    * Defaults to api.scp.splunk.com
+
+scsAccessToken = access token for Splunk Cloud Services
+
+scsIngestEndPoint = events | metrics
+
+scsScheme = https | http
+    * Defaults to https
+
+scsTenant = <valid tenant name>
+
+scsInsecure = true | false
+    * Defaults to false
+    * Used to disable security certificate check
 
 syslogDestinationHost = <host>
     * Defaults to 127.0.0.1
@@ -489,7 +506,7 @@ token.<n>.token = <regular expression>
       will be performed on group 1.
     * Defaults to None.
 
-token.<n>.replacementType = static | timestamp | replaytimestamp | random | rated | file | mvfile | integerid
+token.<n>.replacementType = static | timestamp | replaytimestamp | random | rated | file | mvfile | integerid | custom_kw | compression_test
     * 'n' is a number starting at 0, and increasing by 1.
       Stop looking at the filter when 'n' breaks.
     * For static, the token will be replaced with the value specified
@@ -521,6 +538,8 @@ token.<n>.replacementType = static | timestamp | replaytimestamp | random | rate
       Multiple files can reference the same source file and receive different
       columns from the same random line.
     * For integerid, will use an incrementing integer as the replacement.
+    * For custom_kw, this serves as a way to only add cardinality to a part of your events. Specify the keyword(s) you want to add in token replacement and specify how many of them in token reaplcementCount
+    * For compression_test, each event will be labeled by their order. E.g. the 1st event will be labeled "every1", the 10th event will be labeled "every1 every10, the 100th event: "every1 every10 every100", ...,      the 10000000000th event: "every1 every10 every100 every1K every10K every100K every1M every10M every100M every1B every10B" Set token replacement as 0 so it'll be counted from 0.
     * Defaults to None.
 
 token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid | ipv4 | ipv6 | mac | integer[<start>:<end>] | float[<start>:<end>] | string(<i>) | hex(<i>) | list["list", "of", "values"] | <replacement file name> | <replacement file name>:<column number> | <integer>
@@ -565,6 +584,9 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid 
       meaning the first column is column 1, not 0.
     * <integer> used as the seed for integerid.
     * Defaults to None.
+
+token.<n>.replacementCount = <integer>
+    * Now it's only used for custom_kw. E.g. replacementCount = 1000 means Eventgen will insert the keyword(s) in first 1000 event generated.
 
 ################################
 ## HOST REPLACEMENT SETTINGS  ##

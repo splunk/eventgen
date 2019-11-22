@@ -17,6 +17,7 @@ class HostFilter(logging.Filter):
         record.host = self.host
         return True
 
+
 class SyslogOutOutputPlugin(OutputPlugin):
     useOutputQueue = True
     name = 'syslogout'

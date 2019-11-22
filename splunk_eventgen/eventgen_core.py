@@ -8,7 +8,7 @@ import sys
 import time
 from queue import Empty, Queue
 import signal
-from threading import Thread
+from threading import Thread, Event
 import multiprocessing
 
 from splunk_eventgen.lib.eventgenconfig import Config
@@ -32,13 +32,14 @@ class EventGenerator(object):
         localized .conf entries.
         :param args: __main__ parse_args() object.
         '''
-        self.stopping = False
+        self.stop_request = Event()
         self.force_stop = False
         self.started = False
         self.completed = False
         self.config = None
         self.args = args
-
+        self.workerPool = []
+        self.manager = None
         self._setup_loggers(args=args)
         # attach to the logging queue
         self.logger.info("Logging Setup Complete.")
@@ -94,9 +95,6 @@ class EventGenerator(object):
         else:
             generator_worker_count = self.config.generatorWorkers
 
-        # TODO: Probably should destroy pools better so processes are cleaned.
-        if self.args.multiprocess:
-            self.kill_processes()
         self._setup_pools(generator_worker_count)
 
     def _reload_plugins(self):
@@ -190,9 +188,12 @@ class EventGenerator(object):
                             has over 10 generators working, additional samples won't run until the first ones end.
         :return:
         '''
+
+        self.gc_dict = {s.name: multiprocessing.Value('i', 0) for s in self.config.samples if hasattr(s, 'disableGlobalCount') and s.disableGlobalCount == 'false'}
+
         if self.args.multiprocess:
             self.manager = multiprocessing.Manager()
-            if self.config.disableLoggingQueue:
+            if self.config and self.config.disableLoggingQueue:
                 self.loggingQueue = None
             else:
                 # TODO crash caused by logging Thread https://github.com/splunk/eventgen/issues/217
@@ -212,12 +213,12 @@ class EventGenerator(object):
                     self.output_counters.append(OutputCounter())
                 for i in range(worker_threads):
                     worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue,
-                                                                          self.output_counters[i]))
+                                                                          self.output_counters[i]), kwargs={'gc_dict': self.gc_dict})
                     worker.setDaemon(True)
                     worker.start()
             else:
                 for i in range(worker_threads):
-                    worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue, None))
+                    worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue, None), kwargs={'gc_dict': self.gc_dict})
                     worker.setDaemon(True)
                     worker.start()
 
@@ -233,9 +234,10 @@ class EventGenerator(object):
                     self.loggingQueue,
                     self.genconfig,
                     disable_logging
-                ))
+                ), kwargs={'gc_dict': self.gc_dict})
                 self.workerPool.append(process)
                 process.start()
+                self.logger.info("create process: {}".format(process.pid))
         else:
             pass
 
@@ -252,7 +254,7 @@ class EventGenerator(object):
             self.logger.setLevel(logging.ERROR)
 
     def _worker_do_work(self, work_queue, logging_queue):
-        while not self.stopping:
+        while not self.stop_request.isSet():
             try:
                 item = work_queue.get(timeout=10)
                 startTime = time.time()
@@ -263,14 +265,19 @@ class EventGenerator(object):
                 work_queue.task_done()
             except Empty:
                 pass
+            except EOFError as ef:
+                self.logger.exception(str(ef))
+                continue
             except Exception as e:
                 self.logger.exception(str(e))
                 raise e
 
-    def _generator_do_work(self, work_queue, logging_queue, output_counter=None):
-        while not self.stopping:
+    def _generator_do_work(self, work_queue, logging_queue, output_counter=None, **kwargs):
+        while not self.stop_request.isSet():
             try:
                 item = work_queue.get(timeout=10)
+                gc_obj = kwargs.get("gc_dict", {}).get(item._sample.name)
+                setattr(item, "gc_obj", gc_obj)
                 startTime = time.time()
                 item.run(output_counter=output_counter)
                 totalTime = time.time() - startTime
@@ -279,6 +286,9 @@ class EventGenerator(object):
                 work_queue.task_done()
             except Empty:
                 pass
+            except EOFError as ef:
+                self.logger.exception(str(ef))
+                continue
             except Exception as e:
                 if self.force_stop:
                     break
@@ -286,7 +296,7 @@ class EventGenerator(object):
                 raise e
 
     @staticmethod
-    def _proc_worker_do_work(work_queue, logging_queue, config, disable_logging):
+    def _proc_worker_do_work(work_queue, logging_queue, config, disable_logging, **kwargs):
         genconfig = config
         stopping = genconfig['stopping']
         root = logging.getLogger()
@@ -304,12 +314,16 @@ class EventGenerator(object):
             try:
                 root.info("Checking for work")
                 item = work_queue.get(timeout=10)
+                gc_obj = kwargs.get("gc_dict", {}).get(item._sample.name)
+                setattr(item, "gc_obj", gc_obj)
+                startTime = time.time()
                 item.logger = root
                 item._out.updateConfig(item.config)
                 item.run()
                 work_queue.task_done()
+                item.logger.info("Current Worker Stopping: {0}".format(stopping))
+                item.logger = None
                 stopping = genconfig['stopping']
-                item.logger.debug("Current Worker Stopping: {0}".format(stopping))
             except Empty:
                 stopping = genconfig['stopping']
             except Exception as e:
@@ -320,7 +334,7 @@ class EventGenerator(object):
             sys.exit(0)
 
     def logger_thread(self, loggingQueue):
-        while not self.stopping:
+        while not self.stop_request.isSet():
             try:
                 record = loggingQueue.get(timeout=10)
                 logger.handle(record)
@@ -414,10 +428,15 @@ class EventGenerator(object):
         return ret
 
     def start(self, join_after_start=True):
-        self.stopping = False
+        self.stop_request.clear()
         self.started = True
         self.config.stopping = False
         self.completed = False
+
+        if hasattr(self.config, "scsAccessToken"):
+            for s in self.config.samples:
+                setattr(s, "scsAccessToken", self.config.scsAccessToken)
+
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")
         for s in self.config.samples:
@@ -454,23 +473,19 @@ class EventGenerator(object):
             raise e
 
     def stop(self, force_stop=False):
-        # empty the sample queue:
-        self.config.stopping = True
-        self.stopping = True
+        if hasattr(self.config, "stopping"):
+            self.config.stopping = True
         self.force_stop = force_stop
+        # set the thread event to stop threads
+        self.stop_request.set()
 
-        self.logger.info("All timers exited, joining generation queue until it's empty.")
-        if force_stop:
-            self.logger.info("Forcibly stopping Eventgen: Deleting workerQueue.")
-            del self.workerQueue
-            self._create_generator_pool()
-        self.workerQueue.join()
         # if we're in multiprocess, make sure we don't add more generators after the timers stopped.
         if self.args.multiprocess:
             if force_stop:
                 self.kill_processes()
             else:
-                self.genconfig["stopping"] = True
+                if hasattr(self, "genconfig"):
+                    self.genconfig["stopping"] = True
                 for worker in self.workerPool:
                     count = 0
                     # We wait for a minute until terminating the worker
@@ -484,12 +499,9 @@ class EventGenerator(object):
                         time.sleep(2)
                         count += 1
 
-        self.logger.info("All generators working/exited, joining output queue until it's empty.")
-        if not self.args.multiprocess and not force_stop:
-            self.outputQueue.join()
-        self.logger.info("All items fully processed. Cleaning up internal processes.")
         self.started = False
-        self.stopping = False
+        # clear the thread event
+        self.stop_request.clear()
 
     def reload_conf(self, configfile):
         '''
@@ -534,14 +546,14 @@ class EventGenerator(object):
         return self.sampleQueue.empty() and self.sampleQueue.unfinished_tasks <= 0 and self.workerQueue.empty()
 
     def kill_processes(self):
-        try:
-            if self.args.multiprocess:
-                for worker in self.workerPool:
-                    try:
-                        os.kill(int(worker.pid), signal.SIGKILL)
-                    except:
-                        continue
-                del self.outputQueue
-                self.manager.shutdown()
-        except:
-            pass
+        self.logger.info("Kill worker processes")
+        for worker in self.workerPool:
+            try:
+                self.logger.info("Kill worker process: {}".format(worker.pid))
+                os.kill(int(worker.pid), signal.SIGKILL)
+            except Exception as e:
+                self.logger.ERROR(str(e))
+                continue
+        self.workerPool = []
+        if self.manager:
+            self.manager.shutdown()

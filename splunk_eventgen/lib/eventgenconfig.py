@@ -91,10 +91,10 @@ class Config(object):
                     'syslogDestinationHost', 'syslogDestinationPort', 'syslogAddHeader',
                     'verbosity', 'useOutputQueue', 'seed','end', 'autotimestamps', 'autotimestamp', 'httpeventWaitResponse',
                     'outputCounter', 'sequentialTimestamp', 'extendIndexes', 'disableLoggingQueue']
-    _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2}
+    _validTokenTypes = {'token': 0, 'replacementType': 1, 'replacement': 2, 'replacementCount': 3}
     _validHostTokens = {'token': 0, 'replacement': 1}
     _validReplacementTypes = [
-        'static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'seqfile', 'integerid']
+        'static', 'timestamp', 'replaytimestamp', 'random', 'rated', 'file', 'mvfile', 'seqfile', 'integerid', 'custom_kw', 'compression_test']
     validOutputModes = []
     _intSettings = ['interval', 'outputWorkers', 'generatorWorkers', 'maxIntervalsBeforeFlush', 'maxQueueLength', "fileMaxBytes"]
     _floatSettings = ['randomizeCount', 'delay', 'timeMultiple']
