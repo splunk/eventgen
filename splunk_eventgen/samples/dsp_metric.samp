@@ -1,0 +1,1 @@
+[{"name": "cpu.util","value": @@CPUUTILV@@,"unit": "percent"},{"name": "mem.util","value": @@MEMUTILV@@,"unit": "gigabytes"},{"name": "net.in","value": @@NETV@@,"unit": "bytes/second"}]

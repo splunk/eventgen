@@ -1,0 +1,24 @@
+[dsp_metric.samp]
+generator = scsgen
+outputMode = scsout
+sourcetype = aws:cloudwatch
+count = 1000
+interval = 1
+
+scsInsecure = true
+scsIngestEndPoint = metrics
+scsHost = 10.202.14.217:31000
+scsTenant = default
+scsAccessToken = 
+
+token.0.token = @@CPUUTILV@@
+token.0.replacementType = random
+token.0.replacement = float[1.00:100.00]
+
+token.1.token = @@MEMUTILV@@
+token.1.replacementType = random
+token.1.replacement = integer[2000:8000]
+
+token.2.token = @@NETV@@
+token.2.replacementType = random
+token.2.replacement = integer[5:75]
