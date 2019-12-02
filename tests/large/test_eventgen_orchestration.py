@@ -72,7 +72,7 @@ class TestEventgenOrchestration(object):
         print('creating server')
         redis_host = container["Id"][:12]
         container = cls.client.create_container(
-            image=IMAGE_NAME, command="server", environment=["REDIS_HOST={}".format(redis_host)], 
+            image=IMAGE_NAME, command="server", environment=["REDIS_HOST={}".format(redis_host)],
             host_config=host_config,
             networking_config=networking_config)
         cls.client.start(container["Id"])
@@ -212,7 +212,7 @@ class TestEventgenOrchestration(object):
         assert r.status_code == 200
         output = json.loads(r.content)
         assert output[TestEventgenOrchestration.server_id[:12]]["perDayVolume"] == 20
-    
+
     def test_controller_stop(self):
         r = requests.post("http://127.0.0.1:{}/stop".format(self.controller_eventgen_webport))
         assert r.status_code == 200
@@ -308,3 +308,27 @@ class TestEventgenOrchestration(object):
         assert r.status_code == 200
         output = json.loads(r.content)
         assert output["perDayVolume"] == 150.0
+
+    def test_server_get_throughput(self):
+        r = requests.put("http://127.0.0.1:{}/conf".format(self.server_eventgen_webport), json={"windbag": { 'count' : 1000, "end":1}, "general": {"outputCounter": True}})
+        assert r.status_code == 200
+        assert json.loads(r.content)
+        r = requests.post("http://127.0.0.1:{}/start".format(self.server_eventgen_webport), timeout=5)
+        assert r.status_code == 200
+        timeout = 60
+        while True:
+            r = requests.get("http://127.0.0.1:{}/status".format(self.server_eventgen_webport))
+            assert r.status_code == 200
+            output = json.loads(r.content)
+            assert output
+            if output['EVENTGEN_STATUS'] == 1:
+                time.sleep(5)
+                timeout -= 5
+                assert timeout >= 0
+        r = requests.get("http://127.0.0.1:{}/status".format(self.server_eventgen_webport))
+        assert r.status_code == 200
+        output = json.loads(r.content)
+        assert output
+        assert output['THROUGHTPUT_SUMMARY']['TOTAL_COUNT'] == 1000
+        assert output['THROUGHTPUT_SUMMARY']['TOTAL_VOLUME_MB'] > 0
+
