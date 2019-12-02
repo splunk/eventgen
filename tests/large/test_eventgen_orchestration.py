@@ -136,7 +136,7 @@ class TestEventgenOrchestration(object):
             current_retry += 1
             time.sleep(10)
         assert output
-    
+
     def test_controller_conf(self):
         r = requests.post("http://127.0.0.1:{}/conf".format(self.controller_eventgen_webport), json=self.test_json)
         assert r.status_code == 200
@@ -255,6 +255,32 @@ class TestEventgenOrchestration(object):
         assert output
         assert output['EVENTGEN_STATUS'] == 0
         assert output['TOTAL_VOLUME'] == 20
+        # check if eventgen status changed when it finished
+        config_json = {
+            "windbag": {
+                "end": "3",
+                "count": "0"
+            }
+        }
+        r = requests.post("http://127.0.0.1:{}/conf".format(self.server_eventgen_webport), json=config_json)
+        assert r.status_code == 200
+        assert json.loads(r.content) == config_json
+        r = requests.post("http://127.0.0.1:{}/start".format(self.server_eventgen_webport), timeout=5)
+        assert r.status_code == 200
+        timeout = 60
+        while True:
+            r = requests.get("http://127.0.0.1:{}/status".format(self.server_eventgen_webport))
+            assert r.status_code == 200
+            output = json.loads(r.content)
+            assert output
+            if output['EVENTGEN_STATUS'] == 1:
+                time.sleep(5)
+                timeout -= 5
+                if timeout < 0:
+                    break
+        assert timeout >= 0
+        assert output['EVENTGEN_STATUS'] == 2
+
 
     def test_server_get_and_set_conf(self):
         r = requests.get("http://127.0.0.1:{}/conf".format(self.server_eventgen_webport))
@@ -324,7 +350,9 @@ class TestEventgenOrchestration(object):
             if output['EVENTGEN_STATUS'] == 1:
                 time.sleep(5)
                 timeout -= 5
-                assert timeout >= 0
+                if timeout < 0:
+                    break
+        assert timeout >= 0
         r = requests.get("http://127.0.0.1:{}/status".format(self.server_eventgen_webport))
         assert r.status_code == 200
         output = json.loads(r.content)
