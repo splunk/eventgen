@@ -43,7 +43,7 @@ class EventgenCoreObject:
         args.interval = None
         args.keepoutput = False
         args.modinput = False
-        args.multiprocess = False if kargs.get("mutithread") else True
+        args.multiprocess = False if kargs.get("multithread") else True
         args.outputters = None
         args.profiler = False
         args.sample = None
