@@ -40,18 +40,42 @@ class SCSOutputPlugin(OutputPlugin):
         self.scsClientSecret = getattr(self._sample, 'scsClientSecret', '')
         self.scsRetryNum = int(getattr(self._sample, 'scsRetryNum', 0)) # By default, retry num is 0
 
+        self._setup_REST_workers()
+    
+    def _setup_REST_workers(self, session=None, workers=10):
+        # disable any "requests" warnings
+        requests.packages.urllib3.disable_warnings()
+        # Bind passed in samples to the outputter.
+        if not session:
+            session = Session()
+        self.session = FuturesSession(session=session, executor=ThreadPoolExecutor(max_workers=workers))
+        self.active_sessions = []
+
+    def flush(self, events):
         if not self.scsEndPoint:
-            raise NoSCSEndPoint("Please specify your REST endpoint for the SCS tenant")
+            if getattr(self.config, 'scsEndPoint', None):
+                self.scsEndPoint = self.config.scsEndPoint
+            else:
+                raise NoSCSEndPoint("Please specify your REST endpoint for the SCS tenant")
 
         if not self.scsAccessToken:
-            raise NoSCSAccessToken("Please specify your REST endpoint access token for the SCS tenant")
-
+            if getattr(self.config, 'scsAccessToken', None):
+                self.scsAccessToken = self.config.scsAccessToken
+            else:
+                raise NoSCSAccessToken("Please specify your REST endpoint access token for the SCS tenant")
+            
         if self.scsClientId and self.scsClientSecret:
             logger.info("Both scsClientId and scsClientSecret are supplied. We will renew the expired token using these credentials.")
             self.scsRenewToken = True
         else:
-            self.scsRenewToken = False
-
+            if getattr(self.config, 'scsClientId', None) and getattr(self.config, 'scsClientSecret', None):
+                self.scsClientId = self.config.scsClientId
+                self.scsClientSecret = self.config.scsClientSecret
+                logger.info("Both scsClientId and scsClientSecret are supplied. We will renew the expired token using these credentials.")
+                self.scsRenewToken = True
+            else:
+                self.scsRenewToken = False
+        
         self.header = {
             "Authorization": f"Bearer {self.scsAccessToken}",
             "Content-Type": "application/json"
@@ -65,18 +89,6 @@ class SCSOutputPlugin(OutputPlugin):
             "grant_type": "client_credentials"
         }
 
-        self._setup_REST_workers()
-    
-    def _setup_REST_workers(self, session=None, workers=10):
-        # disable any "requests" warnings
-        requests.packages.urllib3.disable_warnings()
-        # Bind passed in samples to the outputter.
-        if not session:
-            session = Session()
-        self.session = FuturesSession(session=session, executor=ThreadPoolExecutor(max_workers=workers))
-        self.active_sessions = []
-
-    def flush(self, events):
         for i in range(self.scsRetryNum + 1):
             logger.debug(f"Sending data to the scs endpoint. Num:{i}")
             self._sendHTTPEvents(events)
