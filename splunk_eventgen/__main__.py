@@ -76,6 +76,7 @@ def parse_args():
     service_subparser.add_argument("--redis-host", type=str, default='127.0.0.1', help="Redis Host")
     service_subparser.add_argument("--redis-port", type=str, default='6379', help="Redis Port")
     service_subparser.add_argument("--web-server-port", type=str, default='9500', help="Port you want to run a web server on")
+    service_subparser.add_argument("--multithread", action="store_true", help="Use multi-thread instead of multi-process")
     # Help subparser
     # NOTE: Keep this at the end so we can use the subparser_dict.keys() to display valid commands
     help_subparser = subparsers.add_parser('help', help="Display usage on a subcommand")
@@ -202,6 +203,8 @@ def gather_env_vars(args):
     env_vars["REDIS_HOST"] = os.environ.get("REDIS_HOST", args.redis_host)
     env_vars["REDIS_PORT"] = os.environ.get("REDIS_PORT", args.redis_port)
     env_vars["WEB_SERVER_PORT"] = os.environ.get("WEB_SERVER_PORT", args.web_server_port)
+    if "multithread" in args:
+        env_vars["multithread"] = args.multithread
     return env_vars
 
 
