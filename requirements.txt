@@ -2,6 +2,7 @@ pytest==4.6.4
 pytest-xdist
 mock
 pytest-cov
+coverage==4.5.4
 docker==3.7.3
 pyOpenSSL
 lxml==4.3.4
