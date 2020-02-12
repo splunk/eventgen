@@ -33,6 +33,10 @@ class DefaultGenerator(GeneratorPlugin):
                 with self.gc_obj.get_lock():
                     self.gc_obj.value += 1
                     global_count = self.gc_obj.value
+                    if hasattr(self._sample, "scsCardSource"):
+                        scs_card_source = int(getattr(self._sample, "scsCardSource", "0"))
+                        targetevent['source'] = "SOURCE-%d" % (global_count % scs_card_source)
+
             event = targetevent["_raw"]
             # Maintain state for every token in a given event, Hash contains keys for each file name which is
             # assigned a list of values picked from a random line in that file
@@ -48,6 +52,7 @@ class DefaultGenerator(GeneratorPlugin):
                 for token in self._sample.tokens:
                     if self.gc_obj is not None:
                         setattr(token, "global_count", global_count)
+
                     token.mvhash = mvhash
                     event = token.replace(event, et=earliest, lt=latest, s=self._sample,
                                           pivot_timestamp=pivot_timestamp)
@@ -70,9 +75,9 @@ class DefaultGenerator(GeneratorPlugin):
                 'source': targetevent['source'], 'sourcetype': targetevent['sourcetype'], '_time': time_val}
             """
             if self._sample.scsIngestEndPoint == "metrics":
-                temp_event = {'body': json.loads(event), 'sourcetype': targetevent['sourcetype']}
+                temp_event = {'body': json.loads(event), 'sourcetype': targetevent['sourcetype'], 'host': host, 'source': targetevent['source']}
             else:
-                temp_event = {'body': event}
+                temp_event = {'body': event, 'sourcetype': targetevent['sourcetype'], 'host': host, 'source': targetevent['source']}
 
             send_events.append(temp_event)
         return send_events
