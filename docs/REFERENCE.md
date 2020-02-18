@@ -129,7 +129,7 @@ outputMode = scsout | modinput | s2s | file | splunkstream | stdout | devnull | 
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod,
       splunkUser and splunkPassword if not Splunk embedded
     * If setting s2s, should set splunkHost and splunkPort
-    * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort
+    * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort. A UDP port listening on Splunk needs to be configured. https://docs.splunk.com/Documentation/Splunk/latest/Data/HowSplunkEnterprisehandlessyslogdata
     * If setting httpevent, should set httpeventServers
     * If setting metric_httpevent, should set httpeventServers and make sure your index is a splunk metric index
 

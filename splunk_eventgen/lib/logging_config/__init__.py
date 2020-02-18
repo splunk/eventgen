@@ -2,7 +2,7 @@ import os
 import logging.config
 
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'logs')
-DEFAULT_LOGGING_LEVEL = "DEBUG"
+DEFAULT_LOGGING_LEVEL = "ERROR"
 
 LOGGING_CONFIG = {
     'version': 1,
@@ -76,7 +76,7 @@ LOGGING_CONFIG = {
 
     'loggers': {
         'eventgen': {
-            'handlers': ['console', 'eventgen_main'],
+            'handlers': ['eventgen_main'],
             'level': DEFAULT_LOGGING_LEVEL,
             'propagate': False
         },
