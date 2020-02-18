@@ -74,7 +74,7 @@ class SCSOutputPlugin(OutputPlugin):
                 continue
 
             finally:
-                logger.debug(f"Successfully sent out {len(events)} {self.scsIngestEndPoint} of {self._sample.name}")
+                logger.debug(f"Successfully sent out {len(events)} {self.scs_ingest_end_point} of {self._sample.name}")
                 break
 
     def flush(self, events):
