@@ -564,8 +564,7 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid 
       and <end> is a number greater than 0 and greater than or equal to <start>.
       If rated, will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For float[<start>:<end>], the token will be replaced with a random float between
-      start and end values where <start> is a number greater than 0
-      and <end> is a number greater than 0 and greater than or equal to <start>.
+      start and end values where <end> is a number greater than or equal to <start>.
       For floating point numbers, precision will be based off the precision specified
       in <start>. For example, if we specify 1.0, precision will be one digit,
       if we specify 1.0000, precision will be four digits. If rated,
