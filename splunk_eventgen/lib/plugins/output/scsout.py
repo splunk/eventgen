@@ -29,7 +29,7 @@ class SCSOutputPlugin(OutputPlugin):
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
 
-        self.scs_payload_limit = 150000 # Documentation recommends 20KB to 200KB. Going with 150KB.
+        self.scs_payload_limit = 150000 
         self.scs_scheme = getattr(self._sample, "scsScheme", "https")
         self.scs_host = getattr(self._sample, "scsHost", "api.scp.splunk.com")
         self.scs_ingest_end_point = getattr(self._sample, "scsIngestEndPoint")
@@ -48,8 +48,10 @@ class SCSOutputPlugin(OutputPlugin):
 
         while True:
             n_retry += 1
+
             if n_retry > 100:
                 log.info("Have retried over 100 times")
+                break
             
             headers = {
                 'Authorization' : 'Bearer %s' % getattr(self._sample, "scsAccessToken"),
@@ -69,13 +71,13 @@ class SCSOutputPlugin(OutputPlugin):
 
                     continue
 
+                break
+
             except Exception as e:
                 logger.error(e)
                 continue
 
-            finally:
-                logger.debug(f"Successfully sent out {len(events)} {self.scs_ingest_end_point} of {self._sample.name}")
-                break
+        logger.debug(f"Successfully sent out {len(events)} {self.scs_ingest_end_point} of {self._sample.name}")
 
     def flush(self, events):
         logger.info(f"Number of events: {len(events)}")
