@@ -1,3 +1,4 @@
+import copy
 import datetime
 import json
 import logging.handlers
@@ -521,7 +522,7 @@ class Config(object):
                 sampleFiles = os.listdir(s.sampleDir)
                 for sample in sampleFiles:
                     results = re.match(s.name, sample)
-                    if results:
+                    if results and results.endpos - results.pos == len(sample):
                         logger.debug("Matched file {0} with sample name {1}".format(results.group(0), s.name))
                         samplePath = os.path.join(s.sampleDir, sample)
                         if os.path.isfile(samplePath):
@@ -539,8 +540,8 @@ class Config(object):
                     tempsamples2.append(s)
 
             for f in foundFiles:
-                if s.name in f:
-                    news = s
+                if re.search(s.name, f):
+                    news = copy.copy(s)
                     news.filePath = f
                     # 12/3/13 CS TODO These are hard coded but should be handled via the modular config system
                     # Maybe a generic callback for all plugins which will modify sample based on the filename
