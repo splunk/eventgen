@@ -117,3 +117,9 @@ def test_mode_sample_regex_wildcard(eventgen_test_helper):
     """tTest sample mode with a regex wildcard pattern in the stanza name ('sample*')"""
     events = eventgen_test_helper("eventgen_sample_regex_wildcard.conf").get_events()
     assert len(events) == 36
+
+
+def test_mode_sample_regex_csv(eventgen_test_helper):
+    """tTest sample mode with a regex wildcard pattern in the stanza name ('sample*')"""
+    events = eventgen_test_helper("eventgen_sample_regex_csv.conf").get_events()
+    assert len(events) == 20
