@@ -522,14 +522,16 @@ class Config(object):
                 sampleFiles = os.listdir(s.sampleDir)
                 for sample in sampleFiles:
                     results = re.match(s.name, sample)
-                    if results and results.endpos - results.pos == len(sample):
-                        logger.debug("Matched file {0} with sample name {1}".format(results.group(0), s.name))
-                        samplePath = os.path.join(s.sampleDir, sample)
-                        if os.path.isfile(samplePath):
-                            logger.debug(
-                                "Found sample file '%s' for app '%s' using config '%s' with priority '%s'" %
-                                (sample, s.app, s.name, s._priority) + "; adding to list")
-                            foundFiles.append(samplePath)
+                    if results:
+                        match_start, match_end = results.regs[0]
+                        if match_end - match_start == len(sample):
+                            logger.debug("Matched file {0} with sample name {1}".format(results.group(0), s.name))
+                            samplePath = os.path.join(s.sampleDir, sample)
+                            if os.path.isfile(samplePath):
+                                logger.debug(
+                                    "Found sample file '%s' for app '%s' using config '%s' with priority '%s'" %
+                                    (sample, s.app, s.name, s._priority) + "; adding to list")
+                                foundFiles.append(samplePath)
 
             # If we didn't find any files, log about it
             if len(foundFiles) == 0:
