@@ -1,5 +1,6 @@
 import copy
 import datetime
+import glob
 import json
 import logging.handlers
 import os
@@ -521,8 +522,13 @@ class Config(object):
             if os.path.exists(s.sampleDir):
                 sampleFiles = os.listdir(s.sampleDir)
                 for sample in sampleFiles:
-                    results = re.match(s.name, sample)
+                    sample_name = s.name
+                    # If we expect a .csv, append it to the file name - regex matching must include the extension
+                    if s.sampletype == "csv" and not s.name.endswith(".csv"):
+                        sample_name = s.name + "\.csv"
+                    results = re.match(sample_name, sample)
                     if results:
+                        # Make sure the stanza name/regex matches the entire file name
                         match_start, match_end = results.regs[0]
                         if match_end - match_start == len(sample):
                             logger.debug("Matched file {0} with sample name {1}".format(results.group(0), s.name))
