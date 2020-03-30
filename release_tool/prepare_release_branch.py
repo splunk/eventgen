@@ -24,7 +24,7 @@ def parse_args():
             valid = False
             try:
                 v = int(n)
-                valid = (v>=0)
+                valid = (v >= 0)
             except:
                 valid = False
             if not valid:
@@ -38,16 +38,18 @@ def parse_args():
         return t
 
     parser = argparse.ArgumentParser(
-        'prepare_release_branch.py',
-        description='eventgen release branch tool.\ncreate the release branch, set the right version and push the pull request.')
+        'prepare_release_branch.py', description=
+        'eventgen release branch tool.\ncreate the release branch, set the right version and push the pull request.')
     parser.add_argument('-v', '--verbose', default=False, action='store_true', help='enable the verbose logging')
     parser.add_argument('-n', '--version_str', type=validate_version_str, required=True)
     parser.add_argument('-a', '--token', help='your github access token.', default=None, type=validate_token)
     return parser.parse_args(sys.argv[1:])
 
+
 def setup_logging(verbose=None):
     l = logging.DEBUG if verbose is True else logging.INFO
     logging.getLogger().setLevel(l)
+
 
 def setup_env():
     '''
@@ -59,6 +61,7 @@ def setup_env():
     '''
     logging.debug(f'try to change current working directory to {root_repo_dir}')
     os.chdir(root_repo_dir)
+
 
 def run_sh_cmd(args, exit_on_error=None):
     should_exit_on_error = True if exit_on_error is None else exit_on_error
@@ -75,9 +78,11 @@ def run_sh_cmd(args, exit_on_error=None):
         assert False, 'sh command fails.'
     return False
 
+
 def get_release_branch_name(version_str):
     v = version_str.replace('.', '_')
     return f'release/{v}'
+
 
 def replace_version(ver):
     ver_json_file = os.path.join(root_repo_dir, 'splunk_eventgen', 'version.json')
@@ -121,15 +126,15 @@ def commit_updated_files(ver):
     run_sh_cmd(['git', 'commit', '-m', f'update eventgen version to {ver}'], False)
     logging.info('committed version files.')
 
-def create_pr(ver, token):
+
+def create_pr(ver, token, target_branch):
     release_branch = get_release_branch_name(ver)
     response = requests.post(
-        'https://api.github.com/repos/splunk/eventgen/pulls',
-        json={'title': f'Release eventgen {ver}', 'head': release_branch, 'base': 'develop', 'body':
-              'As the title'}, headers={
-                  'Accept': 'application/vnd.github.full+json',
-                  'Content-Type': 'application/json',
-                  'Authorization': f'token {token}'})
+        'https://api.github.com/repos/splunk/eventgen/pulls', json={
+            'title': f'Release eventgen {ver}', 'head': release_branch, 'base': target_branch, 'body': 'As the title'},
+        headers={
+            'Accept': 'application/vnd.github.full+json', 'Content-Type': 'application/json', 'Authorization':
+            f'token {token}'})
     response.raise_for_status()
     data = response.json()
     pr_url = data['url']
@@ -149,7 +154,7 @@ if __name__ == '__main__':
 
     logging.info('check out the release branch')
     release_branch = get_release_branch_name(arg_values.version_str)
-    branch_exist = run_sh_cmd(['git','show-ref','--verify',f'refs/heads/{release_branch}'], False)
+    branch_exist = run_sh_cmd(['git', 'show-ref', '--verify', f'refs/heads/{release_branch}'], False)
     if not branch_exist:
         run_sh_cmd(['git', 'checkout', '-b', release_branch])
     else:
@@ -164,7 +169,8 @@ if __name__ == '__main__':
     logging.info(f'release branch {release_branch} is pushed to remote repo.')
 
     if arg_values.token:
-        create_pr(arg_values.version_str, arg_values.token)
+        create_pr(arg_values.version_str, arg_values.token, 'develop')
+        create_pr(arg_values.version_str, arg_values.token, 'master')
     else:
         pr_url = 'https://github.com/splunk/eventgen/compare'
         logging.info('create pull reqeust manually by visiting this url:\n{pr_url}')
