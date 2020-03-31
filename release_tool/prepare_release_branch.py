@@ -131,10 +131,10 @@ def create_pr(ver, token, target_branch):
     release_branch = get_release_branch_name(ver)
     response = requests.post(
         'https://api.github.com/repos/splunk/eventgen/pulls', json={
-            'title': f'Release eventgen {ver}', 'head': release_branch, 'base': target_branch, 'body': 'As the title'},
-        headers={
-            'Accept': 'application/vnd.github.full+json', 'Content-Type': 'application/json', 'Authorization':
-            f'token {token}'})
+            'title': f'Release eventgen {ver}. Merge to {target_branch} branch.', 'head': release_branch, 'base':
+            target_branch, 'body': 'As the title'}, headers={
+                'Accept': 'application/vnd.github.full+json', 'Content-Type': 'application/json', 'Authorization':
+                f'token {token}'})
     response.raise_for_status()
     data = response.json()
     pr_url = data['url']
