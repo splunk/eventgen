@@ -524,7 +524,7 @@ class Config(object):
                     sample_name = s.name
                     # If we expect a .csv, append it to the file name - regex matching must include the extension
                     if s.sampletype == "csv" and not s.name.endswith(".csv"):
-                        sample_name = s.name + ".csv"
+                        sample_name = s.name + "\.csv"
                     results = re.match(sample_name, sample)
                     if results:
                         # Make sure the stanza name/regex matches the entire file name
