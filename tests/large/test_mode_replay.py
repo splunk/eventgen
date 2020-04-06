@@ -52,7 +52,7 @@ def test_mode_replay_backfill_greater_interval(eventgen_test_helper):
 
 
 def test_mode_replay_tutorial1(eventgen_test_helper):
-    """Test the replay mode with csv for sample file sample.tutorial1. https://github.com/splunk/eventgen/issues/244"""
+    """Test the replay mode with csv for sample file sample.tutorial1.csv"""
     events = eventgen_test_helper('eventgen_tutorial1.conf').get_events()
     assert len(events) == 2019
 

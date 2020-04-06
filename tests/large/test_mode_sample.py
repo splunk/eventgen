@@ -105,3 +105,21 @@ def test_mode_sample_generator_workers(eventgen_test_helper):
     """Test sample mode with generatorWorkers = 5, end = 5 and count = 10"""
     events = eventgen_test_helper("eventgen_sample_generatorWorkers.conf").get_events()
     assert len(events) == 50
+
+
+def test_mode_sample_regex_integer(eventgen_test_helper):
+    """Test sample mode with a regex pattern in the stanza name ('sample\d')"""
+    events = eventgen_test_helper("eventgen_sample_regex_integer.conf").get_events()
+    assert len(events) == 24
+
+
+def test_mode_sample_regex_wildcard(eventgen_test_helper):
+    """tTest sample mode with a regex wildcard pattern in the stanza name ('sample*')"""
+    events = eventgen_test_helper("eventgen_sample_regex_wildcard.conf").get_events()
+    assert len(events) == 36
+
+
+def test_mode_sample_regex_csv(eventgen_test_helper):
+    """tTest sample mode with a regex wildcard pattern in the stanza name ('sample*')"""
+    events = eventgen_test_helper("eventgen_sample_regex_csv.conf").get_events()
+    assert len(events) == 20
