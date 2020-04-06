@@ -545,7 +545,7 @@ class EventgenServerAPI:
                     del kv_pair['httpeventServers']
             conf_dict['global']['threading'] = 'process'
             conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
-            conf_dict['global']['outputMode'] = 'httpevent'
+            conf_dict['global']['outputMode'] = data.get("outputMode") if data.get("outputMode") else 'httpevent' 
             conf_dict['global']['httpeventServers'] = {"servers": data.get("servers")}
             self.set_conf(conf_dict)
         else:
@@ -615,6 +615,6 @@ class EventgenServerAPI:
                     del kv_pair['httpeventServers']
             conf_dict['global']['threading'] = 'process'
             conf_dict['global']['httpeventMaxPayloadSize'] = '256000'
-            conf_dict['global']['outputMode'] = 'httpevent'
+            conf_dict['global']['outputMode'] = data.get("outputMode") if data.get("outputMode") else 'httpevent' 
             conf_dict['global']['httpeventServers'] = {"servers": self.discovered_servers}
             self.set_conf(conf_dict)

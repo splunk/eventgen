@@ -21,7 +21,7 @@ class UdpOutputPlugin(OutputPlugin):
     def flush(self, q):
         for x in q:
             msg = x['_raw'].rstrip() + '\n'
-            self.s.sendto(msg, (self._udpDestinationHost, int(self._udpDestinationPort)))
+            self.s.sendto(str.encode(msg), (self._udpDestinationHost, int(self._udpDestinationPort)))
         logger.info("Flushing in udpout.")
 
 

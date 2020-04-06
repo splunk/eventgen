@@ -22,7 +22,8 @@ class TcpOutputPlugin(OutputPlugin):
         self.s.connect((self._tcpDestinationHost, int(self._tcpDestinationPort)))
         logger.info("Socket connected to {0}:{1}".format(self._tcpDestinationHost, self._tcpDestinationPort))
         for x in q:
-            self.s.send(x['_raw'].rstrip() + '\n')
+            msg = x['_raw'].rstrip() + '\n'
+            self.s.send(str.encode(msg))
         self.s.close()
 
 

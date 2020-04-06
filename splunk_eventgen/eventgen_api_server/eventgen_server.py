@@ -8,10 +8,10 @@ from splunk_eventgen.eventgen_api_server import eventgen_core_object
 
 
 class EventgenServer:
-    def __init__(self, *args, **kwargs):  
-        self.eventgen = eventgen_core_object.EventgenCoreObject()      
-        self.mode = kwargs.get('mode', 'standalone')
+    def __init__(self, *args, **kwargs):
         self.env_vars = kwargs.get('env_vars')
+        self.eventgen = eventgen_core_object.EventgenCoreObject(mutithread=self.env_vars.get("multithread", False))
+        self.mode = kwargs.get('mode', 'standalone')
         self.host = socket.gethostname()
         self.role = 'server'
 
