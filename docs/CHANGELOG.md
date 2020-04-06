@@ -1,89 +1,58 @@
-6.5.0
-- Added metrics output mode
-- Fixed regex token replacement issue
-- Added test coverage information
-- Increased functional test coverage
-- Eventgen server complete revamp and standalone mode support
-- Added contributor license
-- Updated Dockerfile
-- Added documentation
-- Fixed bugs / stability / optimized speed
+**7.1.0**:
 
-6.4.0
-- Fixed exception log error
-- Fixed CircleCI status badage error
-- Fixed navigation error for app if installed with Splunk Stream
-- Fixed generatorWorkers not working error
-- Fixed interval error when end = 1
-- Fixed fileName in global stanza error
-- Added 3rd party libs in SA-Eventgen App
-- Added httpeventAllowFailureCount for httpevent
-- Added 3rd party libs in license credit
-- Disabled logging queue in multiprocess mode
-- Changed implementation of extendIndex for better performance
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/7.1.0)
 
-6.3.6
-- Added functional tests for jinja template and modular input feature
-- Fixed default jinja template directory is not correctly resolved when sampleDir is set issue
-- Fixed verbose flag not working in splunk_eventgen command line issue
-- Fixed index, source, sourcetype are not correct when using splunkstream mode issue
-- Fixed ssh to container issue
-- Fixed perdayvolume without end setting error
-- Updated documentation for better reading and remove unrelated part
+**7.0.0**:
 
-6.3.5
-- Added extendIndexes feature to support a list of indexes
-- Fixed timer and token logic
-- Changed end=-1 to continuously iterate without stopping
-- Changed end=0 to not execute
-- Added a linter for code quality
-- Updated docs / docs format
-- Added a suite of functional tests
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/7.0.0)
 
-6.3.4:
-- Documentation cleanup
-- Jinja template bugfix in app
-- Implementation of 'timeMultiple’ option
-- Templates for bugs/feature requests
-- Fixed Jinja test configuration stanzas
-- Default behavior for 'count' edge cases
+**6.5.2**:
 
-6.3.3:
-- Added performance metrics compared to Eventgen 5.x
-- New config option for generation-time metrics: outputCounter
-- Jinja template fixes
-- Timestamp parsing fix
-- Output queueing fix for outputMode splunkstream
-- Count rater fixes, now supports indefinite generation
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.5.2)
 
-6.3.2:
-- Fixed verbosity bug
-- Added documentation
 
-6.3.1:
-- Fixed Eventgen Volume APIs
-- Improved Eventgen Server Logging
-- Corrected Eventgen Server and Controller conf syncing issue
-- Adding verbosity options (ERROR, INFO, DEBUG) to Eventgen modinput
-- Implemented future event generation support in replay mode
-- Fixed Jinja template's missing default values
-- Adjusted logging message levels for less verbosity
-- Fixed event count off by 1 issue
-- Fixed unnecessary empty data generators being created
-- Updated dependency list
+**6.5.1**:
 
-6.3.0:
-- Bug fixes for the customer issues
-- Documentation upgrade
-- Code refactoring for version unification
-- Logging improvements
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.5.1)
 
-6.2.1:
-- Fixing SA-Eventgen Dashboard and log searching
-- Improving internal logging and fixing splunkd logging issue
-- Fixing timestamping in default generator
-- Fixing custom plugin integration
-- Fixing SA-Eventgen app settings
-- Supporting Eventgen 5 backward compatibility with additional features
-- Better modinput process management
-- Minor Bugfixes with various customer cases
+
+**6.5.0**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.5.0)
+
+**6.4.0**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.4.0)
+
+**6.3.6**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.3.6)
+
+**6.3.5**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.3.5)
+
+**6.3.4**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.3.4)
+
+**6.3.3**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.3.3)
+
+**6.3.2**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.3.2)
+
+**6.3.1**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.3.1)
+
+**6.3.0**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.3.0)
+
+**6.2.1**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/6.2.1)
+

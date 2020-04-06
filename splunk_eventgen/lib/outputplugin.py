@@ -42,6 +42,5 @@ class OutputPlugin(object):
     def _output_end(self):
         pass
 
-
 def load():
     return OutputPlugin

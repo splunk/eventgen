@@ -39,10 +39,10 @@ test_helper:
 	docker cp . ${EVENTGEN_TEST_IMAGE}:$(shell pwd)
 
 	@echo 'Verifying contents of pip.conf'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip install dist/splunk_eventgen*.tar.gz"
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip3 install dist/splunk_eventgen*.tar.gz"
 
 	@echo 'Installing test requirements'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip install --upgrade pip;pip install -r $(shell pwd)/requirements.txt"
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 install --upgrade pip;pip3 install -r $(shell pwd)/requirements.txt;pip3 install git+https://github.com/esnme/ultrajson.git"
 
 	@echo 'Make simulated app dir and sample for modular input test'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); cd ../..; mkdir -p modinput_test_app/samples/"
@@ -51,12 +51,15 @@ test_helper:
 	@echo 'Installing docker-compose'
 	bash install_docker_compose.sh
 
+	@echo 'Build a docker image'
+	docker build -t provision_splunk:latest -f tests/large/provision/Dockerfile tests/large/provision
+
 	@echo 'Start container with splunk'
 	docker-compose -f tests/large/provision/docker-compose.yml up &
 
 	sleep 120
 	@echo 'Provision splunk container'
-	docker-compose -f tests/large/provision/docker-compose.yml exec -T splunk sh -c 'cd /opt/splunk;./provision.sh;/opt/splunk/bin/splunk enable listen 9997 -auth admin:changeme;/opt/splunk/bin/splunk add index test_0;/opt/splunk/bin/splunk add index test_1;/opt/splunk/bin/splunk restart'
+	docker exec --user splunk provision_splunk_1 sh -c 'cd /opt/splunk;./provision.sh;./add_httpevent_collector.sh;/opt/splunk/bin/splunk enable listen 9997 -auth admin:changeme;/opt/splunk/bin/splunk add index test_0;/opt/splunk/bin/splunk add index test_1;/opt/splunk/bin/splunk restart'
 
 run_tests:
 	@echo 'Running the super awesome tests'

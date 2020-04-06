@@ -121,16 +121,37 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent
+outputMode = scsout | modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent
     * Specifies how to output log data. Modinput is default.
+    * If setting scsout, should set scsEndPoint and scsAccessToken. scsClientId, scsClientSecret, and scsRetryNum are optional.
     * If setting spool, should set spoolDir
     * If setting file, should set fileName
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod,
       splunkUser and splunkPassword if not Splunk embedded
     * If setting s2s, should set splunkHost and splunkPort
-    * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort
+    * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort. A UDP port listening on Splunk needs to be configured. https://docs.splunk.com/Documentation/Splunk/latest/Data/HowSplunkEnterprisehandlessyslogdata
     * If setting httpevent, should set httpeventServers
     * If setting metric_httpevent, should set httpeventServers and make sure your index is a splunk metric index
+
+scsEndPoint = <host>
+    * Should be a full url to the scs endpoint
+
+scsAccessToken = <token>
+    * Should be a scs access token. Do not include "Bearer". 
+
+scsClientId = <id>
+    * Optional
+    * SCS client id that is used to renew the access token if it expires during the data generation
+    * If not supplied, will not renew the access token and data transmission might fail
+
+scsClientSecret = <secret>
+    * Optional
+    * SCS client secret that is used to renew the access token if it expires during the data generation
+    * If not supplied, will not renew the access token and data transmission might fail
+
+scsRetryNum = <int>
+    * Optional and defaults to 0
+    * Retry a failing data transmission batch
 
 syslogDestinationHost = <host>
     * Defaults to 127.0.0.1
@@ -543,8 +564,7 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid 
       and <end> is a number greater than 0 and greater than or equal to <start>.
       If rated, will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For float[<start>:<end>], the token will be replaced with a random float between
-      start and end values where <start> is a number greater than 0
-      and <end> is a number greater than 0 and greater than or equal to <start>.
+      start and end values where <end> is a number greater than or equal to <start>.
       For floating point numbers, precision will be based off the precision specified
       in <start>. For example, if we specify 1.0, precision will be one digit,
       if we specify 1.0000, precision will be four digits. If rated,
