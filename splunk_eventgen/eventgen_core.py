@@ -427,70 +427,11 @@ class EventGenerator(object):
                         raise e
         return ret
 
-    def _refresh_access_token(self, routine=True):
-        from threading import Timer
-        import requests
-        import json
-        
-        Timer(3600 * 6, self._refresh_access_token).start() # refresh access token every 6 hour for now token TTL is 12 hours
-        client_credentials = {'client_id': self.config.scsClientID, 'client_secret': self.config.scsClientSecret, "grant_type" : "client_credentials"}
-
-        if self.config.scsEnv == "playground":
-            auth_url = "https://auth.playground.scp.splunk.com/token"
-        elif self.config.scsEnv == "stage":
-            auth_url = "https://auth.staging.scp.splunk.com/token"
-        else:
-            auth_url = "https://auth.scp.splunk.com/token"
-
-        n_retry = 0
-
-        while True:
-            n_retry += 1
-            if n_retry > 100:
-                self.logger.info("Have been refetching access token over 100 times. Time to give up!")
-                self.stop(force_stop=True)
-                break
-
-            try:
-                res = requests.post(auth_url, data=client_credentials, timeout=5) # timeout for avoiding hung process
-                
-                if res.status_code != 200:
-                    self.logger.error("status %d: %s" % (res.status_code, res.text))
-
-                    self.logger.info("Refetching access token...")
-
-                    continue
-
-                access_token = res.json()['access_token']
-
-            except Exception as e:
-                self.logger.error(e)
-                self.logger.info("Connection Error occurs, refetching access token...")
-                continue
-
-            finally:
-                self.logger.info("Successfully acquired scp access token")
-                self.logger.debug(access_token)
-                self.logger.info("Dispatching access token to all samples...")
-                for s in self.config.samples:
-                    setattr(s, "scsAccessToken", access_token) # Store access token in Sample instance
-                self.logger.info("All set")
-                break	
-
     def start(self, join_after_start=True):
         self.stop_request.clear()
         self.started = True
         self.config.stopping = False
         self.completed = False
-
-        if hasattr(self.config, "scsClientID") and hasattr(self.config, "scsClientSecret"):
-            self.logger.info("SCS access token will be refreshed every 6 hours")
-            self._refresh_access_token()
-        elif hasattr(self.config, "scsAccessToken"):
-            self.logger.info("SCS access token is provided for one time use")
-        else:
-            self.logger.info("Neither SCS access token nor credentials are provided")
-
 
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")

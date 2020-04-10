@@ -60,6 +60,9 @@ autotimestamps = [ <jsonlist> ]
 autotimestamp = false
 outputCounter = false
 disableLoggingQueue = true
+scsClientID = <your client id>
+scsClientSecret = <your client secret>
+scsEnv = playground | stage | production
 
 
 [<sample file name>]
@@ -136,7 +139,8 @@ outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | h
 scsHost = <host:port> | <api-url>
     * Defaults to api.scp.splunk.com
 
-scsAccessToken = access token for Splunk Cloud Services
+scsAccessToken = access token for Splunk Cloud Services. 
+    * Either client credentials or this should be used for authorization, however, without client credentials, access token won't be refreshed after 12 hours (playground) as of now.
 
 scsIngestEndPoint = events | metrics
 
