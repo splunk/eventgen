@@ -38,12 +38,8 @@ class SCSOutputPlugin(OutputPlugin):
 
         self._payload_limit = 150000 
         self.scs_scheme = getattr(self._sample, "scsScheme", "https")
-        # self.scs_host = getattr(self._sample, "scsHost", "api.scp.splunk.com")
         self.scs_env = getattr(self._sample, "scsEnv")
         self.scs_ingest_end_point = getattr(self._sample, "scsIngestEndPoint")
-        # instease of hard coding in here, client credentials should be loaded from a file
-        self.client_id = getattr(self._sample, "scsClientID")
-        self.client_secret = getattr(self._sample, "scsClientSecret")
         self.tenant = getattr(self._sample, "scsTenant")
         self.verify = False if hasattr(self._sample, "scsInsecure") and getattr(self._sample, "scsInsecure") == "true" else True
 
@@ -51,20 +47,23 @@ class SCSOutputPlugin(OutputPlugin):
             raise NoSCSEndPoint("please specify your REST endpoint (events | metrics)")
         if not self.tenant:
             raise NoSCSTenant("please specify your tenant name")
-        if not self.client_id or not self.client_secret:
-            raise NoClientCredentials("client ID or client secret is missing")
-        if not self.scs_env:
-            raise NoSCSEnv("please specify the SCS environment of your tenant")
+        # if not self.scs_env:
+        #     raise NoSCSEnv("please specify the SCS environment of your tenant")
 
         host = self._get_scs_attributes(self.scs_env)["api_url"]
         self.api_url = f'{self.scs_scheme}://{host}/{self.tenant}/ingest/v1beta2/{self.scs_ingest_end_point}'
 
         self._session = requests.Session()
+
+        self._update_session()
+
+    def _update_session(self):
+
         self._session.headers.update({
-            'Content-Type' : "application/json"
+            'Content-Type' : "application/json",
+            "Authorization": f"Bearer {self._sample.scsAccessToken}"
         })
-        self._update_access_token()
-    
+
     def _get_scs_attributes(self, scs_env):
         """
         return a dict of scs attributes according to scs env
@@ -90,36 +89,6 @@ class SCSOutputPlugin(OutputPlugin):
         else:
             raise KeyError("scs_env only takes play | stage | prod")
 
-    def _update_access_token(self):
-        scheme = "https"
-        host = self._get_scs_attributes(self.scs_env)['auth_url']
-        # client_id = credentials[scs_env]['client_id']
-        # client_secret = credentials[scs_env]['client_secret']
-
-        paras = 'client_id=%s&client_secret=%s&grant_type=client_credentials' % (self.client_id, self.client_secret)
-        url = scheme + "://" + host + "/" + "token?" + paras
-
-        ts_start_token = time.time()
-
-        try:
-            r = requests.post(url)
-
-            if r.status_code != 200:
-                logger.error('%s, %s', r.status_code, r.text)
-                sys.exit(1)
-
-        except Exception as e:
-            logger.error('Exception generated (POST getting token): %s', e)
-            sys.exit(1)
-
-        access_token = r.json()["access_token"]
-
-        self._session.headers.update({
-            'Authorization' : 'Bearer %s' % access_token
-        })
-
-        logger.debug("successfully updated access token")
-
     def _ingest(self, events):
         data = json.dumps(events)
 
@@ -130,16 +99,9 @@ class SCSOutputPlugin(OutputPlugin):
                 res = self._session.post(self.api_url, data=data, timeout=60, verify=self.verify)
 
                 if res.status_code != 200:
-                    # logger.error("status %s %s" % (res.status_code, res.text))
-                    if res.status_code == 429:
-                        logger.debug(res.text)                
-                        time.sleep(5)
-                    elif res.status_code == 401:
-                        self._update_access_token()
-                        time.sleep(5)
-                    else:
-                        logger.error("status %s %s" % (res.status_code, res.text))
-                        time.sleep(60)
+                    logger.error("status %s %s" % (res.status_code, res.text))
+                    if res.status_code == 401:
+                        self._update_session()
 
                     continue
 

@@ -427,11 +427,69 @@ class EventGenerator(object):
                         raise e
         return ret
 
+    def _refresh_access_token(self, refresh_interval=1):
+        """
+        SCS related function for updating/refreshing access token
+        Args:
+            refresh_interval (int): time interval for refreshing token
+        Side-effects:
+            Eventgen won't be finished till being manually killed
+        """
+        from threading import Timer
+        import requests
+        import json
+
+        Timer(3600 * refresh_interval, self._refresh_access_token).start() # refresh access token every 6 hour for now token TTL is 12 hours
+
+        client_credentials = {
+                'client_id': self.config.scsClientID, 
+                'client_secret': self.config.scsClientSecret, 
+                "grant_type" : "client_credentials"
+            }
+
+        if self.config.scsEnv == "play":
+            auth_url = "https://auth.playground.scp.splunk.com/token"
+        elif self.config.scsEnv == "stage":
+            auth_url = "https://auth.staging.scp.splunk.com/token"
+        else:
+            auth_url = "https://auth.scp.splunk.com/token"
+
+        try:
+            res = requests.post(auth_url, data=client_credentials, timeout=60)
+
+            if res.status_code != 200:
+                self.logger.error("status %s %s" % (res.status_code, res.text))
+
+                sys.exit(1)
+
+        except Exception as e:
+            self.logger.error(e)
+            sys.exit(1)
+
+        access_token = res.json()['access_token']
+        self.logger.debug(access_token)
+        self.logger.info("Dispatching access token to all samples...")
+        for s in self.config.samples:
+            setattr(s, "scsAccessToken", access_token)
+        self.logger.info("Successfully updated SCS access token")
+
     def start(self, join_after_start=True):
         self.stop_request.clear()
         self.started = True
         self.config.stopping = False
         self.completed = False
+
+        ############################ SCS Section ########################################################
+        if hasattr(self.config, "scsClientID") and hasattr(self.config, "scsClientSecret"):
+            self.logger.info(f"SCS access token will be refreshed every hour")
+            self._refresh_access_token()
+        elif hasattr(self.config, "scsAccessToken"):
+            self.logger.warning("SCS access token is provided for one time use but it can't be refreshed once it expires")
+            for s in self.config.samples:
+                setattr(s, "scsAccessToken", access_token)
+        else:
+            raise Exception("Neither SCS access token nor client credentials are provided")
+        ##################################################################################################
 
         if len(self.config.samples) <= 0:
             self.logger.info("No samples found.  Exiting.")

@@ -109,7 +109,7 @@ class Config(object):
         'fileMaxBytes', 'fileBackupFiles', 'splunkHost', 'splunkPort', 'splunkMethod', 'index', 'source', 'sourcetype',
         'host', 'hostRegex', 'projectID', 'accessToken', 'mode', 'minuteOfHourRate', 'timeMultiple', 'dayOfMonthRate',
         'monthOfYearRate', 'perDayVolume', 'sessionKey', 'generator', 'rater', 'timeField', 'maxQueueLength',
-        'maxIntervalsBeforeFlush', 'autotimestamp']
+        'maxIntervalsBeforeFlush', 'autotimestamp', 'scsEnv']
     _complexSettings = {'sampletype': ['raw', 'csv'], 'mode': ['sample', 'replay'], 'threading': ['thread', 'process']}
 
     def __init__(self, configfile=None, sample=None, override_outputter=False, override_count=False,
