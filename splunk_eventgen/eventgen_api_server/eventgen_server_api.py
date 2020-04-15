@@ -579,9 +579,8 @@ class EventgenServerAPI:
             self.discovered_servers = []
             for host in hosts:
                 try:
-                    formatted_hostname = socket.gethostbyname(host)
                     if new_key:
-                        key = create_new_hec_key(formatted_hostname)
+                        key = create_new_hec_key(host)
                 except (socket.gaierror, requests.ConnectionError):
                     self.logger.warning('failed to reach %s, skip...' % host)
                     continue
@@ -589,7 +588,7 @@ class EventgenServerAPI:
                     self.logger.warning('failed to setup hec token for %s, skip...' % host)
                     continue
 
-                self.discovered_servers.append({"protocol": str(protocol), "address": str(formatted_hostname), "port": str(hec_port), "key": str(key)})
+                self.discovered_servers.append({"protocol": str(protocol), "address": str(host), "port": str(hec_port), "key": str(key)})
 
             counter = 1
             while True:
