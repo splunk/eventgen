@@ -1,5 +1,7 @@
 ## Install
 
+For upgrading eventgen, please refer to [this doc](UPGRADE.md).
+
 There are multiple ways to use Eventgen, and you should choose the method that best fits your use case.
 Below are the two major ways to use Eventgen - as a PyPI module and as a Splunk App. Follow the instructions below depending on your ideal use:
 
@@ -148,6 +150,9 @@ $ splunk_eventgen build --destination <DESIRED_PATH_TO_OUTPUT_SPL_FILE>
 ```
 
 #### Finishing the Install
+
+>:warning: For upgrading SA-eventgen from 6.x to 7.x, please refer to [this guide](UPGRADE.md#sa-app-upgrade-to-7).
+
 With the generated / downloaded SPL file, follow these steps to install:
 1. Log in to Splunk Web and navigate to Apps > Manage Apps.
 2. Click "Install app from file".
