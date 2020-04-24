@@ -10,10 +10,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Dependencies
-          command: |
-            pip install --upgrade pip && pip install -r requirements.txt
-      - run:
           name: Run Tests
           command: |
             set -e

@@ -7,19 +7,29 @@ import xml.sax.saxutils
 from splunk.appserver.mrsparkle.lib.util import make_splunkhome_path
 
 
-def setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [ModInput] %(message)s', level=logging.DEBUG,
-                log_name="modinput.log", logger_name="modinput"):
+def setupLogger(
+    logger=None,
+    log_format="%(asctime)s %(levelname)s [ModInput] %(message)s",
+    level=logging.DEBUG,
+    log_name="modinput.log",
+    logger_name="modinput",
+):
     """
     Setup a logger suitable for splunkd consumption
     """
     if logger is None:
         logger = logging.getLogger(logger_name)
 
-    logger.propagate = False  # Prevent the log messages from being duplicated in the python.log file
+    logger.propagate = (
+        False  # Prevent the log messages from being duplicated in the python.log file
+    )
     logger.setLevel(level)
 
     file_handler = logging.handlers.RotatingFileHandler(
-        make_splunkhome_path(['var', 'log', 'splunk', log_name]), maxBytes=2500000, backupCount=5)
+        make_splunkhome_path(["var", "log", "splunk", log_name]),
+        maxBytes=2500000,
+        backupCount=5,
+    )
     formatter = logging.Formatter(log_format)
     file_handler.setFormatter(formatter)
 
@@ -65,7 +75,16 @@ class XMLOutputManager(object):
             self.out.write("</stream>")
             self.stream_initiated = False
 
-    def sendData(self, buf, unbroken=None, sourcetype=None, source=None, host=None, time=None, index=None):
+    def sendData(
+        self,
+        buf,
+        unbroken=None,
+        sourcetype=None,
+        source=None,
+        host=None,
+        time=None,
+        index=None,
+    ):
         """
         Send some data to splunk
         args:
@@ -83,12 +102,14 @@ class XMLOutputManager(object):
         if not unbroken:
             self.out.write("<event>")
         else:
-            self.out.write("<event unbroken=\"1\">")
+            self.out.write('<event unbroken="1">')
         self.out.write("<data>")
         self.out.write(xml.sax.saxutils.escape(buf))
         self.out.write("</data>")
         if sourcetype is not None:
-            self.out.write("<sourcetype>" + xml.sax.saxutils.escape(sourcetype) + "</sourcetype>")
+            self.out.write(
+                "<sourcetype>" + xml.sax.saxutils.escape(sourcetype) + "</sourcetype>"
+            )
         if source is not None:
             self.out.write("<source>" + xml.sax.saxutils.escape(source) + "</source>")
         if time is not None:
@@ -102,7 +123,9 @@ class XMLOutputManager(object):
         self.out.write("</event>\n")
         self.out.flush()
 
-    def sendDoneKey(self, sourcetype=None, source=None, host=None, time=None, index=None):
+    def sendDoneKey(
+        self, sourcetype=None, source=None, host=None, time=None, index=None
+    ):
         """
         Let splunkd know that previously sent, unbroken events are now complete
         and ready for processing. Typically you will send some data, like chunks of a log file
@@ -115,10 +138,12 @@ class XMLOutputManager(object):
             host - the host of the event (string). Defaults to input default.
             index - the index into which the data is being stored. Defaults to the input default.
         """
-        self.out.write("<event unbroken=\"1\">")
+        self.out.write('<event unbroken="1">')
         self.out.write("<data></data>")
         if sourcetype is not None:
-            self.out.write("<sourcetype>" + xml.sax.saxutils.escape(sourcetype) + "</sourcetype>")
+            self.out.write(
+                "<sourcetype>" + xml.sax.saxutils.escape(sourcetype) + "</sourcetype>"
+            )
         if source is not None:
             self.out.write("<source>" + xml.sax.saxutils.escape(source) + "</source>")
         if time is not None:
@@ -134,4 +159,6 @@ class XMLOutputManager(object):
 
     # prints XML error data to be consumed by Splunk
     def printError(self, s):
-        self.out.write("<error><message>{0}</message></error>".format(xml.sax.saxutils.escape(s)))
+        self.out.write(
+            "<error><message>{0}</message></error>".format(xml.sax.saxutils.escape(s))
+        )
