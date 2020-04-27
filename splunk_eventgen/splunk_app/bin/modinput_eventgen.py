@@ -4,9 +4,11 @@ import argparse
 import logging
 import signal
 import sys
-
-# Set path so libraries will load
+import os
 from splunk.clilib.bundle_paths import make_splunkhome_path
+
+os.environ["EVENTGEN_LOG_DIR"] = make_splunkhome_path(["var", "log", "splunk"])
+# Set path so libraries will load
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib']))
 sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib', 'splunk_eventgen', 'lib']))
 
