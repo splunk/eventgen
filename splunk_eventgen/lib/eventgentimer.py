@@ -1,9 +1,9 @@
-import time
 import copy
+import time
 from queue import Full
 
-from splunk_eventgen.lib.timeparser import timeParserTimeMath
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.timeparser import timeParserTimeMath
 
 
 class Timer(object):

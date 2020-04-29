@@ -1,10 +1,10 @@
 import random
-import urllib.request
-import urllib.parse
 import urllib.error
+import urllib.parse
+import urllib.request
 
-from splunk_eventgen.lib.outputplugin import OutputPlugin
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 try:
     import requests

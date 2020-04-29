@@ -3,19 +3,19 @@
 import imp
 import logging
 import logging.config
+import multiprocessing
 import os
+import signal
 import sys
 import time
 from queue import Empty, Queue
-import signal
-from threading import Thread, Event
-import multiprocessing
+from threading import Event, Thread
 
 from splunk_eventgen.lib.eventgenconfig import Config
 from splunk_eventgen.lib.eventgenexceptions import PluginNotLoaded
 from splunk_eventgen.lib.eventgentimer import Timer
-from splunk_eventgen.lib.outputcounter import OutputCounter
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.outputcounter import OutputCounter
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 EVENTGEN_DIR = os.path.realpath(os.path.join(FILE_PATH, ".."))

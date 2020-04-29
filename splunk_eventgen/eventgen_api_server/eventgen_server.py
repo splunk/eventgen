@@ -1,10 +1,10 @@
+import logging
+import socket
+
 from flask import Flask
 
-import socket
-import logging
-
-from splunk_eventgen.eventgen_api_server.eventgen_server_api import EventgenServerAPI
 from splunk_eventgen.eventgen_api_server import eventgen_core_object
+from splunk_eventgen.eventgen_api_server.eventgen_server_api import EventgenServerAPI
 
 
 class EventgenServer:

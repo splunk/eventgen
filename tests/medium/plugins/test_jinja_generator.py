@@ -2,6 +2,7 @@ import os
 import sys
 
 from mock import patch
+
 from splunk_eventgen.__main__ import parse_args
 from splunk_eventgen.eventgen_core import EventGenerator
 

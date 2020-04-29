@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-from setuptools import setup
 import json
+
+from setuptools import setup
 
 try:
     import pypandoc

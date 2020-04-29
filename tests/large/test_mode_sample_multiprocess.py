@@ -1,5 +1,5 @@
-from datetime import datetime
 import re
+from datetime import datetime
 
 
 def test_mode_sample(eventgen_test_helper):

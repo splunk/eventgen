@@ -1,10 +1,11 @@
-import urllib.request
-import urllib.parse
-import urllib.error
-import httplib2
-from xml.dom import minidom
-import time
 import json
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from xml.dom import minidom
+
+import httplib2
 
 BASEURL = "https://127.0.0.1:8089"
 USERNAME = "admin"

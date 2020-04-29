@@ -1,7 +1,8 @@
 # Note as implemented this plugin is not threadsafe, file should only be used with one output worker
 import os
-from splunk_eventgen.lib.outputplugin import OutputPlugin
+
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class FileOutputPlugin(OutputPlugin):

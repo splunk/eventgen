@@ -1,7 +1,8 @@
-from splunk_eventgen.lib.logging_config import logger
 import datetime
 import math
 import re
+
+from splunk_eventgen.lib.logging_config import logger
 
 # Hack to allow distributing python modules since Splunk doesn't have setuptools
 # We create the egg outside of Splunk (with a copy of python2.7 and using Python only modules

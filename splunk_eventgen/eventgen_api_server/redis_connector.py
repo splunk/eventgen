@@ -1,6 +1,7 @@
-import redis
 import logging
 import time
+
+import redis
 
 
 class RedisConnector:

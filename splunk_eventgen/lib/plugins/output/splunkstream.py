@@ -1,14 +1,14 @@
 import http.client
-import urllib.request
-import urllib.parse
 import urllib.error
+import urllib.parse
+import urllib.request
 from collections import deque
 from xml.dom import minidom
 
 import httplib2
 
-from splunk_eventgen.lib.outputplugin import OutputPlugin
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class SplunkStreamOutputPlugin(OutputPlugin):

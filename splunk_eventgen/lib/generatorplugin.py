@@ -1,10 +1,10 @@
 import datetime
 import pprint
-import time
 import random
-import urllib.request
-import urllib.parse
+import time
 import urllib.error
+import urllib.parse
+import urllib.request
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
@@ -12,8 +12,8 @@ import httplib2
 
 from splunk_eventgen.lib.eventgenoutput import Output
 from splunk_eventgen.lib.eventgentimestamp import EventgenTimestamp
-from splunk_eventgen.lib.timeparser import timeParser
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.timeparser import timeParser
 
 
 class GeneratorPlugin(object):

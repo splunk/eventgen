@@ -2,15 +2,21 @@
 # encoding: utf-8
 import argparse
 import logging
+import os
 import signal
 import sys
-import os
+
 from splunk.clilib.bundle_paths import make_splunkhome_path
 
 os.environ["EVENTGEN_LOG_DIR"] = make_splunkhome_path(["var", "log", "splunk"])
 # Set path so libraries will load
-sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib']))
-sys.path.insert(0, make_splunkhome_path(['etc', 'apps', 'SA-Eventgen', 'lib', 'splunk_eventgen', 'lib']))
+sys.path.insert(0, make_splunkhome_path(["etc", "apps", "SA-Eventgen", "lib"]))
+sys.path.insert(
+    0,
+    make_splunkhome_path(
+        ["etc", "apps", "SA-Eventgen", "lib", "splunk_eventgen", "lib"]
+    ),
+)
 
 from mod_input import ModularInput  # noqa isort:skip
 from mod_input.fields import VerbosityField  # noqa isort:skip

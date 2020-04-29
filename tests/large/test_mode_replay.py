@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
 import re
 import time
+from datetime import datetime, timedelta
 
 
 def test_mode_replay(eventgen_test_helper):

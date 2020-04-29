@@ -1,10 +1,11 @@
-from flask import Flask
-import socket
-import os
 import logging
-import requests
-import time
+import os
+import socket
 import threading
+import time
+
+import requests
+from flask import Flask
 
 from splunk_eventgen.eventgen_api_server.eventgen_controller_api import (
     EventgenControllerAPI,
