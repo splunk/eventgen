@@ -38,17 +38,30 @@ class Output(object):
     def updateConfig(self, config):
         self.config = config
         # TODO: This is where the actual output plugin is loaded, and pushed out.  This should be handled way better...
-        self.outputPlugin = self.config.getPlugin('output.' + self._sample.outputMode, self._sample)
+        self.outputPlugin = self.config.getPlugin(
+            "output." + self._sample.outputMode, self._sample
+        )
 
     def send(self, msg):
         """
         Adds msg to the output buffer, flushes if buffer is more than MAXQUEUELENGTH
         """
-        ts = self._sample.timestamp if self._sample.timestamp is not None else self._sample.now()
-        self._queue.append({
-            '_raw': msg, 'index': self._sample.index, 'source': self._sample.source, 'sourcetype':
-            self._sample.sourcetype, 'host': self._sample.host, 'hostRegex': self._sample.hostRegex, '_time': int(
-                time.mktime(ts.timetuple()))})
+        ts = (
+            self._sample.timestamp
+            if self._sample.timestamp is not None
+            else self._sample.now()
+        )
+        self._queue.append(
+            {
+                "_raw": msg,
+                "index": self._sample.index,
+                "source": self._sample.source,
+                "sourcetype": self._sample.sourcetype,
+                "host": self._sample.host,
+                "hostRegex": self._sample.hostRegex,
+                "_time": int(time.mktime(ts.timetuple())),
+            }
+        )
 
         if len(self._queue) >= self.MAXQUEUELENGTH:
             self.flush()
@@ -63,8 +76,12 @@ class Output(object):
                 self.flush()
         except Exception as e:
             # We don't want to exit if there's a single bad event
-            logger.error("Caught Exception {} while appending/flushing output queue. There may be a ".format(e) +
-                              "faulty event or token replacement in your sample.")
+            logger.error(
+                "Caught Exception {} while appending/flushing output queue. There may be a ".format(
+                    e
+                )
+                + "faulty event or token replacement in your sample."
+            )
 
     def flush(self, endOfInterval=False):
         """
@@ -74,7 +91,10 @@ class Output(object):
         flushing = True
         if flushing:
             q = self._queue
-            logger.debug("Flushing queue for sample '%s' with size %d" % (self._sample.name, len(q)))
+            logger.debug(
+                "Flushing queue for sample '%s' with size %d"
+                % (self._sample.name, len(q))
+            )
             self._queue = []
             outputer = self.outputPlugin(self._sample, self.output_counter)
             outputer.updateConfig(self.config)
@@ -91,11 +111,18 @@ class Output(object):
                     logger.warning("Output Queue full, looping again")
             else:
                 if self.config.splunkEmbedded:
-                    tmp = [len(s['_raw']) for s in q]
+                    tmp = [len(s["_raw"]) for s in q]
                     if len(tmp) > 0:
-                        metrics_logger.info({
-                            'timestamp': datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), 'sample':
-                            self._sample.name, 'events': len(tmp), 'bytes': sum(tmp)})
+                        metrics_logger.info(
+                            {
+                                "timestamp": datetime.datetime.strftime(
+                                    datetime.datetime.now(), "%Y-%m-%d %H:%M:%S"
+                                ),
+                                "sample": self._sample.name,
+                                "events": len(tmp),
+                                "bytes": sum(tmp),
+                            }
+                        )
                     tmp = None
                 outputer.run()
             q = None

@@ -17,13 +17,13 @@ class TestUdpOutputPlugin(object):
     def test_output_data_to_udp_port(self):
         configfile = "tests/sample_eventgen_conf/medium_test/eventgen.conf.udpoutput"
         testargs = ["eventgen", "generate", configfile]
-        with patch.object(sys, 'argv', testargs):
+        with patch.object(sys, "argv", testargs):
             pargs = parse_args()
-            assert pargs.subcommand == 'generate'
+            assert pargs.subcommand == "generate"
             assert pargs.configfile == configfile
             eventgen = EventGenerator(args=pargs)
 
-        with patch('socket.socket') as mock_requests:
+        with patch("socket.socket") as mock_requests:
             sample = MagicMock()
             udpoutput = UdpOutputPlugin(sample)
             mock_requests.sendto = MagicMock()

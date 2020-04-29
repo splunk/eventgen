@@ -20,21 +20,35 @@ class HostFilter(logging.Filter):
 
 class SyslogOutOutputPlugin(OutputPlugin):
     useOutputQueue = True
-    name = 'syslogout'
+    name = "syslogout"
     MAXQUEUELENGTH = 10
-    validSettings = ['syslogDestinationHost', 'syslogDestinationPort', 'syslogAddHeader']
-    defaultableSettings = ['syslogDestinationHost', 'syslogDestinationPort', 'syslogAddHeader']
-    intSettings = ['syslogDestinationPort']
+    validSettings = [
+        "syslogDestinationHost",
+        "syslogDestinationPort",
+        "syslogAddHeader",
+    ]
+    defaultableSettings = [
+        "syslogDestinationHost",
+        "syslogDestinationPort",
+        "syslogAddHeader",
+    ]
+    intSettings = ["syslogDestinationPort"]
 
     def __init__(self, sample, output_counter=None):
-        syslogAddHeader = getattr(sample, 'syslogAddHeader', False)
+        syslogAddHeader = getattr(sample, "syslogAddHeader", False)
         OutputPlugin.__init__(self, sample, output_counter)
-        self._syslogDestinationHost = sample.syslogDestinationHost if hasattr(
-            sample, 'syslogDestinationHost') and sample.syslogDestinationHost else '127.0.0.1'
-        self._syslogDestinationPort = sample.syslogDestinationPort if hasattr(
-            sample, 'syslogDestinationPort') and sample.syslogDestinationPort else 1514
+        self._syslogDestinationHost = (
+            sample.syslogDestinationHost
+            if hasattr(sample, "syslogDestinationHost") and sample.syslogDestinationHost
+            else "127.0.0.1"
+        )
+        self._syslogDestinationPort = (
+            sample.syslogDestinationPort
+            if hasattr(sample, "syslogDestinationPort") and sample.syslogDestinationPort
+            else 1514
+        )
 
-        loggerName = 'syslog' + sample.name
+        loggerName = "syslog" + sample.name
         self._l = logging.getLogger(loggerName)
         if syslogAddHeader:
             self._l.addFilter(HostFilter(host=sample.host))
@@ -45,16 +59,19 @@ class SyslogOutOutputPlugin(OutputPlugin):
         # only add the syslog handler once instead of every interval.
         if loggerName not in loggerInitialized:
             syslogHandler = logging.handlers.SysLogHandler(
-                address=(self._syslogDestinationHost, int(self._syslogDestinationPort)))
+                address=(self._syslogDestinationHost, int(self._syslogDestinationPort))
+            )
             if syslogAddHeader:
-                formatter = logging.Formatter(fmt='%(asctime)s %(host)s %(message)s', datefmt='%b %d %H:%M:%S')
+                formatter = logging.Formatter(
+                    fmt="%(asctime)s %(host)s %(message)s", datefmt="%b %d %H:%M:%S"
+                )
                 syslogHandler.setFormatter(formatter)
             self._l.addHandler(syslogHandler)
             loggerInitialized[loggerName] = True
 
     def flush(self, q):
         for x in q:
-            self._l.info(x['_raw'].rstrip())
+            self._l.info(x["_raw"].rstrip())
 
 
 def load():
