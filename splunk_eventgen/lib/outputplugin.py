@@ -3,7 +3,7 @@ from splunk_eventgen.lib.logging_config import logger
 
 
 class OutputPlugin(object):
-    name = 'OutputPlugin'
+    name = "OutputPlugin"
 
     def __init__(self, sample, output_counter=None):
         self._app = sample.app
@@ -11,7 +11,9 @@ class OutputPlugin(object):
         self._outputMode = sample.outputMode
         self.events = None
         logger.debug(
-            "Starting OutputPlugin for sample '%s' with output '%s'" % (self._sample.name, self._sample.outputMode))
+            "Starting OutputPlugin for sample '%s' with output '%s'"
+            % (self._sample.name, self._sample.outputMode)
+        )
         self._queue = deque([])
         self.output_counter = output_counter
 
@@ -35,12 +37,15 @@ class OutputPlugin(object):
         if self.events:
             self.flush(self.events)
         if self.output_counter is not None:
-            self.output_counter.collect(len(self.events), sum([len(e['_raw']) for e in self.events]))
+            self.output_counter.collect(
+                len(self.events), sum([len(e["_raw"]) for e in self.events])
+            )
         self.events = None
         self._output_end()
 
     def _output_end(self):
         pass
+
 
 def load():
     return OutputPlugin

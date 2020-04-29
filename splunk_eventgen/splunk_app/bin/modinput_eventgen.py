@@ -19,12 +19,18 @@ from splunk_eventgen.lib import eventgenconfig  # noqa isort:skip
 from xmloutput import XMLOutputManager, setupLogger  # noqa isort:skip
 
 # Initialize logging
-logger = setupLogger(logger=None, log_format='%(asctime)s %(levelname)s [Eventgen] %(message)s', level=logging.DEBUG,
-                     log_name="modinput_eventgen.log", logger_name="eventgen_app")
+logger = setupLogger(
+    logger=None,
+    log_format="%(asctime)s %(levelname)s [Eventgen] %(message)s",
+    level=logging.DEBUG,
+    log_name="modinput_eventgen.log",
+    logger_name="eventgen_app",
+)
 
 
 class SimpleNamespace(dict):
     """dot.notation access to dictionary attributes"""
+
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
@@ -32,11 +38,11 @@ class SimpleNamespace(dict):
 
 class Eventgen(ModularInput):
     scheme_args = {
-        'title': "SA-Eventgen",
-        'description': "This modular input generates data for Splunk.",
-        'use_external_validation': "true",
-        'streaming_mode': "xml",
-        'use_single_instance': "False"
+        "title": "SA-Eventgen",
+        "description": "This modular input generates data for Splunk.",
+        "use_external_validation": "true",
+        "streaming_mode": "xml",
+        "use_single_instance": "False",
     }
 
     def __init__(self):
@@ -44,11 +50,14 @@ class Eventgen(ModularInput):
         self.output = XMLOutputManager()
 
         self.args = [
-            VerbosityField("verbosity",
-                           "Verbosity",
-                           "Logging Level (DEBUG(10), INFO(20), WARN(30), ERROR(40), CRITICAL(50))",
-                           required_on_create=True,
-                           required_on_edit=True)]
+            VerbosityField(
+                "verbosity",
+                "Verbosity",
+                "Logging Level (DEBUG(10), INFO(20), WARN(30), ERROR(40), CRITICAL(50))",
+                required_on_create=True,
+                required_on_edit=True,
+            )
+        ]
         ModularInput.__init__(self, self.scheme_args, self.args)
 
     def create_args(self):
@@ -71,17 +80,19 @@ class Eventgen(ModularInput):
         args.profiler = False
         args.sample = None
         args.version = False
-        args.subcommand = 'generate'
+        args.subcommand = "generate"
         args.verbosity = logging.ERROR
         args.wsgi = False
-        args.log_path = make_splunkhome_path(['var', 'log', 'splunk'])
+        args.log_path = make_splunkhome_path(["var", "log", "splunk"])
         args.modinput_mode = True
         args.disable_logging = False
         return args
 
     def prepare_config(self, args):
         new_args = {}
-        outputer = [key for key in ["keepoutput", "devnull", "modinput"] if getattr(args, key)]
+        outputer = [
+            key for key in ["keepoutput", "devnull", "modinput"] if getattr(args, key)
+        ]
         if len(outputer) > 0:
             new_args["override_outputter"] = outputer[0]
         if getattr(args, "count"):
@@ -150,11 +161,11 @@ def handler(signum, frame):
 
 
 def handle_signal():
-    if not sys.platform.startswith('win') and sys.platform != "cygwin":
+    if not sys.platform.startswith("win") and sys.platform != "cygwin":
         signal.signal(signal.SIGPIPE, handler)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     handle_signal()
     worker = Eventgen()
     worker.execute()

@@ -3,8 +3,7 @@
 import os
 import sys
 
-import pytest
-from mock import MagicMock, patch
+from mock import MagicMock
 
 from splunk_eventgen.__main__ import gather_env_vars
 
@@ -17,6 +16,10 @@ def test_gather_env_vars():
     args = MagicMock()
     args.redis_host = "127.0.0.1"
     args.redis_port = "6379"
-    args.web_server_port = '9500'
+    args.web_server_port = "9500"
     obj = gather_env_vars(args)
-    assert obj == {"REDIS_HOST": "127.0.0.1", "REDIS_PORT": "6379", "WEB_SERVER_PORT": "9500"}
+    assert obj == {
+        "REDIS_HOST": "127.0.0.1",
+        "REDIS_PORT": "6379",
+        "WEB_SERVER_PORT": "9500",
+    }
