@@ -12,10 +12,6 @@ jobs:
       - run:
           name: Enable Py3
           command: |
-            pyenv uninstall  -f 3.5.2
-            sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
-              libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev xz-utils git \
-              libffi-dev liblzma-dev python-openssl
             pyenv install 3.7.7
             pyenv global 3.7.7
       - run:
