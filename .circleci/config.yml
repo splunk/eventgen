@@ -6,7 +6,7 @@ version: 2
 jobs:
   test_eventgen:
     machine:
-      image: circleci/classic:latest
+      image: circleci/python:3.7-rc-node
     steps:
       - checkout
       - run:
