@@ -1,6 +1,7 @@
 import datetime
 import time
 from queue import Full
+
 from splunk_eventgen.lib.logging_config import logger, metrics_logger
 
 

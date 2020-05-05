@@ -6,13 +6,13 @@ import pprint
 import random
 import re
 import time
-import urllib.request
-import urllib.parse
 import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 
-from splunk_eventgen.lib.timeparser import timeDelta2secs
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.timeparser import timeDelta2secs
 
 
 class Token(object):

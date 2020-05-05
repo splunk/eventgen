@@ -1,5 +1,5 @@
-from splunk_eventgen.lib.outputplugin import OutputPlugin
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class UdpOutputPlugin(OutputPlugin):

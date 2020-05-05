@@ -1,18 +1,19 @@
-import flask
-from flask import Response, request
-import socket
-import json
+import collections
 import configparser
+import glob
+import json
+import logging
 import os
+import shutil
+import socket
+import tarfile
+import threading
 import time
 import zipfile
-import tarfile
-import glob
-import shutil
-import collections
-import logging
+
+import flask
 import requests
-import threading
+from flask import Response, request
 
 from splunk_eventgen.eventgen_api_server import eventgen_core_object
 

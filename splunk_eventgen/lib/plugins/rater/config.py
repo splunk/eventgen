@@ -1,5 +1,6 @@
 import datetime
 import random
+
 from splunk_eventgen.lib.logging_config import logger
 
 

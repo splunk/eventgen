@@ -5,12 +5,12 @@ import os
 import pprint
 import re
 import sys
-import urllib.request
-import urllib.parse
 import urllib.error
+import urllib.parse
+import urllib.request
 
-from splunk_eventgen.lib.timeparser import timeParser
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.timeparser import timeParser
 
 
 class Sample(object):

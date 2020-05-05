@@ -1,9 +1,8 @@
-import os
-import subprocess
-import re
-from threading import Timer
-
 import configparser
+import os
+import re
+import subprocess
+from threading import Timer
 
 # $EVENTGEN_HOME/tests/large
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

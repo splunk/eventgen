@@ -1,6 +1,6 @@
+import csv
 import json
 import os
-import csv
 import re
 
 base_dir = os.path.dirname(os.path.abspath(__file__))

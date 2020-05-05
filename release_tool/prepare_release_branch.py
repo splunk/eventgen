@@ -1,10 +1,11 @@
 import argparse
-import os
-import sys
-import logging
 import json
+import logging
+import os
 import re
 import subprocess
+import sys
+
 import requests
 
 logging.getLogger().setLevel(logging.INFO)

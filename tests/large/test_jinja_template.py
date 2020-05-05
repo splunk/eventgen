@@ -1,5 +1,5 @@
-import re
 import datetime
+import re
 
 ts_regex = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
 ts_format = "%Y-%m-%dT%H:%M:%S"

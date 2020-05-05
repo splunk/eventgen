@@ -1,10 +1,11 @@
-from splunk_eventgen.lib.outputplugin import OutputPlugin
-from splunk_eventgen.lib.logging_config import logger
+from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from requests import Session
 from requests_futures.sessions import FuturesSession
-from concurrent.futures import ThreadPoolExecutor
+
+from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 try:
     import ujson as json

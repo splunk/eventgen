@@ -1,7 +1,9 @@
-import os
 import logging.config
+import os
 
-DEFAULT_LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'logs')
+DEFAULT_LOG_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "logs"
+)
 DEFAULT_LOGGING_LEVEL = "ERROR"
 
 EG_LOG_DIR = os.environ.get("EVENTGEN_LOG_DIR")

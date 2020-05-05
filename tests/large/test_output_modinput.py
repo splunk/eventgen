@@ -1,8 +1,9 @@
-import subprocess
-import os
-import time
 import datetime
+import os
 import re
+import subprocess
+import time
+
 from lxml import etree
 
 file_dir = os.path.abspath(os.path.dirname(__file__))

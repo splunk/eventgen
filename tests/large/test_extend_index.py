@@ -1,8 +1,8 @@
 from utils.splunk_search_util import (
+    get_search_response,
     get_session_key,
     preprocess_search,
     run_search,
-    get_search_response,
 )
 
 

@@ -7,9 +7,9 @@ import pprint
 import random
 import re
 import types
-import urllib.request
-import urllib.parse
 import urllib.error
+import urllib.parse
+import urllib.request
 from configparser import RawConfigParser
 
 from splunk_eventgen.lib.eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
