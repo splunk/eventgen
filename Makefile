@@ -38,6 +38,9 @@ test_helper:
 	@echo 'Copying orca tree into the orca container'
 	docker cp . ${EVENTGEN_TEST_IMAGE}:$(shell pwd)
 
+	@echo 'Show python/pip version info'
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 --version; python3 -m pip3 --version; which python3"
+
 	@echo 'Verifying contents of pip.conf'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip3 install dist/splunk_eventgen*.tar.gz"
 
