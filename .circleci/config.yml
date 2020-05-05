@@ -5,13 +5,14 @@
 version: 2
 jobs:
   test_eventgen:
-    machine: true
+    machine:
+      image: circleci/classic:201808-01
     steps:
       - checkout
       - run:
           name: Enable Py3
           command: |
-            pyenv install --list
+            pyenv global 3.7.0
       - run:
           name: Run Tests
           command: |
