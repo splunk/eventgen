@@ -38,14 +38,11 @@ test_helper:
 	@echo 'Copying orca tree into the orca container'
 	docker cp . ${EVENTGEN_TEST_IMAGE}:$(shell pwd)
 
-	@echo 'Show python/pip version info'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 --version; python3 -m pip3 --version; which python3"
-
 	@echo 'Verifying contents of pip.conf'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip3 install dist/splunk_eventgen*.tar.gz"
 
 	@echo 'Installing test requirements'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 install --upgrade pip;pip3 install -r $(shell pwd)/requirements.txt;pip3 install git+https://github.com/esnme/ultrajson.git"
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 install --upgrade pip;pip3 install -r $(shell pwd)/requirements.txt"
 
 	@echo 'Make simulated app dir and sample for modular input test'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); cd ../..; mkdir -p modinput_test_app/samples/"

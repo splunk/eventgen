@@ -10,7 +10,7 @@ pytest-mock>=1.10.4
 boto3
 requests>=2.18.4
 requests[security]
-ujson>=1.35
+ujson>=2.0.2
 pyyaml
 httplib2>=0.17.2
 jinja2==2.10.3
