@@ -11,9 +11,9 @@ jobs:
       - checkout
       - run:
           name: Enable Py3
-            command: |
-              pyenv versions
-              pyenv global 3.7.0
+          command: |
+            pyenv versions
+            pyenv global 3.7.0
       - run:
           name: Run Tests
           command: |
