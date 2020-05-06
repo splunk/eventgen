@@ -77,10 +77,15 @@ Note: checking out 'remotes/origin/master'.
 
 $ git pull
 ```
+Eventgen uses [Poetry](https://github.com/python-poetry/poetry) to manage and build. Install `Poetry` first:
+```
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+
+```
 
 Then run below commands inside Eventgen directory:
 ```
-$ python setup.py sdist
+$ poetry build
 
 # you should see a tar file inside of dist directory
 # the <version> is a token to represent current version of Eventgen, for example, 7.1.0
