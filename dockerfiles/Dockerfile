@@ -28,9 +28,9 @@ RUN apk --no-cache upgrade && \
 	mkdir -p /root/.ssh && \
 	chmod 0700 /root/.ssh && \
 	passwd -u root && \
-	# install dependencies of conduct2 used by perf
-	pip2 install filelock twisted requests queuelib ujson psutil crochet msgpack-python unidecode attrdict service_identity && \
-	pip2 install git+https://github.com/esnme/ultrajson.git
+	# install dependencies of conductor2 used by perf
+	pip2 install filelock twisted requests queuelib psutil crochet msgpack-python unidecode attrdict service_identity && \
+	pip2 install git+https://github.com/esnme/ultrajson.git@v1.35
 
 COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
