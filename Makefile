@@ -42,7 +42,7 @@ test_helper:
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip3 install dist/splunk_eventgen*.tar.gz"
 
 	@echo 'Installing test requirements'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 install --upgrade pip;pip3 install -r $(shell pwd)/requirements.txt;pip3 install git+https://github.com/esnme/ultrajson.git"
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 install --upgrade pip;pip3 install -r $(shell pwd)/requirements.txt"
 
 	@echo 'Make simulated app dir and sample for modular input test'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); cd ../..; mkdir -p modinput_test_app/samples/"
