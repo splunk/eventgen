@@ -10,14 +10,13 @@ pytest-mock>=1.10.4
 boto3
 requests>=2.18.4
 requests[security]
-ujson>=1.35
+ujson==2.0.3
 pyyaml
 httplib2
 jinja2==2.10.3
 urllib3==1.24.2
-pyOpenSSL
 flake8>=3.7.7
-yapf>=0.26.0
+black==19.10b0
 isort>=4.3.15
 Flask>=1.0.3
 redis==3.3.10

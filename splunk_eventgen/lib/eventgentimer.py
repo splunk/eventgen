@@ -1,9 +1,9 @@
-import time
 import copy
+import time
 from queue import Full
 
-from splunk_eventgen.lib.timeparser import timeParserTimeMath
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.timeparser import timeParserTimeMath
 
 
 class Timer(object):
@@ -22,11 +22,20 @@ class Timer(object):
     the case of Non-Queueable plugins, the Timer class calls the generator method of the plugin directly, tracks the
     amount of time the plugin takes to generate and sleeps the remaining interval before calling generate again.
     """
+
     time = None
     countdown = None
 
     # Added by CS 5/7/12 to emulate threading.Timer
-    def __init__(self, time, sample=None, config=None, genqueue=None, outputqueue=None, loggingqueue=None):
+    def __init__(
+        self,
+        time,
+        sample=None,
+        config=None,
+        genqueue=None,
+        outputqueue=None,
+        loggingqueue=None,
+    ):
         # Logger already setup by config, just get an instance
         # setup default options
         self.profiler = config.profiler
@@ -41,22 +50,38 @@ class Timer(object):
         self.countdown = 0
         self.executions = 0
         self.interval = getattr(self.sample, "interval", config.interval)
-        logger.debug('Initializing timer for %s' % sample.name if sample is not None else "None")
+        logger.debug(
+            "Initializing timer for %s" % sample.name if sample is not None else "None"
+        )
         # load plugins
         if self.sample is not None:
-            rater_class = self.config.getPlugin('rater.' + self.sample.rater, self.sample)
+            rater_class = self.config.getPlugin(
+                "rater." + self.sample.rater, self.sample
+            )
             self.rater = rater_class(self.sample)
-            self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
-            self.outputPlugin = self.config.getPlugin('output.' + self.sample.outputMode, self.sample)
+            self.generatorPlugin = self.config.getPlugin(
+                "generator." + self.sample.generator, self.sample
+            )
+            self.outputPlugin = self.config.getPlugin(
+                "output." + self.sample.outputMode, self.sample
+            )
             if self.sample.timeMultiple < 0:
-                logger.error("Invalid setting for timeMultiple: {}, value should be positive".format(
-                    self.sample.timeMultiple))
+                logger.error(
+                    "Invalid setting for timeMultiple: {}, value should be positive".format(
+                        self.sample.timeMultiple
+                    )
+                )
             elif self.sample.timeMultiple != 1:
                 self.interval = self.sample.interval
-                logger.debug("Adjusting interval {} with timeMultiple {}, new interval: {}".format(
-                    self.sample.interval, self.sample.timeMultiple, self.interval))
+                logger.debug(
+                    "Adjusting interval {} with timeMultiple {}, new interval: {}".format(
+                        self.sample.interval, self.sample.timeMultiple, self.interval
+                    )
+                )
         logger.info(
-            "Start '%s' generatorWorkers for sample '%s'" % (self.sample.config.generatorWorkers, self.sample.name))
+            "Start '%s' generatorWorkers for sample '%s'"
+            % (self.sample.config.generatorWorkers, self.sample.name)
+        )
 
     def predict_event_size(self):
         try:
@@ -65,12 +90,12 @@ class Timer(object):
         except TypeError:
             logger.debug("Error loading sample file for sample '%s'" % self.sample.name)
             return
-        total_len = sum([len(e['_raw']) for e in self.sample.sampleDict])
+        total_len = sum([len(e["_raw"]) for e in self.sample.sampleDict])
         sample_count = len(self.sample.sampleDict)
         if sample_count == 0:
             return 0
         else:
-            return total_len/sample_count
+            return total_len / sample_count
 
     def run(self):
         """
@@ -78,8 +103,14 @@ class Timer(object):
         """
         if self.profiler:
             import cProfile
-            globals()['threadrun'] = self.real_run
-            cProfile.runctx("threadrun()", globals(), locals(), "eventgen_timer_%s" % self.sample.name)
+
+            globals()["threadrun"] = self.real_run
+            cProfile.runctx(
+                "threadrun()",
+                globals(),
+                locals(),
+                "eventgen_timer_%s" % self.sample.name,
+            )
         else:
             self.real_run()
 
@@ -99,10 +130,16 @@ class Timer(object):
         raw_event_size = self.predict_event_size()
         if self.end:
             if int(self.end) == 0:
-                logger.info("End = 0, no events will be generated for sample '%s'" % self.sample.name)
+                logger.info(
+                    "End = 0, no events will be generated for sample '%s'"
+                    % self.sample.name
+                )
                 end = True
             elif int(self.end) == -1:
-                logger.info("End is set to -1. Will be running without stopping for sample %s" % self.sample.name)
+                logger.info(
+                    "End is set to -1. Will be running without stopping for sample %s"
+                    % self.sample.name
+                )
         while not end:
             # Need to be able to stop threads by the main thread or this thread. self.config will stop all threads
             # referenced in the config object, while, self.stopping will only stop this one.
@@ -125,28 +162,41 @@ class Timer(object):
                             backfillnumber += char
                         elif char != "-":
                             backfillletter += char
-                    backfillearliest = timeParserTimeMath(plusminus=mathsymbol, num=backfillnumber, unit=backfillletter,
-                                                        ret=realtime)
+                    backfillearliest = timeParserTimeMath(
+                        plusminus=mathsymbol,
+                        num=backfillnumber,
+                        unit=backfillletter,
+                        ret=realtime,
+                    )
                     while backfillearliest < realtime:
                         if self.end and self.executions == int(self.end):
-                            logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
-                                self.end), self.sample.name))
+                            logger.info(
+                                "End executions %d reached, ending generation of sample '%s'"
+                                % (int(self.end), self.sample.name)
+                            )
                             break
                         et = backfillearliest
-                        lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
+                        lt = timeParserTimeMath(
+                            plusminus="+", num=self.interval, unit="s", ret=et
+                        )
                         copy_sample = copy.copy(self.sample)
                         tokens = copy.deepcopy(self.sample.tokens)
                         copy_sample.tokens = tokens
                         genPlugin = self.generatorPlugin(sample=copy_sample)
                         # need to make sure we set the queue right if we're using multiprocessing or thread modes
-                        genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
+                        genPlugin.updateConfig(
+                            config=self.config, outqueue=self.outputQueue
+                        )
                         genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
                         try:
                             self.generatorQueue.put(genPlugin, True, 3)
                             self.executions += 1
                             backfillearliest = lt
                         except Full:
-                            logger.warning("Generator Queue Full. Reput the backfill generator task later. %d backfill generators are dispatched.", self.executions)
+                            logger.warning(
+                                "Generator Queue Full. Reput the backfill generator task later. %d backfill generators are dispatched.",
+                                self.executions,
+                            )
                             backfillearliest = et
                         realtime = self.sample.now(realnow=True)
 
@@ -154,11 +204,15 @@ class Timer(object):
                 else:
                     # 12/15/13 CS Moving the rating to a separate plugin architecture
                     # Save previous interval count left to avoid perdayvolumegenerator drop small tasks
-                    if self.sample.generator == 'perdayvolumegenerator':
+                    if self.sample.generator == "perdayvolumegenerator":
                         count = self.rater.rate() + previous_count_left
                         if 0 < count < raw_event_size:
-                            logger.info("current interval size is {}, which is smaller than a raw event size {}.".
-                                             format(count, raw_event_size) + "Wait for the next turn.")
+                            logger.info(
+                                "current interval size is {}, which is smaller than a raw event size {}.".format(
+                                    count, raw_event_size
+                                )
+                                + "Wait for the next turn."
+                            )
                             previous_count_left = count
                             self.countdown = self.interval
                             self.executions += 1
@@ -175,28 +229,49 @@ class Timer(object):
                         if count < 1 and count != -1:
                             logger.info(
                                 "There is no data to be generated in worker {0} because the count is {1}.".format(
-                                    self.sample.config.generatorWorkers, count))
+                                    self.sample.config.generatorWorkers, count
+                                )
+                            )
                         else:
                             # Spawn workers at the beginning of job rather than wait for next interval
-                            logger.info("Starting '%d' generatorWorkers for sample '%s'" %
-                                             (self.sample.config.generatorWorkers, self.sample.name))
+                            logger.info(
+                                "Starting '%d' generatorWorkers for sample '%s'"
+                                % (
+                                    self.sample.config.generatorWorkers,
+                                    self.sample.name,
+                                )
+                            )
                             for worker_id in range(self.config.generatorWorkers):
                                 copy_sample = copy.copy(self.sample)
                                 tokens = copy.deepcopy(self.sample.tokens)
                                 copy_sample.tokens = tokens
                                 genPlugin = self.generatorPlugin(sample=copy_sample)
                                 # Adjust queue for threading mode
-                                genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
-                                genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
+                                genPlugin.updateConfig(
+                                    config=self.config, outqueue=self.outputQueue
+                                )
+                                genPlugin.updateCounts(
+                                    count=count, start_time=et, end_time=lt
+                                )
 
                                 try:
                                     self.generatorQueue.put(genPlugin)
-                                    logger.debug(("Worker# {0}: Put {1} MB of events in queue for sample '{2}'" +
-                                                       "with et '{3}' and lt '{4}'").format(
-                                                          worker_id, round((count / 1024.0 / 1024), 4),
-                                                          self.sample.name, et, lt))
+                                    logger.debug(
+                                        (
+                                            "Worker# {0}: Put {1} MB of events in queue for sample '{2}'"
+                                            + "with et '{3}' and lt '{4}'"
+                                        ).format(
+                                            worker_id,
+                                            round((count / 1024.0 / 1024), 4),
+                                            self.sample.name,
+                                            et,
+                                            lt,
+                                        )
+                                    )
                                 except Full:
-                                    logger.warning("Generator Queue Full. Skipping current generation.")
+                                    logger.warning(
+                                        "Generator Queue Full. Skipping current generation."
+                                    )
                             self.executions += 1
                     except Exception as e:
                         logger.exception(str(e))
@@ -219,13 +294,17 @@ class Timer(object):
                     # timer thread
                     if not self.endts:
                         if self.executions >= int(self.end):
-                            logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
-                                self.end), self.sample.name))
+                            logger.info(
+                                "End executions %d reached, ending generation of sample '%s'"
+                                % (int(self.end), self.sample.name)
+                            )
                             self.stopping = True
                             end = True
                     elif lt >= self.endts:
-                        logger.info("End Time '%s' reached, ending generation of sample '%s'" % (self.sample.endts,
-                                                                                                      self.sample.name))
+                        logger.info(
+                            "End Time '%s' reached, ending generation of sample '%s'"
+                            % (self.sample.endts, self.sample.name)
+                        )
                         self.stopping = True
                         end = True
 

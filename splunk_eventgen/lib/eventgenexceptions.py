@@ -4,7 +4,15 @@ Define the custom Exceptions for Eventgen.
 
 
 class PluginNotLoaded(Exception):
-    def __init__(self, bindir, libdir, plugindir, name, type, msg="Plugin {} Not Loaded, attempting to load."):
+    def __init__(
+        self,
+        bindir,
+        libdir,
+        plugindir,
+        name,
+        type,
+        msg="Plugin {} Not Loaded, attempting to load.",
+    ):
         """Exception raised when a sample asks for a plugin that is not in the plugin list.
         This exception triggers an upload reload of plugins that expands the search path of plugins to add.
 

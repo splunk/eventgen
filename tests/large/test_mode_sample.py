@@ -1,5 +1,5 @@
-from datetime import datetime
 import re
+from datetime import datetime
 
 
 def test_mode_sample(eventgen_test_helper):
@@ -29,7 +29,9 @@ def test_mode_sample_csv(eventgen_test_helper):
 
 def test_mode_sample_interval(eventgen_test_helper):
     """Test normal sample mode with interval = 10s"""
-    events = eventgen_test_helper("eventgen_sample_interval.conf", timeout=30).get_events()
+    events = eventgen_test_helper(
+        "eventgen_sample_interval.conf", timeout=30
+    ).get_events()
     # assert the total events count is 12 * 3
     assert len(events) == 36
 

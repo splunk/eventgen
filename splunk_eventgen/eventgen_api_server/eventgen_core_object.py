@@ -5,17 +5,21 @@ import os
 import splunk_eventgen.eventgen_core as eventgen_core
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-CUSTOM_CONFIG_PATH = os.path.realpath(os.path.join(FILE_PATH, "..", "default", "eventgen_wsgi.conf"))
+CUSTOM_CONFIG_PATH = os.path.realpath(
+    os.path.join(FILE_PATH, "..", "default", "eventgen_wsgi.conf")
+)
 
 
 class EventgenCoreObject:
     def __init__(self, **kargs):
-        self.logger = logging.getLogger('eventgen_server')
-        self.eventgen_core_object = eventgen_core.EventGenerator(self._create_args(**kargs))
+        self.logger = logging.getLogger("eventgen_server")
+        self.eventgen_core_object = eventgen_core.EventGenerator(
+            self._create_args(**kargs)
+        )
         self.configured = False
         self.configfile = None
         self.check_and_configure_eventgen()
-    
+
     def check_and_configure_eventgen(self):
         if os.path.isfile(CUSTOM_CONFIG_PATH):
             self.configured = True
@@ -48,7 +52,7 @@ class EventgenCoreObject:
         args.profiler = False
         args.sample = None
         args.version = False
-        args.subcommand = 'generate'
+        args.subcommand = "generate"
         args.verbosity = 20
         args.wsgi = True
         args.modinput_mode = False

@@ -1,6 +1,6 @@
+import csv
 import json
 import os
-import csv
 import re
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -12,13 +12,13 @@ def test_token_replacement(eventgen_test_helper):
     # assert the events size is 10 since end = 1
     assert len(events) == 10
 
-    with open(os.path.join(base_dir, 'sample', 'id.csv'), 'rt') as f:
+    with open(os.path.join(base_dir, "sample", "id.csv"), "rt") as f:
         id_content = f.read()
-    with open(os.path.join(base_dir, 'sample', 'ip.csv'), 'rt') as f:
+    with open(os.path.join(base_dir, "sample", "ip.csv"), "rt") as f:
         ip_content = f.read()
-    with open(os.path.join(base_dir, 'sample', 'cp.csv'), 'rt') as f:
+    with open(os.path.join(base_dir, "sample", "cp.csv"), "rt") as f:
         cp_content = f.read()
-    with open(os.path.join(base_dir, 'sample', 'city.csv'), 'rt') as f:
+    with open(os.path.join(base_dir, "sample", "city.csv"), "rt") as f:
         reader = csv.reader(f)
         country = []
         city = []
@@ -61,7 +61,9 @@ def test_token_replacement(eventgen_test_helper):
         mac_pattern = re.compile(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$")
 
         assert ipv4_pattern.match(event_obj["akadebug"]["Ak_IP"]) is not None
-        assert ipv6_pattern.match(event_obj["akadebug"]["forward-origin-ip"]) is not None
+        assert (
+            ipv6_pattern.match(event_obj["akadebug"]["forward-origin-ip"]) is not None
+        )
         assert mac_pattern.match(event_obj["akadebug"]["end-user-ip"]) is not None
 
         # assert replacementType = file | mvfile and replacement = <replacement file name>:<column number>
