@@ -5,14 +5,14 @@ pytest-cov
 coverage==4.5.4
 docker==3.7.3
 pyOpenSSL
-lxml==4.3.4
+lxml>=4.3.5
 pytest-mock>=1.10.4
 boto3
 requests>=2.18.4
 requests[security]
 ujson==2.0.3
 pyyaml
-httplib2
+httplib2>=0.17.2
 jinja2==2.10.3
 urllib3==1.24.2
 flake8>=3.7.7
