@@ -14,6 +14,12 @@ jobs:
           command: |
             pyenv global 3.7.0
       - run:
+          name: Check Code Format
+          command: |
+            set -e
+            pip install -r requirements.txt
+            make format-check
+      - run:
           name: Run Tests
           command: |
             set -e

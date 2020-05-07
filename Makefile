@@ -24,7 +24,7 @@ image: setup_eventgen egg
 	rm splunk_eventgen/default/eventgen_engine.conf || true
 	docker build -f dockerfiles/Dockerfile . -t eventgen
 
-test: image test_helper run_tests test_collection_cleanup
+test: image test_helper format-check run_tests test_collection_cleanup
 
 test_helper:
 	docker run -d -t --net=host -v /var/run/docker.sock:/var/run/docker.sock --name ${EVENTGEN_TEST_IMAGE} eventgen:latest cat
@@ -60,6 +60,10 @@ test_helper:
 	sleep 120
 	@echo 'Provision splunk container'
 	docker exec --user splunk provision_splunk_1 sh -c 'cd /opt/splunk;./provision.sh;./add_httpevent_collector.sh;/opt/splunk/bin/splunk enable listen 9997 -auth admin:changeme;/opt/splunk/bin/splunk add index test_0;/opt/splunk/bin/splunk add index test_1;/opt/splunk/bin/splunk restart'
+
+format-check: image test_helper
+	@echo 'Checking all py files code format'
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); black --check ."
 
 run_tests:
 	@echo 'Running the super awesome tests'
