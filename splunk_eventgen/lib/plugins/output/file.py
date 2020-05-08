@@ -48,12 +48,12 @@ class FileOutputPlugin(OutputPlugin):
             # This may cause the file exceed the maxFileBytes a little bit but will greatly improve the performance
             try:
                 for metamsg in q:
-                    msg = metamsg.get('_raw')
+                    msg = metamsg.get("_raw")
                     if not msg:
                         continue
                     if msg[-1] != "\n":
                         msg += "\n"
-                    
+
                     if self._fileLength + len(msg) <= self._fileMaxBytes:
                         self._fileHandle.write(msg)
                         self._fileLength += len(msg)
@@ -61,19 +61,37 @@ class FileOutputPlugin(OutputPlugin):
                         self._fileHandle.flush()
                         self._fileHandle.close()
 
-                        if os.path.exists(self._file + '.' + str(self._fileBackupFiles)):
-                            logger.debug('File Output: Removing file: %s' % self._file + '.' + str(self._fileBackupFiles))
-                            os.unlink(self._file + '.' + str(self._fileBackupFiles))
+                        if os.path.exists(
+                            self._file + "." + str(self._fileBackupFiles)
+                        ):
+                            logger.debug(
+                                "File Output: Removing file: %s" % self._file
+                                + "."
+                                + str(self._fileBackupFiles)
+                            )
+                            os.unlink(self._file + "." + str(self._fileBackupFiles))
 
                         for x in range(1, int(self._fileBackupFiles))[::-1]:
-                            logger.debug('File Output: Checking for file: %s' % self._file + '.' + str(x))
-                            if os.path.exists(self._file + '.' + str(x)):
-                                logger.debug('File Output: Renaming file %s to %s' % (self._file + '.' + str(x),
-                                                                                        self._file + '.' + str(x + 1)))
-                                os.rename(self._file + '.' + str(x), self._file + '.' + str(x + 1))
-                            
-                        os.rename(self._file, self._file + '.1')
-                        self._fileHandle = open(self._file, 'w')
+                            logger.debug(
+                                "File Output: Checking for file: %s" % self._file
+                                + "."
+                                + str(x)
+                            )
+                            if os.path.exists(self._file + "." + str(x)):
+                                logger.debug(
+                                    "File Output: Renaming file %s to %s"
+                                    % (
+                                        self._file + "." + str(x),
+                                        self._file + "." + str(x + 1),
+                                    )
+                                )
+                                os.rename(
+                                    self._file + "." + str(x),
+                                    self._file + "." + str(x + 1),
+                                )
+
+                        os.rename(self._file, self._file + ".1")
+                        self._fileHandle = open(self._file, "w")
                         self._fileHandle.write(msg)
                         self._fileLength = len(msg)
             except IndexError:

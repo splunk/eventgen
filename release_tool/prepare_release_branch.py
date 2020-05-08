@@ -1,5 +1,4 @@
 import argparse
-import json
 import logging
 import os
 import re
@@ -7,6 +6,7 @@ import subprocess
 import sys
 
 import requests
+import toml
 
 logging.getLogger().setLevel(logging.INFO)
 root_repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,7 +16,7 @@ def parse_args():
     def validate_version_str(version):
         v_str = str(version).strip()
         if not v_str:
-            raise argparse.ArgumentTypeError("verison str can not be emtpy.")
+            raise argparse.ArgumentTypeError("version str can not be emtpy.")
         err_message = 'version string should be of format "major.minor.hotfix"'
         numbers = v_str.split(".")
         if len(numbers) != 3:
@@ -69,10 +69,10 @@ def setup_logging(verbose=None):
 def setup_env():
     """
     by default, we use this hard code current working dir.
-    because curent working dir has impact about the child sh process.
+    because current working dir has impact about the child sh process.
     we need to setup it before launching any process.
     if there is concrete requirement about setting the current
-    working dir, we can change it to cmd arguemnt.
+    working dir, we can change it to cmd argument.
     """
     logging.debug(f"try to change current working directory to {root_repo_dir}")
     os.chdir(root_repo_dir)
@@ -100,13 +100,16 @@ def get_release_branch_name(version_str):
 
 
 def replace_version(ver):
-    ver_json_file = os.path.join(root_repo_dir, "splunk_eventgen", "version.json")
-    with open(ver_json_file, "w") as fp:
-        json.dump({"version": ver}, fp)
+    pyproject_file = os.path.join(root_repo_dir, "pyproject.toml")
+    pyproject = toml.load(pyproject_file)
+    pyproject["tool"]["poetry"]["version"] = ver
+    with open(pyproject_file, "w") as f:
+        toml.dump(pyproject, f)
+
     app_conf = os.path.join(
         root_repo_dir, "splunk_eventgen", "splunk_app", "default", "app.conf"
     )
-    app_conf_content = []
+
     with open(app_conf, "r") as fp:
         app_conf_content = fp.readlines()
     app_pattern = re.compile(r"version\s*=")
@@ -137,10 +140,10 @@ def update_changelog(ver):
 
 
 def commit_updated_files(ver):
-    ver_json_file = os.path.join("splunk_eventgen", "version.json")
+    pyproject_file = os.path.join("pyproject.toml")
     app_conf = os.path.join("splunk_eventgen", "splunk_app", "default", "app.conf")
     changelog = os.path.join("docs", "CHANGELOG.md")
-    run_sh_cmd(["git", "add", ver_json_file])
+    run_sh_cmd(["git", "add", pyproject_file])
     run_sh_cmd(["git", "add", app_conf])
     run_sh_cmd(["git", "add", changelog])
     run_sh_cmd(["git", "commit", "-m", f"update eventgen version to {ver}"], False)

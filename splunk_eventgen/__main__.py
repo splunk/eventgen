@@ -1,6 +1,5 @@
 import argparse
 import errno
-import json
 import logging
 import os
 import shutil
@@ -10,19 +9,15 @@ from splunk_eventgen.eventgen_core import EventGenerator
 from splunk_eventgen.lib.logging_config import logger
 
 FILE_LOCATION = os.path.dirname(os.path.abspath(__file__))
-VERSION_LOCATION = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "version.json"
-)
 
 
 def _get_version():
     """
     @return: Version Number
     """
-    with open(VERSION_LOCATION, "rb") as fp:
-        json_data = json.load(fp)
-        version = json_data["version"]
-    return version
+    import pkg_resources
+
+    return pkg_resources.get_distribution("splunk_eventgen").version
 
 
 EVENTGEN_VERSION = _get_version()

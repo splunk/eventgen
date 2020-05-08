@@ -82,6 +82,10 @@ Eventgen uses [Poetry](https://github.com/python-poetry/poetry) to manage and bu
 curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 
 ```
+Or you can use `pip` to install `poetry`(this is not recommended which might cause conflicts):
+```
+pip install --user poetry
+```
 
 Then run below commands inside Eventgen directory:
 ```
