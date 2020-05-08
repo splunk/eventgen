@@ -18,7 +18,7 @@ CHANGED_ADDED_PY_FILES = $(shell git ls-files -mo --exclude-standard | grep -E '
 all: egg
 
 egg: clean
-	python setup.py sdist
+	python3 setup.py sdist
 
 image: setup_eventgen egg
 	rm splunk_eventgen/default/eventgen_engine.conf || true
@@ -123,7 +123,7 @@ run_standalone:
 	docker run --name eg_standalone  -d -p 9500:9500 eventgen:latest standalone
 
 run_local_standalone:
-	python -m splunk_eventgen service -r standalone
+	python3 -m splunk_eventgen service -r standalone
 
 docs:
 	cd docs/; bundle install; bundle exec jekyll serve

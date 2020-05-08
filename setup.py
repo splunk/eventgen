@@ -51,7 +51,7 @@ setup(
         "Topic :: Software Development :: Build Tools",
         "Topic :: Software Development :: Testing",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.7",
     ],
     keywords="splunk eventgen container containers docker automation",
     entry_points={
