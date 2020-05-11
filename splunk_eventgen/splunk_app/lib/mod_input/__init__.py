@@ -747,9 +747,8 @@ class ModularInput(object):
             )
         except ValueError:
             logger.exception(
-                'msg="ValueError when saving checkpoint data (perhaps invalid JSON)" checkpoint_dir="{}" filename="{}"'.format(
-                    checkpoint_dir, filename
-                )
+                'msg="ValueError when saving checkpoint data (perhaps invalid JSON)"'
+                + f' checkpoint_dir="{checkpoint_dir}" filename="{filename}"'
             )
         except Exception:
             logger.exception(

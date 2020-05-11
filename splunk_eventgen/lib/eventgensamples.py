@@ -397,8 +397,11 @@ class Sample(object):
                             breakerRE = re.compile(self.breaker, re.M)
                         except:
                             logger.error(
-                                "Line breaker '%s' for sample '%s' in app '%s' could not be compiled; using default breaker"
-                                % (self.breaker, self.name, self.app)
+                                "Line breaker '%s' for sample '%s' in app '%s'"
+                                " could not be compiled; using default breaker",
+                                self.breaker,
+                                self.name,
+                                self.app,
                             )
                             self.breaker = self.config.breaker
 

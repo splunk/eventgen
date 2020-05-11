@@ -74,7 +74,8 @@ class SCSOutputPlugin(OutputPlugin):
 
         if self.scsClientId and self.scsClientSecret:
             logger.info(
-                "Both scsClientId and scsClientSecret are supplied. We will renew the expired token using these credentials."
+                "Both scsClientId and scsClientSecret are supplied."
+                + " We will renew the expired token using these credentials."
             )
             self.scsRenewToken = True
         else:
@@ -84,7 +85,8 @@ class SCSOutputPlugin(OutputPlugin):
                 self.scsClientId = self.config.scsClientId
                 self.scsClientSecret = self.config.scsClientSecret
                 logger.info(
-                    "Both scsClientId and scsClientSecret are supplied. We will renew the expired token using these credentials."
+                    "Both scsClientId and scsClientSecret are supplied."
+                    + " We will renew the expired token using these credentials."
                 )
                 self.scsRenewToken = True
             else:

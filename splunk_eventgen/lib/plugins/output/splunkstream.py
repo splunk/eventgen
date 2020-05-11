@@ -45,9 +45,9 @@ class SplunkStreamOutputPlugin(OutputPlugin):
             self._splunkMethod,
             self._splunkHost,
             self._splunkPort,
-        ) = c.getSplunkUrl(
+        ) = c.getSplunkUrl(  # noqa: F821
             self._sample
-        )  # noqa
+        )
         self._splunkUser = self._sample.splunkUser
         self._splunkPass = self._sample.splunkPass
 
