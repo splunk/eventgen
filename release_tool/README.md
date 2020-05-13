@@ -1,6 +1,6 @@
 # Release tool
 
-Use script to bump the release verison and create the release PR to merge to develop branch.
+Use script to bump the release version and create the release PR to merge to develop branch.
 
 **Note: this script only works with python3.**
 

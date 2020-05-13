@@ -1,3 +1,65 @@
+[tool.poetry]
+name="splunk_eventgen"
+version="7.1.0"
+description="Splunk Event Generator to produce real-time, representative data"
+authors = [
+    "Brian Bingham <bbingham@splunk.com>",
+    "Tony Lee <tonyl@splunk.com>",
+    "Jack Meixensperger <jackm@splunk.com>"
+]
+license = "Apache-2.0"
+readme = "README.md"
+
+documentation = "http://splunk.github.io/eventgen/"
+repository = "https://github.com/splunk/eventgen"
+keywords = ["splunk", "eventgen", "container", "containers", "docker", "automation"]
+classifiers=[
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Testing",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+]
+packages = [{ include = "splunk_eventgen"}]
+
+[tool.poetry.scripts]
+splunk_eventgen = "splunk_eventgen.__main__:main"
+
+[build-system]
+requires = ["poetry>=1.0.5"]
+build-backend = "poetry.masonry.api"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+docker = "^3.7.3"
+pyOpenSSL = "^19.1.0"
+lxml = "^4.3.5"
+boto3 = "^1.12.45"
+requests = "^2.18.4"
+requests-futures = "1.0.0"
+redis = "3.3.10"
+Flask = "^1.0.3"
+ujson = "^2.0.3"
+PyYAML = "^5.3.1"
+jinja2 = "2.10.3"
+urllib3 = "1.24.2"
+httplib2 = "^0.17.2"
+uuid = "^1.30"
+
+[tool.poetry.dev-dependencies]
+pytest = "4.6.4"
+pytest-xdist = "^1.31.0"
+mock = "^4.0.2"
+pytest-cov = "^2.8.1"
+coverage = "4.5.4"
+pytest-mock = "^3.1.0"
+flake8 = "^3.7.9"
+black = "19.10b0"
+isort = "^4.3.15"
+
+
 [tool.black]
 target-version = ['py37']
 include = '\.pyi?$'

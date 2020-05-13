@@ -18,7 +18,7 @@ CHANGED_ADDED_PY_FILES = $(shell git ls-files -mo --exclude-standard | grep -E '
 all: egg
 
 egg: clean
-	python3 setup.py sdist
+	poetry build
 
 image: setup_eventgen egg
 	rm splunk_eventgen/default/eventgen_engine.conf || true
@@ -41,15 +41,15 @@ test_helper:
 	@echo 'Verifying contents of pip.conf'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip3 install dist/splunk_eventgen*.tar.gz"
 
-	@echo 'Installing test requirements'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 install --upgrade pip;pip3 install -r $(shell pwd)/requirements.txt"
+	@echo 'Installing test dependencies'
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 install poetry;poetry config virtualenvs.create false;poetry install --no-root"
 
 	@echo 'Make simulated app dir and sample for modular input test'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); cd ../..; mkdir -p modinput_test_app/samples/"
 	docker cp tests/large/sample/film.json ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/../../modinput_test_app/samples
 
 	@echo 'Installing docker-compose'
-	bash install_docker_compose.sh
+	bash tests/large/provision/install_docker_compose.sh
 
 	@echo 'Build a docker image'
 	docker build -t provision_splunk:latest -f tests/large/provision/Dockerfile tests/large/provision
