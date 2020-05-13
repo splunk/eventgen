@@ -28,6 +28,8 @@ jobs:
       - run:
           name: Run Tests
           command: |
+            pip3 install --upgrade pip
+            pip3 install poetry
             set -e
             make test
           no_output_timeout: 30m
@@ -43,4 +45,3 @@ workflows:
   run_tests:
     jobs:
       - test_eventgen
-
