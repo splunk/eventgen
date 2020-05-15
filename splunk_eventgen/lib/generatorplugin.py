@@ -288,8 +288,9 @@ class GeneratorPlugin(object):
                 if self._sample.hostToken:
                     # clear the host mvhash every time, because we need to re-randomize it
                     self._sample.hostToken.mvhash = {}
-                if self._sample.hostToken:
-                    host = self._sample.hostToken.replace(host, s=self._sample)
+                    event = self._sample.hostToken.replace(event, s=self._sample)
+                    host = self._sample.hostToken.replacementValue
+
             try:
                 time_val = int(time.mktime(pivot_timestamp.timetuple()))
             except Exception:
