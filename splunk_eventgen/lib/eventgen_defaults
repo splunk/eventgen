@@ -21,6 +21,5 @@ fileBackupFiles = 5
 splunkPort = 8089
 splunkMethod = https
 index = main
-source = eventgen
 sourcetype = eventgen
 host = 127.0.0.1

@@ -971,6 +971,10 @@ class Config(object):
                 s.interval = 0 if not s.interval else s.interval
                 # 12/29/13 CS Moved replay generation to a new replay generator plugin
                 s.generator = "replay"
+            # 5/25/20 - Instead of using a static default source, leave source empty by default and
+            # set it to the sample file name unless otherwise specified.
+            if not self.source:
+                s.source = os.path.basename(s.filePath)
 
         self.samples = tempsamples
         self._confDict = None

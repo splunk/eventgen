@@ -374,7 +374,7 @@ specifically be supported by all plugins. Plugins that write to files like spool
 
     source = <source>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
-    * Set event source in Splunk to <source>. Defaults to 'eventgen' if none specified.
+    * Set event source in Splunk to <source>. Defaults to sample file name if none specified.
 
     sourcetype = <sourcetype>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
