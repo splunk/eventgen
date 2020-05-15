@@ -125,6 +125,7 @@ outputMode = scsout | modinput | s2s | file | splunkstream | stdout | devnull | 
     * If setting scsout, should set scsEndPoint and scsAccessToken. scsClientId, scsClientSecret, and scsRetryNum are optional.
     * If setting spool, should set spoolDir
     * If setting file, should set fileName
+    * If setting pregen, should output json to stdout for use in external tools
     * If setting splunkstream, should set splunkHost, splunkPort, splunkMethod,
       splunkUser and splunkPassword if not Splunk embedded
     * If setting s2s, should set splunkHost and splunkPort
