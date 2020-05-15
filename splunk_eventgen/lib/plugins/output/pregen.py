@@ -18,14 +18,12 @@ class PregenOutputPlugin(OutputPlugin):
             m = q.pop(0)
             while m:
                 out  = json.dumps(m)
-
+                sys.stdout.write(f"{out}\n")
                 try:
                     m = q.pop(0)
                 except IndexError:
-                    m = False
-
-        sys.stdout.write(out)
-        sys.stdout.flush()
+                    m = False            
+            sys.stdout.flush()
 
 
 def load():
