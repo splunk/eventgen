@@ -131,7 +131,7 @@ class SCSOutputPlugin(OutputPlugin):
                     f"Data transmisison failed with {response.status_code} and {response.text}"
                 )
                 return False
-        logger.debug(f"Data transmission successful")
+        logger.debug("Data transmission successful")
         return True
 
     def renewAccessToken(self):
