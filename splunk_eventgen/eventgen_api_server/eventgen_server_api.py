@@ -374,7 +374,16 @@ class EventgenServerAPI:
         return bp
 
     def get_index(self):
-        home_page = """*** Eventgen WSGI ***\nHost: {0}\nEventgen Status: {1}\nEventgen Config file exists: {2}\nEventgen Config file path: {3}\nTotal volume: {4}\nWorker Queue Status: {5}\nSample Queue Status: {6}\nOutput Queue Status: {7}\n"""
+        home_page = """*** Eventgen WSGI ***
+Host: {0}
+Eventgen Status: {1}
+Eventgen Config file exists: {2}
+Eventgen Config file path: {3}
+Total volume: {4}
+Worker Queue Status: {5}
+Sample Queue Status: {6}
+Output Queue Status: {7}
+"""
         status = self.get_status()
         eventgen_status = "running" if status["EVENTGEN_STATUS"] else "stopped"
         host = status["EVENTGEN_HOST"]

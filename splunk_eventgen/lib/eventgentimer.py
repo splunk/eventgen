@@ -194,7 +194,8 @@ class Timer(object):
                             backfillearliest = lt
                         except Full:
                             logger.warning(
-                                "Generator Queue Full. Reput the backfill generator task later. %d backfill generators are dispatched.",
+                                "Generator Queue Full. Reput the backfill generator task later."
+                                " %d backfill generators are dispatched.",
                                 self.executions,
                             )
                             backfillearliest = et

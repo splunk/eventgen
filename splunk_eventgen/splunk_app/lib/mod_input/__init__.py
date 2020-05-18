@@ -747,9 +747,8 @@ class ModularInput(object):
             )
         except ValueError:
             logger.exception(
-                'msg="ValueError when saving checkpoint data (perhaps invalid JSON)" checkpoint_dir="{}" filename="{}"'.format(
-                    checkpoint_dir, filename
-                )
+                'msg="ValueError when saving checkpoint data (perhaps invalid JSON)"'
+                + f' checkpoint_dir="{checkpoint_dir}" filename="{filename}"'
             )
         except Exception:
             logger.exception(
@@ -789,9 +788,8 @@ class ModularInput(object):
                     data = json.load(fp)
         except (IOError, ValueError) as e:
             logger.exception(
-                'msg="Exception when reading checkpoint data" checkpoint_dir="{}" filename="{}" exception="%s"'.format(
-                    checkpoint_dir, filename, e
-                )
+                'msg="Exception when reading checkpoint data" '
+                + f'checkpoint_dir="{checkpoint_dir}" filename="{filename}" exception="{e}"'
             )
             if raise_known_exceptions:
                 raise

@@ -131,9 +131,7 @@ class GeneratorPlugin(object):
             if s.backfillSearch is not None:
                 if s.backfillSearchUrl is None:
                     try:
-                        s.backfillSearchUrl = c.getSplunkUrl(s)[
-                            0
-                        ]  # noqa, we update c in the globals() dict
+                        s.backfillSearchUrl = c.getSplunkUrl(s)[0]  # noqa: F821
                     except ValueError:
                         logger.error(
                             "Backfill Search URL not specified for sample '%s', not running backfill search"
