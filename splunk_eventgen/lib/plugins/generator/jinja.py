@@ -192,7 +192,7 @@ class JinjaGenerator(GeneratorPlugin):
             self.current_count = self.current_count + 1
         else:
             raise Exception(
-                "Unable to process target count style: %s".format(self.jinja_count_type)
+                f"Unable to process target count style: {self.jinja_count_type}"
             )
 
     def gen(self, count, earliest, latest, samplename=None):

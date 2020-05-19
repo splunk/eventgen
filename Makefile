@@ -12,6 +12,7 @@ LARGE ?= 'tests/large'
 XLARGE ?= 'tests/xlarge'
 NEWLY_ADDED_PY_FILES = $(shell git ls-files -o --exclude-standard | grep -E '\.py$$')
 CHANGED_ADDED_PY_FILES = $(shell git ls-files -mo --exclude-standard | grep -E '\.py$$')
+ALL_PY_FILES = $(shell git ls-files tests splunk_eventgen | grep -E '\.py$$')
 
 .PHONY: tests, lint, format, docs
 
@@ -149,12 +150,18 @@ endif
 ifeq ($(NEWLY_ADDED_PY_FILES), )
 	@echo 'No newly added python files. Skip...'
 else
-	@black $(NEWLY_ADDED_PY_FILES)
+	@black -t py37 $(NEWLY_ADDED_PY_FILES)
 endif
 
 lint-all:
-	@flake8 .
+	@echo "lint all py files"
+	@flake8 $(ALL_PY_FILES)
+
+format-check:
+	@echo 'Checking all py files code format'
+	@black --check -t py37 .
 
 format-all:
-	@isort -rc .
-	@black .
+	@echo "format all py files"
+	@isort -rc $(ALL_PY_FILES)
+	@black -t py37 $(ALL_PY_FILES)

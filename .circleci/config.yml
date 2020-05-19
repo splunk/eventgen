@@ -14,6 +14,18 @@ jobs:
           command: |
             pyenv global 3.7.0
       - run:
+          name: Run Flake8 Code Lint
+          command: |
+            set -e
+            pip install "flake8>=3.7.7"
+            make lint-all
+      - run:
+          name: Check Code Format
+          command: |
+            set -e
+            pip install "black==19.10b0" "isort>=4.3.15"
+            make format-check
+      - run:
           name: Run Tests
           command: |
             pip3 install --upgrade pip
