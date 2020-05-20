@@ -660,16 +660,14 @@ class Config(object):
                     else:
                         s.sampleDir = os.path.join(os.getcwd(), self.DEFAULT_SAMPLE_DIR)
                         if not os.path.exists(s.sampleDir):
-                            # use the prebuilt sample dirs as the last choice
-                            if not os.path.exists(s.sampleDir):
-                                newSampleDir = os.path.join(
-                                    self.grandparentdir, self.DEFAULT_SAMPLE_DIR
-                                )
-                                logger.error(
-                                    "Path not found for samples '%s', trying '%s'"
-                                    % (s.sampleDir, newSampleDir)
-                                )
-                                s.sampleDir = newSampleDir
+                            newSampleDir = os.path.join(
+                                self.grandparentdir, self.DEFAULT_SAMPLE_DIR
+                            )
+                            logger.error(
+                                "Path not found for samples '%s', trying '%s'"
+                                % (s.sampleDir, newSampleDir)
+                            )
+                            s.sampleDir = newSampleDir
             else:
                 if not os.path.isabs(s.sampleDir):
                     # relative path use the conffile dir as the base dir
@@ -974,7 +972,8 @@ class Config(object):
             # 5/14/20 - Instead of using a static default source, leave source empty by default and
             # set it to the sample file name unless otherwise specified.
             if not self.source:
-                s.source = os.path.basename(s.filePath)
+                sample_path = s.filePath if s.filePath else s.generator
+                s.source = os.path.basename(sample_path)
 
         self.samples = tempsamples
         self._confDict = None
