@@ -971,7 +971,7 @@ class Config(object):
                 s.generator = "replay"
             # 5/14/20 - Instead of using a static default source, leave source empty by default and
             # set it to the sample file name unless otherwise specified.
-            if not self.source:
+            if not s.source:
                 sample_path = s.filePath if s.filePath else s.generator
                 s.source = os.path.basename(sample_path)
 
