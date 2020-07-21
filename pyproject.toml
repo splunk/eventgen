@@ -1,35 +1,28 @@
+[build-system]
+requires = [ "poetry>=1.0.5",]
+build-backend = "poetry.masonry.api"
+
 [tool.poetry]
-name="splunk_eventgen"
-version="7.1.0"
-description="Splunk Event Generator to produce real-time, representative data"
-authors = [
-    "Brian Bingham <bbingham@splunk.com>",
-    "Tony Lee <tonyl@splunk.com>",
-    "Jack Meixensperger <jackm@splunk.com>"
-]
+name = "splunk_eventgen"
+version = "7.1.1"
+description = "Splunk Event Generator to produce real-time, representative data"
+authors = [ "Brian Bingham <bbingham@splunk.com>", "Tony Lee <tonyl@splunk.com>", "Jack Meixensperger <jackm@splunk.com>",]
 license = "Apache-2.0"
 readme = "README.md"
-
 documentation = "http://splunk.github.io/eventgen/"
 repository = "https://github.com/splunk/eventgen"
-keywords = ["splunk", "eventgen", "container", "containers", "docker", "automation"]
-classifiers=[
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Developers",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Software Development :: Build Tools",
-    "Topic :: Software Development :: Testing",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.7",
-]
-packages = [{ include = "splunk_eventgen"}]
+keywords = [ "splunk", "eventgen", "container", "containers", "docker", "automation",]
+classifiers = [ "Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "Topic :: Software Development :: Libraries :: Python Modules", "Topic :: Software Development :: Build Tools", "Topic :: Software Development :: Testing", "Programming Language :: Python", "Programming Language :: Python :: 3.7",]
+[[tool.poetry.packages]]
+include = "splunk_eventgen"
+
+[tool.black]
+target-version = [ "py37",]
+include = "\\.pyi?$"
+exclude = "/(\n    \\.git\n  | \\.tox\n  | \\.venv\n  | build\n  | dist\n)/\n"
 
 [tool.poetry.scripts]
 splunk_eventgen = "splunk_eventgen.__main__:main"
-
-[build-system]
-requires = ["poetry>=1.0.5"]
-build-backend = "poetry.masonry.api"
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -58,17 +51,3 @@ pytest-mock = "^3.1.0"
 flake8 = "^3.7.9"
 black = "19.10b0"
 isort = "^4.3.15"
-
-
-[tool.black]
-target-version = ['py37']
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
