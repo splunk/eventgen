@@ -17,16 +17,16 @@ class TestSyslogOutputWithHeaderPlugin(object):
     def test_output_data_to_syslog_with_header(self):
         configfile = "tests/sample_eventgen_conf/medium_test/eventgen.conf.syslogoutputwithheader"
         testargs = ["eventgen", "generate", configfile]
-        with patch.object(sys, 'argv', testargs):
-            with patch('logging.getLogger'):
+        with patch.object(sys, "argv", testargs):
+            with patch("logging.getLogger"):
                 pargs = parse_args()
-                assert pargs.subcommand == 'generate'
+                assert pargs.subcommand == "generate"
                 assert pargs.configfile == configfile
                 eventgen = EventGenerator(args=pargs)
 
                 sample = MagicMock()
-                sample.name = 'test'
-                sample.syslogDestinationHost = '127.0.0.1'
+                sample.name = "test"
+                sample.syslogDestinationHost = "127.0.0.1"
                 sample.syslogDestinationPort = 9999
                 syslogoutput = SyslogOutOutputPlugin(sample)
 

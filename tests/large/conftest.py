@@ -13,6 +13,7 @@ def eventgen_test_helper():
         instance = EventgenTestHelper(conf, timeout, mode, env)
         created_instances.append(instance)
         return instance
+
     yield _create_eventgen_test_helper_instance
 
     for instance in created_instances:

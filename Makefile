@@ -12,13 +12,14 @@ LARGE ?= 'tests/large'
 XLARGE ?= 'tests/xlarge'
 NEWLY_ADDED_PY_FILES = $(shell git ls-files -o --exclude-standard | grep -E '\.py$$')
 CHANGED_ADDED_PY_FILES = $(shell git ls-files -mo --exclude-standard | grep -E '\.py$$')
+ALL_PY_FILES = $(shell git ls-files tests splunk_eventgen | grep -E '\.py$$')
 
 .PHONY: tests, lint, format, docs
 
 all: egg
 
 egg: clean
-	python setup.py sdist
+	poetry build
 
 image: setup_eventgen egg
 	rm splunk_eventgen/default/eventgen_engine.conf || true
@@ -41,15 +42,15 @@ test_helper:
 	@echo 'Verifying contents of pip.conf'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip3 install dist/splunk_eventgen*.tar.gz"
 
-	@echo 'Installing test requirements'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 install --upgrade pip;pip3 install -r $(shell pwd)/requirements.txt;pip3 install git+https://github.com/esnme/ultrajson.git"
+	@echo 'Installing test dependencies'
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 install poetry;poetry config virtualenvs.create false;poetry install --no-root"
 
 	@echo 'Make simulated app dir and sample for modular input test'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); cd ../..; mkdir -p modinput_test_app/samples/"
 	docker cp tests/large/sample/film.json ${EVENTGEN_TEST_IMAGE}:$(shell pwd)/../../modinput_test_app/samples
 
 	@echo 'Installing docker-compose'
-	bash install_docker_compose.sh
+	bash tests/large/provision/install_docker_compose.sh
 
 	@echo 'Build a docker image'
 	docker build -t provision_splunk:latest -f tests/large/provision/Dockerfile tests/large/provision
@@ -123,13 +124,14 @@ run_standalone:
 	docker run --name eg_standalone  -d -p 9500:9500 eventgen:latest standalone
 
 run_local_standalone:
-	python -m splunk_eventgen service -r standalone
+	python3 -m splunk_eventgen service -r standalone
 
 docs:
 	cd docs/; bundle install; bundle exec jekyll serve
 
 build_spl: clean
 	python3 -m splunk_eventgen build --destination ./
+
 
 lint:
 ifeq ($(NEWLY_ADDED_PY_FILES), )
@@ -148,12 +150,18 @@ endif
 ifeq ($(NEWLY_ADDED_PY_FILES), )
 	@echo 'No newly added python files. Skip...'
 else
-	@yapf -i $(NEWLY_ADDED_PY_FILES)
+	@black -t py37 $(NEWLY_ADDED_PY_FILES)
 endif
 
 lint-all:
-	@flake8 .
+	@echo "lint all py files"
+	@flake8 $(ALL_PY_FILES)
+
+format-check:
+	@echo 'Checking all py files code format'
+	@black --check -t py37 .
 
 format-all:
-	@isort -rc .
-	@yapf -r -i .
+	@echo "format all py files"
+	@isort -rc $(ALL_PY_FILES)
+	@black -t py37 $(ALL_PY_FILES)

@@ -44,7 +44,6 @@ fileBackupFiles = 5
 splunkPort = 8089
 splunkMethod = https
 index = main
-source = eventgen
 sourcetype = eventgen
 host = 127.0.0.1
 outputWorkers = 1
@@ -265,7 +264,7 @@ extendIndexes = <index_prefix>:<weight>,<index2>,<index3>
 source = <source>
     * Valid with the following outputMode:
       outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
-    * Set event source in Splunk to <source>. Defaults to 'eventgen' if none specified.
+    * Set event source in Splunk to <source>. Defaults to sample file name if none specified.
 
 sourcetype = <sourcetype>
     * Valid with the following outputMode:

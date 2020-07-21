@@ -4,10 +4,10 @@ from splunk_eventgen.lib.logging_config import logger
 
 
 class OutputCounter(object):
-    '''
+    """
     This object is used as a global variable for outputer to collect how many events and how much size of
     raw events egx has generated, and use them to calculate a real-time throughput.
-    '''
+    """
 
     def __init__(self):
         self.event_size_1_min = 0
@@ -26,8 +26,11 @@ class OutputCounter(object):
         self.current_time = timestamp
         self.event_count_1_min = 0
         self.event_size_1_min = 0
-        logger.debug("Current throughput is {} B/s, {} count/s".format(self.throughput_volume,
-                                                                            self.throughput_count))
+        logger.debug(
+            "Current throughput is {} B/s, {} count/s".format(
+                self.throughput_volume, self.throughput_count
+            )
+        )
 
     def collect(self, event_count, event_size):
         timestamp = time.time()

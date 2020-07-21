@@ -1,6 +1,0 @@
-include README.md setup.py setup.cfg requirements.txt
-
-recursive-include splunk_eventgen *
-
-recursive-exclude * *.pyc *.pyo
-

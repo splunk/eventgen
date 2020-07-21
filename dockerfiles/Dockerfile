@@ -28,15 +28,17 @@ RUN apk --no-cache upgrade && \
 	mkdir -p /root/.ssh && \
 	chmod 0700 /root/.ssh && \
 	passwd -u root && \
-	# install dependencies of conduct2 used by perf
-	pip2 install filelock twisted requests queuelib ujson psutil crochet msgpack-python unidecode attrdict service_identity && \
-	pip2 install git+https://github.com/esnme/ultrajson.git
+	# install dependencies of conductor2 used by perf
+	pip2 install filelock twisted requests queuelib psutil crochet msgpack-python unidecode attrdict service_identity && \
+	pip2 install git+https://github.com/esnme/ultrajson.git@v1.35
 
 COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
-COPY dist/* /root/splunk_eventgen.tgz
+COPY dist/splunk_eventgen*.tar.gz /root/splunk_eventgen.tgz
 RUN pip3 install /root/splunk_eventgen.tgz && \
 	rm /root/splunk_eventgen.tgz
+COPY pyproject.toml /usr/lib/python3.7/site-packages/splunk_eventgen/pyproject.toml
+COPY poetry.lock /usr/lib/python3.7/site-packages/splunk_eventgen/poetry.lock
 
 EXPOSE 2222 6379 9500
 RUN chmod a+x /sbin/entrypoint.sh
