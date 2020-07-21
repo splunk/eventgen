@@ -1,3 +1,7 @@
+**7.1.1**:
+
+- Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/7.1.1)
+
 **7.1.0**:
 
 - Check the release note and download the package/source from [Here](https://github.com/splunk/eventgen/releases/tag/7.1.0)
