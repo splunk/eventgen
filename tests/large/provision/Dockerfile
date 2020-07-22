@@ -6,6 +6,6 @@ RUN printf "deb http://archive.debian.org/debian/ jessie main\ndeb-src http://ar
 RUN apt-get update
 
 RUN echo "installing docker dependencies and development tools" && \
-    apt-get --assume-yes install curl vim
+    apt-get -y --force-yes install curl vim
 
 COPY provision.sh /opt/splunk/

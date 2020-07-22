@@ -26,7 +26,7 @@ RUN apk --no-cache upgrade && \
 	mkdir -p /root/.ssh && \
 	chmod 0700 /root/.ssh && \
 	passwd -u root && \
-	pip install git+git://github.com/esnme/ultrajson.git
+	pip install git+git://github.com/esnme/ultrajson.git@v1.35
 
 COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
