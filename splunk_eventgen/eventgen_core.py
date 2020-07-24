@@ -292,9 +292,7 @@ class EventGenerator(object):
         self.loggingQueue = None
         if args and args.verbosity:
             self.logger.setLevel(args.verbosity)
-        # Set the default log level to ERROR when directly called Generator in tests
-        if args.verbosity is None:
-            self.logger.setLevel(logging.ERROR)
+            self.logger.handlers[0].setLevel(args.verbosity)
 
     def _worker_do_work(self, work_queue, logging_queue):
         while not self.stop_request.isSet():

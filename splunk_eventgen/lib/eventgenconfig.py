@@ -441,6 +441,15 @@ class Config(object):
             for key, value in self._confDict["global"].items():
                 value = self._validateSetting("global", key, value)
                 setattr(self, key, value)
+                if key == "verbosity":
+                    target_level = logging.ERROR
+                    verbosity = int(value) // 10
+                    if verbosity == 1:
+                        target_level = logging.INFO
+                    elif verbosity == 2:
+                        target_level = logging.DEBUG
+                    logger.setLevel(target_level)
+                    logger.handlers[0].setLevel(target_level)
             del self._confDict["global"]
             if "default" in self._confDict:
                 del self._confDict["default"]
