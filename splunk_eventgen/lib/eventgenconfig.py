@@ -442,14 +442,20 @@ class Config(object):
                 value = self._validateSetting("global", key, value)
                 setattr(self, key, value)
                 if key == "verbosity":
-                    target_level = logging.ERROR
-                    verbosity = int(value) // 10
-                    if verbosity == 1:
+                    current_level = logger.getEffectiveLevel()
+                    target_level = current_level
+                    if value == "info":
                         target_level = logging.INFO
-                    elif verbosity == 2:
+                    elif value == "debug":
                         target_level = logging.DEBUG
-                    logger.setLevel(target_level)
-                    logger.handlers[0].setLevel(target_level)
+                    elif value == "error":
+                        target_level = logging.ERROR
+                    else:
+                        logger.error("Invalid value: {} for global config option 'verbosity'".format(value) +
+                                     "Please refer to the documentation's spec file for acceptable values.")
+                    if target_level != current_level:
+                        logger.setLevel(target_level)
+                        logger.handlers[0].setLevel(target_level)
             del self._confDict["global"]
             if "default" in self._confDict:
                 del self._confDict["default"]

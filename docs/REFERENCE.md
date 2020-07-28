@@ -24,7 +24,7 @@
 [global]
 disabled = false
 debug = false
-verbosity = false
+verbosity = error
 spoolDir = $SPLUNK_HOME/var/spool/splunk
 spoolFile = <SAMPLE>
 breaker = [^\r\n\s]+
@@ -109,6 +109,13 @@ disableLoggingQueue = true | false
     * Disable the logging queue for process mode
     * In process mode, logs in each process will be collected via a logging queue
     * Default is true which will disable the logging queue
+
+verbosity = error | info | debug
+    * Modify logging level of the main process logger ('error' by default)
+    * Only available as a global config setting (recommended approach for docker
+      containers aka eventgenx)
+    * Can alternatively use '-v' flags for the python module, or the modinput
+      'verbosity' option for the splunk app
 
 #############################
 ## OUTPUT RELATED SETTINGS ##
