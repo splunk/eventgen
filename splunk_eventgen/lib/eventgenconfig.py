@@ -819,9 +819,7 @@ class Config(object):
                                 )
                             )
                         elif s.spoolFile == self.spoolFile:
-                            s.fileName = os.path.join(
-                                s.spoolDir, f.split(os.sep)[-1]
-                            )
+                            s.fileName = os.path.join(s.spoolDir, f.split(os.sep)[-1])
                         elif s.spoolFile is not None:
                             s.fileName = os.path.join(s.spoolDir, s.spoolFile)
                     s.name = f.split(os.sep)[-1]
