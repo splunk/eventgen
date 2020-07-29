@@ -29,7 +29,7 @@ jobs:
           name: Run Tests
           command: |
             pip3 install --upgrade pip
-            pip3 install poetry==1.0.9
+            pip3 install poetry
             set -e
             make test
           no_output_timeout: 30m
