@@ -29,7 +29,7 @@ RUN apk --no-cache upgrade && \
 	chmod 0700 /root/.ssh && \
 	passwd -u root && \
 	# install dependencies of conductor2 used by perf
-	pip2 install filelock twisted requests queuelib psutil crochet msgpack-python unidecode attrdict service_identity ujson
+	pip2 install filelock twisted requests queuelib ujson psutil crochet msgpack-python unidecode attrdict service_identity
 
 COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh

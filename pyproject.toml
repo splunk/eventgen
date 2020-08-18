@@ -39,7 +39,6 @@ PyYAML = "^5.3.1"
 jinja2 = "2.10.3"
 urllib3 = "1.24.2"
 httplib2 = "^0.17.2"
-uuid = "^1.30"
 
 [tool.poetry.dev-dependencies]
 pytest = "4.6.4"
