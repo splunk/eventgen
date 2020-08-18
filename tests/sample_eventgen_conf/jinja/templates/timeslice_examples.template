@@ -1,0 +1,82 @@
+{# Jinja allows for some variables to be passed back and forth with every sample:
+eventgen_count - The current count of the count type. set via jinja_count_type with options: ["line_count", "cycles", "perDayVolume"]
+                 Defaults to Cycles.
+eventgen_maxcount - The max count requested in the stanza.
+eventgen_earliest - The earliest specified item in ISO8601 - https://en.wikipedia.org/wiki/ISO_8601
+eventgen_earliest_epoch - earliest converted to epoch time based on specified value and host time.
+eventgen_latest - the latest specified time item in ISO8601 - https://en.wikipedia.org/wiki/ISO_8601
+eventgen_latest_epoch - latest time converted to epoch
+
+You can also pass in your own custom variables via the jinja_variables setting in a stanza.  This setting must be in valid json, but
+can set several variables at once.
+
+jinja_variables = {"large_number":10}
+
+#}
+
+{%- time_now -%}
+        {"_time":"{{ time_now_epoch }}", "_raw":"{{ time_now_formatted }}  Current Settings:
+        eventgen_count: {{ eventgen_count }}
+        eventgen_maxcount: {{ eventgen_maxcount }}
+        eventgen_earliest: {{ eventgen_earliest }}
+        eventgen_earliest_epoch: {{ eventgen_earliest_epoch }}
+        eventgen_latest: {{ eventgen_latest }}
+        eventgen_latest_epoch: {{ eventgen_latest_epoch }}
+        large_number: {{ large_number }}
+        "}
+
+{# as shown in the last example, you also have access to a jinja modules.  As a custom module that ships with Eventgen, you'll have the
+ability to access time functions.  These time functions are as follows:
+
+time_now - Will tell the time module to find the current spot in time based on the current host's machine time.
+time_slice - Used to divide up time based on earliest and latest.  Let's say I wanted to know, "If I gave you a start window
+             and an end window, and wanted you to divide that time slot into set buckets of time.  Given my 3rd event, give me back a time
+             period that fits the expected slice."
+
+FUTURE_REQUEST: time_delta - Given a time period, let me specify + or - seconds and have it return a new time period
+FUTURE_REQUEST: time_backfill - Spread out my count based on a time period of (cycles / events / volume), spread my events out evenly back earliest until "now"
+
+Below are examples of most of those elements, and their corresponding options.  Please note, future requests are not listed below.
+
+#}
+
+
+{# Create a fake loop of 10 events (please note that our "count" is set to cycles, so this loop takes place internally), where the earliest time we want to see is 1234, and the latest time is 2345 (1111 seconds)
+then take the lopp.index to get count of the event.  We'll take our earliest time of 1234, and our latest time of 2345, and divide it into 5 blocks (222).  Take our events and select time pieces based on the count,
+ and spread it out between those sections.  Event 1 and 2 are in the first block of 222 seconds, 3 and 4 in the next block of 222 (223-444) and so on. If you count past your slice count, eventgen will just assume
+ you wanted to slice the time based on the smaller slice count, but you wanted to continue that offset into the future.
+
+ By using the time_slice function, we can pass in the following:
+ earliest - earliest time in epoch start slice time periods
+ latest - latest time in epoch to end slice time period
+ count - Which slice to use
+ slices - Total number of slices to divide time into
+ FUTURE_REQUEST: slice_type - [random, lower, upper, middle] grab either the lowest time of the slice, the middle of the slice, the top of the slice, or randomly between the slice bounds
+ #}
+
+{# Perfectly match the slice count #}
+{% for _ in range(0, 5) %}
+   {%- time_slice earliest="1234", latest="2345", count=loop.index, slices="5" -%}
+        {"_time":"{{ time_target_epoch }}", "_raw":"Formatted_Time: {{ time_target_formatted }}  Epoch_Time: {{ time_target_epoch }}
+        I like little windbags
+        Im at: {{ loop.index }} out of: 5
+        I'm also hungry, can I have a pizza?"}
+{% endfor %}
+
+{# Ask for slices outside the latest timerange #}
+{% for _ in range(0, 10) %}
+   {%- time_slice earliest="1234", latest="2345", count=loop.index, slices="5" -%}
+        {"_time":"{{ time_target_epoch }}", "_raw":"Formatted_Time: {{ time_target_formatted }}  Epoch_Time: {{ time_target_epoch }}
+        I like little windbags
+        Im at: {{ loop.index }} out of: 10
+        I'm also hungry, can I have a pizza?"}
+{% endfor %}
+
+{# Change date format #}
+{% for _ in range(0, 5) %}
+   {%- time_slice earliest="1234", latest="2345", count=loop.index, slices="5" -%}
+        {"_time":"{{ time_target_epoch }}", "_raw":"Formatted_Time: {{ time_target_formatted }}  Epoch_Time: {{ time_target_epoch }}
+        I like little windbags
+        Im at: {{ loop.index }} out of: 5
+        I'm also hungry, can I have a pizza?"}
+{% endfor %}

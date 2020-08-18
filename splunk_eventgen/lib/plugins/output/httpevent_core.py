@@ -11,7 +11,7 @@ try:
     import requests
     from requests import Session
     from requests_futures.sessions import FuturesSession
-    from concurrent.futures import ThreadPoolExecutor
+
 except ImportError:
     pass
 try:
@@ -49,7 +49,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
         self.lastsourcetype = None
         if not session:
             session = Session()
-        self.session = FuturesSession(session=session, executor=ThreadPoolExecutor(max_workers=workers))
+        self.session = FuturesSession(session=session, executor=self.futures_pool)
         self.active_sessions = []
 
     @staticmethod

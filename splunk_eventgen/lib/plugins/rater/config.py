@@ -15,14 +15,18 @@ class ConfigRater(RaterPlugin):
     def multi_queue_it(self, count):
         logger.info("Entering multi-processing division of sample")
         numberOfWorkers = self.config.generatorWorkers
+        logger.debug("Number of Workers: {0}".format(numberOfWorkers))
         # this is a redundant check, but will prevent some missed call to multi_queue without a valid setting
         if bool(self.sample.splitSample):
             # if split = 1, then they want to divide by number of generator workers, else use the splitSample
             if self.sample.splitSample == 1:
+                logger.debug("SplitSample = 1, using all availible workers")
                 targetWorkersToUse = numberOfWorkers
             else:
+                logger.debug("SplitSample != 1, using {0} workers.".format(self.sample.splitSample))
                 targetWorkersToUse = self.sample.splitSample
         else:
+            logger.debug("SplitSample set to disable multithreading for just this sample.")
             self.single_queue_it()
         currentWorkerPrepCount = 0
         remainingCount = count

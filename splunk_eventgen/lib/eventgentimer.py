@@ -75,7 +75,7 @@ class Timer(object):
         else:
             return total_len/sample_count
 
-    def run(self):
+    def run(self, futures_pool=None):
         """
         Simple wrapper method to determine whether we should be running inside python's profiler or not
         """

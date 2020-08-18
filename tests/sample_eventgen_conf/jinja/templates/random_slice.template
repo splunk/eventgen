@@ -1,0 +1,17 @@
+{%- macro time_delta(diff) -%}{{ eventgen_earliest_epoch - diff}}{%- endmacro -%}
+{%- set earliest = time_delta(1) -%}
+
+
+
+{%- with -%}
+	{% import 'fix_includes.template' as fixinc %}
+    {% set events = 3 -%}
+    {% set slicect = 20 -%}
+    {% import 'random_slice_count.template' as randomslice %}
+	{%- time_slice earliest=earliest, latest=eventgen_earliest_epoch, count=randomslice.getcount(events, slicect, 0), slices=slicect, date_format="%Y%m%d-%H:%M:%S.%f" -%}
+		{"_time":"{{time_target_epoch}}", "_raw":"1: {{randomslice.getcount(events, slicect, 0)}} > {{time_target_formatted}}"}
+	{%- time_slice earliest=earliest, latest=eventgen_earliest_epoch, count=randomslice.getcount(events, slicect,1), slices=slicect, date_format="%Y%m%d-%H:%M:%S.%f" -%}
+		{"_time":"{{time_target_epoch}}", "_raw":"2: {{randomslice.getcount(events, slicect, 1)}} > {{time_target_formatted}}"}
+	{%- time_slice earliest=earliest, latest=eventgen_earliest_epoch, count=randomslice.getcount(events, slicect, 2), slices=slicect, date_format="%Y%m%d-%H:%M:%S.%f" -%}
+		{"_time":"{{time_target_epoch}}", "_raw":"3: {{randomslice.getcount(events, slicect, 2)}} > {{time_target_formatted}}"}
+{%- endwith -%}

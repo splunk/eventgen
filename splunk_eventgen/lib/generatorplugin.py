@@ -160,10 +160,14 @@ class GeneratorPlugin(object):
                         "Failed to parse end '%s' for sample '%s', treating as number of executions" % (s.end, s.name))
                     raise
 
-    def run(self, output_counter=None):
+    def run(self, output_counter=None, futures_pool=None):
+        self.futures_pool=futures_pool
         if output_counter is not None and hasattr(self.config, 'outputCounter') and self.config.outputCounter:
             # Use output_counter to calculate throughput
             self._out.setOutputCounter(output_counter)
+        if self.futures_pool and not self._out.outputPlugin.useOutputQueue:
+            self._out.futures_pool = self.futures_pool
+            self._out.outputPlugin.futures_pool = self.futures_pool
         self.gen(count=self.count, earliest=self.start_time, latest=self.end_time, samplename=self._sample.name)
         # TODO: Make this some how handle an output queue and support intervals and a master queue
         # Just double check to see if there's something in queue to flush out at the end of run

@@ -9,6 +9,7 @@ import time
 import signal
 from Queue import Empty, Queue
 from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
 
 from lib.eventgenconfig import Config
 from lib.eventgenexceptions import PluginNotLoaded
@@ -103,6 +104,8 @@ class EventGenerator(object):
         self._reload_plugins()
         if "args" in kwargs and getattr(kwargs["args"], "generators"):
             generator_worker_count = kwargs["args"].generators
+            # override the config's generatorWorkers to match what was specified on the cli
+            self.config.generatorWorkers = generator_worker_count
         else:
             generator_worker_count = self.config.generatorWorkers
 
@@ -147,6 +150,7 @@ class EventGenerator(object):
         :return:
         '''
         # Load the things that actually do the work.
+        self._create_futures_threadpool()
         self._create_generator_pool()
         self._create_timer_threadpool()
         self._create_output_threadpool()
@@ -166,9 +170,14 @@ class EventGenerator(object):
             worker = Thread(target=self._worker_do_work, args=(
                 self.sampleQueue,
                 self.loggingQueue,
-            ), name="TimeThread{0}".format(i))
+            ), kwargs={
+                "futures_pool": self.futures_pool
+            }, name="TimeThread{0}".format(i))
             worker.setDaemon(True)
             worker.start()
+
+    def _create_futures_threadpool(self, threadcount=20):
+        self.futures_pool = ThreadPoolExecutor(max_workers=threadcount)
 
     def _create_output_threadpool(self, threadcount=1):
         '''
@@ -189,7 +198,9 @@ class EventGenerator(object):
             worker = Thread(target=self._worker_do_work, args=(
                 self.outputQueue,
                 self.loggingQueue,
-            ), name="OutputThread{0}".format(i))
+            ), kwargs={
+                "futures_pool": self.futures_pool
+            }, name="OutputThread{0}".format(i))
             worker.setDaemon(True)
             worker.start()
 
@@ -225,12 +236,14 @@ class EventGenerator(object):
                     self.output_counters.append(OutputCounter())
                 for i in range(worker_threads):
                     worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue,
-                                                                          self.output_counters[i]))
+                                                                          self.output_counters[i]),
+                                    kwargs={"futures_pool": self.futures_pool})
                     worker.setDaemon(True)
                     worker.start()
             else:
                 for i in range(worker_threads):
-                    worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue, None))
+                    worker = Thread(target=self._generator_do_work, args=(self.workerQueue, self.loggingQueue, None),
+                                    kwargs={"futures_pool": self.futures_pool})
                     worker.setDaemon(True)
                     worker.start()
 
@@ -244,7 +257,9 @@ class EventGenerator(object):
                     self.workerQueue,
                     self.loggingQueue,
                     self.genconfig,
-                ))
+                ), kwargs={
+                    "futures_pool": self.futures_pool
+                })
                 self.workerPool.append(process)
                 process.start()
         else:
@@ -259,12 +274,12 @@ class EventGenerator(object):
         if args.verbosity is None:
             self.logger.setLevel(logging.ERROR)
 
-    def _worker_do_work(self, work_queue, logging_queue):
+    def _worker_do_work(self, work_queue, logging_queue, futures_pool=None):
         while not self.stopping:
             try:
                 item = work_queue.get(timeout=10)
                 startTime = time.time()
-                item.run()
+                item.run(futures_pool=futures_pool)
                 totalTime = time.time() - startTime
                 if totalTime > self.config.interval and self.config.end != 1:
                     self.logger.warning("work took longer than current interval, queue/threading throughput limitation")
@@ -275,12 +290,12 @@ class EventGenerator(object):
                 self.logger.exception(str(e))
                 raise e
 
-    def _generator_do_work(self, work_queue, logging_queue, output_counter=None):
+    def _generator_do_work(self, work_queue, logging_queue, output_counter=None, futures_pool=None):
         while not self.stopping:
             try:
                 item = work_queue.get(timeout=10)
                 startTime = time.time()
-                item.run(output_counter=output_counter)
+                item.run(output_counter=output_counter, futures_pool=futures_pool)
                 totalTime = time.time() - startTime
                 if totalTime > self.config.interval and item._sample.end != 1:
                     self.logger.warning("work took longer than current interval, queue/threading throughput limitation")
@@ -294,7 +309,7 @@ class EventGenerator(object):
                 raise e
 
     @staticmethod
-    def _proc_worker_do_work(work_queue, logging_queue, config):
+    def _proc_worker_do_work(work_queue, logging_queue, config, futures_pool=None):
         genconfig = config
         stopping = genconfig['stopping']
         root = logging.getLogger()
@@ -311,7 +326,8 @@ class EventGenerator(object):
                 item = work_queue.get(timeout=10)
                 item.logger = root
                 item._out.updateConfig(item.config)
-                item.run()
+                item.futures_pool = futures_pool
+                item.run(futures_pool=futures_pool)
                 work_queue.task_done()
                 stopping = genconfig['stopping']
                 item.logger.debug("Current Worker Stopping: {0}".format(stopping))
@@ -543,5 +559,4 @@ class EventGenerator(object):
                 self.manager.shutdown()
         except:
             pass
-            
-                
+

@@ -1,0 +1,17 @@
+{#% set earliest_epoch = time_delta(5) %#}
+{#% set latest_epoch = eventgen_earliest_epoch - eventgen_rcount %#}
+{#% macro time_delta(diff) -%}{{latest_epoch - diff}}{%- endmacro -%#}
+
+{% macro time_delta(diff) -%}{{eventgen_earliest_epoch-diff}}{%- endmacro -%}
+{% set earliest = time_delta(5) %}
+
+{% with %}
+	{% import 'fix_includes.template' as fixinc %}
+	{% import 'fix_includes.template' as fixinc %}
+	{%- time_slice earliest=earliest, latest=eventgen_earliest_epoch, count=1, slices="20", date_format="%Y%m%d-%H:%M:%S.%f" -%}
+		{"_time":"{{ time_target_epoch }}", "_raw":"{{yay}} Event {{rcount}}: Range 1: {{time_target_formatted}}", "source": "test_event_timeslice", "sourcetype": "fix" }
+	{%- time_slice earliest=earliest, latest=eventgen_earliest_epoch, count=2, slices="20", date_format="%Y%m%d-%H:%M:%S.%f" -%}
+		{"_time":"{{ time_target_epoch }}", "_raw":"Event {{rcount}}: Range 2: {{time_target_formatted}}", "source": "test_event_timeslice", "sourcetype": "fix" }
+	{%- time_slice earliest=earliest, latest=eventgen_earliest_epoch, count=3, slices="20", date_format="%Y%m%d-%H:%M:%S.%f" -%}
+		{"_time":"{{ time_target_epoch }}", "_raw":"Event {{rcount}}: Range 3: {{time_target_formatted}}", "source": "test_event_timeslice", "sourcetype": "fix" }
+{% endwith %}

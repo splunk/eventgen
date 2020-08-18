@@ -1,0 +1,5 @@
+{% set host_ip = '345' %}
+{% set port = '1234' %}
+
+{%- time_now -%}
+	{"_time":"{{time_now_epoch}}", "_raw": "{{host_ip}} :: {{port}}", "source": "errors", "sourcetype": "fix" }

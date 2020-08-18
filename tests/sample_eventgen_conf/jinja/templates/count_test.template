@@ -1,0 +1,46 @@
+{% set events = 3 -%} <-- pass
+{% set slices = 20 -%} <-- pass
+{% set max = slices // events -%}
+
+{% set crange = [] -%}
+{% for _ in range(0, events) %}
+    {% set minr = max*loop.index0+1 -%}
+    {% set maxr = max*loop.index -%}
+    {% do crange.append((minr, maxr)) -%}
+{% endfor %}
+
+{% set cyc = cycler(crange) -%}
+
+{% for _ in range(0, events) %}
+    {% set newct = range(crange[1][0], crange[1][1], 1) | random -%}
+    {"_time":"{{ time_target_epoch }}", "_raw":"{{ newct }}"}
+{% endfor %}
+
+
+
+{#
+{{ range(max*loop.index0+1) :: range(max*loop.index)}}
+
+
+20 // 3 = 6
+
+1, max (1)
+7,12 (2)
+13,18 (3) <- loop.index
+
+40 // 3 = 39 / 3 = 13
+
+1 , 13
+14 , 26
+27, 39
+
+
+max * li0 (0) + 1 = 1  || max * li (1) = 6
+max * li0 (1) + 1 = 7 || max * li (2) = 12
+max * li0 (2) + 1 = 13 || max * li (3) = 18
+max * li0 (3) + 1 = 19|| max * li (4) =24
+
+
+
+range(max*loop.index0+1)
+#}
