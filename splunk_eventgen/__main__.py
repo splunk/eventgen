@@ -295,7 +295,7 @@ def convert_verbosity_count_to_logging_level(verbosity):
         return logging.ERROR
     elif verbosity == 1:
         return logging.INFO
-    elif verbosity == 2:
+    elif verbosity >= 2:
         return logging.DEBUG
     else:
         return logging.ERROR
