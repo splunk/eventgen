@@ -488,7 +488,8 @@ class EventGenerator(object):
             for s in self.config.samples:
                 setattr(s, "scsAccessToken", access_token)
         else:
-            raise Exception("Neither SCS access token nor client credentials are provided")
+            # raise Exception("Neither SCS access token nor client credentials are provided")
+            pass
         ##################################################################################################
 
         if len(self.config.samples) <= 0:

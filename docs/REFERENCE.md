@@ -147,7 +147,7 @@ scsIngestEndPoint = events | metrics
 scsScheme = https | http
     * Defaults to https
 
-scsTenant = <valid tenant name>
+scsTenant = <single valid tenant name> | list["tenant_name1", "tenant_name2", ..., "tenant_nameN"]
 
 scsInsecure = true | false
     * Defaults to false
