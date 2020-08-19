@@ -1,4 +1,4 @@
-# Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
+# Copyright (C) 2005-2019 Splunk Inc. All Rights Reserved.
 #
 # This file contains all possible options for an eventgen.conf file.  Use this file to configure
 # Splunk's event generation properties.
@@ -47,7 +47,6 @@ fileBackupFiles = 5
 splunkPort = 8089
 splunkMethod = https
 index = main
-source = eventgen
 sourcetype = eventgen
 host = 127.0.0.1
 outputWorkers = 1
@@ -128,6 +127,14 @@ syslogDestinationHost = <host>
 syslogDestinationPort = <port>
     * Defaults to port 1514
     * Only supports UDP ports
+
+syslogAddHeader = true | false
+    * Controls whether syslog messages should be prefixed with an RFC3164 compliant header
+      including the host value defined for the sample.
+    * Useful in situations where you want to output generated events to syslog and make it
+      possible for the receiving syslog server to use the sample's defined host value instead of
+      the hostname of the host that eventgen is running on.
+    * Defaults to false
 
 tcpDestinationHost = <host>
     * Defaults to 127.0.0.1
@@ -211,15 +218,18 @@ index = <index>
 
 source = <source>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
-    * Set event source in Splunk to <source>.  Defaults to 'eventgen' if none specified.
+    * Set event source in Splunk to <source>.  Defaults to sample file name if none specified.
 
 sourcetype = <sourcetype>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
     * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
 
 host = <host>
-    * ONLY VALID WITH outputMode SPLUNKSTREAM
-    * Set event host in Splunk to <host>.  Defaults to 127.0.0.1 if none specified.
+    * ONLY VALID WITH outputMode SPLUNKSTREAM and SYSLOGOUT
+    * When outputMode is splunkstream, set event host in Splunk to <host>.
+    * When outputMode is syslogout and syslogAddHeader is set to true, add initial header with hostname <host>,
+      see syslogAddHeader for details.
+    * Defaults to 127.0.0.1 if none specified.
 
 hostRegex = <hostRegex>
     * ONLY VALID WITH outputMode SPLUNKSTREAM
@@ -462,8 +472,7 @@ token.<n>.replacement = <string> | <strptime> | ["list","of","strptime"] | guid 
       and <end> is a number greater than 0 and greater than or equal to <start>.  If rated,
       will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For float[<start>:<end>], the token will be replaced with a random float between
-      start and end values where <start> is a number greater than 0
-      and <end> is a number greater than 0 and greater than or equal to <start>.
+      start and end values where <end> is a number greater than or equal to <start>.
       For floating point numbers, precision will be based off the precision specified
       in <start>.  For example, if we specify 1.0, precision will be one digit, if we specify
       1.0000, precision will be four digits. If rated, will be multiplied times hourOfDayRate and dayOfWeekRate.

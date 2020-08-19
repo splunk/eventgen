@@ -1,7 +1,4 @@
 # TODO: Handle timestamp generation for modinput and set sample.timestamp properly for timestamp replacement
-
-from __future__ import division, with_statement
-
 import datetime
 import json
 import os
@@ -9,15 +6,18 @@ import pprint
 import random
 import re
 import time
-import urllib
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 
-from timeparser import timeDelta2secs
-from logging_config import logger
+from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.timeparser import timeDelta2secs
 
 
 class Token(object):
     """Contains data and methods for replacing a token in a given sample"""
+
     token = None
     replacementType = None
     replacement = None
@@ -46,7 +46,9 @@ class Token(object):
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this token"""
         # Eliminate recursive going back to parent
-        temp = dict([(key, value) for (key, value) in self.__dict__.items() if key != 'sample'])
+        temp = dict(
+            [(key, value) for (key, value) in self.__dict__.items() if key != "sample"]
+        )
         return pprint.pformat(temp)
 
     def __repr__(self):
@@ -74,9 +76,14 @@ class Token(object):
         tokenMatch = list(self._finditer(event))
 
         if len(tokenMatch) > 0:
-            replacement = self._getReplacement(event[tokenMatch[0].start(0):tokenMatch[0].end(0)], et, lt, s,
-                                               pivot_timestamp=pivot_timestamp)
-            if replacement is not None or self.replacementType == 'replaytimestamp':
+            replacement = self._getReplacement(
+                event[tokenMatch[0].start(0) : tokenMatch[0].end(0)],
+                et,
+                lt,
+                s,
+                pivot_timestamp=pivot_timestamp,
+            )
+            if replacement is not None or self.replacementType == "replaytimestamp":
                 # logger.debug("Replacement: '%s'" % replacement)
                 # Iterate matches
                 for match in tokenMatch:
@@ -89,7 +96,7 @@ class Token(object):
                         # In order to not break legacy which might replace the same timestamp
                         # with the same value in multiple matches, here we'll include
                         # ones that need to be replaced for every match
-                        if self.replacementType == 'replaytimestamp':
+                        if self.replacementType == "replaytimestamp":
                             replacement = lt.strftime(self.replacement)
                         offset += len(replacement) - len(match.group(1))
                     except:
@@ -100,7 +107,7 @@ class Token(object):
                         # In order to not break legacy which might replace the same timestamp
                         # with the same value in multiple matches, here we'll include
                         # ones that need to be replaced for every match
-                        if self.replacementType == 'replaytimestamp':
+                        if self.replacementType == "replaytimestamp":
                             replacement = lt.strftime(self.replacement)
                         offset += len(replacement) - len(match.group(0))
                     # logger.debug("matchStart %d matchEnd %d offset %d" % (matchStart, matchEnd, offset))
@@ -111,13 +118,15 @@ class Token(object):
                 self._lastts = None
         return event
 
-    def _getReplacement(self, old=None, earliestTime=None, latestTime=None, s=None, pivot_timestamp=None):
-        if self.replacementType == 'static':
+    def _getReplacement(
+        self, old=None, earliestTime=None, latestTime=None, s=None, pivot_timestamp=None
+    ):
+        if self.replacementType == "static":
             return self.replacement
         # This logic is done in replay.py
-        elif self.replacementType == 'replaytimestamp':
+        elif self.replacementType == "replaytimestamp":
             pass
-        elif self.replacementType == 'timestamp':
+        elif self.replacementType == "timestamp":
             if s.earliest and s.latest:
                 if earliestTime and latestTime:
                     if latestTime >= earliestTime:
@@ -135,8 +144,14 @@ class Token(object):
 
                             # Get random timeDelta
                             randomDelta = datetime.timedelta(
-                                seconds=random.randint(minDelta, maxDelta), microseconds=random.randint(
-                                    0, latestTime.microsecond if latestTime.microsecond > 0 else 999999))
+                                seconds=random.randint(minDelta, maxDelta),
+                                microseconds=random.randint(
+                                    0,
+                                    latestTime.microsecond
+                                    if latestTime.microsecond > 0
+                                    else 999999,
+                                ),
+                            )
 
                             # Compute replacmentTime
                             replacementTime = latestTime - randomDelta
@@ -145,87 +160,100 @@ class Token(object):
                             replacementTime = s.timestamp
 
                         replacement = self.replacement.replace(
-                            '%s',
-                            str(round(time.mktime(replacementTime.timetuple()))).rstrip('0').rstrip('.'))
+                            "%s",
+                            str(round(time.mktime(replacementTime.timetuple())))
+                            .rstrip("0")
+                            .rstrip("."),
+                        )
                         replacementTime = replacementTime.strftime(replacement)
                         # replacementTime == replacement for invalid strptime specifiers
-                        if replacementTime != self.replacement.replace('%', ''):
+                        if replacementTime != self.replacement.replace("%", ""):
                             return replacementTime
                         else:
                             logger.error(
-                                "Invalid strptime specifier '%s' detected; will not replace" % (self.replacement))
+                                "Invalid strptime specifier '%s' detected; will not replace"
+                                % (self.replacement)
+                            )
                             return old
                     # earliestTime/latestTime not proper
                     else:
-                        logger.error(("Earliest specifier '%s', value '%s' is greater than latest specifier '%s'" +
-                                           "value '%s' for sample '%s'; will not replace") %
-                                          (s.earliest, earliestTime, s.latest, latestTime, s.name))
+                        logger.error(
+                            (
+                                "Earliest specifier '%s', value '%s' is greater than latest specifier '%s'"
+                                + "value '%s' for sample '%s'; will not replace"
+                            )
+                            % (s.earliest, earliestTime, s.latest, latestTime, s.name)
+                        )
                         return old
             # earliest/latest not proper
             else:
-                logger.error('Earliest or latest specifier were not set; will not replace')
+                logger.error(
+                    "Earliest or latest specifier were not set; will not replace"
+                )
                 return old
-        elif self.replacementType in ('random', 'rated'):
+        elif self.replacementType in ("random", "rated"):
             # Validations:
             if self._integerMatch is not None:
                 integerMatch = self._integerMatch
             else:
-                integerRE = re.compile('integer\[([-]?\d+):([-]?\d+)\]', re.I)
+                integerRE = re.compile(r"integer\[([-]?\d+):([-]?\d+)\]", re.I)
                 integerMatch = integerRE.match(self.replacement)
                 self._integerMatch = integerMatch
 
             if self._floatMatch is not None:
                 floatMatch = self._floatMatch
             else:
-                floatRE = re.compile('float\[(-?\d+|-?\d+\.(\d+)):(-?\d+|-?\d+\.(\d+))\]', re.I)
+                floatRE = re.compile(
+                    r"float\[(-?\d+|-?\d+\.(\d+)):(-?\d+|-?\d+\.(\d+))\]", re.I
+                )
                 floatMatch = floatRE.match(self.replacement)
                 self._floatMatch = floatMatch
 
             if self._stringMatch is not None:
                 stringMatch = self._stringMatch
             else:
-                stringRE = re.compile('string\((\d+)\)', re.I)
+                stringRE = re.compile(r"string\((\d+)\)", re.I)
                 stringMatch = stringRE.match(self.replacement)
                 self._stringMatch = stringMatch
 
             if self._hexMatch is not None:
                 hexMatch = self._hexMatch
             else:
-                hexRE = re.compile('hex\((\d+)\)', re.I)
+                hexRE = re.compile(r"hex\((\d+)\)", re.I)
                 hexMatch = hexRE.match(self.replacement)
                 self._hexMatch = hexMatch
 
             if self._listMatch is not None:
                 listMatch = self._listMatch
             else:
-                listRE = re.compile('list(\[[^\]]+\])', re.I)
+                listRE = re.compile(r"list(\[[^\]]+\])", re.I)
                 listMatch = listRE.match(self.replacement)
                 self._listMatch = listMatch
 
             # Valid replacements: ipv4 | ipv6 | integer[<start>:<end>] | string(<i>)
-            if self.replacement.lower() == 'ipv4':
+            if self.replacement.lower() == "ipv4":
                 x = 0
-                replacement = ''
+                replacement = ""
 
                 while x < 4:
-                    replacement += str(random.randint(0, 255)) + '.'
+                    replacement += str(random.randint(0, 255)) + "."
                     x += 1
 
-                replacement = replacement.strip('.')
+                replacement = replacement.strip(".")
                 return replacement
-            elif self.replacement.lower() == 'ipv6':
+            elif self.replacement.lower() == "ipv6":
                 x = 0
-                replacement = ''
+                replacement = ""
 
                 while x < 8:
-                    replacement += hex(random.randint(0, 65535))[2:] + ':'
+                    replacement += hex(random.randint(0, 65535))[2:] + ":"
                     x += 1
 
-                replacement = replacement.strip(':')
+                replacement = replacement.strip(":")
                 return replacement
-            elif self.replacement.lower() == 'mac':
+            elif self.replacement.lower() == "mac":
                 x = 0
-                replacement = ''
+                replacement = ""
 
                 # Give me 6 blocks of 2 hex
                 while x < 6:
@@ -233,12 +261,12 @@ class Token(object):
                     while y < 2:
                         replacement += hex(random.randint(0, 15))[2:]
                         y += 1
-                    replacement += ':'
+                    replacement += ":"
                     x += 1
 
-                replacement = replacement.strip(':')
+                replacement = replacement.strip(":")
                 return replacement
-            elif self.replacement.lower() == 'guid':
+            elif self.replacement.lower() == "guid":
                 return str(uuid.uuid4())
             elif integerMatch:
                 startInt = int(integerMatch.group(1))
@@ -246,15 +274,19 @@ class Token(object):
 
                 if endInt >= startInt:
                     replacementInt = random.randint(startInt, endInt)
-                    if self.replacementType == 'rated':
+                    if self.replacementType == "rated":
                         rateFactor = 1.0
                         if type(s.hourOfDayRate) == dict:
                             try:
                                 rateFactor *= s.hourOfDayRate[str(s.now())]
                             except KeyError:
                                 import traceback
+
                                 stack = traceback.format_exc()
-                                logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
+                                logger.error(
+                                    "Hour of day rate failed for token %s.  Stacktrace %s"
+                                    % stack
+                                )
                         if type(s.dayOfWeekRate) == dict:
                             try:
                                 weekday = datetime.date.weekday(s.now())
@@ -265,14 +297,19 @@ class Token(object):
                                 rateFactor *= s.dayOfWeekRate[str(weekday)]
                             except KeyError:
                                 import traceback
+
                                 stack = traceback.format_exc()
-                                logger.error("Day of week rate failed.  Stacktrace %s" % stack)
+                                logger.error(
+                                    "Day of week rate failed.  Stacktrace %s" % stack
+                                )
                         replacementInt = int(round(replacementInt * rateFactor, 0))
                     replacement = str(replacementInt)
                     return replacement
                 else:
                     logger.error(
-                        "Start integer %s greater than end integer %s; will not replace" % (startInt, endInt))
+                        "Start integer %s greater than end integer %s; will not replace"
+                        % (startInt, endInt)
+                    )
                     return old
             elif floatMatch:
                 try:
@@ -284,8 +321,10 @@ class Token(object):
                         significance = len(floatMatch.group(2))
 
                     if endFloat >= startFloat:
-                        floatret = round(random.uniform(startFloat, endFloat), significance)
-                        if self.replacementType == 'rated':
+                        floatret = round(
+                            random.uniform(startFloat, endFloat), significance
+                        )
+                        if self.replacementType == "rated":
                             rateFactor = 1.0
                             now = s.now()
                             if type(s.hourOfDayRate) == dict:
@@ -293,8 +332,12 @@ class Token(object):
                                     rateFactor *= s.hourOfDayRate[str(now.hour)]
                                 except KeyError:
                                     import traceback
+
                                     stack = traceback.format_exc()
-                                    logger.error("Hour of day rate failed for token %s.  Stacktrace %s" % stack)
+                                    logger.error(
+                                        "Hour of day rate failed for token %s.  Stacktrace %s"
+                                        % stack
+                                    )
                             if type(s.dayOfWeekRate) == dict:
                                 try:
                                     weekday = datetime.date.weekday(now)
@@ -305,41 +348,70 @@ class Token(object):
                                     rateFactor *= s.dayOfWeekRate[str(weekday)]
                                 except KeyError:
                                     import traceback
+
                                     stack = traceback.format_exc()
-                                    logger.error("Day of week rate failed.  Stacktrace %s" % stack)
+                                    logger.error(
+                                        "Day of week rate failed.  Stacktrace %s"
+                                        % stack
+                                    )
                             floatret = round(floatret * rateFactor, significance)
                         floatret = str(floatret)
                         return floatret
                     else:
                         logger.error(
-                            "Start float %s greater than end float %s; will not replace" % (startFloat, endFloat))
+                            "Start float %s greater than end float %s; will not replace"
+                            % (startFloat, endFloat)
+                        )
                         return old
                 except ValueError:
-                    logger.error("Could not parse float[%s:%s]" % (floatMatch.group(1), floatMatch.group(4)))
+                    logger.error(
+                        "Could not parse float[%s:%s]"
+                        % (floatMatch.group(1), floatMatch.group(4))
+                    )
                     return old
             elif stringMatch:
                 strLength = int(stringMatch.group(1))
                 if strLength == 0:
-                    return ''
+                    return ""
                 elif strLength > 0:
-                    replacement = ''
+                    replacement = ""
                     while len(replacement) < strLength:
                         # Generate a random ASCII between dec 33->126
                         replacement += chr(random.randint(33, 126))
                         # Practice safe strings
-                        replacement = re.sub('%[0-9a-fA-F]+', '', urllib.quote(replacement))
+                        replacement = re.sub(
+                            "%[0-9a-fA-F]+", "", urllib.parse.quote(replacement)
+                        )
 
                     return replacement
                 else:
                     logger.error(
-                        "Length specifier %s for string replacement must be greater than 0; will not replace" %
-                        (strLength))
+                        "Length specifier %s for string replacement must be greater than 0; will not replace"
+                        % (strLength)
+                    )
                     return old
             elif hexMatch:
                 strLength = int(hexMatch.group(1))
 
-                replacement = ''
-                hexList = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
+                replacement = ""
+                hexList = [
+                    "0",
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7",
+                    "8",
+                    "9",
+                    "A",
+                    "B",
+                    "C",
+                    "D",
+                    "E",
+                    "F",
+                ]
                 while len(replacement) < strLength:
                     replacement += hexList[random.randint(0, 15)]
 
@@ -348,29 +420,34 @@ class Token(object):
                 try:
                     value = json.loads(listMatch.group(1))
                 except:
-                    logger.error("Could not parse json for '%s' in sample '%s'" % (listMatch.group(1), s.name))
+                    logger.error(
+                        "Could not parse json for '%s' in sample '%s'"
+                        % (listMatch.group(1), s.name)
+                    )
                     return old
-                return random.SystemRandom().choice(value)
+                return random.choice(value)
 
             else:
-                logger.error("Unknown replacement value '%s' for replacementType '%s'; will not replace" %
-                                  (self.replacement, self.replacementType))
+                logger.error(
+                    "Unknown replacement value '%s' for replacementType '%s'; will not replace"
+                    % (self.replacement, self.replacementType)
+                )
                 return old
-        elif self.replacementType in ('file', 'mvfile', 'seqfile'):
+        elif self.replacementType in ("file", "mvfile", "seqfile"):
             if self._replacementFile is not None:
                 replacementFile = self._replacementFile
                 replacementColumn = self._replacementColumn
             else:
                 try:
-                    paths = self.replacement.split(':')
-                    if (len(paths) == 1):
+                    paths = self.replacement.split(":")
+                    if len(paths) == 1:
                         replacementColumn = 0
                     else:
                         try:  # When it's not a mvfile, there's no number on the end:
                             replacementColumn = int(paths[-1])
                         except (ValueError):
                             replacementColumn = 0
-                    if (replacementColumn > 0):
+                    if replacementColumn > 0:
                         # This supports having a drive-letter colon
                         replacementFile = s.pathParser(":".join(paths[0:-1]))
                     else:
@@ -378,7 +455,8 @@ class Token(object):
                 except ValueError:
                     logger.error(
                         "Replacement string '%s' improperly formatted. Should be /path/to/file or /path/to/file:column"
-                        % self.replacement)
+                        % self.replacement
+                    )
                     return old
                 self._replacementFile = replacementFile
                 self._replacementColumn = replacementColumn
@@ -388,8 +466,10 @@ class Token(object):
             # return the same random pick on every iteration
             if replacementColumn > 0 and replacementFile in self.mvhash:
                 if replacementColumn > len(self.mvhash[replacementFile]):
-                    logger.error("Index for column '%s' in replacement file '%s' is out of bounds" %
-                                      (replacementColumn, replacementFile))
+                    logger.error(
+                        "Index for column '%s' in replacement file '%s' is out of bounds"
+                        % (replacementColumn, replacementFile)
+                    )
                     return old
                 else:
                     # logger.debug("Returning mvhash: %s" % self.mvhash[replacementFile][replacementColumn-1])
@@ -404,43 +484,56 @@ class Token(object):
                     #                   (replacementFile, replacementColumn))
                     replacementFile = os.path.abspath(replacementFile)
                     logger.debug("Normalized replacement file %s" % replacementFile)
-                    if os.path.exists(replacementFile) and os.path.isfile(replacementFile):
-                        replacementFH = open(replacementFile, 'rU')
+                    if os.path.exists(replacementFile) and os.path.isfile(
+                        replacementFile
+                    ):
+                        replacementFH = open(replacementFile, "rU")
                         replacementLines = replacementFH.readlines()
                         replacementFH.close()
 
                         if len(replacementLines) == 0:
-                            logger.error("Replacement file '%s' is empty; will not replace" % (replacementFile))
+                            logger.error(
+                                "Replacement file '%s' is empty; will not replace"
+                                % (replacementFile)
+                            )
                             return old
                         else:
                             self._tokenfile = replacementLines
                     else:
                         logger.error("File '%s' does not exist" % (replacementFile))
                         return old
-                if self.replacementType == 'seqfile':
+                if self.replacementType == "seqfile":
                     # pick value one by one from replacement file
-                    replacement = replacementLines[self._tokenfilecounter % len(replacementLines)].strip()
+                    replacement = replacementLines[
+                        self._tokenfilecounter % len(replacementLines)
+                    ].strip()
                     self._tokenfilecounter += 1
                 else:
                     # pick value randomly from replacement file
-                    replacement = replacementLines[random.randint(0, len(replacementLines) - 1)].strip()
+                    replacement = replacementLines[
+                        random.randint(0, len(replacementLines) - 1)
+                    ].strip()
 
                 if replacementColumn > 0:
-                    self.mvhash[replacementFile] = replacement.split(',')
+                    self.mvhash[replacementFile] = replacement.split(",")
 
                     if replacementColumn > len(self.mvhash[replacementFile]):
-                        logger.error("Index for column '%s' in replacement file '%s' is out of bounds" %
-                                          (replacementColumn, replacementFile))
+                        logger.error(
+                            "Index for column '%s' in replacement file '%s' is out of bounds"
+                            % (replacementColumn, replacementFile)
+                        )
                         return old
                     else:
                         return self.mvhash[replacementFile][replacementColumn - 1]
                 else:
                     return replacement
-        elif self.replacementType == 'integerid':
+        elif self.replacementType == "integerid":
             temp = self.replacement
             self.replacement = str(int(self.replacement) + 1)
             return temp
 
         else:
-            logger.error("Unknown replacementType '%s'; will not replace" % self.replacementType)
+            logger.error(
+                "Unknown replacementType '%s'; will not replace" % self.replacementType
+            )
             return old

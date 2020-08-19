@@ -3,17 +3,17 @@ import sys
 
 import pytest
 
-SMALL = 'tests/small'
-MEDIUM = 'tests/medium'
-LARGE = 'tests/large'
-XLARGE = 'tests/xlarge'
+SMALL = "tests/small"
+MEDIUM = "tests/medium"
+LARGE = "tests/large"
+XLARGE = "tests/xlarge"
 newargs = []
 args = sys.argv[:]
 ENV = os.environ
 PATH = sys.path
 
 # Normally, it is 8, which should match the cores/hyperthreads of most of our systems.
-NUM_TEST_WORKERS_LARGE = '8'
+NUM_TEST_WORKERS_LARGE = "8"
 """
 How to run the tests:
 1. python run_tests.py
@@ -30,24 +30,21 @@ if len(args) > 1:
     LARGE = args.pop(0)
     XLARGE = args.pop(0)
 
-    if SMALL.lower() == 'none':
+    if SMALL.lower() == "none":
         SMALL = False
-    if MEDIUM.lower() == 'none':
+    if MEDIUM.lower() == "none":
         MEDIUM = False
-    if LARGE.lower() == 'none':
+    if LARGE.lower() == "none":
         LARGE = False
-    if XLARGE.lower() == 'none':
+    if XLARGE.lower() == "none":
         XLARGE = False
-
-# Array that will hold return codes
-return_codes = []
 
 cov_args = [
     "--cov=splunk_eventgen",
     "--cov-config=tests/.coveragerc",
     "--cov-report=term",
     "--cov-report=html",
-    "--cov-append"
+    "--cov-append",
 ]
 
 # Run small tests
@@ -55,25 +52,37 @@ if SMALL:
     sys.path = PATH
     os.environ = ENV
     args = [SMALL, "--junitxml=tests/test-reports/tests_small_results.xml"] + cov_args
-    return_codes.append(pytest.main(args))
+    rt = pytest.main(args)
+    if rt != 0:
+        print("There are failures in small test cases!")
+        sys.exit(rt)
+
 
 # Run medium tests
 if MEDIUM:
     sys.path = PATH
     os.environ = ENV
-    args = ["-sv", MEDIUM, "--junitxml=tests/test-reports/tests_medium_results.xml"] + cov_args
-    return_codes.append(pytest.main(args))
+    args = [
+        "-sv",
+        MEDIUM,
+        "--junitxml=tests/test-reports/tests_medium_results.xml",
+    ] + cov_args
+    rt = pytest.main(args)
+    if rt != 0:
+        print("There are failures in medium test cases!")
+        sys.exit(rt)
 
 # Commenting out other tests that aren't added yet.
 # Run large tests
 if LARGE:
     sys.path = PATH
     os.environ = ENV
-    args = ["-sv", LARGE, "--junitxml=tests/test-reports/tests_large_results.xml"] + cov_args
-    return_codes.append(pytest.main(args))
-
-print("What do you call a Boomerang that doesn't come back....")
-# We need to ensure we return a bad exit code if the tests do not completely pass
-for code in return_codes:
-    if int(code) != 0:
-        sys.exit(int(code))
+    args = [
+        "-sv",
+        LARGE,
+        "--junitxml=tests/test-reports/tests_large_results.xml",
+    ] + cov_args
+    rt = pytest.main(args)
+    if rt != 0:
+        print("There are failures in large test cases!")
+        sys.exit(rt)

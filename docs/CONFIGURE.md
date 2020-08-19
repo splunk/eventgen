@@ -1,5 +1,5 @@
 
-## Configure ##
+## Configure
 
 After you have installed Eventgen by the method of your choosing, you may be asking some of the following questions:
 * How much data should Eventgen send?
@@ -20,12 +20,12 @@ In addition, common use cases work around bundling these relevant files.
 Because Eventgen configs can be tightly coupled with custom sample files, they can be bundled up into a package itself, in the format:
 ```
 bundle/
-	default/
-		eventgen.conf
-	samples/
-		users.sample
-		hosts.sample
-		firewall.logs
+    default/
+        eventgen.conf
+    samples/
+        users.sample
+        hosts.sample
+        firewall.logs
 ```
 
 
@@ -36,7 +36,7 @@ sample you wish to create, followed by key = value tuning options for that sampl
 [<sample file name>]
 * This stanza defines a given sample file contained within the samples directory.
 * This stanza can be specified as a PCRE.
-configurationkey = configuration value
+<configuration key> = <configuration value>
     
 [windbag]
 count=100
@@ -323,8 +323,7 @@ Tokens in the default generator can override the sample to allow dynamic content
       and <end> is a number greater than 0 and greater than or equal to <start>. If rated,
       will be multiplied times hourOfDayRate and dayOfWeekRate.
     * For float[<start>:<end>], the token will be replaced with a random float between
-      start and end values where <start> is a number greater than 0
-      and <end> is a number greater than 0 and greater than or equal to <start>.
+      start and end values where <end> is a number greater than or equal to <start>.
       For floating point numbers, precision will be based off the precision specified
       in <start>. For example, if we specify 1.0, precision will be one digit, if we specify
       1.0000, precision will be four digits. If rated, will be multiplied times hourOfDayRate and dayOfWeekRate.
@@ -375,15 +374,17 @@ specifically be supported by all plugins. Plugins that write to files like spool
 
     source = <source>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
-    * Set event source in Splunk to <source>. Defaults to 'eventgen' if none specified.
+    * Set event source in Splunk to <source>. Defaults to sample file name if none specified.
 
     sourcetype = <sourcetype>
     * Valid with outputMode=modinput (default) & outputMode=splunkstream & outputMode=httpevent
     * Set event sourcetype in Splunk to <source> Defaults to 'eventgen' if none specified.
 
     host = <host>
-    * ONLY VALID WITH outputMode SPLUNKSTREAM
-    * Set event host in Splunk to <host>. Defaults to 127.0.0.1 if none specified.
+    * When outputMode is splunkstream, set event host in Splunk to <host>.
+    * When outputMode is syslogout and syslogAddHeader is set to true, add initial header with hostname <host>,
+      see syslogAddHeader for details.
+    * Defaults to 127.0.0.1 if none specified.
 
     host.token = <regular expression>
     * PCRE expression used to identify the host name (or partial name) for replacement.
@@ -419,6 +420,14 @@ specifically be supported by all plugins. Plugins that write to files like spool
     * Defaults to port 1514
     * Only supports UDP ports
     * Required
+
+    syslogAddHeader = true | false
+    * Controls whether syslog messages should be prefixed with an RFC3164 compliant header
+      including the host value defined for the sample.
+    * Useful in situations where you want to output generated events to syslog and make it
+      possible for the receiving syslog server to use the sample's defined host value instead of
+      the hostname of the host that eventgen is running on.
+    * Defaults to false
 
 ###### tcpout
     tcpDestinationHost = <host>

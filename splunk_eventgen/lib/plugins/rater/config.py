@@ -1,14 +1,16 @@
 from raterplugin import RaterPlugin
-from logging_config import logger
+from splunk_eventgen.lib.logging_config import logger
 
 class ConfigRater(RaterPlugin):
     name = 'ConfigRater'
     stopping = False
 
     def __init__(self, sample):
+        logger.debug(
         super(ConfigRater, self).__init__(sample)
 
     def single_queue_it(self, count):
+                )
         super(ConfigRater, self).single_queue_it(count)
 
 

@@ -1,9 +1,7 @@
-from __future__ import division
-
 import socket
 import struct
 
-from outputplugin import OutputPlugin
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class S2S:
@@ -20,7 +18,7 @@ class S2S:
     signature_sent = None
     useOutputQueue = True
 
-    def __init__(self, host='localhost', port=9997):
+    def __init__(self, host="localhost", port=9997):
         """
         Initialize object.  Need to know Splunk host and port for the TCP Receiver
         """
@@ -28,14 +26,16 @@ class S2S:
 
         self.signature_sent = False
 
-    def _open_connection(self, host='localhost', port=9997):
+    def _open_connection(self, host="localhost", port=9997):
         """
         Open a connection to Splunk and return a socket
         """
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.connect((host, int(port)))
 
-    def _encode_sig(self, serverName='s2s-api', mgmtPort='9997'):
+    def _encode_sig(
+        self, serverName="s2s-api".encode("utf-8"), mgmtPort="9997".encode("utf-8")
+    ):
         """
         Create Signature element of the S2S Message.  Signature is C struct:
 
@@ -48,33 +48,44 @@ class S2S:
         """
         if not self.signature_sent:
             self.signature_sent = True
-            return struct.pack('!128s256s16s', '--splunk-cooked-mode-v2--', serverName, mgmtPort)
+            return struct.pack(
+                "!128s256s16s",
+                "--splunk-cooked-mode-v2--".encode("utf-8"),
+                serverName,
+                mgmtPort,
+            ).decode("utf-8")
         else:
-            return ''
+            return ""
 
-    def _encode_string(self, tosend=''):
+    def _encode_string(self, tosend=""):
         """
         Encode a string to be sent across the wire to splunk
 
         Wire protocol has an unsigned integer of the length of the string followed
         by a null terminated string.
         """
-        tosend = str(tosend)
-        return struct.pack('!I%ds' % (len(tosend) + 1), len(tosend) + 1, tosend)
+        tosend = str(tosend).encode("utf-8")
+        return struct.pack("!I%ds" % (len(tosend) + 1), len(tosend) + 1, tosend).decode(
+            "utf-8"
+        )
 
-    def _encode_key_value(self, key='', value=''):
+    def _encode_key_value(self, key="", value=""):
         """
         Encode a key/value pair to send across the wire to splunk
 
         A key value pair is merely a concatenated set of encoded strings.
         """
-        return '%s%s' % (self._encode_string(key), self._encode_string(value))
+        return "%s%s" % (self._encode_string(key), self._encode_string(value))
 
-    def _encode_event(self, index='main', host='', source='', sourcetype='', _raw='_done', _time=None):
+    def _encode_event(
+        self, index="main", host="", source="", sourcetype="", _raw="_done", _time=None
+    ):
         # Create signature
         sig = self._encode_sig()
 
-        msg_size = len(struct.pack('!I', 0))  # size of unsigned 32 bit integer, which is the count of map entries
+        msg_size = len(
+            struct.pack("!I", 0)
+        )  # size of unsigned 32 bit integer, which is the count of map entries
         maps = 1
 
         # May not have these, so set them first
@@ -84,77 +95,83 @@ class S2S:
 
         # Encode source
         if len(source) > 0:
-            encoded_source = self._encode_key_value('MetaData:Source', 'source::' + source)
+            encoded_source = self._encode_key_value(
+                "MetaData:Source", "source::" + source
+            )
             maps += 1
             msg_size += len(encoded_source)
 
         # Encode sourcetype
         if len(sourcetype) > 0:
-            encoded_sourcetype = self._encode_key_value('MetaData:Sourcetype', 'sourcetype::' + sourcetype)
+            encoded_sourcetype = self._encode_key_value(
+                "MetaData:Sourcetype", "sourcetype::" + sourcetype
+            )
             maps += 1
             msg_size += len(encoded_sourcetype)
 
         # Encode host
         if len(host) > 0:
-            encoded_host = self._encode_key_value('MetaData:Host', 'host::' + host)
+            encoded_host = self._encode_key_value("MetaData:Host", "host::" + host)
             maps += 1
             msg_size += len(encoded_host)
 
         # Encode index
-        encoded_index = self._encode_key_value('_MetaData:Index', index)
+        encoded_index = self._encode_key_value("_MetaData:Index", index)
         maps += 1
         msg_size += len(encoded_index)
 
         # Encode _raw
-        encoded_raw = self._encode_key_value('_raw', _raw)
+        encoded_raw = self._encode_key_value("_raw", _raw)
         msg_size += len(encoded_raw)
 
         # Will include a 32 bit integer 0 between the end of raw and the _raw trailer
-        msg_size += len(struct.pack('!I', 0))
+        msg_size += len(struct.pack("!I", 0))
 
         # Encode "_raw" trailer... seems to just the string '_raw' repeated again at the end of the _raw field
-        encoded_raw_trailer = self._encode_string('_raw')
+        encoded_raw_trailer = self._encode_string("_raw")
         msg_size += len(encoded_raw_trailer)
 
         # Add _done... Not sure if there's a penalty to setting this for every event
         # but otherwise we don't flush immediately
-        encoded_done = self._encode_key_value('_done', '_done')
+        encoded_done = self._encode_key_value("_done", "_done")
         maps += 1
         msg_size += len(encoded_done)
 
         # Encode _time
         if _time is not None:
-            encoded_time = self._encode_key_value('_time', _time)
+            encoded_time = self._encode_key_value("_time", _time)
             msg_size += len(encoded_time)
             maps += 1
 
         # Create buffer, starting with the signature
         buf = sig
         # Add 32 bit integer with the size of the msg, calculated earlier
-        buf += struct.pack('!I', msg_size)
+        buf += struct.pack("!I", msg_size).decode("utf-8")
         # Add number of map entries, which is 5, index, host, source, sourcetype, raw
-        buf += struct.pack('!I', maps)
+        buf += struct.pack("!I", maps).decode("utf-8")
         # Add the map entries, index, source, sourcetype, host, raw
         buf += encoded_index
-        buf += encoded_host if encoded_host else ''
-        buf += encoded_source if encoded_source else ''
-        buf += encoded_sourcetype if encoded_sourcetype else ''
-        buf += encoded_time if encoded_time else ''
+        buf += encoded_host if encoded_host else ""
+        buf += encoded_source if encoded_source else ""
+        buf += encoded_sourcetype if encoded_sourcetype else ""
+        buf += encoded_time if encoded_time else ""
         buf += encoded_done
         buf += encoded_raw
         # Add dummy zero
-        buf += struct.pack('!I', 0)
+        buf += struct.pack("!I", 0).decode("utf-8")
         # Add trailer raw
         buf += encoded_raw_trailer
         return buf
 
-    def send_event(self, index='main', host='', source='', sourcetype='', _raw='', _time=None):
+    def send_event(
+        self, index="main", host="", source="", sourcetype="", _raw="", _time=None
+    ):
         """
         Encode and send an event to Splunk
         """
         if len(_raw) > 0:
             e = self._encode_event(index, host, source, sourcetype, _raw, _time)
-            self.s.sendall(e)
+            self.s.sendall(e.encode("utf-8"))
 
     def close(self):
         """
@@ -164,7 +181,7 @@ class S2S:
 
 
 class S2SOutputPlugin(OutputPlugin):
-    name = 's2s'
+    name = "s2s"
     MAXQUEUELENGTH = 10
     s2s = None
     useOutputQueue = True
@@ -178,7 +195,14 @@ class S2SOutputPlugin(OutputPlugin):
         if self.s2s is None:
             self.s2s = S2S(self._sample.splunkHost, self._sample.splunkPort)
         for m in q:
-            self.s2s.send_event(m['index'], m['host'], m['source'], m['sourcetype'], m['_raw'], m['_time'])
+            self.s2s.send_event(
+                m["index"],
+                m["host"],
+                m["source"],
+                m["sourcetype"],
+                m["_raw"],
+                m["_time"],
+            )
 
 
 def load():

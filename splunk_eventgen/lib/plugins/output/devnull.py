@@ -1,10 +1,8 @@
-from __future__ import division
-
-from outputplugin import OutputPlugin
+from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 
 class DevNullOutputPlugin(OutputPlugin):
-    name = 'devnull'
+    name = "devnull"
     MAXQUEUELENGTH = 1000
     useOutputQueue = True
 
@@ -14,9 +12,9 @@ class DevNullOutputPlugin(OutputPlugin):
 
     def flush(self, q):
         if self.firsttime:
-            self.f = open('/dev/null', 'w')
+            self.f = open("/dev/null", "w")
             self.firsttime = False
-        buf = '\n'.join(x['_raw'].rstrip() for x in q)
+        buf = "\n".join(x["_raw"].rstrip() for x in q)
         self.f.write(buf)
 
 

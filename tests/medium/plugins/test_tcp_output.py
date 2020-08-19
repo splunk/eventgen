@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 import os
@@ -17,13 +17,13 @@ class TestTcpOutputPlugin(object):
     def test_output_data_to_tcp_port(self):
         configfile = "tests/sample_eventgen_conf/medium_test/eventgen.conf.tcpoutput"
         testargs = ["eventgen", "generate", configfile]
-        with patch.object(sys, 'argv', testargs):
+        with patch.object(sys, "argv", testargs):
             pargs = parse_args()
-            assert pargs.subcommand == 'generate'
+            assert pargs.subcommand == "generate"
             assert pargs.configfile == configfile
             eventgen = EventGenerator(args=pargs)
 
-        with patch('socket.socket') as mock_requests:
+        with patch("socket.socket") as mock_requests:
             sample = MagicMock()
             tcpoutput = TcpOutputPlugin(sample)
             mock_requests.send = MagicMock()
@@ -34,5 +34,5 @@ class TestTcpOutputPlugin(object):
             mock_requests.connect.return_value = True
 
             eventgen.start()
-            tcpoutput.s.connect.assert_called_with(('127.0.0.1', 9999))
+            tcpoutput.s.connect.assert_called_with(("127.0.0.1", 9999))
             assert tcpoutput.s.send.call_count == 5

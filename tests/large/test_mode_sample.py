@@ -1,5 +1,5 @@
-from datetime import datetime
 import re
+from datetime import datetime
 
 
 def test_mode_sample(eventgen_test_helper):
@@ -29,7 +29,9 @@ def test_mode_sample_csv(eventgen_test_helper):
 
 def test_mode_sample_interval(eventgen_test_helper):
     """Test normal sample mode with interval = 10s"""
-    events = eventgen_test_helper("eventgen_sample_interval.conf", timeout=30).get_events()
+    events = eventgen_test_helper(
+        "eventgen_sample_interval.conf", timeout=30
+    ).get_events()
     # assert the total events count is 12 * 3
     assert len(events) == 36
 
@@ -91,7 +93,7 @@ def test_mode_sample_latest(eventgen_test_helper):
         event_datetime = datetime.strptime(result.group(), "%Y-%m-%d %H:%M:%S")
         delter_seconds = (event_datetime - current_datetime).total_seconds()
         # assert the event time is after (now - earliest) time
-        assert delter_seconds < 16
+        assert delter_seconds < 17
 
 
 def test_mode_sample_count(eventgen_test_helper):
@@ -105,3 +107,21 @@ def test_mode_sample_generator_workers(eventgen_test_helper):
     """Test sample mode with generatorWorkers = 5, end = 5 and count = 10"""
     events = eventgen_test_helper("eventgen_sample_generatorWorkers.conf").get_events()
     assert len(events) == 50
+
+
+def test_mode_sample_regex_integer(eventgen_test_helper):
+    """Test sample mode with a regex pattern in the stanza name ('sample\d')"""
+    events = eventgen_test_helper("eventgen_sample_regex_integer.conf").get_events()
+    assert len(events) == 24
+
+
+def test_mode_sample_regex_wildcard(eventgen_test_helper):
+    """tTest sample mode with a regex wildcard pattern in the stanza name ('sample*')"""
+    events = eventgen_test_helper("eventgen_sample_regex_wildcard.conf").get_events()
+    assert len(events) == 36
+
+
+def test_mode_sample_regex_csv(eventgen_test_helper):
+    """tTest sample mode with a regex wildcard pattern in the stanza name ('sample*')"""
+    events = eventgen_test_helper("eventgen_sample_regex_csv.conf").get_events()
+    assert len(events) == 20

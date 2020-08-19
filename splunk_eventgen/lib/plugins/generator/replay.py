@@ -1,13 +1,10 @@
 # TODO Add timestamp detection for common timestamp format
-
-from __future__ import division
-
 import datetime
 import time
 
-from eventgentimestamp import EventgenTimestamp
-from generatorplugin import GeneratorPlugin
-from logging_config import logger
+from splunk_eventgen.lib.eventgentimestamp import EventgenTimestamp
+from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
+from splunk_eventgen.lib.logging_config import logger
 
 
 class ReplayGenerator(GeneratorPlugin):
@@ -27,10 +24,10 @@ class ReplayGenerator(GeneratorPlugin):
 
     def set_time_and_send(self, rpevent, event_time, earliest, latest):
         # temporary time append
-        rpevent['_raw'] = rpevent['_raw'][:-1]
-        rpevent['_time'] = (event_time - datetime.datetime(1970, 1, 1)).total_seconds()
+        rpevent["_raw"] = rpevent["_raw"][:-1]
+        rpevent["_time"] = (event_time - datetime.datetime(1970, 1, 1)).total_seconds()
 
-        event = rpevent['_raw']
+        event = rpevent["_raw"]
 
         # Maintain state for every token in a given event
         # Hash contains keys for each file name which is assigned a list of values
@@ -40,19 +37,21 @@ class ReplayGenerator(GeneratorPlugin):
         # Iterate tokens
         for token in self._sample.tokens:
             token.mvhash = mvhash
-            if token.replacementType in ['timestamp', 'replaytimestamp']:
-                event = token.replace(event, et=event_time, lt=event_time, s=self._sample)
+            if token.replacementType in ["timestamp", "replaytimestamp"]:
+                event = token.replace(
+                    event, et=event_time, lt=event_time, s=self._sample
+                )
             else:
                 event = token.replace(event, s=self._sample)
         if self._sample.hostToken:
             # clear the host mvhash every time, because we need to re-randomize it
             self._sample.hostToken.mvhash = {}
 
-        host = rpevent['host']
+        host = rpevent["host"]
         if self._sample.hostToken:
-            rpevent['host'] = self._sample.hostToken.replace(host, s=self._sample)
+            rpevent["host"] = self._sample.hostToken.replace(host, s=self._sample)
 
-        rpevent['_raw'] = event
+        rpevent["_raw"] = event
         self._out.bulksend([rpevent])
 
     def gen(self, count, earliest, latest, samplename=None):
@@ -68,41 +67,61 @@ class ReplayGenerator(GeneratorPlugin):
 
         if not self._sample.backfill or self._sample.backfilldone:
             self.backfill_time = EventgenTimestamp.get_random_timestamp_backfill(
-                earliest, latest, self._sample.earliest, self._sample.latest)
+                earliest, latest, self._sample.earliest, self._sample.latest
+            )
 
         for line in self._sample.get_loaded_sample():
             # Add newline to a raw line if necessary
             try:
-                if line['_raw'][-1] != '\n':
-                    line['_raw'] += '\n'
+                if line["_raw"][-1] != "\n":
+                    line["_raw"] += "\n"
 
-                index = line.get('index', self._sample.index)
-                host = line.get('host', self._sample.host)
-                hostRegex = line.get('hostRegex', self._sample.hostRegex)
-                source = line.get('source', self._sample.source)
-                sourcetype = line.get('sourcetype', self._sample.sourcetype)
+                index = line.get("index", self._sample.index)
+                host = line.get("host", self._sample.host)
+                hostRegex = line.get("hostRegex", self._sample.hostRegex)
+                source = line.get("source", self._sample.source)
+                sourcetype = line.get("sourcetype", self._sample.sourcetype)
                 rpevent = {
-                    '_raw': line['_raw'], 'index': index, 'host': host, 'hostRegex': hostRegex, 'source': source,
-                    'sourcetype': sourcetype}
+                    "_raw": line["_raw"],
+                    "index": index,
+                    "host": host,
+                    "hostRegex": hostRegex,
+                    "source": source,
+                    "sourcetype": sourcetype,
+                }
             except:
-                if line[-1] != '\n':
-                    line += '\n'
+                if line[-1] != "\n":
+                    line += "\n"
 
                 rpevent = {
-                    '_raw': line, 'index': self._sample.index, 'host': self._sample.host, 'hostRegex':
-                    self._sample.hostRegex, 'source': self._sample.source, 'sourcetype': self._sample.sourcetype}
+                    "_raw": line,
+                    "index": self._sample.index,
+                    "host": self._sample.host,
+                    "hostRegex": self._sample.hostRegex,
+                    "source": self._sample.source,
+                    "sourcetype": self._sample.sourcetype,
+                }
 
             # If timestamp doesn't exist, the sample file should be fixed to include timestamp for every event.
             try:
-                current_event_timestamp = self._sample.getTSFromEvent(rpevent[self._sample.timeField])
+                current_event_timestamp = self._sample.getTSFromEvent(
+                    rpevent[self._sample.timeField]
+                )
             except Exception:
                 try:
-                    current_event_timestamp = self._sample.getTSFromEvent(line[self._sample.timeField])
+                    current_event_timestamp = self._sample.getTSFromEvent(
+                        line[self._sample.timeField]
+                    )
                 except Exception:
                     try:
-                        logger.debug("Sample timeField {} failed to locate. Trying to locate _time field.".format(
-                            self._sample.timeField))
-                        current_event_timestamp = self._sample.getTSFromEvent(line["_time"])
+                        logger.error(
+                            "Sample timeField {} failed to locate. Trying to locate _time field.".format(
+                                self._sample.timeField
+                            )
+                        )
+                        current_event_timestamp = self._sample.getTSFromEvent(
+                            line["_time"]
+                        )
                     except Exception:
                         logger.exception("Extracting timestamp from an event failed.")
                         continue
@@ -115,7 +134,12 @@ class ReplayGenerator(GeneratorPlugin):
                 continue
 
             # Refer to the last event to calculate the new backfill time
-            time_difference = datetime.timedelta(seconds=(current_event_timestamp - previous_event_timestamp) .total_seconds() * self._sample.timeMultiple)
+            time_difference = datetime.timedelta(
+                seconds=(
+                    current_event_timestamp - previous_event_timestamp
+                ).total_seconds()
+                * self._sample.timeMultiple
+            )
 
             if self.backfill_time + time_difference >= self.current_time:
                 sleep_time = time_difference - (self.current_time - self.backfill_time)

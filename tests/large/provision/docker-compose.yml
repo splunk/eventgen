@@ -2,7 +2,7 @@ version: "3.3"
 services:
   splunk:
     hostname: eventgensplunk
-    build: .
+    image: provision_splunk:latest
     ports:
       - 8000:8000
       - 8089:8089
@@ -12,16 +12,10 @@ services:
       SPLUNK_START_ARGS: --answer-yes --no-prompt --accept-license
       # add `SHELL` env variable to make the `dircolors` happy
       SHELL: /bin/bash
+      SPLUNK_PASSWORD: changeme
     volumes:
       # the `docker` command in guest can talk to host docker daemon
       - "/var/run/docker.sock:/var/run/docker.sock"
     # to make terminal colorful
     tty: true
-  # expose a TCP socket for accessing docker API
-  socat:
-    image: alpine/socat:1.0.2
-    command: TCP4-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock
-    ports:
-      - 2375:2375
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      
