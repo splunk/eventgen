@@ -1,4 +1,5 @@
 from queue import Full
+
 from splunk_eventgen.lib.logging_config import logger
 from splunk_eventgen.lib.plugins.rater.config import ConfigRater
 
@@ -21,8 +22,12 @@ class PerDayVolume(ConfigRater):
     def queue_it(self, count):
         count = count + self.previous_count_left
         if 0 < count < self.raweventsize:
-            logger.info("current interval size is {}, which is smaller than a raw event size {}.".
-                             format(count, self.raweventsize) + "Wait for the next turn.")
+            logger.info(
+                "current interval size is {}, which is smaller than a raw event size {}.".format(
+                    count, self.raweventsize
+                )
+                + "Wait for the next turn."
+            )
             self.update_options(previous_count_left=count)
         else:
             self.update_options(previous_count_left=0)
@@ -45,7 +50,7 @@ class PerDayVolume(ConfigRater):
         perdayvolume = perdayvolume * 1024 * 1024 * 1024
         interval = self.sample.interval
         if self.sample.interval == 0:
-            logger.debug('Running perDayVolume as if for 24hr period.')
+            logger.debug("Running perDayVolume as if for 24hr period.")
             interval = 86400
         logger.debug(
             "Current perDayVolume: %f,  Sample interval: %s" % (perdayvolume, interval)

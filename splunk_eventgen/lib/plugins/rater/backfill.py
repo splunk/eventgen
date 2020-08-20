@@ -1,15 +1,21 @@
 from queue import Full
-from splunk_eventgen.lib.timeparser import timeParserTimeMath
-from splunk_eventgen.lib.plugins.rater.config import ConfigRater
+
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.plugins.rater.config import ConfigRater
+from splunk_eventgen.lib.timeparser import timeParserTimeMath
+
 
 class BackfillRater(ConfigRater):
-    name = 'BackfillRater'
+    name = "BackfillRater"
     stopping = False
 
     def __init__(self, sample):
         super(BackfillRater, self).__init__(sample)
-        logger.debug('Starting BackfillRater for %s' % sample.name if sample is not None else "None")
+        logger.debug(
+            "Starting BackfillRater for %s" % sample.name
+            if sample is not None
+            else "None"
+        )
         self.sample = sample
         self.samplerater = None
 
@@ -27,11 +33,17 @@ class BackfillRater(ConfigRater):
                     backfillnumber += char
                 elif char != "-":
                     backfillletter += char
-            backfillearliest = timeParserTimeMath(plusminus=mathsymbol, num=backfillnumber, unit=backfillletter,
-                                                  ret=realtime)
+            backfillearliest = timeParserTimeMath(
+                plusminus=mathsymbol,
+                num=backfillnumber,
+                unit=backfillletter,
+                ret=realtime,
+            )
             while backfillearliest < realtime:
                 et = backfillearliest
-                lt = timeParserTimeMath(plusminus="+", num=self.sample.interval, unit="s", ret=et)
+                lt = timeParserTimeMath(
+                    plusminus="+", num=self.sample.interval, unit="s", ret=et
+                )
                 genPlugin = self.generatorPlugin(sample=self.sample)
                 # need to make sure we set the queue right if we're using multiprocessing or thread modes
                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
@@ -49,6 +61,7 @@ class BackfillRater(ConfigRater):
 
         except Exception as e:
             logger.error("Failed queuing backfill, exception: {0}".format(e))
+
 
 def load():
     return BackfillRater

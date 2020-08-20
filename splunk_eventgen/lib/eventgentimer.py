@@ -55,13 +55,17 @@ class Timer(object):
         )
         # load plugins
         if self.sample is not None:
-            rater_class = self.config.getPlugin('rater.' + self.sample.rater, self.sample)
-            backrater_class = self.config.getPlugin('rater.backfill', self.sample)
-            perdayrater_class = self.config.getPlugin('rater.perdayvolume', self.sample)
+            rater_class = self.config.getPlugin(
+                "rater." + self.sample.rater, self.sample
+            )
+            backrater_class = self.config.getPlugin("rater.backfill", self.sample)
+            perdayrater_class = self.config.getPlugin("rater.perdayvolume", self.sample)
             self.rater = rater_class(self.sample)
             self.backrater = backrater_class(self.sample)
             self.perdayrater = perdayrater_class(self.sample)
-            self.generatorPlugin = self.config.getPlugin('generator.' + self.sample.generator, self.sample)
+            self.generatorPlugin = self.config.getPlugin(
+                "generator." + self.sample.generator, self.sample
+            )
             self.outputPlugin = self.config.getPlugin(
                 "output." + self.sample.outputMode, self.sample
             )
@@ -145,24 +149,40 @@ class Timer(object):
                 # referenced in the config object, while, self.stopping will only stop this one.
                 if self.config.stopping or self.stopping:
                     end = True
-                self.rater.update_options(config=self.config, sample=self.sample, generatorQueue=self.generatorQueue,
-                                          outputQueue=self.outputQueue, outputPlugin=self.outputPlugin,
-                                          generatorPlugin=self.generatorPlugin)
+                self.rater.update_options(
+                    config=self.config,
+                    sample=self.sample,
+                    generatorQueue=self.generatorQueue,
+                    outputQueue=self.outputQueue,
+                    outputPlugin=self.outputPlugin,
+                    generatorPlugin=self.generatorPlugin,
+                )
                 count = self.rater.rate()
                 # First run of the generator, see if we have any backfill work to do.
                 if self.countdown <= 0:
                     if self.sample.backfill and not self.sample.backfilldone:
-                        self.backrater.update_options(config=self.config, sample=self.sample,
-                                          generatorQueue=self.generatorQueue, outputQueue=self.outputQueue,
-                                          outputPlugin=self.outputPlugin, generatorPlugin=self.generatorPlugin,
-                                          samplerater=self.rater)
+                        self.backrater.update_options(
+                            config=self.config,
+                            sample=self.sample,
+                            generatorQueue=self.generatorQueue,
+                            outputQueue=self.outputQueue,
+                            outputPlugin=self.outputPlugin,
+                            generatorPlugin=self.generatorPlugin,
+                            samplerater=self.rater,
+                        )
                         self.backrater.queue_it(count)
                     else:
-                        if self.sample.generator == 'perdayvolumegenerator':
-                            self.perdayrater.update_options(config=self.config, sample=self.sample,
-                                                          generatorQueue=self.generatorQueue, outputQueue=self.outputQueue,
-                                                          outputPlugin=self.outputPlugin, generatorPlugin=self.generatorPlugin,
-                                                          samplerater=self.rater, raweventsize=raw_event_size)
+                        if self.sample.generator == "perdayvolumegenerator":
+                            self.perdayrater.update_options(
+                                config=self.config,
+                                sample=self.sample,
+                                generatorQueue=self.generatorQueue,
+                                outputQueue=self.outputQueue,
+                                outputPlugin=self.outputPlugin,
+                                generatorPlugin=self.generatorPlugin,
+                                samplerater=self.rater,
+                                raweventsize=raw_event_size,
+                            )
                             self.perdayrater.rate()
                             self.perdayrater.queue_it(count)
                         else:
@@ -199,8 +219,10 @@ class Timer(object):
                         self.stopping = True
                         end = True
                 elif lt >= self.endts:
-                    logger.info("End Time '%s' reached, ending generation of sample '%s'" % (self.sample.endts,
-                                                                                                  self.sample.name))
+                    logger.info(
+                        "End Time '%s' reached, ending generation of sample '%s'"
+                        % (self.sample.endts, self.sample.name)
+                    )
                     self.stopping = True
                     end = True
 

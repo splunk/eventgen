@@ -211,7 +211,7 @@ class GeneratorPlugin(object):
                     raise
 
     def run(self, output_counter=None, futures_pool=None):
-        self.futures_pool=futures_pool
+        self.futures_pool = futures_pool
         if (
             output_counter is not None
             and hasattr(self.config, "outputCounter")

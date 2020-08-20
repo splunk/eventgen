@@ -8,9 +8,9 @@ import os
 import signal
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from queue import Empty, Queue
 from threading import Event, Thread
-from concurrent.futures import ThreadPoolExecutor
 
 from splunk_eventgen.lib.eventgenconfig import Config
 from splunk_eventgen.lib.eventgenexceptions import PluginNotLoaded
@@ -182,9 +182,8 @@ class EventGenerator(object):
             worker = Thread(
                 target=self._worker_do_work,
                 args=(self.sampleQueue, self.loggingQueue,),
-                kwargs={
-                "futures_pool": self.futures_pool},
-                name="TimeThread{0}".format(i)
+                kwargs={"futures_pool": self.futures_pool},
+                name="TimeThread{0}".format(i),
             )
             worker.setDaemon(True)
             worker.start()
@@ -211,8 +210,7 @@ class EventGenerator(object):
             worker = Thread(
                 target=self._worker_do_work,
                 args=(self.outputQueue, self.loggingQueue,),
-                kwargs={
-                "futures_pool": self.futures_pool },
+                kwargs={"futures_pool": self.futures_pool},
                 name="OutputThread{0}".format(i),
             )
             worker.setDaemon(True)
@@ -269,7 +267,7 @@ class EventGenerator(object):
                     worker = Thread(
                         target=self._generator_do_work,
                         args=(self.workerQueue, self.loggingQueue, None),
-                        kwargs={"futures_pool": self.futures_pool}
+                        kwargs={"futures_pool": self.futures_pool},
                     )
                     worker.setDaemon(True)
                     worker.start()
@@ -291,8 +289,8 @@ class EventGenerator(object):
                         self.loggingQueue,
                         self.genconfig,
                         disable_logging,
-                    ),kwargs={
-                    "futures_pool": self.futures_pool}
+                    ),
+                    kwargs={"futures_pool": self.futures_pool},
                 )
                 self.workerPool.append(process)
                 process.start()
@@ -333,7 +331,9 @@ class EventGenerator(object):
                 self.logger.exception(str(e))
                 raise e
 
-    def _generator_do_work(self, work_queue, logging_queue, output_counter=None, futures_pool=None):
+    def _generator_do_work(
+        self, work_queue, logging_queue, output_counter=None, futures_pool=None
+    ):
         while not self.stop_request.isSet():
             try:
                 item = work_queue.get(timeout=10)
@@ -357,7 +357,9 @@ class EventGenerator(object):
                 raise e
 
     @staticmethod
-    def _proc_worker_do_work(work_queue, logging_queue, config, disable_logging, futures_pool=None):
+    def _proc_worker_do_work(
+        work_queue, logging_queue, config, disable_logging, futures_pool=None
+    ):
         genconfig = config
         stopping = genconfig["stopping"]
         root = logging.getLogger()
@@ -669,4 +671,3 @@ class EventGenerator(object):
         self.workerPool = []
         if self.manager:
             self.manager.shutdown()
-

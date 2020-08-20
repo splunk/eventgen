@@ -1,8 +1,9 @@
-from splunk_eventgen.lib.raterplugin import RaterPlugin
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.raterplugin import RaterPlugin
+
 
 class ConfigRater(RaterPlugin):
-    name = 'ConfigRater'
+    name = "ConfigRater"
     stopping = False
 
     def __init__(self, sample):
@@ -22,10 +23,16 @@ class ConfigRater(RaterPlugin):
                 logger.debug("SplitSample = 1, using all availible workers")
                 targetWorkersToUse = numberOfWorkers
             else:
-                logger.debug("SplitSample != 1, using {0} workers.".format(self.sample.splitSample))
+                logger.debug(
+                    "SplitSample != 1, using {0} workers.".format(
+                        self.sample.splitSample
+                    )
+                )
                 targetWorkersToUse = self.sample.splitSample
         else:
-            logger.debug("SplitSample set to disable multithreading for just this sample.")
+            logger.debug(
+                "SplitSample set to disable multithreading for just this sample."
+            )
             self.single_queue_it()
         currentWorkerPrepCount = 0
         remainingCount = count
@@ -38,6 +45,7 @@ class ConfigRater(RaterPlugin):
             else:
                 targetLoopCount = remainingCount
             self.single_queue_it(targetLoopCount)
+
 
 def load():
     return ConfigRater

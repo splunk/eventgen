@@ -1,8 +1,9 @@
-from splunk_eventgen.lib.raterplugin import RaterPlugin
 from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.raterplugin import RaterPlugin
+
 
 class CountRater(RaterPlugin):
-    name = 'CountRater'
+    name = "CountRater"
     stopping = False
 
     def __init__(self, sample):
@@ -19,7 +20,9 @@ class CountRater(RaterPlugin):
         if count < 1 and count != -1:
             logger.info(
                 "There is no data to be generated in worker {0} because the count is {1}.".format(
-                    self.sample.config.generatorWorkers, count))
+                    self.sample.config.generatorWorkers, count
+                )
+            )
         else:
             genPlugin = self.generatorPlugin(sample=self.sample)
             # Adjust queue for threading mode
@@ -27,14 +30,16 @@ class CountRater(RaterPlugin):
             genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
             try:
                 self.generatorQueue.put(genPlugin)
-                logger.info(("Put {0} MB of events in queue for sample '{1}'" +
-                             "with et '{2}' and lt '{3}'").format(
-                    round((count / 1024.0 / 1024), 4),
-                    self.sample.name, et, lt))
+                logger.info(
+                    (
+                        "Put {0} MB of events in queue for sample '{1}'"
+                        + "with et '{2}' and lt '{3}'"
+                    ).format(
+                        round((count / 1024.0 / 1024), 4), self.sample.name, et, lt
+                    )
+                )
             except Full:
                 logger.warning("Generator Queue Full. Skipping current generation.")
-
-
 
     def multi_queue_it(self, count):
         logger.info("Entering multi-processing division of sample")
@@ -59,6 +64,7 @@ class CountRater(RaterPlugin):
             else:
                 targetLoopCount = remainingCount
             self.single_queue_it(targetLoopCount)
+
 
 def load():
     return CountRater
