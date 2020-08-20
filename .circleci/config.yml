@@ -33,6 +33,7 @@ jobs:
             set -e
             make test
           no_output_timeout: 30m
+
       - store_test_results:
           path: /home/circleci/project/tests/test-reports
       - store_artifacts:
