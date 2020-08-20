@@ -169,7 +169,6 @@ class Timer(object):
                             self.rater.queue_it(count)
                     self.countdown = self.interval
                     self.executions += 1
-                                )
 
             except Exception as e:
                 logger.exception(str(e))
@@ -193,10 +192,10 @@ class Timer(object):
                 # timer thread
                 if not self.endts:
                     if self.executions >= int(self.end):
-                            logger.info(
-                                "End executions %d reached, ending generation of sample '%s'"
-                                % (int(self.end), self.sample.name)
-                            )
+                        logger.info(
+                            "End executions %d reached, ending generation of sample '%s'"
+                            % (int(self.end), self.sample.name)
+                        )
                         self.stopping = True
                         end = True
                 elif lt >= self.endts:

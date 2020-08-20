@@ -184,7 +184,7 @@ class EventGenerator(object):
                 args=(self.sampleQueue, self.loggingQueue,),
                 kwargs={
                 "futures_pool": self.futures_pool},
-                name="TimeThread{0}".format(i))
+                name="TimeThread{0}".format(i)
             )
             worker.setDaemon(True)
             worker.start()

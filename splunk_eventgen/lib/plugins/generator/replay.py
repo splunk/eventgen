@@ -22,60 +22,50 @@ class ReplayGenerator(GeneratorPlugin):
         self._timeSinceSleep = datetime.timedelta()
         self._times = []
 
-    def set_time_and_send(self, rpevent, event_time, earliest, latest):
+    def set_time_and_tokens(self, replayed_event, event_time, earliest, latest):
+        send_event = {}
         # temporary time append
-        rpevent["_raw"] = rpevent["_raw"][:-1]
-        rpevent["_time"] = (event_time - datetime.datetime(1970, 1, 1)).total_seconds()
+        send_event["_raw"] = replayed_event["_raw"][:-1]
+        send_event["host"] = replayed_event["host"]
+        send_event["source"] = replayed_event["source"]
+        send_event["sourcetype"] = replayed_event["sourcetype"]
+        send_event["index"] = replayed_event["index"]
+        send_event["_time"] = (event_time - datetime.datetime(1970, 1, 1)).total_seconds()
 
-        event = rpevent["_raw"]
 
         # Maintain state for every token in a given event
         # Hash contains keys for each file name which is assigned a list of values
         # picked from a random line in that file
-        mvhash = {}
+        mvhash = dict()
 
         # Iterate tokens
         for token in self._sample.tokens:
             token.mvhash = mvhash
             if token.replacementType in ["timestamp", "replaytimestamp"]:
-                event = token.replace(
-                    event, et=event_time, lt=event_time, s=self._sample
+                eventraw = token.replace(
+                    replayed_event["_raw"], et=event_time, lt=event_time, s=self._sample
                 )
             else:
-                event = token.replace(event, s=self._sample)
+                eventraw = token.replace(replayed_event["_raw"], s=self._sample)
         if self._sample.hostToken:
             # clear the host mvhash every time, because we need to re-randomize it
             self._sample.hostToken.mvhash = {}
 
-        host = rpevent["host"]
+        host = replayed_event["host"]
         if self._sample.hostToken:
-            rpevent["host"] = self._sample.hostToken.replace(host, s=self._sample)
+            send_event["host"] = self._sample.hostToken.replace(host, s=self._sample)
 
-        rpevent["_raw"] = event
-        self._out.bulksend([rpevent])
+        send_event["_raw"] = eventraw
+        return(send_event)
 
-    def gen(self, count, earliest, latest, samplename=None):
-        # 9/8/15 CS Check to make sure we have events to replay
-        self._sample.loadSample()
-        previous_event = None
-        previous_event_timestamp = None
-        self.current_time = self._sample.now()
-
-        # If backfill exists, calculate the start of the backfill time relative to the current time.
-        # Otherwise, backfill time equals to the current time
-        self.backfill_time = self._sample.get_backfill_time(self.current_time)
-
-        if not self._sample.backfill or self._sample.backfilldone:
-            self.backfill_time = EventgenTimestamp.get_random_timestamp_backfill(
-                earliest, latest, self._sample.earliest, self._sample.latest
-            )
-
+    def load_sample_file(self):
+        line_list=[]
         for line in self._sample.get_loaded_sample():
             # Add newline to a raw line if necessary
             try:
                 if line["_raw"][-1] != "\n":
                     line["_raw"] += "\n"
-
+                current_event_timestamp = False
                 index = line.get("index", self._sample.index)
                 host = line.get("host", self._sample.host)
                 hostRegex = line.get("hostRegex", self._sample.hostRegex)
@@ -89,6 +79,7 @@ class ReplayGenerator(GeneratorPlugin):
                     "source": source,
                     "sourcetype": sourcetype,
                 }
+                line_list.append(rpevent)
             except:
                 if line[-1] != "\n":
                     line += "\n"
@@ -101,17 +92,17 @@ class ReplayGenerator(GeneratorPlugin):
                     "source": self._sample.source,
                     "sourcetype": self._sample.sourcetype,
                 }
-
-            # If timestamp doesn't exist, the sample file should be fixed to include timestamp for every event.
             try:
                 current_event_timestamp = self._sample.getTSFromEvent(
                     rpevent[self._sample.timeField]
                 )
+                rpevent["base_time"]=current_event_timestamp
             except Exception:
                 try:
                     current_event_timestamp = self._sample.getTSFromEvent(
                         line[self._sample.timeField]
                     )
+                    rpevent["base_time"]=current_event_timestamp
                 except Exception:
                     try:
                         logger.error(
@@ -125,33 +116,65 @@ class ReplayGenerator(GeneratorPlugin):
                     except Exception:
                         logger.exception("Extracting timestamp from an event failed.")
                         continue
+            line_list.append(rpevent)
+            # now interate the list 1 time and figure out the time delta of every event
+            current_event = None
+            previous_event= None
+            for index, line in enumerate(line_list):
+                current_event=line
+                # if it's the first event, there is no previous event.
+                if index==0:
+                    previous_event = current_event
+                else:
+                    previous_event = line_list[index-1]
+                # Refer to the last event to calculate the new backfill time
+                time_difference = datetime.timedelta(
+                    seconds=(
+                            current_event["base_time"] - previous_event["base_time"]
+                        ).total_seconds()
+                        * self._sample.timeMultiple
+                )
+                current_event["timediff"]=time_difference
+        return line_list
 
-            # Always flush the first event
+    def gen(self, count, earliest, latest, samplename=None):
+        # 9/8/15 CS Check to make sure we have events to replay
+        self._sample.loadSample()
+        previous_event = None
+        previous_event_timestamp = None
+        self.current_time = self._sample.now()
+        line_list=self.load_sample_file()
+        # If backfill exists, calculate the start of the backfill time relative to the current time.
+        # Otherwise, backfill time equals to the current time
+        self.backfill_time = self._sample.get_backfill_time(self.current_time)
+        # if we have backfill, replay the events backwards until we hit the backfill
+        if self.backfill_time != self.current_time:
+            backfill_count_time = self.current_time
+            current_backfill_index = len(line_list) - 1
+            backfill_events = []
+            while backfill_count_time >= self.backfill_time:
+                rpevent = line_list[current_backfill_index]
+                backfill_count_time = backfill_count_time - rpevent["timediff"]
+                backfill_events.append(self.set_time_and_tokens(rpevent, backfill_count_time, earliest, latest))
+                current_backfill_index -= 1
+                if current_backfill_index < 0:
+                    current_backfill_index = len(line_list) - 1
+            backfill_events.reverse()
+            self._out.bulksend(backfill_events)
+        previous_event = None
+        for index, rpevent in enumerate(line_list[:-1]):
             if previous_event is None:
-                previous_event = rpevent
-                previous_event_timestamp = current_event_timestamp
-                self.set_time_and_send(rpevent, self.backfill_time, earliest, latest)
+                current_event = self.set_time_and_tokens(rpevent, self.backfill_time, earliest, latest)
+                previous_event = current_event
+                previous_event_timediff = rpevent["timediff"]
+                self._out.bulksend([current_event])
                 continue
-
-            # Refer to the last event to calculate the new backfill time
-            time_difference = datetime.timedelta(
-                seconds=(
-                    current_event_timestamp - previous_event_timestamp
-                ).total_seconds()
-                * self._sample.timeMultiple
-            )
-
-            if self.backfill_time + time_difference >= self.current_time:
-                sleep_time = time_difference - (self.current_time - self.backfill_time)
-                if self._sample.backfill and not self._sample.backfilldone:
-                    time.sleep(sleep_time.seconds)
-                self.current_time += sleep_time
-                self.backfill_time = self.current_time
-            else:
-                self.backfill_time += time_difference
+            time.sleep(previous_event_timediff.total_seconds())
+            current_time = datetime.datetime.now()
             previous_event = rpevent
-            previous_event_timestamp = current_event_timestamp
-            self.set_time_and_send(rpevent, self.backfill_time, earliest, latest)
+            previous_event_timediff = rpevent["timediff"]
+            send_event = self.set_time_and_tokens(rpevent, current_time, earliest, latest)
+            self._out.bulksend([send_event])
 
         self._out.flush(endOfInterval=True)
         return

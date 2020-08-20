@@ -222,7 +222,7 @@ class GeneratorPlugin(object):
         if self.futures_pool and not self._out.outputPlugin.useOutputQueue:
             self._out.futures_pool = self.futures_pool
             self._out.outputPlugin.futures_pool = self.futures_pool
-         self.gen(
+        self.gen(
             count=self.count,
             earliest=self.start_time,
             latest=self.end_time,

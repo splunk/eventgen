@@ -1,7 +1,4 @@
-from Queue import Full
-import datetime
-import random
-
+from queue import Full
 from splunk_eventgen.lib.logging_config import logger
 from splunk_eventgen.lib.plugins.rater.config import ConfigRater
 
@@ -57,7 +54,7 @@ class PerDayVolume(ConfigRater):
         perintervalvolume = perdayvolume / intervalsperday
         count = self.sample.count
         rateFactor = self.adjust_rate_factor()
-       logger.debug(
+        logger.debug(
             "Size per interval: %s, rate factor to adjust by: %s"
             % (perintervalvolume, rateFactor)
         )

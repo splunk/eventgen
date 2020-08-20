@@ -2,7 +2,8 @@ from __future__ import division
 
 import datetime
 import random
-from logging_config import logger
+from queue import Full
+from splunk_eventgen.lib.logging_config import logger
 
 
 class RaterPlugin(object):
@@ -16,6 +17,7 @@ class RaterPlugin(object):
         self.outputQueue = None
         self.outputPlugin = None
         self.generatorPlugin = None
+        self.executions = 0
 
     def __str__(self):
         """Only used for debugging, outputs a pretty printed representation of this output"""

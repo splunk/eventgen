@@ -1,7 +1,7 @@
-from config import ConfigRater
-from timeparser import timeParserTimeMath
-from Queue import Full
-from logging_config import logger
+from queue import Full
+from splunk_eventgen.lib.timeparser import timeParserTimeMath
+from splunk_eventgen.lib.plugins.rater.config import ConfigRater
+from splunk_eventgen.lib.logging_config import logger
 
 class BackfillRater(ConfigRater):
     name = 'BackfillRater'
@@ -30,22 +30,21 @@ class BackfillRater(ConfigRater):
             backfillearliest = timeParserTimeMath(plusminus=mathsymbol, num=backfillnumber, unit=backfillletter,
                                                   ret=realtime)
             while backfillearliest < realtime:
-                if self.executions == int(self.end):
-                    logger.info("End executions %d reached, ending generation of sample '%s'" % (int(
-                        self.end), self.sample.name))
-                    break
                 et = backfillearliest
-                lt = timeParserTimeMath(plusminus="+", num=self.interval, unit="s", ret=et)
+                lt = timeParserTimeMath(plusminus="+", num=self.sample.interval, unit="s", ret=et)
                 genPlugin = self.generatorPlugin(sample=self.sample)
                 # need to make sure we set the queue right if we're using multiprocessing or thread modes
                 genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                 genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
                 try:
                     self.generatorQueue.put(genPlugin)
-                    self.executions += 1
                 except Full:
                     logger.warning("Generator Queue Full. Skipping current generation.")
-                backfillearliest = lt
+                # replay mode takes care of all replays on it's first run.
+                if self.sample.generator == "replay":
+                    backfillearliest = realtime
+                else:
+                    backfillearliest = lt
             self.sample.backfilldone = True
 
         except Exception as e:

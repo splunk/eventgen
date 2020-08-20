@@ -57,8 +57,6 @@ class HTTPCoreOutputPlugin(OutputPlugin):
         if not session:
             session = Session()
         self.session = FuturesSession(session=session, executor=self.futures_pool)
-            session=session, executor=ThreadPoolExecutor(max_workers=workers)
-        )
         self.active_sessions = []
 
     @staticmethod

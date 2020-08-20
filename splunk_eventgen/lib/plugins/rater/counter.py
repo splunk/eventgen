@@ -1,5 +1,5 @@
-from raterplugin import RaterPlugin
-from logging_config import logger
+from splunk_eventgen.lib.raterplugin import RaterPlugin
+from splunk_eventgen.lib.logging_config import logger
 
 class CountRater(RaterPlugin):
     name = 'CountRater'
