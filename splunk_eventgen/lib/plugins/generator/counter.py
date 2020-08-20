@@ -16,7 +16,10 @@ class CounterGenerator(GeneratorPlugin):
         self.start_count = 0.0
         self.end_count = 0.0
         self.count_by = 1.0
-        self.count_template = "{event_ts}-0700 Counter for sample:{samplename}, Now processing event counting {loop_count} of {max_loop} cycles. Counter Values: Start_Count: {start_count} Current_Counter:{current_count} End_Count:{end_count} Counting_By: {count_by}"
+        self.count_template = "{event_ts}-0700 Counter for sample:{samplename}, " + \
+                              "Now processing event counting {loop_count} of {max_loop} cycles. Counter Values:" + \
+                              " Start_Count: {start_count} Current_Counter:{current_count}" + \
+                              " End_Count:{end_count} Counting_By: {count_by}"
 
     def update_start_count(self, target):
         try:
@@ -24,7 +27,7 @@ class CounterGenerator(GeneratorPlugin):
                 self.start_count = round(float(target), 5)
             else:
                 self.start_count = int(target)
-        except Exception as e:
+        except Exception:
             logger.warn(
                 "Failed setting start count to {0}.  Make sure start_count is an int/float".format(
                     target
@@ -40,7 +43,7 @@ class CounterGenerator(GeneratorPlugin):
             else:
                 self.end_count = int(target)
 
-        except Exception as e:
+        except Exception:
             logger.warn(
                 "Failed setting end count to {0}.  Make sure end_count is an int/float".format(
                     target
@@ -55,7 +58,7 @@ class CounterGenerator(GeneratorPlugin):
                 self.count_by = round(float(target), 5)
             else:
                 self.count_by = int(target)
-        except Exception as e:
+        except Exception:
             logger.warn(
                 "Failed setting count_by to {0}.  Make sure count_by is an int/float".format(
                     target
@@ -93,8 +96,8 @@ class CounterGenerator(GeneratorPlugin):
                 self.update_end_count(count)
                 count = 1
             # if the end_count is lower than start_count, check if they want to count backwards.  Some people might not
-            # want to do math, so if end_count is lower, but they want to count by a positive number, instead assume they
-            # are trying to say "start at number x, count by y, and end after z cyles of y".
+            # want to do math, so if end_count is lower, but they want to count by a positive number, instead assume
+            # they are trying to say "start at number x, count by y, and end after z cyles of y".
             if self.end_count < self.start_count:
                 if self.count_by > 0:
                     logger.warn(
@@ -106,7 +109,7 @@ class CounterGenerator(GeneratorPlugin):
                     self.count_by = 1
             countdiff = abs(self.end_count - self.start_count)
             time_interval = timedelta.total_seconds((latest - earliest)) / countdiff
-            for i in xrange(count):
+            for i in range(count):
                 current_count = self.start_count
                 while current_count != self.end_count:
                     current_time_object = earliest + datetime.timedelta(

@@ -1,9 +1,6 @@
-import copy
 import time
-from queue import Full
-
 from splunk_eventgen.lib.logging_config import logger
-from splunk_eventgen.lib.timeparser import timeParserTimeMath
+import datetime
 
 
 class Timer(object):
@@ -128,7 +125,7 @@ class Timer(object):
             time.sleep(self.sample.delay)
 
         logger.debug("Timer creating plugin for '%s'" % self.sample.name)
-
+        local_time=datetime.datetime.now()
         end = False
         raw_event_size = self.predict_event_size()
         if self.end:
@@ -218,7 +215,7 @@ class Timer(object):
                         )
                         self.stopping = True
                         end = True
-                elif lt >= self.endts:
+                elif local_time >= self.endts:
                     logger.info(
                         "End Time '%s' reached, ending generation of sample '%s'"
                         % (self.sample.endts, self.sample.name)

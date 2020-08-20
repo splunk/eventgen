@@ -2,7 +2,6 @@
 import datetime
 import time
 
-from splunk_eventgen.lib.eventgentimestamp import EventgenTimestamp
 from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
 from splunk_eventgen.lib.logging_config import logger
 
@@ -141,8 +140,6 @@ class ReplayGenerator(GeneratorPlugin):
     def gen(self, count, earliest, latest, samplename=None):
         # 9/8/15 CS Check to make sure we have events to replay
         self._sample.loadSample()
-        previous_event = None
-        previous_event_timestamp = None
         self.current_time = self._sample.now()
         line_list = self.load_sample_file()
         # If backfill exists, calculate the start of the backfill time relative to the current time.

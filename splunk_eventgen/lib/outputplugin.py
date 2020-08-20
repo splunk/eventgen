@@ -36,7 +36,7 @@ class OutputPlugin(object):
         self.config = config
 
     def run(self, futures_pool=None):
-        if self.futures_pool == None and futures_pool:
+        if self.futures_pool is None and futures_pool:
             self.futures_pool = futures_pool
         if self.events:
             self.flush(self.events)
