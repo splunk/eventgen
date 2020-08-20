@@ -125,7 +125,7 @@ class Timer(object):
             time.sleep(self.sample.delay)
 
         logger.debug("Timer creating plugin for '%s'" % self.sample.name)
-        local_time=datetime.datetime.now()
+        local_time = datetime.datetime.now()
         end = False
         raw_event_size = self.predict_event_size()
         if self.end:
