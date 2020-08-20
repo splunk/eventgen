@@ -1,6 +1,7 @@
-import time
-from splunk_eventgen.lib.logging_config import logger
 import datetime
+import time
+
+from splunk_eventgen.lib.logging_config import logger
 
 
 class Timer(object):

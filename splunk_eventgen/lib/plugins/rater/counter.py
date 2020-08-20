@@ -1,4 +1,5 @@
 from queue import Full
+
 from splunk_eventgen.lib.logging_config import logger
 from splunk_eventgen.lib.raterplugin import RaterPlugin
 

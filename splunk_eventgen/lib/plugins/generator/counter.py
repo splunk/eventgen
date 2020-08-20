@@ -1,5 +1,6 @@
 import datetime
 from datetime import timedelta
+
 from splunk_eventgen.lib.generatorplugin import GeneratorPlugin
 from splunk_eventgen.lib.logging_config import logger
 
@@ -13,10 +14,12 @@ class CounterGenerator(GeneratorPlugin):
         self.start_count = 0.0
         self.end_count = 0.0
         self.count_by = 1.0
-        self.count_template = "{event_ts}-0700 Counter for sample:{samplename}, " + \
-                              "Now processing event counting {loop_count} of {max_loop} cycles. Counter Values:" + \
-                              " Start_Count: {start_count} Current_Counter:{current_count}" + \
-                              " End_Count:{end_count} Counting_By: {count_by}"
+        self.count_template = (
+            "{event_ts}-0700 Counter for sample:{samplename}, "
+            + "Now processing event counting {loop_count} of {max_loop} cycles. Counter Values:"
+            + " Start_Count: {start_count} Current_Counter:{current_count}"
+            + " End_Count:{end_count} Counting_By: {count_by}"
+        )
 
     def update_start_count(self, target):
         try:
