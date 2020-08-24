@@ -15,9 +15,10 @@ def _get_version():
     """
     @return: Version Number
     """
-    from importlib_metadata import distribution, PackageNotFoundError
+    from importlib_metadata import PackageNotFoundError, distribution
+
     try:
-        dist = distribution('splunk_eventgen')
+        dist = distribution("splunk_eventgen")
         return dist.version
     except PackageNotFoundError:
         return "dev"
