@@ -55,7 +55,7 @@ class BackfillRater(ConfigRater):
                     else:
                         self.generatorQueue.put(genPlugin)
                 except Full:
-                        logger.warning("Generator Queue Full. Skipping current generation.")
+                    logger.warning("Generator Queue Full. Skipping current generation.")
                 # due to replays needing to iterate in reverse, it's more efficent to process backfill
                 # after the file has been parsed.  This section is to allow replay mode to take
                 # care of all replays on it's first run. and sets backfilldone

@@ -1,7 +1,6 @@
 import datetime
 import time
 
-from threading import Event
 from splunk_eventgen.lib.logging_config import logger
 
 
