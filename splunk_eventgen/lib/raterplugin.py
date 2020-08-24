@@ -18,6 +18,7 @@ class RaterPlugin(object):
         self.outputQueue = None
         self.outputPlugin = None
         self.generatorPlugin = None
+        self.replayLock = None
         self.executions = 0
 
     def __str__(self):
@@ -168,10 +169,9 @@ class RaterPlugin(object):
         else:
             genPlugin = self.generatorPlugin(sample=self.sample)
             # Adjust queue for threading mode
-            genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
             genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
+            genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
             try:
-                self.generatorQueue.put(genPlugin)
                 logger.info(
                     (
                         "Put {0} MB of events in queue for sample '{1}'"
@@ -180,6 +180,12 @@ class RaterPlugin(object):
                         round((count / 1024.0 / 1024), 4), self.sample.name, et, lt
                     )
                 )
+                if self.sample.generator == "replay":
+                    # lock on to replay mode, this will keep the timer knowing when to continue cycles since
+                    # replay mode has a dynamic replay time and interval doesn't mean the same thing.
+                    genPlugin.run()
+                else:
+                    self.generatorQueue.put(genPlugin)
             except Full:
                 logger.warning("Generator Queue Full. Skipping current generation.")
 

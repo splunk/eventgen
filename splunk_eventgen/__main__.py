@@ -15,9 +15,12 @@ def _get_version():
     """
     @return: Version Number
     """
-    import pkg_resources
-
-    return pkg_resources.get_distribution("splunk_eventgen").version
+    from importlib_metadata import distribution, PackageNotFoundError
+    try:
+        dist = distribution('splunk_eventgen')
+        return dist.version
+    except PackageNotFoundError:
+        return "dev"
 
 
 EVENTGEN_VERSION = _get_version()

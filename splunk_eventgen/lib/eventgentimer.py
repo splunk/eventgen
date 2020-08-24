@@ -1,6 +1,7 @@
 import datetime
 import time
 
+from threading import Event
 from splunk_eventgen.lib.logging_config import logger
 
 
@@ -183,8 +184,7 @@ class Timer(object):
                             )
                             self.perdayrater.rate()
                             self.perdayrater.queue_it(count)
-                        else:
-                            self.rater.queue_it(count)
+                        self.rater.queue_it(count)
                     self.countdown = self.interval
                     self.executions += 1
 

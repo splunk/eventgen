@@ -45,19 +45,26 @@ class BackfillRater(ConfigRater):
                     plusminus="+", num=self.sample.interval, unit="s", ret=et
                 )
                 genPlugin = self.generatorPlugin(sample=self.sample)
-                # need to make sure we set the queue right if we're using multiprocessing or thread modes
-                genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                 genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
+                genPlugin.updateConfig(config=self.config, outqueue=self.outputQueue)
                 try:
-                    self.generatorQueue.put(genPlugin)
+                    # Need to lock on replay mode since event duration is dynamic.  Interval starts counting
+                    # after the replay has finished.
+                    if self.sample.generator == "replay":
+                        genPlugin.run()
+                    else:
+                        self.generatorQueue.put(genPlugin)
                 except Full:
-                    logger.warning("Generator Queue Full. Skipping current generation.")
-                # replay mode takes care of all replays on it's first run.
+                        logger.warning("Generator Queue Full. Skipping current generation.")
+                # due to replays needing to iterate in reverse, it's more efficent to process backfill
+                # after the file has been parsed.  This section is to allow replay mode to take
+                # care of all replays on it's first run. and sets backfilldone
                 if self.sample.generator == "replay":
                     backfillearliest = realtime
                 else:
                     backfillearliest = lt
-            self.sample.backfilldone = True
+            if self.sample.generator != "replay":
+                self.sample.backfilldone = True
 
         except Exception as e:
             logger.error("Failed queuing backfill, exception: {0}".format(e))

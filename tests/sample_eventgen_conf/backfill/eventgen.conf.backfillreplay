@@ -4,6 +4,7 @@ generator = replay
 timeMultiple = 2
 backfill = -15m
 end = 3
+interval=0
 
 outputMode = stdout
 index = main

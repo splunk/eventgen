@@ -20,6 +20,11 @@ class ReplayGenerator(GeneratorPlugin):
         self._currentevent = 0
         self._timeSinceSleep = datetime.timedelta()
         self._times = []
+        self.replayLock = None
+
+    def updateConfig(self, config, outqueue, replayLock=None):
+        super(ReplayGenerator, self).updateConfig(config, outqueue)
+        self.replayLock = replayLock
 
     def set_time_and_tokens(self, replayed_event, event_time, earliest, latest):
         send_event = {}
@@ -146,7 +151,7 @@ class ReplayGenerator(GeneratorPlugin):
         # Otherwise, backfill time equals to the current time
         self.backfill_time = self._sample.get_backfill_time(self.current_time)
         # if we have backfill, replay the events backwards until we hit the backfill
-        if self.backfill_time != self.current_time:
+        if self.backfill_time != self.current_time and not self._sample.backfilldone:
             backfill_count_time = self.current_time
             current_backfill_index = len(line_list) - 1
             backfill_events = []
@@ -163,25 +168,26 @@ class ReplayGenerator(GeneratorPlugin):
                     current_backfill_index = len(line_list) - 1
             backfill_events.reverse()
             self._out.bulksend(backfill_events)
-        previous_event = None
-        for index, rpevent in enumerate(line_list[:-1]):
-            if previous_event is None:
-                current_event = self.set_time_and_tokens(
-                    rpevent, self.backfill_time, earliest, latest
-                )
-                previous_event = current_event
+            self._sample.backfilldone = True
+        else:
+            previous_event = None
+            for index, rpevent in enumerate(line_list):
+                if previous_event is None:
+                    current_event = self.set_time_and_tokens(
+                        rpevent, self.backfill_time, earliest, latest
+                    )
+                    previous_event = current_event
+                    previous_event_timediff = rpevent["timediff"]
+                    self._out.bulksend([current_event])
+                    continue
+                time.sleep(previous_event_timediff.total_seconds())
+                current_time = datetime.datetime.now()
+                previous_event = rpevent
                 previous_event_timediff = rpevent["timediff"]
-                self._out.bulksend([current_event])
-                continue
-            time.sleep(previous_event_timediff.total_seconds())
-            current_time = datetime.datetime.now()
-            previous_event = rpevent
-            previous_event_timediff = rpevent["timediff"]
-            send_event = self.set_time_and_tokens(
-                rpevent, current_time, earliest, latest
-            )
-            self._out.bulksend([send_event])
-
+                send_event = self.set_time_and_tokens(
+                    rpevent, current_time, earliest, latest
+                )
+                self._out.bulksend([send_event])
         self._out.flush(endOfInterval=True)
         return
 
