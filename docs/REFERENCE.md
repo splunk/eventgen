@@ -120,7 +120,7 @@ outputWorkers = <number of worker threads>
     * Generally if using TCP based outputs like splunkstream, more could be required
     * Defaults to 1
 
-outputMode = scsout | modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent
+outputMode = scsout | modinput | s2s | file | splunkstream | stdout | devnull | spool | httpevent | syslogout | tcpout | udpout | metric_httpevent | awscwe | awscwl
     * Specifies how to output log data. Modinput is default.
     * If setting scsout, should set scsEndPoint and scsAccessToken. scsClientId, scsClientSecret, and scsRetryNum are optional.
     * If setting spool, should set spoolDir
@@ -131,6 +131,8 @@ outputMode = scsout | modinput | s2s | file | splunkstream | stdout | devnull | 
     * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort. A UDP port listening on Splunk needs to be configured. https://docs.splunk.com/Documentation/Splunk/latest/Data/HowSplunkEnterprisehandlessyslogdata
     * If setting httpevent, should set httpeventServers
     * If setting metric_httpevent, should set httpeventServers and make sure your index is a splunk metric index
+    * If setting awscwe, should set awsAccessKeyIdList = list["<access_key_1>", "<access_key_2>", ..., "access_key_n"] and awsSecretKeyList = list["<access_secret_key_1>", "<access_secret_key_2>", ..., <access_secret_key_n>]
+    * If setting awscwl, should set awsAccessKeyIdList = list["<access_key_1>", "<access_key_2>", ..., "access_key_n"] and awsSecretKeyList = list["<access_secret_key_1>", "<access_secret_key_2>", ..., <access_secret_key_n>] and awsLogGroupName (string) and awsLogStreamName (string)
 
 scsEndPoint = <host>
     * Should be a full url to the scs endpoint
