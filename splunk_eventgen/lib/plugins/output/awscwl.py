@@ -49,10 +49,10 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
         return boto_clients
 
     def target_process(self, client, events):
-        response = client.describe_log_streams(logGroupName=self.aws_log_group_name, logStreamNamePrefix=self.aws_log_stream_name)
-        sequenceToken = response['logStreams'][0]['uploadSequenceToken']
-
         while True:
+            response = client.describe_log_streams(logGroupName=self.aws_log_group_name, logStreamNamePrefix=self.aws_log_stream_name)
+            sequenceToken = response['logStreams'][0]['uploadSequenceToken']
+
             try:
                 response = client.put_log_events(
                     logGroupName=self.aws_log_group_name,
@@ -62,6 +62,7 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
                 )
             except Exception as e:
                 logger.error(e)
+                time.sleep(1)
             else:
                 break
 

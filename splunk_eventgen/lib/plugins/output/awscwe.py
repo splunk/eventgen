@@ -15,6 +15,7 @@ class AWSCloudWatchEventOutOutputPlugin(OutputPlugin):
     useOutputQueue = False
     name = "awscwe"
     MAXQUEUELENGTH = 10000
+    MAXBATCHLENGTH = 10
 
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
@@ -51,7 +52,6 @@ class AWSCloudWatchEventOutOutputPlugin(OutputPlugin):
             response = client.put_events(Entries=events)
         except Exception as e:
             logger.error(e)
-            logger.error(response)
         else:
             logger.debug(response)
 
@@ -75,9 +75,15 @@ class AWSCloudWatchEventOutOutputPlugin(OutputPlugin):
                 'Detail': x['_raw'],
                 'EventBusName': 'default'
             }
+
             events.append(event)
 
-        self.send_events(events)
+            if (len(events) == self.MAXBATCHLENGTH):
+                self.send_events(events)
+                events = []
+                
+        if events:
+            self.send_events(events)
 
 
 def load():
