@@ -4,8 +4,12 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import boto3
 import time
-import re
 import json
+import logging
+
+logging.getLogger('boto3').setLevel(logging.WARNING)
+logging.getLogger('botocore').setLevel(logging.WARNING)
+logging.getLogger('nose').setLevel(logging.WARNING)
 
 class AWSCloudWatchLogOutputPlugin(OutputPlugin):
     useOutputQueue = False
@@ -47,17 +51,19 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
     def target_process(self, client, events):
         response = client.describe_log_streams(logGroupName=self.aws_log_group_name, logStreamNamePrefix=self.aws_log_stream_name)
         sequenceToken = response['logStreams'][0]['uploadSequenceToken']
-        print(sequenceToken)
 
-        try:
-            response = client.put_log_events(
-                logGroupName=self.aws_log_group_name,
-                logStreamName=self.aws_log_stream_name,
-                logEvents=events,
-                sequenceToken=sequenceToken
-            )
-        except Exception as e:
-            print(e)
+        while True:
+            try:
+                response = client.put_log_events(
+                    logGroupName=self.aws_log_group_name,
+                    logStreamName=self.aws_log_stream_name,
+                    logEvents=events,
+                    sequenceToken=sequenceToken
+                )
+            except Exception as e:
+                logger.error(e)
+            else:
+                break
 
     def send_events(self, events):
         n_clients = len(self.clients)
@@ -68,7 +74,7 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
                     executor.submit(self.target_process, client=client, events=events)
         else:
             self.target_process(client=self.clients[0], events=events)
-        
+
 
     def flush(self, q):
         events = []

@@ -1,37 +1,67 @@
 from splunk_eventgen.lib.outputplugin import OutputPlugin
+from splunk_eventgen.lib.logging_config import logger
+from concurrent.futures import ThreadPoolExecutor
 import boto3
 import time
-import re
 import json
+
+logging.getLogger('boto3').setLevel(logging.WARNING)
+logging.getLogger('botocore').setLevel(logging.WARNING)
+logging.getLogger('nose').setLevel(logging.WARNING)
 
 class AWSCloudWatchEventOutOutputPlugin(OutputPlugin):
     useOutputQueue = False
     name = "awscwe"
     MAXQUEUELENGTH = 10000
-    listRE = re.compile(r'list(\[[^\]]+\])', re.I)
 
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
-
-        self.aws_access_key_id_list = getattr(self._sample, "awsAccessKeyIdList", "[]")
-        self.aws_secret_key_list = getattr(self._sample, "awsSecretKeyList", "[]")
-
-        aws_access_key_id_list_match = self.listRE.match(self.aws_access_key_id_list)
-        if aws_access_key_id_list_match:
-            self.aws_access_key_id_list = json.loads(aws_access_key_id_list_match.group(1))
-
-        aws_secret_key_list_match = self.listRE.match(self.aws_secret_key_list)
-        if aws_secret_key_list_match:
-            self.aws_secret_key_list = json.loads(aws_secret_key_list_match.group(1))
         
-        self._create_boto_clients()
+        self.aws_credentials = self._get_aws_credentials()
+        self.clients = self._create_boto_clients()
+
+    def _get_aws_credentials(self):
+        path = getattr(self._sample, "awsCredentialsJson")
+        try:
+            path = Path(path)
+        except Exception as e:
+            logger.error(e)
+
+        with open(path) as f:
+            aws_credentials = json.load(f)
+
+        return aws_credentials
 
     def _create_boto_clients(self):
-        self.boto_clients = []
-        for i in range(len(self.aws_access_key_id_list)):
-            client = boto3.client("events", aws_access_key_id=self.aws_access_key_id_list[i], aws_secret_access_key=self.aws_secret_key_list[i], region_name="us-east-1")
-            self.boto_clients.append(client)
+        """
+        Return: A list of boto logs clients
+        """
+        boto_clients = []
+        for acct in self.aws_credentials:
+            for region in acct['regions']:
+                client = boto3.client("events", aws_access_key_id=acct['access_key'], aws_secret_access_key=acct['secret_access_key'], region_name=region)
+                boto_clients.append(client)
 
+        return boto_clients
+
+    def target_process(self, client, events):
+        try:
+            response = client.put_events(Entries=events)
+        except Exception as e:
+            logger.error(e)
+            logger.error(response)
+        else:
+            logger.debug(response)
+
+    def send_events(self, events):
+        n_clients = len(self.clients)
+
+        if n_clients > 1:
+            with ThreadPoolExecutor(max_workers=n_clients) as executor:
+                for client in self.boto_clients:
+                    executor.submit(self.target_process, client=client, events=events)
+        else:
+            self.target_process(client=self.clients[0], events=events)
 
     def flush(self, q):
         events = []
@@ -45,12 +75,7 @@ class AWSCloudWatchEventOutOutputPlugin(OutputPlugin):
             }
             events.append(event)
 
-        for client in self.boto_clients:
-            response = client.put_events(
-                Entries=events
-            )
-
-            print(response)
+        self.send_events(events)
 
 
 def load():
