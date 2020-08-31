@@ -1,4 +1,7 @@
 from splunk_eventgen.lib.outputplugin import OutputPlugin
+from splunk_eventgen.lib.logging_config import logger
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 import boto3
 import time
 import re
@@ -8,55 +11,86 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
     useOutputQueue = False
     name = "awscwl"
     MAXQUEUELENGTH = 10000
-    listRE = re.compile(r'list(\[[^\]]+\])', re.I)
+    MAXBATCHBYTES = 1048576
 
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
-        
         self.aws_log_group_name = getattr(self._sample, "awsLogGroupName")
         self.aws_log_stream_name = getattr(self._sample, "awsLogStreamName")
-        self.aws_access_key_id_list = getattr(self._sample, "awsAccessKeyIdList", "[]")
-        self.aws_secret_key_list = getattr(self._sample, "awsSecretKeyList", "[]")
+        self.aws_credentials = self._get_aws_credentials()
+        self.clients = self._create_boto_clients()
 
-        aws_access_key_id_list_match = self.listRE.match(self.aws_access_key_id_list)
-        if aws_access_key_id_list_match:
-            self.aws_access_key_id_list = json.loads(aws_access_key_id_list_match.group(1))
+    def _get_aws_credentials(self):
+        path = getattr(self._sample, "awsCredentialsJson")
+        try:
+            path = Path(path)
+        except Exception as e:
+            logger.error(e)
 
-        aws_secret_key_list_match = self.listRE.match(self.aws_secret_key_list)
-        if aws_secret_key_list_match:
-            self.aws_secret_key_list = json.loads(aws_secret_key_list_match.group(1))
-        
-        self._create_boto_clients()
+        with open(path) as f:
+            aws_credentials = json.load(f)
+
+        return aws_credentials
 
     def _create_boto_clients(self):
-        self.boto_clients = []
-        for i in range(len(self.aws_access_key_id_list)):
-            client = boto3.client("logs", aws_access_key_id=self.aws_access_key_id_list[i], aws_secret_access_key=self.aws_secret_key_list[i], region_name="us-east-1")
-            self.boto_clients.append(client)
+        """
+        Return: A list of boto logs clients
+        """
+        boto_clients = []
+        for acct in self.aws_credentials:
+            for region in acct['regions']:
+                client = boto3.client("logs", aws_access_key_id=acct['access_key'], aws_secret_access_key=acct['secret_access_key'], region_name=region)
+                boto_clients.append(client)
 
-    def flush(self, q):
-        events = []
-        for x in q:
-            event = {
-                "timestamp": int(time.time() * 1000),
-                "message": x['_raw']
-            }
-            events.append(event)
+        return boto_clients
 
-        for client in self.boto_clients:
-            # get sequenceToken
-            response = client.describe_log_streams(logGroupName=self.aws_log_group_name, logStreamNamePrefix=self.aws_log_stream_name)
-            sequenceToken = response['logStreams'][0]['uploadSequenceToken']
-            print("sequenceToken: {}".format(sequenceToken))
+    def target_process(self, client, events):
+        response = client.describe_log_streams(logGroupName=self.aws_log_group_name, logStreamNamePrefix=self.aws_log_stream_name)
+        sequenceToken = response['logStreams'][0]['uploadSequenceToken']
+        print(sequenceToken)
 
+        try:
             response = client.put_log_events(
                 logGroupName=self.aws_log_group_name,
                 logStreamName=self.aws_log_stream_name,
                 logEvents=events,
                 sequenceToken=sequenceToken
             )
+        except Exception as e:
+            print(e)
 
-            print(response)
+    def send_events(self, events):
+        n_clients = len(self.clients)
+
+        if n_clients > 1:
+            with ThreadPoolExecutor(max_workers=n_clients) as executor:
+                for client in self.boto_clients:
+                    executor.submit(self.target_process, client=client, events=events)
+        else:
+            self.target_process(client=self.clients[0], events=events)
+        
+
+    def flush(self, q):
+        events = []
+        current_batch_total_bytes = 0
+        # preprocess each event for AWS API
+        for x in q:
+            event = {
+                "timestamp": int(time.time() * 1000),
+                "message": x['_raw']
+            }
+
+            if (len(events) + 1 > self.MAXQUEUELENGTH) or (current_batch_total_bytes + len(json.dumps(event)) >= self.MAXBATCHBYTES):
+                self.send_events(events)
+                print("triggered!")
+                events = []
+                current_batch_total_bytes = 0
+
+            events.append(event)
+            current_batch_total_bytes += len(json.dumps(event))
+
+        if events:
+            self.send_events(events)
 
 
 def load():
