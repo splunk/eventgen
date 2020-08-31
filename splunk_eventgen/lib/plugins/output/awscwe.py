@@ -1,9 +1,11 @@
 from splunk_eventgen.lib.outputplugin import OutputPlugin
 from splunk_eventgen.lib.logging_config import logger
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 import boto3
 import time
 import json
+import logging
 
 logging.getLogger('boto3').setLevel(logging.WARNING)
 logging.getLogger('botocore').setLevel(logging.WARNING)
