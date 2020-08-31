@@ -131,8 +131,8 @@ outputMode = scsout | modinput | s2s | file | splunkstream | stdout | devnull | 
     * If setting syslogout, should set syslogDestinationHost and syslogDestinationPort. A UDP port listening on Splunk needs to be configured. https://docs.splunk.com/Documentation/Splunk/latest/Data/HowSplunkEnterprisehandlessyslogdata
     * If setting httpevent, should set httpeventServers
     * If setting metric_httpevent, should set httpeventServers and make sure your index is a splunk metric index
-    * If setting awscwe, should set awsAccessKeyIdList = list["<access_key_1>", "<access_key_2>", ..., "access_key_n"] and awsSecretKeyList = list["<access_secret_key_1>", "<access_secret_key_2>", ..., <access_secret_key_n>]
-    * If setting awscwl, should set awsAccessKeyIdList = list["<access_key_1>", "<access_key_2>", ..., "access_key_n"] and awsSecretKeyList = list["<access_secret_key_1>", "<access_secret_key_2>", ..., <access_secret_key_n>] and awsLogGroupName (string) and awsLogStreamName (string)
+    * If setting awscwe, should set awsCredentialsJson to the absolute file path of your AWS credentials JSON file and it should look like [{"access_key": "<access_key_1>", "secret_access_key": "<secret_access_key_1>", "regions": ["us-east-1", "us-west-1"]}, {"access_key": "<access_key_2>", "secret_access_key": "<secret_access_key_2>", "regions": ["us-east-1", "us-west-1", "us-west-2"]}, ...., {"access_key": "<access_key_n>", "secret_access_key": "<secret_access_key_n>", "regions": ["us-east-1", "us-west-1", ......]}]
+    * If setting awscwl, should set awsLogGroupName (string) and awsLogStreamName (string) and these names should all be the same in all of your aws accounts and regions. Set awsCredentialsJson to the absolute file path of your AWS credentials JSON file and it should look like the format mentioned above in awscwe statement
 
 scsEndPoint = <host>
     * Should be a full url to the scs endpoint
