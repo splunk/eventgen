@@ -84,7 +84,6 @@ class ReplayGenerator(GeneratorPlugin):
                     "source": source,
                     "sourcetype": sourcetype,
                 }
-                line_list.append(rpevent)
             except:
                 if line[-1] != "\n":
                     line += "\n"
@@ -122,24 +121,19 @@ class ReplayGenerator(GeneratorPlugin):
                         logger.exception("Extracting timestamp from an event failed.")
                         continue
             line_list.append(rpevent)
-            # now interate the list 1 time and figure out the time delta of every event
-            current_event = None
-            previous_event = None
-            for index, line in enumerate(line_list):
-                current_event = line
-                # if it's the first event, there is no previous event.
-                if index == 0:
-                    previous_event = current_event
-                else:
-                    previous_event = line_list[index - 1]
-                # Refer to the last event to calculate the new backfill time
-                time_difference = datetime.timedelta(
-                    seconds=(
-                        current_event["base_time"] - previous_event["base_time"]
-                    ).total_seconds()
-                    * self._sample.timeMultiple
-                )
-                current_event["timediff"] = time_difference
+        # now interate the list 1 time and figure out the time delta of every event
+        current_event = None
+        previous_event = None
+        for index, line in enumerate(line_list):
+            current_event = line
+            # if it's the first event, there is no previous event.
+            if index == 0:
+                previous_event = current_event
+            else:
+                previous_event = line_list[index - 1]
+            # Refer to the last event to calculate the new backfill time
+            time_difference = (current_event["base_time"] - previous_event["base_time"]) * self._sample.timeMultiple
+            current_event["timediff"] = time_difference
         return line_list
 
     def gen(self, count, earliest, latest, samplename=None):
