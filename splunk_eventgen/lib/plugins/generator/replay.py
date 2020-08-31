@@ -132,7 +132,9 @@ class ReplayGenerator(GeneratorPlugin):
             else:
                 previous_event = line_list[index - 1]
             # Refer to the last event to calculate the new backfill time
-            time_difference = (current_event["base_time"] - previous_event["base_time"]) * self._sample.timeMultiple
+            time_difference = (
+                current_event["base_time"] - previous_event["base_time"]
+            ) * self._sample.timeMultiple
             current_event["timediff"] = time_difference
         return line_list
 
