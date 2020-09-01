@@ -120,9 +120,6 @@ def parse_args():
         "--profiler", action="store_true", help="Turn on cProfiler"
     )
     generate_subparser.add_argument(
-        "--log-path", type=str, default="{0}/logs".format(FILE_LOCATION)
-    )
-    generate_subparser.add_argument(
         "--generator-queue-size",
         type=int,
         default=500,
@@ -315,12 +312,15 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
 
 
 def convert_verbosity_count_to_logging_level(verbosity):
-    if verbosity == 0:
-        return logging.ERROR
-    elif verbosity == 1:
-        return logging.INFO
-    elif verbosity == 2:
-        return logging.DEBUG
+    if type(verbosity) == int:
+        if verbosity == 0:
+            return logging.ERROR
+        elif verbosity == 1:
+            return logging.INFO
+        elif verbosity >= 2:
+            return logging.DEBUG
+        else:
+            return logging.DEBUG
     else:
         return logging.ERROR
 
