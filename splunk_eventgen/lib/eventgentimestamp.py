@@ -46,11 +46,11 @@ class EventgenTimestamp(object):
 
         pivot_time = earliest_in_epoch
 
-        sample_earliest_in_seconds = (
-            EventgenTimestamp._convert_time_difference_to_seconds(sample_earliest)
+        sample_earliest_in_seconds = EventgenTimestamp._convert_time_difference_to_seconds(
+            sample_earliest
         )
-        sample_latest_in_seconds = (
-            EventgenTimestamp._convert_time_difference_to_seconds(sample_latest)
+        sample_latest_in_seconds = EventgenTimestamp._convert_time_difference_to_seconds(
+            sample_latest
         )
 
         earliest_pivot_time = pivot_time + sample_earliest_in_seconds

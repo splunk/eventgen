@@ -181,10 +181,7 @@ class EventGenerator(object):
         for i in range(num_threads):
             worker = Thread(
                 target=self._worker_do_work,
-                args=(
-                    self.sampleQueue,
-                    self.loggingQueue,
-                ),
+                args=(self.sampleQueue, self.loggingQueue,),
                 kwargs={"futures_pool": self.futures_pool},
                 name="TimeThread{0}".format(i),
             )
@@ -212,10 +209,7 @@ class EventGenerator(object):
         for i in range(num_threads):
             worker = Thread(
                 target=self._worker_do_work,
-                args=(
-                    self.outputQueue,
-                    self.loggingQueue,
-                ),
+                args=(self.outputQueue, self.loggingQueue,),
                 kwargs={"futures_pool": self.futures_pool},
                 name="OutputThread{0}".format(i),
             )
