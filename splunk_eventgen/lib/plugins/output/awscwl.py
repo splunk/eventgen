@@ -51,7 +51,10 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
     def target_process(self, client, events):
         while True:
             response = client.describe_log_streams(logGroupName=self.aws_log_group_name, logStreamNamePrefix=self.aws_log_stream_name)
-            sequenceToken = response['logStreams'][0]['uploadSequenceToken']
+            # since we provide the full name of the log stream, the first item should be it
+            matched_stream = response['logStreams'][0]
+            # sequence token isn't needed for any new stream so None will be set in such case to avoid KeyError
+            sequenceToken = matched_stream.get('uploadSequenceToken', None)
 
             try:
                 response = client.put_log_events(
