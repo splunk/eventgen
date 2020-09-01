@@ -44,14 +44,15 @@ class ReplayGenerator(GeneratorPlugin):
         mvhash = dict()
 
         # Iterate tokens
+        eventraw = replayed_event["_raw"]
         for token in self._sample.tokens:
             token.mvhash = mvhash
             if token.replacementType in ["timestamp", "replaytimestamp"]:
                 eventraw = token.replace(
-                    replayed_event["_raw"], et=event_time, lt=event_time, s=self._sample
+                    eventraw, et=event_time, lt=event_time, s=self._sample
                 )
             else:
-                eventraw = token.replace(replayed_event["_raw"], s=self._sample)
+                eventraw = token.replace(eventraw, s=self._sample)
         if self._sample.hostToken:
             # clear the host mvhash every time, because we need to re-randomize it
             self._sample.hostToken.mvhash = {}
@@ -165,33 +166,32 @@ class ReplayGenerator(GeneratorPlugin):
             backfill_events.reverse()
             self._out.bulksend(backfill_events)
             self._sample.backfilldone = True
-        else:
-            previous_event = None
-            for index, rpevent in enumerate(line_list):
-                if previous_event is None:
-                    current_event = self.set_time_and_tokens(
-                        rpevent, self.backfill_time, earliest, latest
-                    )
-                    previous_event = current_event
-                    previous_event_timediff = rpevent["timediff"]
-                    self._out.bulksend([current_event])
-                    continue
-                try:
-                    time.sleep(previous_event_timediff.total_seconds())
-                except ValueError:
-                    logger.error(
-                        "Can't sleep for negative time, please make sure your events are in time order."
-                        "see line Number{0}".format(index)
-                    )
-                    logger.error("Event: {0}".format(rpevent))
-                    pass
-                current_time = datetime.datetime.now()
-                previous_event = rpevent
-                previous_event_timediff = rpevent["timediff"]
-                send_event = self.set_time_and_tokens(
-                    rpevent, current_time, earliest, latest
+        previous_event = None
+        for index, rpevent in enumerate(line_list):
+            if previous_event is None:
+                current_event = self.set_time_and_tokens(
+                    rpevent, self.backfill_time, earliest, latest
                 )
-                self._out.bulksend([send_event])
+                previous_event = current_event
+                previous_event_timediff = rpevent["timediff"]
+                self._out.bulksend([current_event])
+                continue
+            try:
+                time.sleep(previous_event_timediff.total_seconds())
+            except ValueError:
+                logger.error(
+                    "Can't sleep for negative time, please make sure your events are in time order."
+                    "see line Number{0}".format(index)
+                )
+                logger.error("Event: {0}".format(rpevent))
+                pass
+            current_time = datetime.datetime.now()
+            previous_event = rpevent
+            previous_event_timediff = rpevent["timediff"]
+            send_event = self.set_time_and_tokens(
+                rpevent, current_time, earliest, latest
+            )
+            self._out.bulksend([send_event])
         self._out.flush(endOfInterval=True)
         return
 

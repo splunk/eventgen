@@ -36,7 +36,7 @@ def test_mode_replay_backfill(eventgen_test_helper):
     just playing the file twice."""
     events = eventgen_test_helper("eventgen_replay_backfill.conf").get_events()
     # assert the events length is twice of the events in the sample file
-    assert len(events) > 24
+    assert len(events) == 27
 
 
 def test_mode_replay_backfill_greater_interval(eventgen_test_helper):
