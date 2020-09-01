@@ -176,7 +176,15 @@ class ReplayGenerator(GeneratorPlugin):
                     previous_event_timediff = rpevent["timediff"]
                     self._out.bulksend([current_event])
                     continue
-                time.sleep(previous_event_timediff.total_seconds())
+                try:
+                    time.sleep(previous_event_timediff.total_seconds())
+                except ValueError:
+                    logger.error(
+                        "Can't sleep for negative time, please make sure your events are in time order."
+                        "see line Number{0}".format(index)
+                    )
+                    logger.error("Event: {0}".format(rpevent))
+                    pass
                 current_time = datetime.datetime.now()
                 previous_event = rpevent
                 previous_event_timediff = rpevent["timediff"]
