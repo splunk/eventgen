@@ -1,4 +1,6 @@
 import argparse
+from builtins import ImportError, ModuleNotFoundError, Exception
+
 import errno
 import logging
 import os
@@ -15,13 +17,29 @@ def _get_version():
     """
     @return: Version Number
     """
-    from importlib_metadata import PackageNotFoundError, distribution
-
     try:
-        dist = distribution("splunk_eventgen")
-        return dist.version
-    except PackageNotFoundError:
-        return "dev"
+        from sys import version_info
+        if version_info[0] < 3 or (version_info[0] and version_info[1] < 8):
+            from importlib_metadata import PackageNotFoundError, distribution
+            try:
+                dist = distribution("splunk_eventgen")
+                return dist.version
+            except PackageNotFoundError:
+                return "dev"
+        else:
+            # module change in python 3.8
+            from importlib.metadata import PackageNotFoundError, distribution
+            try:
+                dist = distribution("splunk_eventgen")
+                return dist.version
+            except PackageNotFoundError:
+                return "dev"
+            except ImportError:
+                return "Unknown"
+            except ModuleNotFoundError:
+                return "Unknown"
+    except Exception:
+        return "Unknown"
 
 
 EVENTGEN_VERSION = _get_version()
