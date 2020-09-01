@@ -15,7 +15,7 @@ time_delta_test_params = [
 
 @pytest.mark.parametrize("delta,expect", time_delta_test_params)
 def test_time_delta_2_second(delta, expect):
-    """ Test timeDelta2secs function, convert time delta object to seconds
+    """Test timeDelta2secs function, convert time delta object to seconds
     Normal cases:
     case 1: time delta is 1 day, expect is 86400
     case 2: time delta is 1 day 3 hour 15 minutes 32 seconds, expect is 98132
