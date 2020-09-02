@@ -44,13 +44,15 @@ def test_mode_replay_backfill_greater_interval(eventgen_test_helper):
     this should backfill.  Since the backfill is 120s, it should replay the entire file 5 times, and then add in 15 more
     seconds of backfill before replaying twice.  Since the last 5 events in replay span 15s, there should be an output
     of (60 (5 full backfills) + 5 (15s of the end of the file back) + 24 (2 full replays of the file))"""
-    current_datetime = datetime.now()
     events = eventgen_test_helper(
         "eventgen_replay_backfill_greater_interval.conf"
     ).get_events()
     # assert the events length is twice of the events in the sample file
     assert len(events) == 89
     pattern = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
+    # wait a second to make sure we're after the last microsecond cut off
+    time.sleep(1)
+    current_datetime = datetime.now()
     for event in events:
         result = pattern.match(event)
         assert result is not None
