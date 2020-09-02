@@ -299,9 +299,16 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
     )
     return_code = os.system(install_cmd)
     if return_code != 0:
-        print(
-            "Failed to install dependencies via pip. Please check whether pip is installed."
+        install_cmd = (
+            "pip3 install --requirement splunk_eventgen/lib/requirements.txt --upgrade --no-compile "
+            + "--no-binary :all: --target "
+            + install_target
         )
+        return_code = os.system(install_cmd)
+        if return_code != 0:
+            print(
+                "Failed to install dependencies via pip. Please check whether pip is installed."
+            )
     os.system("rm -rf " + os.path.join(install_target, "*.egg-info"))
 
     make_tarfile(target_file, directory)
