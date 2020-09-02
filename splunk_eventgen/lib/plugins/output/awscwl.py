@@ -57,14 +57,22 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
             sequenceToken = matched_stream.get('uploadSequenceToken', None)
 
             try:
-                response = client.put_log_events(
-                    logGroupName=self.aws_log_group_name,
-                    logStreamName=self.aws_log_stream_name,
-                    logEvents=events,
-                    sequenceToken=sequenceToken
-                )
+                if sequenceToken:
+                    response = client.put_log_events(
+                        logGroupName=self.aws_log_group_name,
+                        logStreamName=self.aws_log_stream_name,
+                        logEvents=events,
+                        sequenceToken=sequenceToken
+                    )
+                else:
+                    response = client.put_log_events(
+                        logGroupName=self.aws_log_group_name,
+                        logStreamName=self.aws_log_stream_name,
+                        logEvents=events
+                    )
             except Exception as e:
-                logger.error(e)
+                logger.error("Error occurs when trying to send log events : {}".format(e))
+                logger.info("Re-sending log events...")
                 time.sleep(1)
             else:
                 break
