@@ -4,7 +4,6 @@ import logging
 import os
 import shutil
 import sys
-from builtins import Exception, ImportError, ModuleNotFoundError
 
 from splunk_eventgen.eventgen_core import EventGenerator
 from splunk_eventgen.lib.logging_config import logger
