@@ -6,8 +6,11 @@ import pprint
 import random
 import re
 import types
-import urllib
 from configparser import RawConfigParser
+
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 
 from splunk_eventgen.lib.eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
 from splunk_eventgen.lib.eventgensamples import Sample
@@ -754,7 +757,8 @@ class Config(object):
                         stateFile = open(
                             os.path.join(
                                 s.sampleDir,
-                                "state." + urllib.request.pathname2url(token.token),
+                                "state."
+                                + six.moves.urllib.request.pathname2url(token.token),
                             ),
                             "r",
                         )

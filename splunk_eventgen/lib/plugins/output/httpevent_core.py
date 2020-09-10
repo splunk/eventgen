@@ -1,7 +1,8 @@
 import random
-import urllib.error
-import urllib.parse
-import urllib.request
+
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 
 from splunk_eventgen.lib.logging_config import logger
 from splunk_eventgen.lib.outputplugin import OutputPlugin
@@ -66,7 +67,7 @@ class HTTPCoreOutputPlugin(OutputPlugin):
         :param value: string
         :return: urlencoded string
         """
-        return urllib.parse.quote(value)
+        return six.moves.urllib.parse.quote(value)
 
     @staticmethod
     def _bg_convert_json(sess, resp):

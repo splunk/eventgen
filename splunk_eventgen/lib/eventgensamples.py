@@ -5,7 +5,10 @@ import os
 import pprint
 import re
 import sys
-import urllib
+
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 
 from splunk_eventgen.lib.logging_config import logger
 from splunk_eventgen.lib.timeparser import timeParser
@@ -244,7 +247,7 @@ class Sample(object):
                 stateFile = open(
                     os.path.join(
                         self.sampleDir,
-                        "state." + urllib.request.pathname2url(token.token),
+                        "state." + six.moves.urllib.request.pathname2url(token.token),
                     ),
                     "w",
                 )
