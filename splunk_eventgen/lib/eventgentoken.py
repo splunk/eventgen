@@ -6,9 +6,7 @@ import pprint
 import random
 import re
 import time
-import urllib.error
-import urllib.parse
-import urllib.request
+import urllib
 import uuid
 
 from splunk_eventgen.lib.logging_config import logger

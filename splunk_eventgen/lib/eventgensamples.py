@@ -5,9 +5,7 @@ import os
 import pprint
 import re
 import sys
-import urllib.error
-import urllib.parse
-import urllib.request
+import urllib
 
 from splunk_eventgen.lib.logging_config import logger
 from splunk_eventgen.lib.timeparser import timeParser
