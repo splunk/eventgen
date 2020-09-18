@@ -2,6 +2,7 @@ from splunk_eventgen.lib.outputplugin import OutputPlugin
 from splunk_eventgen.lib.logging_config import logger
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+import sys
 import boto3
 import time
 import json
@@ -19,8 +20,8 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
 
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
-        self.aws_log_group_name = getattr(self._sample, "awsLogGroupName")
-        self.aws_log_stream_name = getattr(self._sample, "awsLogStreamName")
+        # self.aws_log_group_name = getattr(self._sample, "awsLogGroupName")
+        # self.aws_log_stream_name = getattr(self._sample, "awsLogStreamName")
         self.aws_credentials = self._get_aws_credentials()
         self.clients = self._create_boto_clients()
 
@@ -41,16 +42,47 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
         Return: A list of boto logs clients
         """
         boto_clients = []
+        
         for acct in self.aws_credentials:
-            for region in acct['regions']:
-                client = boto3.client("logs", aws_access_key_id=acct['access_key'], aws_secret_access_key=acct['secret_access_key'], region_name=region)
-                boto_clients.append(client)
+            # log_group_names = acct.get("logGroupNames")
+            # log_group_stream_names = acct.get("logGroupStreamNames")
+            # regions = acct.get('regions')
+            acc_key = acct.get("access_key")
+            as_key = acct.get("secret_access_key")
+            awscwl = acct.get("awscwl")
+            if not acc_key or not as_key or not awscwl:
+                logger.error("No credentials or no awscwl-related info provided for this account")
+                sys.exit(1)
+
+            for lg in awscwl:
+                region = lg.get("region")
+                lg_name = lg.get("logGroupName")
+                lg_snames = lg.get("logGroupStreamNames")
+                for lg_sname in lg_snames:
+                    boto_clients.append({
+                        "client": boto3.client("logs", aws_access_key_id=acc_key, aws_secret_access_key=as_key, region_name=region),
+                        "lg_name": lg_name,
+                        "lg_sname": lg_sname
+                    })
+
+            # if not regions or not log_group_names or not log_group_stream_names or not isinstance(log_group_names, list) or \
+            #     not isinstance(log_group_stream_names, list) or not isinstance(regions, list) or \
+            #         (len(log_group_names) != len(log_group_stream_names) != len(regions)):
+            #     logger.error("Please inspect regions, logGroupNames, and logGroupStreamNames in your aws credentials")
+            #     sys.exit(1)
+            # for region, lg_name, lg_sname in zip(regions, log_group_names, log_group_stream_names):
+            #     client = boto3.client("logs", aws_access_key_id=acct['access_key'], aws_secret_access_key=acct['secret_access_key'], region_name=region)
+            #     boto_clients.append({
+            #         'client': client,
+            #         "lg_name": lg_name,
+            #         "lg_sname": lg_sname
+            #     })
 
         return boto_clients
 
-    def target_process(self, client, events):
+    def target_process(self, client, lg_name, lg_sname, events):
         while True:
-            response = client.describe_log_streams(logGroupName=self.aws_log_group_name, logStreamNamePrefix=self.aws_log_stream_name)
+            response = client.describe_log_streams(logGroupName=lg_name, logStreamNamePrefix=lg_sname)
             # since we provide the full name of the log stream, the first item should be it
             matched_stream = response['logStreams'][0]
             # sequence token isn't needed for any new stream so None will be set in such case to avoid KeyError
@@ -59,15 +91,15 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
             try:
                 if sequenceToken:
                     response = client.put_log_events(
-                        logGroupName=self.aws_log_group_name,
-                        logStreamName=self.aws_log_stream_name,
+                        logGroupName=lg_name,
+                        logStreamName=lg_sname,
                         logEvents=events,
                         sequenceToken=sequenceToken
                     )
                 else:
                     response = client.put_log_events(
-                        logGroupName=self.aws_log_group_name,
-                        logStreamName=self.aws_log_stream_name,
+                        logGroupName=lg_name,
+                        logStreamName=lg_sname,
                         logEvents=events
                     )
             except Exception as e:
@@ -82,10 +114,11 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
 
         if n_clients > 1:
             with ThreadPoolExecutor(max_workers=n_clients) as executor:
-                for client in self.boto_clients:
-                    executor.submit(self.target_process, client=client, events=events)
+                for e in self.clients:
+                    executor.submit(self.target_process, client=e["client"], lg_name=e["lg_name"], lg_sname=e["lg_sname"], events=events)
         else:
-            self.target_process(client=self.clients[0], events=events)
+            only_client = self.clients[0]
+            self.target_process(client=only_client["client"], lg_name=only_client["lg_name"], lg_sname=only_client["lg_sname"], events=events)
 
 
     def flush(self, q):
@@ -100,7 +133,6 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
 
             if (len(events) + 1 > self.MAXQUEUELENGTH) or (current_batch_total_bytes + len(json.dumps(event)) >= self.MAXBATCHBYTES):
                 self.send_events(events)
-                print("triggered!")
                 events = []
                 current_batch_total_bytes = 0
 

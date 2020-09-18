@@ -2,6 +2,7 @@ from splunk_eventgen.lib.outputplugin import OutputPlugin
 from splunk_eventgen.lib.logging_config import logger
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+import sys
 import boto3
 import time
 import json
@@ -41,7 +42,12 @@ class AWSCloudWatchEventOutOutputPlugin(OutputPlugin):
         """
         boto_clients = []
         for acct in self.aws_credentials:
-            for region in acct['regions']:
+            awscwe = acct.get("awscwe")
+            if not awscwe or ("regions" not in awscwe):
+                logger.error("No awscwe-related info provided or incomplete")
+                sys.exit(1)
+            regions = awscwe.get("regions")
+            for region in regions:
                 client = boto3.client("events", aws_access_key_id=acct['access_key'], aws_secret_access_key=acct['secret_access_key'], region_name=region)
                 boto_clients.append(client)
 
