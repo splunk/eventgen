@@ -66,7 +66,7 @@ class AWSCloudWatchEventOutOutputPlugin(OutputPlugin):
 
         if n_clients > 1:
             with ThreadPoolExecutor(max_workers=n_clients) as executor:
-                for client in self.boto_clients:
+                for client in self.clients:
                     executor.submit(self.target_process, client=client, events=events)
         else:
             self.target_process(client=self.clients[0], events=events)
