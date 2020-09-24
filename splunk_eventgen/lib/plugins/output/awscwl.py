@@ -2,7 +2,6 @@ from splunk_eventgen.lib.outputplugin import OutputPlugin
 from splunk_eventgen.lib.logging_config import logger
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from threading import Lock
 import sys
 import boto3
 import time
@@ -16,7 +15,6 @@ logging.getLogger('nose').setLevel(logging.WARNING)
 class AWSCloudWatchLogOutputPlugin(OutputPlugin):
     useOutputQueue = False
     name = "awscwl"
-    lock = Lock()
     MAXQUEUELENGTH = 10000
     MAXBATCHBYTES = 1048576
 
@@ -67,19 +65,6 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
                         "lg_sname": lg_sname
                     })
 
-            # if not regions or not log_group_names or not log_group_stream_names or not isinstance(log_group_names, list) or \
-            #     not isinstance(log_group_stream_names, list) or not isinstance(regions, list) or \
-            #         (len(log_group_names) != len(log_group_stream_names) != len(regions)):
-            #     logger.error("Please inspect regions, logGroupNames, and logGroupStreamNames in your aws credentials")
-            #     sys.exit(1)
-            # for region, lg_name, lg_sname in zip(regions, log_group_names, log_group_stream_names):
-            #     client = boto3.client("logs", aws_access_key_id=acct['access_key'], aws_secret_access_key=acct['secret_access_key'], region_name=region)
-            #     boto_clients.append({
-            #         'client': client,
-            #         "lg_name": lg_name,
-            #         "lg_sname": lg_sname
-            #     })
-
         return boto_clients
 
     def target_process(self, client, lg_name, lg_sname, events):
@@ -108,6 +93,7 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
                 logger.info("Refetching SequenceToken after 3 seconds")
                 time.sleep(3)
             except Exception as e:
+                # drop events if encounter other type of exception here
                 logger.error(e)
                 break
             else:
@@ -115,7 +101,6 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
 
     def send_events(self, events):
         n_clients = len(self.clients)
-        self.lock.acquire()
         if n_clients > 1:
             with ThreadPoolExecutor(max_workers=n_clients) as executor:
                 for e in self.clients:
@@ -123,7 +108,6 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
         else:
             only_client = self.clients[0]
             self.target_process(client=only_client["client"], lg_name=only_client["lg_name"], lg_sname=only_client["lg_sname"], events=events)
-        self.lock.release()
 
 
     def flush(self, q):
