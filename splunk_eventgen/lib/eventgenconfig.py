@@ -772,10 +772,9 @@ class Config(object):
                 sampleFiles = os.listdir(s.sampleDir)
                 for sample in sampleFiles:
                     sample_name = s.name
-                    # If we expect a .csv, append it to the file name - regex matching must include the extension
-                    if s.sampletype == "csv" and not s.name.endswith(".csv"):
-                        sample_name = s.name + "\.csv"
                     results = re.match(sample_name, sample)
+                    if s.sampletype == "csv" and not s.name.endswith(".csv") and not results:
+                        logger.warning("Could not find target csv, try adding .csv into stanza title and filename")
                     if results:
                         # Make sure the stanza name/regex matches the entire file name
                         match_start, match_end = results.regs[0]

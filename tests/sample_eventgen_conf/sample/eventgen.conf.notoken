@@ -1,0 +1,8 @@
+[sample]
+sampleDir = .
+outputMode = stdout
+count = 3
+earliest = -3s
+latest = now
+interval = 3
+end = 1
