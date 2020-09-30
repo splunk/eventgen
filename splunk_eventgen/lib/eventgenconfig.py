@@ -773,8 +773,14 @@ class Config(object):
                 for sample in sampleFiles:
                     sample_name = s.name
                     results = re.match(sample_name, sample)
-                    if s.sampletype == "csv" and not s.name.endswith(".csv") and not results:
-                        logger.warning("Could not find target csv, try adding .csv into stanza title and filename")
+                    if (
+                        s.sampletype == "csv"
+                        and not s.name.endswith(".csv")
+                        and not results
+                    ):
+                        logger.warning(
+                            "Could not find target csv, try adding .csv into stanza title and filename"
+                        )
                     if results:
                         # Make sure the stanza name/regex matches the entire file name
                         match_start, match_end = results.regs[0]
