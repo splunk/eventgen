@@ -62,6 +62,7 @@ def parse_args():
         version="%(prog)s " + EVENTGEN_VERSION,
     )
     parser.add_argument("--modinput-mode", default=False)
+    parser.add_argument("--counter-output", action="store_true", default=False)
     subparsers = parser.add_subparsers(
         title="commands", help="valid subcommands", dest="subcommand"
     )

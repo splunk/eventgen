@@ -77,7 +77,7 @@ LOGGING_CONFIG = {
         },
         "eventgen_metrics": {
             "handlers": ["eventgen_metrics"],
-            "level": DEFAULT_LOGGING_LEVEL,
+            "level": "INFO",
             "propagate": False,
         },
         "eventgen_server": {

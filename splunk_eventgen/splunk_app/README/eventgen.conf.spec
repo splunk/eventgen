@@ -280,7 +280,7 @@ sampletype = raw | csv
       OVERRIDES FOR DEFAULT FIELDS WILL ONLY WITH WITH outputMode SPLUNKSTREAM.
 
 interval = <integer>
-    * Only valid in mode = sample
+    * Delay between exections.  This number in replay mode occurs after the replay has finished.
     * How often to generate sample (in seconds).
     * 0 means disabled.
     * Defaults to 60 seconds.

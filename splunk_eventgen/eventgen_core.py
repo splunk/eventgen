@@ -97,6 +97,8 @@ class EventGenerator(object):
                 new_args["verbosity"] = args.verbosity
         self.config = Config(configfile, **new_args)
         self.config.parse()
+        if self.config.outputCounter is None and getattr(args, "counter_output"):
+            self.config.outputCounter = True
         self.args.multiprocess = (
             True if self.config.threading == "process" else self.args.multiprocess
         )
@@ -260,11 +262,11 @@ class EventGenerator(object):
                 for i in range(worker_threads):
                     worker = Thread(
                         target=self._generator_do_work,
-                        args=(
-                            self.workerQueue,
-                            self.loggingQueue,
-                            self.output_counters[i],
-                        ),
+                        args=(self.workerQueue, self.loggingQueue),
+                        kwargs={
+                            "futures_pool": self.futures_pool,
+                            "output_counter": self.output_counters[i],
+                        },
                     )
                     worker.setDaemon(True)
                     worker.start()
@@ -272,8 +274,11 @@ class EventGenerator(object):
                 for i in range(worker_threads):
                     worker = Thread(
                         target=self._generator_do_work,
-                        args=(self.workerQueue, self.loggingQueue, None),
-                        kwargs={"futures_pool": self.futures_pool},
+                        args=(self.workerQueue, self.loggingQueue),
+                        kwargs={
+                            "futures_pool": self.futures_pool,
+                            "output_counter": None,
+                        },
                     )
                     worker.setDaemon(True)
                     worker.start()

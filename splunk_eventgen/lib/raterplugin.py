@@ -183,7 +183,14 @@ class RaterPlugin(object):
                 if self.sample.generator == "replay":
                     # lock on to replay mode, this will keep the timer knowing when to continue cycles since
                     # replay mode has a dynamic replay time and interval doesn't mean the same thing.
-                    genPlugin.run()
+                    if (
+                        hasattr(self.config, "outputCounter")
+                        and self.config.outputCounter
+                    ):
+                        from splunk_eventgen.lib.outputcounter import OutputCounter
+
+                        output_counter = OutputCounter()
+                    genPlugin.run(output_counter=output_counter)
                 else:
                     self.generatorQueue.put(genPlugin)
             except Full:

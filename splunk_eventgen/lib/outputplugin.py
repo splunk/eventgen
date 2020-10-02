@@ -1,6 +1,6 @@
 from collections import deque
 
-from splunk_eventgen.lib.logging_config import logger
+from splunk_eventgen.lib.logging_config import logger, metrics_logger
 
 
 class OutputPlugin(object):
@@ -43,6 +43,9 @@ class OutputPlugin(object):
         if self.output_counter is not None:
             self.output_counter.collect(
                 len(self.events), sum([len(e["_raw"]) for e in self.events])
+            )
+            metrics_logger.info(
+                "Current Counts: {0}".format(self.output_counter.__dict__)
             )
         self.events = None
         self._output_end()
