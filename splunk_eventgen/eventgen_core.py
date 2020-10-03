@@ -8,7 +8,6 @@ import os
 import signal
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
 from queue import Empty, Queue
 from threading import Event, Thread
 
@@ -66,6 +65,9 @@ class EventGenerator(object):
         """
         # TODO: The old eventgen had strange cli args. We should probably update the module args to match this usage.
         new_args = {}
+        # this variable can't exist in the config object inputs, due to how it's set with symbols and needs to be
+        # pickable.  We only want to change it to true if it doesn't exist and isn't linked to a egcounter.
+        update_counter = False
         if "args" in kwargs:
             args = kwargs["args"]
             outputer = [
@@ -95,10 +97,16 @@ class EventGenerator(object):
                 new_args["sample"] = args.sample
             if getattr(args, "verbosity"):
                 new_args["verbosity"] = args.verbosity
+            if getattr(args, "counter_output"):
+                update_counter = True
+
         self.config = Config(configfile, **new_args)
         self.config.parse()
-        if self.config.outputCounter is None and getattr(args, "counter_output"):
-            self.config.outputCounter = True
+        if update_counter:
+            if hasattr(self.config, "outputCounter") and isinstance(
+                self.config.outputCounter, type(None)
+            ):
+                self.config.outputCounter = True
         self.args.multiprocess = (
             True if self.config.threading == "process" else self.args.multiprocess
         )
@@ -164,7 +172,6 @@ class EventGenerator(object):
         :return:
         """
         # Load the things that actually do the work.
-        self._create_futures_threadpool()
         self._create_generator_pool()
         self._create_timer_threadpool()
         self._create_output_threadpool()
@@ -180,6 +187,7 @@ class EventGenerator(object):
         """
         self.sampleQueue = Queue(maxsize=0)
         num_threads = threadcount
+        # futures pool allows each process to share an async pool.  One per thread.
         for i in range(num_threads):
             worker = Thread(
                 target=self._worker_do_work,
@@ -187,14 +195,10 @@ class EventGenerator(object):
                     self.sampleQueue,
                     self.loggingQueue,
                 ),
-                kwargs={"futures_pool": self.futures_pool},
                 name="TimeThread{0}".format(i),
             )
             worker.setDaemon(True)
             worker.start()
-
-    def _create_futures_threadpool(self, threadcount=20):
-        self.futures_pool = ThreadPoolExecutor(max_workers=threadcount)
 
     def _create_output_threadpool(self, threadcount=1):
         """
@@ -218,7 +222,6 @@ class EventGenerator(object):
                     self.outputQueue,
                     self.loggingQueue,
                 ),
-                kwargs={"futures_pool": self.futures_pool},
                 name="OutputThread{0}".format(i),
             )
             worker.setDaemon(True)
@@ -264,7 +267,6 @@ class EventGenerator(object):
                         target=self._generator_do_work,
                         args=(self.workerQueue, self.loggingQueue),
                         kwargs={
-                            "futures_pool": self.futures_pool,
                             "output_counter": self.output_counters[i],
                         },
                     )
@@ -276,7 +278,6 @@ class EventGenerator(object):
                         target=self._generator_do_work,
                         args=(self.workerQueue, self.loggingQueue),
                         kwargs={
-                            "futures_pool": self.futures_pool,
                             "output_counter": None,
                         },
                     )
@@ -301,7 +302,6 @@ class EventGenerator(object):
                         self.genconfig,
                         disable_logging,
                     ),
-                    kwargs={"futures_pool": self.futures_pool},
                 )
                 self.workerPool.append(process)
                 process.start()
@@ -321,12 +321,12 @@ class EventGenerator(object):
         if args.verbosity is None:
             self.logger.setLevel(logging.ERROR)
 
-    def _worker_do_work(self, work_queue, logging_queue, futures_pool=None):
+    def _worker_do_work(self, work_queue, logging_queue):
         while not self.stop_request.isSet():
             try:
                 item = work_queue.get(timeout=10)
                 startTime = time.time()
-                item.run(futures_pool=futures_pool)
+                item.run()
                 totalTime = time.time() - startTime
                 if totalTime > self.config.interval and self.config.end != 1:
                     self.logger.warning(
@@ -342,14 +342,12 @@ class EventGenerator(object):
                 self.logger.exception(str(e))
                 raise e
 
-    def _generator_do_work(
-        self, work_queue, logging_queue, output_counter=None, futures_pool=None
-    ):
+    def _generator_do_work(self, work_queue, logging_queue, output_counter=None):
         while not self.stop_request.isSet():
             try:
                 item = work_queue.get(timeout=10)
                 startTime = time.time()
-                item.run(output_counter=output_counter, futures_pool=futures_pool)
+                item.run(output_counter=output_counter)
                 totalTime = time.time() - startTime
                 if totalTime > self.config.interval and item._sample.end != 1:
                     self.logger.warning(
@@ -368,9 +366,7 @@ class EventGenerator(object):
                 raise e
 
     @staticmethod
-    def _proc_worker_do_work(
-        work_queue, logging_queue, config, disable_logging, futures_pool=None
-    ):
+    def _proc_worker_do_work(work_queue, logging_queue, config, disable_logging):
         genconfig = config
         stopping = genconfig["stopping"]
         root = logging.getLogger()
@@ -390,8 +386,7 @@ class EventGenerator(object):
                 item = work_queue.get(timeout=10)
                 item.logger = root
                 item._out.updateConfig(item.config)
-                item.futures_pool = futures_pool
-                item.run(futures_pool=futures_pool)
+                item.run()
                 work_queue.task_done()
                 item.logger.info("Current Worker Stopping: {0}".format(stopping))
                 item.logger = None

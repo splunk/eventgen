@@ -210,8 +210,7 @@ class GeneratorPlugin(object):
                     )
                     raise
 
-    def run(self, output_counter=None, futures_pool=None):
-        self.futures_pool = futures_pool
+    def run(self, output_counter=None):
         if (
             output_counter is not None
             and hasattr(self.config, "outputCounter")
@@ -219,9 +218,6 @@ class GeneratorPlugin(object):
         ):
             # Use output_counter to calculate throughput
             self._out.setOutputCounter(output_counter)
-        if self.futures_pool and not self._out.outputPlugin.useOutputQueue:
-            self._out.futures_pool = self.futures_pool
-            self._out.outputPlugin.futures_pool = self.futures_pool
         self.gen(
             count=self.count,
             earliest=self.start_time,

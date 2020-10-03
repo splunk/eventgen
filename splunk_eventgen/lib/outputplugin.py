@@ -10,7 +10,6 @@ class OutputPlugin(object):
         self._app = sample.app
         self._sample = sample
         self._outputMode = sample.outputMode
-        self.futures_pool = None
         self.events = None
         logger.debug(
             "Starting OutputPlugin for sample '%s' with output '%s'"
@@ -35,9 +34,7 @@ class OutputPlugin(object):
     def updateConfig(self, config):
         self.config = config
 
-    def run(self, futures_pool=None):
-        if self.futures_pool is None and futures_pool:
-            self.futures_pool = futures_pool
+    def run(self):
         if self.events:
             self.flush(self.events)
         if self.output_counter is not None:

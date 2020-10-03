@@ -8,6 +8,8 @@ from splunk_eventgen.lib.logging_config import logger
 from splunk_eventgen.lib.outputplugin import OutputPlugin
 
 try:
+    from concurrent.futures import ThreadPoolExecutor
+
     import requests
     from requests import Session
     from requests_futures.sessions import FuturesSession
@@ -57,7 +59,9 @@ class HTTPCoreOutputPlugin(OutputPlugin):
         self.lastsourcetype = None
         if not session:
             session = Session()
-        self.session = FuturesSession(session=session, executor=self.futures_pool)
+        self.session = FuturesSession(
+            session=session, executor=ThreadPoolExecutor(max_workers=workers)
+        )
         self.active_sessions = []
 
     @staticmethod

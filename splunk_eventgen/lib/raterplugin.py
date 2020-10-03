@@ -190,6 +190,8 @@ class RaterPlugin(object):
                         from splunk_eventgen.lib.outputcounter import OutputCounter
 
                         output_counter = OutputCounter()
+                    elif hasattr(self.config, "outputCounter"):
+                        output_counter = self.config.outputCounter
                     genPlugin.run(output_counter=output_counter)
                 else:
                     self.generatorQueue.put(genPlugin)
