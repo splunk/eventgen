@@ -22,13 +22,11 @@ LOGGING_CONFIG = {
     "filters": {},
     "handlers": {
         "console": {
-            "level": DEFAULT_LOGGING_LEVEL,
             "class": "logging.StreamHandler",
             "formatter": "default",
         },
         "eventgen_main": {
             "class": "logging.handlers.RotatingFileHandler",
-            "level": DEFAULT_LOGGING_LEVEL,
             "formatter": "default",
             "filters": [],
             "maxBytes": 1024 * 1024,
@@ -36,7 +34,6 @@ LOGGING_CONFIG = {
         },
         "eventgen_controller": {
             "class": "logging.handlers.RotatingFileHandler",
-            "level": DEFAULT_LOGGING_LEVEL,
             "formatter": "default",
             "filters": [],
             "maxBytes": 1024 * 1024,
@@ -44,7 +41,6 @@ LOGGING_CONFIG = {
         },
         "eventgen_httpevent": {
             "class": "logging.handlers.RotatingFileHandler",
-            "level": DEFAULT_LOGGING_LEVEL,
             "formatter": "default",
             "filters": [],
             "maxBytes": 1024 * 1024,
@@ -60,7 +56,6 @@ LOGGING_CONFIG = {
         },
         "eventgen_metrics": {
             "class": "logging.handlers.RotatingFileHandler",
-            "level": DEFAULT_LOGGING_LEVEL,
             "formatter": "default",
             "filters": [],
             "maxBytes": 1024 * 1024,
@@ -68,7 +63,6 @@ LOGGING_CONFIG = {
         },
         "eventgen_server": {
             "class": "logging.handlers.RotatingFileHandler",
-            "level": DEFAULT_LOGGING_LEVEL,
             "formatter": "default",
             "filters": [],
             "maxBytes": 1024 * 1024,
@@ -77,13 +71,13 @@ LOGGING_CONFIG = {
     },
     "loggers": {
         "eventgen": {
-            "handlers": ["eventgen_main"],
+            "handlers": ["eventgen_main", "eventgen_error"],
             "level": DEFAULT_LOGGING_LEVEL,
             "propagate": False,
         },
         "eventgen_metrics": {
             "handlers": ["eventgen_metrics"],
-            "level": DEFAULT_LOGGING_LEVEL,
+            "level": "INFO",
             "propagate": False,
         },
         "eventgen_server": {

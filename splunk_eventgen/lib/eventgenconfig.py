@@ -6,10 +6,11 @@ import pprint
 import random
 import re
 import types
-import urllib.error
-import urllib.parse
-import urllib.request
 from configparser import RawConfigParser
+
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 
 from splunk_eventgen.lib.eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
 from splunk_eventgen.lib.eventgensamples import Sample
@@ -148,6 +149,7 @@ class Config(object):
         "sequentialTimestamp",
         "extendIndexes",
         "disableLoggingQueue",
+        "splitSample",
     ]
     _validTokenTypes = {"token": 0, "replacementType": 1, "replacement": 2}
     _validHostTokens = {"token": 0, "replacement": 1}
@@ -169,6 +171,7 @@ class Config(object):
         "generatorWorkers",
         "maxIntervalsBeforeFlush",
         "maxQueueLength",
+        "splitSample",
         "fileMaxBytes",
     ]
     _floatSettings = ["randomizeCount", "delay", "timeMultiple"]
@@ -235,6 +238,7 @@ class Config(object):
         "maxQueueLength",
         "maxIntervalsBeforeFlush",
         "autotimestamp",
+        "splitSample",
     ]
     _complexSettings = {
         "sampletype": ["raw", "csv"],
@@ -753,7 +757,8 @@ class Config(object):
                         stateFile = open(
                             os.path.join(
                                 s.sampleDir,
-                                "state." + urllib.request.pathname2url(token.token),
+                                "state."
+                                + six.moves.urllib.request.pathname2url(token.token),
                             ),
                             "r",
                         )
@@ -767,10 +772,15 @@ class Config(object):
                 sampleFiles = os.listdir(s.sampleDir)
                 for sample in sampleFiles:
                     sample_name = s.name
-                    # If we expect a .csv, append it to the file name - regex matching must include the extension
-                    if s.sampletype == "csv" and not s.name.endswith(".csv"):
-                        sample_name = s.name + "\.csv"
                     results = re.match(sample_name, sample)
+                    if (
+                        s.sampletype == "csv"
+                        and not s.name.endswith(".csv")
+                        and not results
+                    ):
+                        logger.warning(
+                            "Could not find target csv, try adding .csv into stanza title and filename"
+                        )
                     if results:
                         # Make sure the stanza name/regex matches the entire file name
                         match_start, match_end = results.regs[0]

@@ -1,0 +1,3 @@
+{% block head -%}
+    {"_time": "MockTimeBlock", "_raw": "If you see this, you successfully imported another jinja template."}
+{%- endblock -%}

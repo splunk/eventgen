@@ -1,0 +1,8 @@
+{% macro getcount(pevent, pslice, ploop) -%}
+    {% set max = pslice //pevent -%}
+    {% set crange = [] -%}
+    {%- for _ in range(0, pevent) -%}
+        {% do crange.append((max*loop.index0+1, max*loop.index)) -%}
+    {%- endfor -%}
+    {{ range(crange[ploop][0], crange[ploop][1], 1) | random }}
+{%- endmacro -%}

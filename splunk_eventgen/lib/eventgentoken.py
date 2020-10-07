@@ -6,10 +6,11 @@ import pprint
 import random
 import re
 import time
-import urllib.error
-import urllib.parse
-import urllib.request
 import uuid
+
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 
 from splunk_eventgen.lib.logging_config import logger
 from splunk_eventgen.lib.timeparser import timeDelta2secs
@@ -380,7 +381,9 @@ class Token(object):
                         replacement += chr(random.randint(33, 126))
                         # Practice safe strings
                         replacement = re.sub(
-                            "%[0-9a-fA-F]+", "", urllib.parse.quote(replacement)
+                            "%[0-9a-fA-F]+",
+                            "",
+                            six.moves.urllib.parse.quote(replacement),
                         )
 
                     return replacement

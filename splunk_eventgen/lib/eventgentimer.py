@@ -1,9 +1,7 @@
-import copy
+import datetime
 import time
-from queue import Full
 
 from splunk_eventgen.lib.logging_config import logger
-from splunk_eventgen.lib.timeparser import timeParserTimeMath
 
 
 class Timer(object):
@@ -58,7 +56,11 @@ class Timer(object):
             rater_class = self.config.getPlugin(
                 "rater." + self.sample.rater, self.sample
             )
+            backrater_class = self.config.getPlugin("rater.backfill", self.sample)
+            perdayrater_class = self.config.getPlugin("rater.perdayvolume", self.sample)
             self.rater = rater_class(self.sample)
+            self.backrater = backrater_class(self.sample)
+            self.perdayrater = perdayrater_class(self.sample)
             self.generatorPlugin = self.config.getPlugin(
                 "generator." + self.sample.generator, self.sample
             )
@@ -97,7 +99,7 @@ class Timer(object):
         else:
             return total_len / sample_count
 
-    def run(self):
+    def run(self, futures_pool=None):
         """
         Simple wrapper method to determine whether we should be running inside python's profiler or not
         """
@@ -124,9 +126,8 @@ class Timer(object):
             time.sleep(self.sample.delay)
 
         logger.debug("Timer creating plugin for '%s'" % self.sample.name)
-
+        local_time = datetime.datetime.now()
         end = False
-        previous_count_left = 0
         raw_event_size = self.predict_event_size()
         if self.end:
             if int(self.end) == 0:
@@ -141,174 +142,86 @@ class Timer(object):
                     % self.sample.name
                 )
         while not end:
-            # Need to be able to stop threads by the main thread or this thread. self.config will stop all threads
-            # referenced in the config object, while, self.stopping will only stop this one.
-            if self.config.stopping or self.stopping:
-                end = True
-                continue
-            count = self.rater.rate()
-            # First run of the generator, see if we have any backfill work to do.
-            if self.countdown <= 0:
-                if self.sample.backfill and not self.sample.backfilldone:
-                    realtime = self.sample.now(realnow=True)
-                    if "-" in self.sample.backfill[0]:
-                        mathsymbol = "-"
-                    else:
-                        mathsymbol = "+"
-                    backfillnumber = ""
-                    backfillletter = ""
-                    for char in self.sample.backfill:
-                        if char.isdigit():
-                            backfillnumber += char
-                        elif char != "-":
-                            backfillletter += char
-                    backfillearliest = timeParserTimeMath(
-                        plusminus=mathsymbol,
-                        num=backfillnumber,
-                        unit=backfillletter,
-                        ret=realtime,
-                    )
-                    while backfillearliest < realtime:
-                        if self.end and self.executions == int(self.end):
-                            logger.info(
-                                "End executions %d reached, ending generation of sample '%s'"
-                                % (int(self.end), self.sample.name)
-                            )
-                            break
-                        et = backfillearliest
-                        lt = timeParserTimeMath(
-                            plusminus="+", num=self.interval, unit="s", ret=et
+            try:
+                # Need to be able to stop threads by the main thread or this thread. self.config will stop all threads
+                # referenced in the config object, while, self.stopping will only stop this one.
+                if self.config.stopping or self.stopping:
+                    end = True
+                self.rater.update_options(
+                    config=self.config,
+                    sample=self.sample,
+                    generatorQueue=self.generatorQueue,
+                    outputQueue=self.outputQueue,
+                    outputPlugin=self.outputPlugin,
+                    generatorPlugin=self.generatorPlugin,
+                )
+                count = self.rater.rate()
+                # First run of the generator, see if we have any backfill work to do.
+                if self.countdown <= 0:
+                    if self.sample.backfill and not self.sample.backfilldone:
+                        self.backrater.update_options(
+                            config=self.config,
+                            sample=self.sample,
+                            generatorQueue=self.generatorQueue,
+                            outputQueue=self.outputQueue,
+                            outputPlugin=self.outputPlugin,
+                            generatorPlugin=self.generatorPlugin,
+                            samplerater=self.rater,
                         )
-                        copy_sample = copy.copy(self.sample)
-                        tokens = copy.deepcopy(self.sample.tokens)
-                        copy_sample.tokens = tokens
-                        genPlugin = self.generatorPlugin(sample=copy_sample)
-                        # need to make sure we set the queue right if we're using multiprocessing or thread modes
-                        genPlugin.updateConfig(
-                            config=self.config, outqueue=self.outputQueue
-                        )
-                        genPlugin.updateCounts(count=count, start_time=et, end_time=lt)
-                        try:
-                            self.generatorQueue.put(genPlugin, True, 3)
-                            self.executions += 1
-                            backfillearliest = lt
-                        except Full:
-                            logger.warning(
-                                "Generator Queue Full. Reput the backfill generator task later."
-                                " %d backfill generators are dispatched.",
-                                self.executions,
-                            )
-                            backfillearliest = et
-                        realtime = self.sample.now(realnow=True)
-
-                    self.sample.backfilldone = True
-                else:
-                    # 12/15/13 CS Moving the rating to a separate plugin architecture
-                    # Save previous interval count left to avoid perdayvolumegenerator drop small tasks
-                    if self.sample.generator == "perdayvolumegenerator":
-                        count = self.rater.rate() + previous_count_left
-                        if 0 < count < raw_event_size:
-                            logger.info(
-                                "current interval size is {}, which is smaller than a raw event size {}.".format(
-                                    count, raw_event_size
-                                )
-                                + "Wait for the next turn."
-                            )
-                            previous_count_left = count
-                            self.countdown = self.interval
-                            self.executions += 1
-                            continue
-                        else:
-                            previous_count_left = 0
+                        self.backrater.queue_it(count)
                     else:
-                        count = self.rater.rate()
-
-                    et = self.sample.earliestTime()
-                    lt = self.sample.latestTime()
-
-                    try:
-                        if count < 1 and count != -1:
-                            logger.info(
-                                "There is no data to be generated in worker {0} because the count is {1}.".format(
-                                    self.sample.config.generatorWorkers, count
-                                )
+                        if self.sample.generator == "perdayvolumegenerator":
+                            self.perdayrater.update_options(
+                                config=self.config,
+                                sample=self.sample,
+                                generatorQueue=self.generatorQueue,
+                                outputQueue=self.outputQueue,
+                                outputPlugin=self.outputPlugin,
+                                generatorPlugin=self.generatorPlugin,
+                                samplerater=self.rater,
+                                raweventsize=raw_event_size,
                             )
-                        else:
-                            # Spawn workers at the beginning of job rather than wait for next interval
-                            logger.info(
-                                "Starting '%d' generatorWorkers for sample '%s'"
-                                % (
-                                    self.sample.config.generatorWorkers,
-                                    self.sample.name,
-                                )
-                            )
-                            for worker_id in range(self.config.generatorWorkers):
-                                copy_sample = copy.copy(self.sample)
-                                tokens = copy.deepcopy(self.sample.tokens)
-                                copy_sample.tokens = tokens
-                                genPlugin = self.generatorPlugin(sample=copy_sample)
-                                # Adjust queue for threading mode
-                                genPlugin.updateConfig(
-                                    config=self.config, outqueue=self.outputQueue
-                                )
-                                genPlugin.updateCounts(
-                                    count=count, start_time=et, end_time=lt
-                                )
+                            self.perdayrater.rate()
+                            self.perdayrater.queue_it(count)
+                        self.rater.queue_it(count)
+                    self.countdown = self.interval
+                    self.executions += 1
 
-                                try:
-                                    self.generatorQueue.put(genPlugin)
-                                    logger.debug(
-                                        (
-                                            "Worker# {0}: Put {1} MB of events in queue for sample '{2}'"
-                                            + "with et '{3}' and lt '{4}'"
-                                        ).format(
-                                            worker_id,
-                                            round((count / 1024.0 / 1024), 4),
-                                            self.sample.name,
-                                            et,
-                                            lt,
-                                        )
-                                    )
-                                except Full:
-                                    logger.warning(
-                                        "Generator Queue Full. Skipping current generation."
-                                    )
-                            self.executions += 1
-                    except Exception as e:
-                        logger.exception(str(e))
-                        if self.stopping:
-                            end = True
-                        pass
+            except Exception as e:
+                logger.exception(str(e))
+                if self.stopping:
+                    end = True
+                pass
 
-                # Sleep until we're supposed to wake up and generate more events
+            # Sleep until we're supposed to wake up and generate more events
+            if self.countdown == 0:
                 self.countdown = self.interval
 
-                # 8/20/15 CS Adding support for ending generation at a certain time
+            # 8/20/15 CS Adding support for ending generation at a certain time
 
-                if self.end:
-                    if int(self.end) == -1:
-                        time.sleep(self.time)
-                        self.countdown -= self.time
-                        continue
-                    # 3/16/16 CS Adding support for ending on a number of executions instead of time
-                    # Should be fine with storing state in this sample object since each sample has it's own unique
-                    # timer thread
-                    if not self.endts:
-                        if self.executions >= int(self.end):
-                            logger.info(
-                                "End executions %d reached, ending generation of sample '%s'"
-                                % (int(self.end), self.sample.name)
-                            )
-                            self.stopping = True
-                            end = True
-                    elif lt >= self.endts:
+            if self.end:
+                if int(self.end) == -1:
+                    time.sleep(self.time)
+                    self.countdown -= self.time
+                    continue
+                # 3/16/16 CS Adding support for ending on a number of executions instead of time
+                # Should be fine with storing state in this sample object since each sample has it's own unique
+                # timer thread
+                if not self.endts:
+                    if self.executions >= int(self.end):
                         logger.info(
-                            "End Time '%s' reached, ending generation of sample '%s'"
-                            % (self.sample.endts, self.sample.name)
+                            "End executions %d reached, ending generation of sample '%s'"
+                            % (int(self.end), self.sample.name)
                         )
                         self.stopping = True
                         end = True
+                elif local_time >= self.endts:
+                    logger.info(
+                        "End Time '%s' reached, ending generation of sample '%s'"
+                        % (self.sample.endts, self.sample.name)
+                    )
+                    self.stopping = True
+                    end = True
 
-            else:
-                time.sleep(self.time)
-                self.countdown -= self.time
+            time.sleep(self.time)
+            self.countdown -= self.time

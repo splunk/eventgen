@@ -1,0 +1,5 @@
+{% from 'random_slice_count.template' import getcount %}
+{% from 'fix_includes.template' import %}
+
+{%- time_slice earliest=earliest, latest=eventgen_earliest_epoch, count=getcount(1, 20, 0), slices=20, date_format="%Y%m%d-%H:%M:%S.%f" -%}
+		{"_time":"{{time_target__epoch }}", "_raw":"49={{ACCOUNTS[0]}}52={{time_target_formatted}}56={{LOCAL}}1={{ACCOUNTS[1]}}", "source": "new_order_with_fill", "sourcetype": "fix" }

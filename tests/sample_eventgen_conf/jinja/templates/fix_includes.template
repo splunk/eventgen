@@ -1,0 +1,18 @@
+{% macro r_int() -%}{% for n in [0,1,2,3,4,5] %}{{ [0,1,2,3,4,5,6,7,8,9]|random }}{% endfor %}{%- endmacro -%}
+
+{% macro guid() -%}{{ [r_int(),r_int(),r_int(),r_int(),r_int()]|join('-')}}{%- endmacro -%}
+
+{% set LOCAL = ['BTSYS-ONE', 'BTSYS-TWO', 'BTSYS-THREE']|random %}
+{% set CLORDID = guid() %}
+{% set NEWCLORDID = guid() %}
+{% set ORDID = guid() %}
+{% set EXECID = guid() %}
+{% set SECORDID = guid() %}
+{% set ACCOUNTS = [("REMOTE-ONE", "RONE"), ("REMOTE-TWO", "RTWO"), ("REMOTE-THREE", "RTHREE")] | random | list %}
+{% set SIDE = [1,2] | random %}
+{% set SYMBOLS = [("NBCT", 128, 130), ("NAMZ", 100, 102), ("NAPL", 48, 49)] | random | list %}
+{% set PRICE = [range(SYMBOLS[1], SYMBOLS[2], 1)| random, '%02d' % range(00,99,1) | random]|join('.') %}
+{% set ORDQTYM = range(10000,12000,1) | random %}
+{% set ORDQTY = range(10000,12000,1) | random %}
+{#% set SUBSEC0 = '%03d' % range(000,199,1) | random %#}
+

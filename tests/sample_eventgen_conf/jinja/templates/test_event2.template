@@ -1,0 +1,12 @@
+{% set errors = [("0", "Too late to cancel", 1), ("1", "Unknown Order", 1), ("2", "Broker / Exchange Option", 5), ("99", "Other", 2)] -%}
+{% set elist = [] -%}
+{% for id, msg, pri in errors -%}
+	{% for _ in range(0, pri) %}
+		{% do elist.append((id, msg)) -%}
+	{% endfor -%}
+{% endfor -%}
+
+
+{%- time_now date_format="%Y%m%d-%H:%M:%S.%f" -%}
+	{"_time":"{{ time_now_epoch }}", "_raw":"{{time_now_formatted}} :: {{ prioe }}", "source": "errors", "sourcetype": "fix" }
+

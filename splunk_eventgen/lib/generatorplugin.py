@@ -2,13 +2,13 @@ import datetime
 import pprint
 import random
 import time
-import urllib.error
-import urllib.parse
-import urllib.request
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
 import httplib2
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 
 from splunk_eventgen.lib.eventgenoutput import Output
 from splunk_eventgen.lib.eventgentimestamp import EventgenTimestamp
@@ -153,7 +153,7 @@ class GeneratorPlugin(object):
                         s.backfillSearchUrl + "/services/search/jobs",
                         "POST",
                         headers={"Authorization": "Splunk %s" % s.sessionKey},
-                        body=urllib.parse.urlencode(
+                        body=six.moves.urllib.parse.urlencode(
                             {
                                 "search": s.backfillSearch,
                                 "earliest_time": s.backfill,

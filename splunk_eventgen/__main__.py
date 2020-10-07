@@ -15,9 +15,32 @@ def _get_version():
     """
     @return: Version Number
     """
-    import pkg_resources
+    try:
+        from sys import version_info
 
-    return pkg_resources.get_distribution("splunk_eventgen").version
+        if version_info[0] < 3 or (version_info[0] and version_info[1] < 8):
+            from importlib_metadata import PackageNotFoundError, distribution
+
+            try:
+                dist = distribution("splunk_eventgen")
+                return dist.version
+            except PackageNotFoundError:
+                return "dev"
+        else:
+            # module change in python 3.8
+            from importlib.metadata import PackageNotFoundError, distribution
+
+            try:
+                dist = distribution("splunk_eventgen")
+                return dist.version
+            except PackageNotFoundError:
+                return "dev"
+            except ImportError:
+                return "Unknown"
+            except ModuleNotFoundError:
+                return "Unknown"
+    except Exception:
+        return "Unknown"
 
 
 EVENTGEN_VERSION = _get_version()
@@ -39,6 +62,7 @@ def parse_args():
         version="%(prog)s " + EVENTGEN_VERSION,
     )
     parser.add_argument("--modinput-mode", default=False)
+    parser.add_argument("--counter-output", action="store_true", default=False)
     subparsers = parser.add_subparsers(
         title="commands", help="valid subcommands", dest="subcommand"
     )
@@ -94,9 +118,6 @@ def parse_args():
     )
     generate_subparser.add_argument(
         "--profiler", action="store_true", help="Turn on cProfiler"
-    )
-    generate_subparser.add_argument(
-        "--log-path", type=str, default="{0}/logs".format(FILE_LOCATION)
     )
     generate_subparser.add_argument(
         "--generator-queue-size",
@@ -278,9 +299,16 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
     )
     return_code = os.system(install_cmd)
     if return_code != 0:
-        print(
-            "Failed to install dependencies via pip. Please check whether pip is installed."
+        install_cmd = (
+            "pip3 install --requirement splunk_eventgen/lib/requirements.txt --upgrade --no-compile "
+            + "--no-binary :all: --target "
+            + install_target
         )
+        return_code = os.system(install_cmd)
+        if return_code != 0:
+            print(
+                "Failed to install dependencies via pip. Please check whether pip is installed."
+            )
     os.system("rm -rf " + os.path.join(install_target, "*.egg-info"))
 
     make_tarfile(target_file, directory)
@@ -291,12 +319,15 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
 
 
 def convert_verbosity_count_to_logging_level(verbosity):
-    if verbosity == 0:
-        return logging.ERROR
-    elif verbosity == 1:
-        return logging.INFO
-    elif verbosity == 2:
-        return logging.DEBUG
+    if type(verbosity) == int:
+        if verbosity == 0:
+            return logging.ERROR
+        elif verbosity == 1:
+            return logging.INFO
+        elif verbosity >= 2:
+            return logging.DEBUG
+        else:
+            return logging.DEBUG
     else:
         return logging.ERROR
 
