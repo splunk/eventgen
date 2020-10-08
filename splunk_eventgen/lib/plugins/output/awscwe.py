@@ -20,56 +20,21 @@ class AWSCloudWatchEventOutOutputPlugin(OutputPlugin):
 
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
+
+        access_key = getattr(self._sample, "awsAccessKey", None)
+        secret_access_key = getattr(self._sample, "awsSecretAccessKey", None)
+        aws_region = getattr(self._sample, "awsRegion", None)
+
+        if access_key is None or secret_access_key is None or aws_region is None:
+            logger.error("Please specify the correct awsAccessKey/awsSecretAccessKey/awsRegion")
+
+        self.boto_client = boto3.client("events", aws_access_key_id=access_key, aws_secret_access_key=secret_access_key, region_name=aws_region)
         
-        self.aws_credentials = self._get_aws_credentials()
-        self.clients = self._create_boto_clients()
-
-    def _get_aws_credentials(self):
-        path = getattr(self._sample, "awsCredentialsJson")
-        try:
-            path = Path(path)
-        except Exception as e:
-            logger.error(e)
-
-        with open(path) as f:
-            aws_credentials = json.load(f)
-
-        return aws_credentials
-
-    def _create_boto_clients(self):
-        """
-        Return: A list of boto logs clients
-        """
-        boto_clients = []
-        for acct in self.aws_credentials:
-            awscwe = acct.get("awscwe")
-            if not awscwe or ("regions" not in awscwe):
-                logger.error("No awscwe-related info provided or incomplete")
-                sys.exit(1)
-            regions = awscwe.get("regions")
-            for region in regions:
-                client = boto3.client("events", aws_access_key_id=acct['access_key'], aws_secret_access_key=acct['secret_access_key'], region_name=region)
-                boto_clients.append(client)
-
-        return boto_clients
-
-    def target_process(self, client, events):
-        try:
-            response = client.put_events(Entries=events)
-        except Exception as e:
-            logger.error(e)
-        else:
-            logger.debug(response)
-
     def send_events(self, events):
-        n_clients = len(self.clients)
-
-        if n_clients > 1:
-            with ThreadPoolExecutor(max_workers=n_clients) as executor:
-                for client in self.clients:
-                    executor.submit(self.target_process, client=client, events=events)
-        else:
-            self.target_process(client=self.clients[0], events=events)
+        try:
+            self.boto_client.put_events(Entries=events)
+        except Exception as e:
+            logger.error(e)
 
     def flush(self, q):
         events = []

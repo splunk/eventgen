@@ -20,52 +20,17 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
 
     def __init__(self, sample, output_counter=None):
         OutputPlugin.__init__(self, sample, output_counter)
-        # self.aws_log_group_name = getattr(self._sample, "awsLogGroupName")
-        # self.aws_log_stream_name = getattr(self._sample, "awsLogStreamName")
-        self.aws_credentials = self._get_aws_credentials()
-        self.clients = self._create_boto_clients()
 
-    def _get_aws_credentials(self):
-        path = getattr(self._sample, "awsCredentialsJson")
-        try:
-            path = Path(path)
-        except Exception as e:
-            logger.error(e)
+        access_key = getattr(self._sample, "awsAccessKey", None)
+        secret_access_eky = getattr(self._sample, "awsSecretAccessKey", None)
+        self.log_group = getattr(self._sample, "awsLogGroup", None)
+        self.log_stream = getattr(self._sample, "awsLogStream", None)
+        aws_region = getattr(self._sample, "awsRegion", None)
 
-        with open(path) as f:
-            aws_credentials = json.load(f)
+        if access_key is None or secret_access_eky is None or aws_region is None:
+            logger.error("Please specify the correct awsAccessKey/awsSecretAccessKey/awsRegion")
 
-        return aws_credentials
-
-    def _create_boto_clients(self):
-        """
-        Return: A list of boto logs clients
-        """
-        boto_clients = []
-
-        for acct in self.aws_credentials:
-            # log_group_names = acct.get("logGroupNames")
-            # log_group_stream_names = acct.get("logGroupStreamNames")
-            # regions = acct.get('regions')
-            acc_key = acct.get("access_key")
-            as_key = acct.get("secret_access_key")
-            awscwl = acct.get("awscwl")
-            if not acc_key or not as_key or not awscwl:
-                logger.error("No credentials or no awscwl-related info provided for this account")
-                sys.exit(1)
-
-            for lg in awscwl:
-                region = lg.get("region")
-                lg_name = lg.get("logGroupName")
-                lg_snames = lg.get("logGroupStreamNames")
-                for lg_sname in lg_snames:
-                    boto_clients.append({
-                        "client": boto3.client("logs", aws_access_key_id=acc_key, aws_secret_access_key=as_key, region_name=region),
-                        "lg_name": lg_name,
-                        "lg_sname": lg_sname
-                    })
-
-        return boto_clients
+        self.boto_client = boto3.client("logs", aws_access_key_id=access_key, aws_secret_access_key=secret_access_eky, region_name=aws_region)
 
     def target_process(self, client, lg_name, lg_sname, events):
         while True:
@@ -99,17 +64,6 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
             else:
                 break
 
-    def send_events(self, events):
-        n_clients = len(self.clients)
-        if n_clients > 1:
-            with ThreadPoolExecutor(max_workers=n_clients) as executor:
-                for e in self.clients:
-                    executor.submit(self.target_process, client=e["client"], lg_name=e["lg_name"], lg_sname=e["lg_sname"], events=events)
-        else:
-            only_client = self.clients[0]
-            self.target_process(client=only_client["client"], lg_name=only_client["lg_name"], lg_sname=only_client["lg_sname"], events=events)
-
-
     def flush(self, q):
         events = []
         current_batch_total_bytes = 0
@@ -121,7 +75,7 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
             }
 
             if (len(events) + 1 > self.MAXQUEUELENGTH) or (current_batch_total_bytes + len(json.dumps(event)) >= self.MAXBATCHBYTES):
-                self.send_events(events)
+                self.target_process(self.boto_client, self.log_group, self.log_stream, events)
                 events = []
                 current_batch_total_bytes = 0
 
@@ -129,7 +83,7 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
             current_batch_total_bytes += len(json.dumps(event))
 
         if events:
-            self.send_events(events)
+            self.target_process(self.boto_client, self.log_group, self.log_stream, events)
 
 
 def load():
