@@ -1,0 +1,9 @@
+{% set errors = [("0", "Broker option", 5), ("1", "Unknown Symbol", 1), ("3", "Order exceeds limit", 1), ("7", "Duplicate of verbally committed order", 1), ("8", "Stale order", 2)] -%}
+{% set elist = [] -%}
+{% for id, msg, pri in errors -%}
+	{% for _ in range(0, pri) %}
+		{% do elist.append((id, msg)) -%}
+	{% endfor -%}
+{% endfor -%}
+
+{% set reason = elist | random %}

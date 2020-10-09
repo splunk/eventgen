@@ -5,9 +5,10 @@ import os
 import pprint
 import re
 import sys
-import urllib.error
-import urllib.parse
-import urllib.request
+
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 
 from splunk_eventgen.lib.logging_config import logger
 from splunk_eventgen.lib.timeparser import timeParser
@@ -246,7 +247,7 @@ class Sample(object):
                 stateFile = open(
                     os.path.join(
                         self.sampleDir,
-                        "state." + urllib.request.pathname2url(token.token),
+                        "state." + six.moves.urllib.request.pathname2url(token.token),
                     ),
                     "w",
                 )
@@ -363,6 +364,60 @@ class Sample(object):
     def utcnow(self):
         return self.now(utcnow=True)
 
+    def processSampleLine(self, filehandler):
+        """
+        Due to a change in python3, utf-8 is now the default trying to read a file.  To get around this we need the
+        process loop outside of the filehandler.
+        :param filehandler:
+        :return:
+        """
+        sampleLines = []
+        if self.breaker == self.config.breaker:
+            logger.debug("Reading raw sample '%s' in app '%s'" % (self.name, self.app))
+            sampleLines = filehandler.readlines()
+        # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time
+        # instead of on every generation
+        else:
+            logger.debug(
+                "Non-default breaker '%s' detected for sample '%s' in app '%s'"
+                % (self.breaker, self.name, self.app)
+            )
+            sampleData = filehandler.read()
+            logger.debug(
+                "Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s"
+                % (self.name, self.app, len(sampleData), self.breaker)
+            )
+            try:
+                breakerRE = re.compile(self.breaker, re.M)
+            except:
+                logger.error(
+                    "Line breaker '%s' for sample '%s' in app '%s'"
+                    " could not be compiled; using default breaker",
+                    self.breaker,
+                    self.name,
+                    self.app,
+                )
+                self.breaker = self.config.breaker
+
+            # Loop through data, finding matches of the regular expression and breaking them up into
+            # "lines".  Each match includes the breaker itself.
+            extractpos = 0
+            searchpos = 0
+            breakerMatch = breakerRE.search(sampleData, searchpos)
+            while breakerMatch:
+                logger.debug(
+                    "Breaker found at: %d, %d"
+                    % (breakerMatch.span()[0], breakerMatch.span()[1])
+                )
+                # Ignore matches at the beginning of the file
+                if breakerMatch.span()[0] != 0:
+                    sampleLines.append(sampleData[extractpos : breakerMatch.span()[0]])
+                    extractpos = breakerMatch.span()[0]
+                searchpos = breakerMatch.span()[1]
+                breakerMatch = breakerRE.search(sampleData, searchpos)
+            sampleLines.append(sampleData[extractpos:])
+        return sampleLines
+
     def loadSample(self):
         """
         Load sample from disk into self._sample.sampleLines and self._sample.sampleDict, using cached copy if possible
@@ -370,61 +425,14 @@ class Sample(object):
         if self.sampletype == "raw":
             # 5/27/12 CS Added caching of the sample file
             if self.sampleDict is None:
-                with open(self.filePath, "r") as fh:
-                    if self.breaker == self.config.breaker:
-                        logger.debug(
-                            "Reading raw sample '%s' in app '%s'"
-                            % (self.name, self.app)
-                        )
-                        self.sampleLines = fh.readlines()
-                    # 1/5/14 CS Moving to using only sampleDict and doing the breaking up into events at load time
-                    # instead of on every generation
-                    else:
-                        logger.debug(
-                            "Non-default breaker '%s' detected for sample '%s' in app '%s'"
-                            % (self.breaker, self.name, self.app)
-                        )
-
-                        sampleData = fh.read()
-                        self.sampleLines = []
-
-                        logger.debug(
-                            "Filling array for sample '%s' in app '%s'; sampleData=%s, breaker=%s"
-                            % (self.name, self.app, len(sampleData), self.breaker)
-                        )
-
-                        try:
-                            breakerRE = re.compile(self.breaker, re.M)
-                        except:
-                            logger.error(
-                                "Line breaker '%s' for sample '%s' in app '%s'"
-                                " could not be compiled; using default breaker",
-                                self.breaker,
-                                self.name,
-                                self.app,
-                            )
-                            self.breaker = self.config.breaker
-
-                        # Loop through data, finding matches of the regular expression and breaking them up into
-                        # "lines".  Each match includes the breaker itself.
-                        extractpos = 0
-                        searchpos = 0
-                        breakerMatch = breakerRE.search(sampleData, searchpos)
-                        while breakerMatch:
-                            logger.debug(
-                                "Breaker found at: %d, %d"
-                                % (breakerMatch.span()[0], breakerMatch.span()[1])
-                            )
-                            # Ignore matches at the beginning of the file
-                            if breakerMatch.span()[0] != 0:
-                                self.sampleLines.append(
-                                    sampleData[extractpos : breakerMatch.span()[0]]
-                                )
-                                extractpos = breakerMatch.span()[0]
-                            searchpos = breakerMatch.span()[1]
-                            breakerMatch = breakerRE.search(sampleData, searchpos)
-                        self.sampleLines.append(sampleData[extractpos:])
-
+                self.sampleLines = []
+                try:
+                    with open(self.filePath, "r") as fh:
+                        self.sampleLines = self.processSampleLine(fh)
+                except UnicodeDecodeError:
+                    # incase you can't read it in the default encoding, change over to latin-1
+                    with open(self.filePath, "r", encoding="latin-1") as fh:
+                        self.sampleLines = self.processSampleLine(fh)
                 self.sampleDict = []
                 for line in self.sampleLines:
                     if line == "\n":

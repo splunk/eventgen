@@ -182,8 +182,8 @@ class AwsS3OutputPlugin(OutputPlugin):
             )
         logger.debug("Uploading %d events into s3 key: %s " % (len(records), s3keyname))
         if self.awsS3compressiontype == "gz":
-            import io
             import gzip
+            import io
 
             out = io.StringIO()
             with gzip.GzipFile(fileobj=out, mode="w") as f:

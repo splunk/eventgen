@@ -1,11 +1,11 @@
 import http.client
-import urllib.error
-import urllib.parse
-import urllib.request
 from collections import deque
 from xml.dom import minidom
 
 import httplib2
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 
 from splunk_eventgen.lib.logging_config import logger
 from splunk_eventgen.lib.outputplugin import OutputPlugin
@@ -71,7 +71,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                     self._splunkUrl + "/services/auth/login",
                     "POST",
                     headers={},
-                    body=urllib.parse.urlencode(
+                    body=six.moves.urllib.parse.urlencode(
                         {"username": self._splunkUser, "password": self._splunkPass}
                     ),
                 )[1]
@@ -155,7 +155,7 @@ class SplunkStreamOutputPlugin(OutputPlugin):
                         if host:
                             urlparams.append(("host", host))
                         url = "/services/receivers/simple?%s" % (
-                            urllib.parse.urlencode(urlparams)
+                            six.moves.urllib.parse.urlencode(urlparams)
                         )
                         headers = {
                             "Authorization": "Splunk %s" % self._sample.sessionKey

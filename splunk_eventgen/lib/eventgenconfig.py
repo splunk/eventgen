@@ -1,4 +1,3 @@
-import copy
 import datetime
 import json
 import logging.handlers
@@ -7,10 +6,11 @@ import pprint
 import random
 import re
 import types
-import urllib.error
-import urllib.parse
-import urllib.request
 from configparser import RawConfigParser
+
+import six.moves.urllib.error
+import six.moves.urllib.parse
+import six.moves.urllib.request
 
 from splunk_eventgen.lib.eventgenexceptions import FailedLoadingPlugin, PluginNotLoaded
 from splunk_eventgen.lib.eventgensamples import Sample
@@ -149,6 +149,7 @@ class Config(object):
         "sequentialTimestamp",
         "extendIndexes",
         "disableLoggingQueue",
+        "splitSample",
     ]
     _validTokenTypes = {"token": 0, "replacementType": 1, "replacement": 2}
     _validHostTokens = {"token": 0, "replacement": 1}
@@ -170,6 +171,7 @@ class Config(object):
         "generatorWorkers",
         "maxIntervalsBeforeFlush",
         "maxQueueLength",
+        "splitSample",
         "fileMaxBytes",
     ]
     _floatSettings = ["randomizeCount", "delay", "timeMultiple"]
@@ -236,6 +238,7 @@ class Config(object):
         "maxQueueLength",
         "maxIntervalsBeforeFlush",
         "autotimestamp",
+        "splitSample",
     ]
     _complexSettings = {
         "sampletype": ["raw", "csv"],
@@ -754,7 +757,8 @@ class Config(object):
                         stateFile = open(
                             os.path.join(
                                 s.sampleDir,
-                                "state." + urllib.request.pathname2url(token.token),
+                                "state."
+                                + six.moves.urllib.request.pathname2url(token.token),
                             ),
                             "r",
                         )
@@ -768,10 +772,15 @@ class Config(object):
                 sampleFiles = os.listdir(s.sampleDir)
                 for sample in sampleFiles:
                     sample_name = s.name
-                    # If we expect a .csv, append it to the file name - regex matching must include the extension
-                    if s.sampletype == "csv" and not s.name.endswith(".csv"):
-                        sample_name = s.name + "\.csv"
                     results = re.match(sample_name, sample)
+                    if (
+                        s.sampletype == "csv"
+                        and not s.name.endswith(".csv")
+                        and not results
+                    ):
+                        logger.warning(
+                            "Could not find target csv, try adding .csv into stanza title and filename"
+                        )
                     if results:
                         # Make sure the stanza name/regex matches the entire file name
                         match_start, match_end = results.regs[0]
@@ -781,6 +790,8 @@ class Config(object):
                                     results.group(0), s.name
                                 )
                             )
+                            # Store original name for future regex matching
+                            s._origName = s.name
                             samplePath = os.path.join(s.sampleDir, sample)
                             if os.path.isfile(samplePath):
                                 logger.debug(
@@ -801,39 +812,33 @@ class Config(object):
                     tempsamples2.append(s)
 
             for f in foundFiles:
-                if re.search(s.name, f):
-                    news = copy.copy(s)
-                    news.filePath = f
+                if re.search(s._origName, f):
+                    s.filePath = f
                     # 12/3/13 CS TODO These are hard coded but should be handled via the modular config system
                     # Maybe a generic callback for all plugins which will modify sample based on the filename
                     # found?
                     # Override <SAMPLE> with real name
                     if s.outputMode == "spool" and s.spoolFile == self.spoolFile:
-                        news.spoolFile = f.split(os.sep)[-1]
+                        s.spoolFile = f.split(os.sep)[-1]
                     if s.outputMode == "file" and s.fileName is None:
                         if self.fileName:
-                            news.fileName = self.fileName
+                            s.fileName = self.fileName
                             logger.debug(
                                 "Found a global fileName {}. Setting the sample fileName.".format(
                                     self.fileName
                                 )
                             )
                         elif s.spoolFile == self.spoolFile:
-                            news.fileName = os.path.join(
-                                s.spoolDir, f.split(os.sep)[-1]
-                            )
+                            s.fileName = os.path.join(s.spoolDir, f.split(os.sep)[-1])
                         elif s.spoolFile is not None:
-                            news.fileName = os.path.join(s.spoolDir, s.spoolFile)
-                    # Override s.name with file name.  Usually they'll match unless we've been a regex
-                    # 6/22/12 CS Save original name for later matching
-                    news._origName = news.name
-                    news.name = f.split(os.sep)[-1]
-                    if not news.disabled:
-                        tempsamples2.append(news)
+                            s.fileName = os.path.join(s.spoolDir, s.spoolFile)
+                    s.name = f.split(os.sep)[-1]
+                    if not s.disabled:
+                        tempsamples2.append(s)
                     else:
                         logger.info(
                             "Sample '%s' for app '%s' is marked disabled."
-                            % (news.name, news.app)
+                            % (s.name, s.app)
                         )
 
         # Clear tempsamples, we're going to reuse it

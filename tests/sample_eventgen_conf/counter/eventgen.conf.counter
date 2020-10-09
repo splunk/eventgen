@@ -1,0 +1,130 @@
+#[counter1]
+# Should output 10 events, counting 1-10
+#generator = counter
+#earliest = -3s
+#latest = now
+#count = 10
+#end = 1
+#outputMode = stdout
+
+#[counter2]
+# Should output 3 events, counting 1-3
+#generator = counter
+#earliest = -3s
+#latest = now
+#count = 3
+#end = 1
+#outputMode = stdout
+
+#[counter3]
+# Should output 3 events, counting 1-3
+#generator = counter
+#earliest = -3s
+#latest = now
+#end_count = 3
+#end = 1
+#outputMode = stdout
+
+#[counter4]
+# Should output 40 events, counting 4(1-10) yes, can you not hear me?
+#generator = counter
+#earliest = -3s
+#latest = now
+#end_count = 10
+#count = 4
+#end = 1
+#outputMode = stdout
+
+#[counter5]
+## outputs 4 events by counting 1-1 without cycles every 3 seconds
+#generator = counter
+#earliest = -3s
+#latest = now
+#end_count = 1
+#count = 1
+#end = 4
+#interval = 3
+#outputMode = stdout
+
+#[counter6]
+## outputs 10 events by counting down by 1
+#generator = counter
+#earliest = -3s
+#latest = now
+#start_count = 10
+#end_count = 0
+#count_by = -1
+#end = 1
+#outputMode = stdout
+
+#[counter7]
+# outputs 10 events by counting down by .1
+#generator = counter
+#earliest = -3s
+#latest = now
+#start_count = 1
+#end_count = 0
+#count_by = -.1
+#end = 1
+#outputMode = stdout
+
+#[counter8]
+# outputs 10 events by counting up by .1
+#generator = counter
+#earliest = -3s
+#latest = now
+#start_count = 0
+#end_count = 1
+#count_by = .1
+#end = 1
+#outputMode = stdout
+
+#[counter9]
+# outputs 10 events by counting up by .1, but with a custom output line
+#count_template = {event_ts}-0700 Counter for sample:{samplename},  I like loops! counting {loop_count} of {max_loop}. BLAH: Start_Count: {start_count} Current_Counter:{current_count} End_Count:{end_count} Counting_By: {count_by}
+#generator = counter
+#earliest = -3s
+#latest = now
+#start_count = 0
+#end_count = 1
+#count_by = .1
+#end = 1
+#outputMode = stdout
+
+#[counter0]
+# outputs 10 events by counting up by .1, but with a custom output line, this time without some fields
+#count_template = {event_ts}-0700 Printing event {current_count} of {end_count}
+#generator = counter
+#earliest = -3s
+#latest = now
+#start_count = 1
+#end_count = 10
+#count_by = 1
+#end = 1
+#outputMode = stdout
+
+#[billion1]
+# outputs 1000000000 events by counting up by 1, but with a custom output line, this time without some fields
+#count_template = {event_ts}-0700 Printing event {current_count} of {end_count}
+#generator = counter
+#earliest = -3s
+#latest = now
+#start_count = 1
+#end_count = 1000000000
+#count_by = 1
+#end = 1
+#outputMode = stdout
+
+[100multiproc]
+# outputs 100 events by counting up by 1, but with a custom output line, and splitting into multiprocess
+# Please note, that in order to use mutliprocessing, you must change from the default rater, not the generator.
+# This rater will then correctly set the generator plugin.  This will always divide into 4 processes regardless
+# of generator worker count.
+count_template = {event_ts}-0700 Printing event {current_count} of {end_count}
+rater = counter
+start_count = 1
+splitSample = 4
+end_count = 100
+count_by = 1
+end = 1
+outputMode = stdout

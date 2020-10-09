@@ -65,6 +65,9 @@ class EventGenerator(object):
         """
         # TODO: The old eventgen had strange cli args. We should probably update the module args to match this usage.
         new_args = {}
+        # this variable can't exist in the config object inputs, due to how it's set with symbols and needs to be
+        # pickable.  We only want to change it to true if it doesn't exist and isn't linked to a egcounter.
+        update_counter = False
         if "args" in kwargs:
             args = kwargs["args"]
             outputer = [
@@ -94,17 +97,30 @@ class EventGenerator(object):
                 new_args["sample"] = args.sample
             if getattr(args, "verbosity"):
                 new_args["verbosity"] = args.verbosity
+            if getattr(args, "counter_output"):
+                update_counter = True
+
         self.config = Config(configfile, **new_args)
         self.config.parse()
+        if update_counter:
+            if hasattr(self.config, "outputCounter") and isinstance(
+                self.config.outputCounter, type(None)
+            ):
+                self.config.outputCounter = True
         self.args.multiprocess = (
             True if self.config.threading == "process" else self.args.multiprocess
         )
         self._reload_plugins()
         if "args" in kwargs and getattr(kwargs["args"], "generators"):
             generator_worker_count = kwargs["args"].generators
+            # override the config's generatorWorkers to match what was specified on the cli
+            self.config.generatorWorkers = generator_worker_count
         else:
             generator_worker_count = self.config.generatorWorkers
 
+        # TODO: Probably should destroy pools better so processes are cleaned.
+        if self.args.multiprocess:
+            self.kill_processes()
         self._setup_pools(generator_worker_count)
 
     def _reload_plugins(self):
@@ -171,10 +187,14 @@ class EventGenerator(object):
         """
         self.sampleQueue = Queue(maxsize=0)
         num_threads = threadcount
+        # futures pool allows each process to share an async pool.  One per thread.
         for i in range(num_threads):
             worker = Thread(
                 target=self._worker_do_work,
-                args=(self.sampleQueue, self.loggingQueue,),
+                args=(
+                    self.sampleQueue,
+                    self.loggingQueue,
+                ),
                 name="TimeThread{0}".format(i),
             )
             worker.setDaemon(True)
@@ -198,7 +218,10 @@ class EventGenerator(object):
         for i in range(num_threads):
             worker = Thread(
                 target=self._worker_do_work,
-                args=(self.outputQueue, self.loggingQueue,),
+                args=(
+                    self.outputQueue,
+                    self.loggingQueue,
+                ),
                 name="OutputThread{0}".format(i),
             )
             worker.setDaemon(True)
@@ -242,11 +265,10 @@ class EventGenerator(object):
                 for i in range(worker_threads):
                     worker = Thread(
                         target=self._generator_do_work,
-                        args=(
-                            self.workerQueue,
-                            self.loggingQueue,
-                            self.output_counters[i],
-                        ),
+                        args=(self.workerQueue, self.loggingQueue),
+                        kwargs={
+                            "output_counter": self.output_counters[i],
+                        },
                     )
                     worker.setDaemon(True)
                     worker.start()
@@ -254,7 +276,10 @@ class EventGenerator(object):
                 for i in range(worker_threads):
                     worker = Thread(
                         target=self._generator_do_work,
-                        args=(self.workerQueue, self.loggingQueue, None),
+                        args=(self.workerQueue, self.loggingQueue),
+                        kwargs={
+                            "output_counter": None,
+                        },
                     )
                     worker.setDaemon(True)
                     worker.start()

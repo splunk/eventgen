@@ -93,7 +93,7 @@ class SCSOutputPlugin(OutputPlugin):
                 self.scsRenewToken = False
 
         self.header = {
-            "Authorization": f"Bearer {self.scsAccessToken}",
+            "Authorization": "Bearer {0}".format(self.scsAccessToken),
             "Content-Type": "application/json",
         }
 
@@ -106,7 +106,7 @@ class SCSOutputPlugin(OutputPlugin):
         }
 
         for i in range(self.scsRetryNum + 1):
-            logger.debug(f"Sending data to the scs endpoint. Num:{i}")
+            logger.debug("Sending data to the scs endpoint. Num:{0}".format(i))
             self._sendHTTPEvents(events)
 
             if not self.checkResults():
@@ -128,7 +128,9 @@ class SCSOutputPlugin(OutputPlugin):
                 return False
             elif response.status_code != 200:
                 logger.error(
-                    f"Data transmisison failed with {response.status_code} and {response.text}"
+                    "Data transmisison failed with {0} and {1}".format(
+                        response.status_code, response.text
+                    )
                 )
                 return False
         logger.debug("Data transmission successful")

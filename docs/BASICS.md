@@ -1,42 +1,45 @@
 # Welcome
 
 Welcome to the basics of Eventgen.
-This should hopefully get you through setting up a working eventgen instance. For a complete reference of all of the available configuration options, please check out the [eventgen.conf.spec](REFERENCE.md#eventgenconfspec).  With that, feel free to dig right in, and please post to the Issues page if you have any questions.
+This should hopefully get you through setting up a working eventgen instance. For a complete reference of all available configuration options, please check out the [eventgen.conf.spec](REFERENCE.md#eventgenconfspec).  In the event you hit an issue, please post to the Issues page of the eventgen github repository (github.com/splunk/eventgen).
 
 ## Replay Example
 
-The first example we'll show you should likely cover 90% of the use cases you can imagine.  Eventgen can take an export from another Splunk instance, or just a plain text file, and replay those events while replacing the time stamps. Eventgen will pause the amount of time between each event just like it happened in the original, so the events will appear to be coming out in real time.  When Eventgen reaches the end of the file, it will automatically start over from the beginning.
+Replay mode is likely to cover 90% of the use cases you can imagine.  Eventgen can take an export from another Splunk instance, or just a plain text file, and replay those events while replacing the time stamps. Eventgen will pause the amount of time between each event just like what happened in the original, so the events will appear to be coming out in real time.  When Eventgen reaches the end of the file, it can be configured to start over, stop or rest an interval and begin all over.  By default replay mode it will rest the default interval (60s) and then automatically start over from the beginning.
 
 ### Making a Splunk Export
 
-To build a seed for your new Eventgen, I recommend taking an export from an existing Splunk instance.  You could also take a regular log file and use it for replay (in which case, you can omit sampletype=csv).  There are a few considerations.
+To build a seed for your new Eventgen, start by taking an export from an existing Splunk instance.  Replay also can take a regular log file (in which case, you can omit sampletype=csv).  There are a few considerations.
 * First, Eventgen assumes its sample files are in chronological order.
-* Second, it only uses `index`, `host`, `source`, `sourcetype` and `_raw` fields.  To accommodate that, whatever search you write, we recommend appending `| reverse | fields index, host, source, sourcetype, _raw` to your Splunk search and then doing an export to CSV format.
+* Second, csv only uses `index`, `host`, `source`, `sourcetype` and `_raw` fields.  When using splunk search to build your replay, please append `| reverse | fields index, host, source, sourcetype, _raw` to your Splunk search and then doing an export to CSV format.
 * Third, make sure you find all the different time formats inside the log file and set up tokens to replace for them, so limiting your initial search to a few sourcetypes is probably advisable.
+* Forth, if not using a csv, token.0. should always be used to find and replace the replaytimestamp.  Eventgen needs to be told which field / regex to use for finding out the difference in time between events.
+
+Please note, replaytimestamp means replace a replay with the time difference of the original event difference, where timestamp will always replace the time with "now".
 
 ### Running the example
-You can easily run these examples by hand.  In fact, for testing purposes, I almost always change `outputMode = stdout` to visually examine the data. Run the command below from directory `$EVENTGEN_HOME/splunk_eventgen`.
+You can easily run these examples by hand.  For testing purposes, change `outputMode = stdout` or `outputMode = modinput` to visually examine the data. Run the command below from directory `$EVENTGEN_HOME/splunk_eventgen`.
 
     python -m splunk_eventgen generate README/eventgen.conf.tutorial1
 
-You should now see events showing up on your terminal window.  You can see Eventgen will sleep between events as it sees gaps in the events in the source log.
+You should now see events showing up on your terminal window.  Eventgen will sleep between events as it sees gaps in the events in the source log.
 
 ### Wrapping up the first example
-This will cover most, if not all, of most people's use cases.  Find a real world example of what you want to generate events off, extract it from Splunk or a log file, and toss it into Eventgen.  Assuming that meets all your needs, you might want to skip to the [Deployment](#deployment) section.
+Find a real world example of what you want to generate events off, extract it from Splunk or a log file, and toss it into Eventgen.  Assuming that meets all your needs, you might want to skip to the [Deployment](#deployment) section.
 
 ## Basic Sample
 
-Next, lets build a basic noise generator from a log file.  This will use sample mode, which take a file and replay all or a subset of that file every X seconds, defined by the interval.  Sample mode is the original way eventgen ran, and it's still very useful for generating random data where you want to engineer the data generated from the ground up. Run the command below from directory `$EVENTGEN_HOME/splunk_eventgen`:
+Next, lets build a basic noise generator from a log file.  This will use sample mode, which take a file and either dump the entire file, or randomly select subset of that file every X seconds, defined by the count and interval.  It's important to remember, the default interval is set to 60s, even if you do not specify an interval, there will be one added to your stanza.  `Count` is used to specify how many events should leak out per `interval`.   Sample mode is the original way eventgen ran, and it's still very useful for generating random data where you want to engineer the data generated from the ground up. Run the command below from directory `$EVENTGEN_HOME/splunk_eventgen`:
 
     python -m splunk_eventgen generate README/eventgen.conf.tutorial2
 
 ### Grabbing and rating events
 
-We have a file in the samples directory called `sample.tutorial2` that we'll use as the seed for our event generator.  It contains some random noise pulled from Router and Switch logs.  It will provide a good basis of showing how we can very quickly take a customer's log file and randomly sample it and make it show up in real time.  We won't get too sophisticated with substitutions in this example, just a timestamp, and some more varied interfaces to make it look interesting.
+In the samples directory there is a file called `sample.tutorial2`.  It contains some random noise pulled from Router and Switch logs.  The sample will select 20 events from the file, every 15s and then allow that output to change slightly based on the time of day.
 
-When we're defining a new config file, we need to decide which defaults we're going to override.  By default for example, we'll rate events by time of day and day of week.  Do we want to override that?  There's a variety of defaults we should consider.  They're listed in the [eventgen.conf.spec](https://github.com/splunk/eventgen/blob/master/README/eventgen.conf.spec) in the README directory for reference.
+When defining a new config file, decide which defaults to override, and place them in your `eventgen.conf`.  In this example, the default time of day and day of week are varied.  There's a variety of defaults that can be overwritten.  See [eventgen.conf.spec](https://github.com/splunk/eventgen/blob/master/README/eventgen.conf.spec) in the README directory for reference.
 
-Let's list out the file here and then break down the config directives we've not seen before:
+Below is the contents of configuration directives used in `sample.tutorial2`:
 
 ```
 [sample.tutorial2]
@@ -57,14 +60,14 @@ token.0.token = \w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp
 token.0.replacement = %b %d %H:%M:%S
 ```
-
+Eventgen has 3 major sections, rating, generating, and outputing.  The first block located here lets the `generator` know how many events to create, and how:
 First:
 ```
 interval = 15
 earliest = -15s
 latest = now
 ```
-Let's us decide how often we want to generate events and how we want to generate time stamps for these events.  In this case, every 15 seconds should be sufficient, but depending on your use case you may want to generate only once an hour, once every minute, or every second. We'll generally want to set earliest to a value that's equal to a splunk relative time specifier opposite of interval.  So, if we set it to an hour, or 3600, we'll want earliest to be -3600s or -1h.  For this example, lets generate every 15 seconds.
+In the first three lines, the generator will be told to run every 15s, and to make sure the earliest event is placed 15s into the past.  The last event will end exactly when the generator started (otherwise known as `now`), effectively creating a backfill for 15s.
 ```
 count = 20
 hourOfDayRate = { "0": 0.8, "1": 1.0, "2": 0.9, "3": 0.7, "4": 0.5, "5": 0.4, "6": 0.4, "7": 0.4, "8": 0.4, "9": 0.4, "10": 0.4, "11": 0.4, "12": 0.4, "13": 0.4, "14": 0.4, "15": 0.4, "16": 0.4, "17": 0.4, "18": 0.4, "19": 0.4, "20": 0.4, "21": 0.4, "22": 0.5, "23": 0.6 }
@@ -72,32 +75,30 @@ dayOfWeekRate = { "0": 0.7, "1": 0.7, "2": 0.7, "3": 0.5, "4": 0.5, "5": 1.0, "6
 randomizeCount = 0.2
 randomizeEvents = true
 ```
-Eventgen by default will rate events by the time of day and the day of the week and introduce some randomness every interval.  Also by default, we'll only grab the first X events from the log file every time. For this example, we're looking at router and switch events, which actually is the opposite of the normal business flow.  We expect to see more events overnight for a few hours during maintenance windows and calm down during the day, so we'll need to override the default rating which looks like a standard business cycle.
-    
-`hourOfDayRate` is a JSON formatted hash, with a string identifier for the current hour and a float representing the multiplier we want to use for that hour.  In general, I've always configured the rate to be between 0 and 1, but nothing limits you from putting it at any valid floating point value.  `dayOfWeekRate` is similar, but the number is the day of the week, starting with Sunday.  In this example, Saturday and Sunday early mornings should have the greatest number of events, with fewer events evenly distributed during the week. `randomizeCount` says to introduce 20% randomness, which means plus or minus 10% of the rated total, to every rated count just to make sure we don't have a flat rate of events. `randomizeEvents` we discussed previously, it makes sure we don't grab the same lines from the file every time.
+The next 5 lines in the first section tell the generator how much data to generate.  In this case, a base count of 20, that then will be multiplied by the ratios for `hourOfDayRate`,`dayOfWeekRate`, and `randomizeCount`.  `hourOfDayRate` is a JSON formatted hash, with a string identifier for the current hour and a float representing the multiplier we want to use for that hour.  These ratios can be any valid floating point value.  `dayOfWeekRate` is similar, but the number is the day of the week, starting with Sunday.  `randomizeCount` says to introduce 20% randomness, which means plus or minus 10% of the rated total, to every rated count. `randomizeEvents` makes sure we don't grab the same lines from the file every time.
 
+The next section configures the `output` plugin.
 ```
 outputMode = file
 fileName = /tmp/ciscosample.log
 ```
-As you saw with the last example, we can output straight to Splunk, but in this case we're going to do a simple output to file.  The file outputMode rotates based on size (by default 10 megabytes) and keeps the most recent 5 files around.
+The output plugin is set to output to a file.  The file outputMode rotates based on size (by default 10 megabytes) and keeps the most recent 5 files around.
+
+The last section deals with data manipulation.
 ```
 ## Replace timestamp Feb  4 07:52:53
 token.0.token = \w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}
 token.0.replacementType = timestamp
 token.0.replacement = %b %d %H:%M:%S
 ```
-As we've seen before, here's a simple token substitution for the timestamp.  This will make the events appear to be coming in sometime during the last 15 seconds, based on earliest and latest configs above.
-
-Let's look in detail at this configuration format. `token` is the configuration statement, `0` is the token number (we'll want a different number for every token we define, although they can be non-contiguous).  The third part defines the three subitems of token configuration.  The first, `token`, defines a regular expression we're going to look for in the events as they stream through Eventgen.  The second, `replacementType`, defines what type of replacement we're going to need.  This is a timestamp, but we also offer a variety of other token replacement types such as random for randomly generated values, file for grabbing lines out of files, static for replacing with static strings, etc.  We'll cover those in detail later.  The third subitem, `replacement`, is specific for the `replacementType`, and in this case defines a strptime format we're going to use to output the time using strftime.  For a reference on how to configure strptime, check python's documentation on strptime format strings.
-
-This should now replay random events from the file we have configured.  Go ahead and cd to `$EVENTGEN_HOME/splunk_eventgen` and run `python -m splunk_eventgen generate README/eventgen.conf.tutorial2`.  In another shell, `tail -f /tmp/ciscosample.log` and you should see events replaying from the `sample.tutorial2` file!  You can reuse this same example to easily replay a customer log file, of course accounting for the different regular expressions and strptime formats you'll need for their timestamps.  Remember to customize `interval`, `earliest`, and `count` for the number of events you want the generator to build.
+This token substitution is for the timestamp.  Events will have their timestamp overridden based on earliest and latest configs above.
+`token` is the configuration statement, `0` is the token number (use a different number for every token).  The third part of the token name defines the three subitems of token configuration.  The first, `token`, defines a regular expression used on the events to match a given field.  The second, `replacementType`, defines how to replace the matched field (for a list of different `replacementType`s please see [eventgen.conf.spec](https://github.com/splunk/eventgen/blob/master/README/eventgen.conf.spec)).  The third subitem, `replacement`, specifies the configuration for the `replacementType`.  In this case, defines a strptime format to use on output.  For a reference on how to configure strptime, please see python's documentation on strptime format strings.
 
 ## Second example, building events from scratch
 
 Replaying random events from a file is an easy way to build an eventgen.  Sometimes, like in Eventgen we're building for VMware, the events you're modeling are so complicated it's simplest way to do it without investing a lot of time modeling all the tokens you want to subtitute etc.  Also, sometimes so many tokens need to move together, it's easiest just to replay the file with new timestamps.  However, if we're building a new demo from scratch, a lot of times we want to generate events from a basic template with values we're providing from files.  Let's look at an example:
 ```
-# Note, these samples assume you're installed as an app or a symbolic link in 
+# Note, these samples assume you're installed as an app or a symbolic link in
 # $SPLUNK_HOME/etc/apps/eventgen.  If not, please change the paths below.
 
 [sample.tutorial3]
@@ -208,7 +209,7 @@ The first challenge with modeling transactions is that they often contain multip
 
     [sample.mobilemusic.csv]
     sampletype = csv
-    
+
 If you look at sample.mobilemusic.csv, you'll see the CSV file has fields for index, host, source and sourcetype.  Just as we can specify those directives with `outputmode = splunkstream`, in `sampletype = csv` we'll pull those values directly from the file.  This allows us to model a transaction with different \_raw events with individual values per event for index, host, source and sourcetype, but define tokens which will work across them.
 
 ### The second challenge and result: bundlelines
@@ -228,7 +229,7 @@ Because of what we went through earlier, inside Eventgen, this three line CSV fi
     token.0.token = ((\w+\s+\d+\s+\d{2}:\d{2}:\d{2}:\d{3})|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}:\d{3}))
     token.0.replacementType = replaytimestamp
     token.0.replacement = ["%b %d %H:%M:%S:%f", "%Y-%m-%d %H:%M:%S:%f"]
-    
+
 The first line shows a really complicated RegEx.  This is essentially using RegEx to match both timestamp formats contained in the file.  If you look at the tutorial, you'll see both of these formats as they exist in other sample types, and in this case we bundled two capture groups together with a `|` to have our RegEx parser match both.
 
 Secondly, in the replacement clause, we have a JSON formatted list.  This allows us to pass a user determined number of strptime formats.  Replaytimestamp will use these formats to parse the timestamps it finds with the RegEx.  It will then figure out differences between the events in the original event and introduce some randomness between them and then output them back in the strptime format it matched with.

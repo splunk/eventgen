@@ -136,7 +136,7 @@ scsEndPoint = <host>
     * Should be a full url to the scs endpoint
 
 scsAccessToken = <token>
-    * Should be a scs access token. Do not include "Bearer". 
+    * Should be a scs access token. Do not include "Bearer".
 
 scsClientId = <id>
     * Optional
@@ -329,7 +329,7 @@ sampletype = raw | csv
       OVERRIDES FOR DEFAULT FIELDS WILL ONLY WORK WITH outputMode SPLUNKSTREAM.
 
 interval = <integer>
-    * Only valid in mode = sample
+    * Delay between exections.  This number in replay mode occurs after the replay has finished.
     * How often to generate sample (in seconds).
     * 0 means disabled.
     * Defaults to 60 seconds.

@@ -265,6 +265,12 @@ mode = sample | replay
     * Default is sample, which will generate count (+/- rating) events every configured interval
     * Replay will instead read the file and leak out events, replacing timestamps,
 
+splitSample = <integer>
+    * only works with mode sample
+    * default value set to 0
+    * Value of 1 will default to number of threads / processes enabled
+    * some generators may not have the ability split threads and guarantee transaction order.
+
 sampletype = raw | csv
     * Raw are raw events (default)
     * CSV are from an outputcsv or export from Splunk.
@@ -274,7 +280,7 @@ sampletype = raw | csv
       OVERRIDES FOR DEFAULT FIELDS WILL ONLY WITH WITH outputMode SPLUNKSTREAM.
 
 interval = <integer>
-    * Only valid in mode = sample
+    * Delay between exections.  This number in replay mode occurs after the replay has finished.
     * How often to generate sample (in seconds).
     * 0 means disabled.
     * Defaults to 60 seconds.

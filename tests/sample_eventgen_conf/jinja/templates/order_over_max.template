@@ -1,0 +1,13 @@
+{% macro time_delta(diff) -%}{{ eventgen_earliest_epoch - diff}}{%- endmacro -%}
+{% set earliest = time_delta(5) %}
+
+{%- with -%}
+	{% set events = 2 -%}
+    {% set slicect = 13 -%}
+    {% import 'random_slice_count.template' as randomslice %}
+	{% import 'fix_includes.template' as fixinc %}
+	{%- time_slice earliest=earliest, latest=eventgen_earliest_epoch, count=randomslice.getcount(events, slicect, 0), slices=slicect, date_format="%Y%m%d-%H:%M:%S.%f" -%}
+		{"_time":"{{ time_target_epoch }}", "_raw":"8=FIX.4.29=14735=D34=3949={{fixinc.ACCOUNTS[0]}}52={{time_target_formatted}}56={{fixinc.LOCAL}}1={{fixinc.ACCOUNTS[1]}}11={{fixinc.CLORDID}}38={{fixinc.ORDQTYM}}40=144={{fixinc.PRICE}}47=A54={{fixinc.SIDE}}55={{fixinc.SYMBOLS[0]}}167=FUT200=201206204=0207=BTEX10=184", "source": "order_over_max", "sourcetype": "fix" }
+	{%- time_slice earliest=earliest, latest=eventgen_earliest_epoch, count=randomslice.getcount(events, slicect, 1), slices=slicect, date_format="%Y%m%d-%H:%M:%S.%f" -%}
+		{"_time":"{{ time_target_epoch }}", "_raw":"8=FIX.4.29=0041635=849={{fixinc.LOCAL}}56={{fixinc.ACCOUNTS[0] }}50=BTORD{{fixinc.ACCOUNTS[1]}}57=NONE34=6152={{time_target_formatted}}55={{fixinc.SYMBOLS[0]}}48=BTRD062012167=FUT207=BTEX15=USD1={{fixinc.ACCOUNTS[1]}}47=A204=011={{fixinc.CLORDID}}37={{fixinc.ORDID}}17={{fixinc.EXECID}}58=From Gateway: BT0Q33 > BTEQ33 over max qty200=201206103=0151=014=054={{fixinc.SIDE}}40=177=O59=0150=820=039=8442=144={{fixinc.PRICE}}38={{fixinc.ORDQTYM}}6=060=20120404-20:05:46.115146=010=056", "source": "order_over_max", "sourcetype": "fix" }
+{%- endwith -%}
