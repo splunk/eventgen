@@ -42,7 +42,7 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
         Return: A list of boto logs clients
         """
         boto_clients = []
-        
+
         for acct in self.aws_credentials:
             # log_group_names = acct.get("logGroupNames")
             # log_group_stream_names = acct.get("logGroupStreamNames")
@@ -65,19 +65,6 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
                         "lg_sname": lg_sname
                     })
 
-            # if not regions or not log_group_names or not log_group_stream_names or not isinstance(log_group_names, list) or \
-            #     not isinstance(log_group_stream_names, list) or not isinstance(regions, list) or \
-            #         (len(log_group_names) != len(log_group_stream_names) != len(regions)):
-            #     logger.error("Please inspect regions, logGroupNames, and logGroupStreamNames in your aws credentials")
-            #     sys.exit(1)
-            # for region, lg_name, lg_sname in zip(regions, log_group_names, log_group_stream_names):
-            #     client = boto3.client("logs", aws_access_key_id=acct['access_key'], aws_secret_access_key=acct['secret_access_key'], region_name=region)
-            #     boto_clients.append({
-            #         'client': client,
-            #         "lg_name": lg_name,
-            #         "lg_sname": lg_sname
-            #     })
-
         return boto_clients
 
     def target_process(self, client, lg_name, lg_sname, events):
@@ -89,29 +76,31 @@ class AWSCloudWatchLogOutputPlugin(OutputPlugin):
             sequenceToken = matched_stream.get('uploadSequenceToken', None)
 
             try:
-                if sequenceToken:
+                if sequenceToken is None:
+                    response = client.put_log_events(
+                        logGroupName=lg_name,
+                        logStreamName=lg_sname,
+                        logEvents=events
+                    )
+                else:
                     response = client.put_log_events(
                         logGroupName=lg_name,
                         logStreamName=lg_sname,
                         logEvents=events,
                         sequenceToken=sequenceToken
                     )
-                else:
-                    response = client.put_log_events(
-                        logGroupName=lg_name,
-                        logStreamName=lg_sname,
-                        logEvents=events
-                    )
+            except client.exceptions.InvalidSequenceTokenException as e:
+                logger.info("Refetching SequenceToken after 3 seconds")
+                time.sleep(3)
             except Exception as e:
-                logger.error("Error occurs when trying to send log events : {}".format(e))
-                logger.info("Re-sending log events...")
-                time.sleep(1)
+                # drop events if encounter other type of exception here
+                logger.error(e)
+                break
             else:
                 break
 
     def send_events(self, events):
         n_clients = len(self.clients)
-
         if n_clients > 1:
             with ThreadPoolExecutor(max_workers=n_clients) as executor:
                 for e in self.clients:
