@@ -260,7 +260,7 @@ class EventGenerator(object):
                     worker = Thread(
                         target=self._generator_do_work,
                         args=(self.workerQueue, self.loggingQueue),
-                        kwargs={"output_counter": self.output_counters[i],},
+                        kwargs={"output_counter": self.output_counters[i]},
                     )
                     worker.setDaemon(True)
                     worker.start()
@@ -269,7 +269,7 @@ class EventGenerator(object):
                     worker = Thread(
                         target=self._generator_do_work,
                         args=(self.workerQueue, self.loggingQueue),
-                        kwargs={"output_counter": None,},
+                        kwargs={"output_counter": None},
                     )
                     worker.setDaemon(True)
                     worker.start()

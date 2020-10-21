@@ -21,7 +21,7 @@ LOGGING_CONFIG = {
     },
     "filters": {},
     "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "default",},
+        "console": {"class": "logging.StreamHandler", "formatter": "default"},
         "eventgen_main": {
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "default",
