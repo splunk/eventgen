@@ -97,15 +97,18 @@ class PerDayVolumeGenerator(GeneratorPlugin):
         # build the events and replace tokens
         send_objects = self.replace_tokens(eventsDict, earliest, latest)
         del eventsDict
+        # drop events until payload is under our target size
         payload_size = sum([len(event["_raw"]) for event in send_objects])
         original_size = payload_size
-        logger.debug("Performing final check on prepared sample {} payload for perdayvolume".format(self._sample.name))
         while payload_size > size:
             last_event = send_objects.pop()
             event_size = len(last_event["_raw"])
             payload_size -= event_size
-        logger.debug("Payload size for {} sample too large, removed {} bytes".format(
-            self._sample.name, original_size - payload_size))
+        logger.debug(
+            "Payload size for {} sample too large, removed {} bytes".format(
+                self._sample.name, original_size - payload_size
+            )
+        )
 
         # send the built events
         self.send_events(send_objects, startTime)

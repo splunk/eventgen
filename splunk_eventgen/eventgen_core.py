@@ -191,10 +191,7 @@ class EventGenerator(object):
         for i in range(num_threads):
             worker = Thread(
                 target=self._worker_do_work,
-                args=(
-                    self.sampleQueue,
-                    self.loggingQueue,
-                ),
+                args=(self.sampleQueue, self.loggingQueue,),
                 name="TimeThread{0}".format(i),
             )
             worker.setDaemon(True)
@@ -218,10 +215,7 @@ class EventGenerator(object):
         for i in range(num_threads):
             worker = Thread(
                 target=self._worker_do_work,
-                args=(
-                    self.outputQueue,
-                    self.loggingQueue,
-                ),
+                args=(self.outputQueue, self.loggingQueue,),
                 name="OutputThread{0}".format(i),
             )
             worker.setDaemon(True)
@@ -266,9 +260,7 @@ class EventGenerator(object):
                     worker = Thread(
                         target=self._generator_do_work,
                         args=(self.workerQueue, self.loggingQueue),
-                        kwargs={
-                            "output_counter": self.output_counters[i],
-                        },
+                        kwargs={"output_counter": self.output_counters[i],},
                     )
                     worker.setDaemon(True)
                     worker.start()
@@ -277,9 +269,7 @@ class EventGenerator(object):
                     worker = Thread(
                         target=self._generator_do_work,
                         args=(self.workerQueue, self.loggingQueue),
-                        kwargs={
-                            "output_counter": None,
-                        },
+                        kwargs={"output_counter": None,},
                     )
                     worker.setDaemon(True)
                     worker.start()
