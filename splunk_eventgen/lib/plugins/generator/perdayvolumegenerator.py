@@ -13,7 +13,7 @@ class PerDayVolumeGenerator(GeneratorPlugin):
     def gen(self, count, earliest, latest, samplename=None):
         # count in this plugin is a measurement of byteself._sample.
         size = count
-        logger.debug(
+        logger.info(
             "PerDayVolumeGenerator Called with a Size of: %s with Earliest: %s and Latest: %s"
             % (size, earliest, latest)
         )
@@ -27,7 +27,7 @@ class PerDayVolumeGenerator(GeneratorPlugin):
             )
             return
 
-        logger.debug(
+        logger.info(
             "Generating sample '%s' in app '%s' with count %d, et: '%s', lt '%s'"
             % (self._sample.name, self._sample.app, size, earliest, latest)
         )
@@ -95,7 +95,20 @@ class PerDayVolumeGenerator(GeneratorPlugin):
             )
 
         # build the events and replace tokens
-        self.build_events(eventsDict, startTime, earliest, latest)
+        send_objects = self.replace_tokens(eventsDict, earliest, latest)
+        del eventsDict
+        payload_size = sum([len(event["_raw"]) for event in send_objects])
+        original_size = payload_size
+        logger.debug("Performing final check on prepared payload for perdayvolume")
+        while payload_size > size:
+            last_event = send_objects.pop()
+            event_size = len(last_event["_raw"])
+            payload_size -= event_size
+        logger.info("Payload size for {} sample too large, removed {} bytes".format(
+            self._sample.name, original_size - payload_size))
+
+        # send the built events
+        self.send_events(send_objects, startTime)
 
 
 def load():
