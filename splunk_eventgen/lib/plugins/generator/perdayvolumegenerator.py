@@ -33,6 +33,16 @@ class PerDayVolumeGenerator(GeneratorPlugin):
         )
         startTime = datetime.datetime.now()
 
+        # Pre-generate each event in the sample once, so we can replace tokens and calculate any volume differences
+        preReplacementSize = sum([len(event["_raw"]) for event in self._sample.sampleDict])
+        allEvents = self.replace_tokens(self._sample.sampleDict, earliest, latest)
+        postReplacementSize = sum([len(event["_raw"]) for event in allEvents])
+        replacementVolumeRatio = preReplacementSize / postReplacementSize
+        size = size * replacementVolumeRatio
+        logger.debug("Token replacement size factor: {}, new interval target size: {}".format(
+            replacementVolumeRatio, size))
+        del allEvents
+
         # Create a counter for the current byte size of the read in samples
         currentSize = 0
 
@@ -94,23 +104,9 @@ class PerDayVolumeGenerator(GeneratorPlugin):
                 % (self._sample.name, self._sample.app, len(eventsDict))
             )
 
-        # build the events and replace tokens
+        # replace tokens and send events
         send_objects = self.replace_tokens(eventsDict, earliest, latest)
         del eventsDict
-        # drop events until payload is under our target size
-        payload_size = sum([len(event["_raw"]) for event in send_objects])
-        original_size = payload_size
-        while payload_size > size:
-            last_event = send_objects.pop()
-            event_size = len(last_event["_raw"])
-            payload_size -= event_size
-        logger.debug(
-            "Payload size for {} sample too large, removed {} bytes".format(
-                self._sample.name, original_size - payload_size
-            )
-        )
-
-        # send the built events
         self.send_events(send_objects, startTime)
 
 
