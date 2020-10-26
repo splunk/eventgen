@@ -34,13 +34,18 @@ class PerDayVolumeGenerator(GeneratorPlugin):
         startTime = datetime.datetime.now()
 
         # Pre-generate each event in the sample once, so we can replace tokens and calculate any volume differences
-        preReplacementSize = sum([len(event["_raw"]) for event in self._sample.sampleDict])
+        preReplacementSize = sum(
+            [len(event["_raw"]) for event in self._sample.sampleDict]
+        )
         allEvents = self.replace_tokens(self._sample.sampleDict, earliest, latest)
         postReplacementSize = sum([len(event["_raw"]) for event in allEvents])
         replacementVolumeRatio = preReplacementSize / postReplacementSize
         size = size * replacementVolumeRatio
-        logger.debug("Token replacement size factor: {}, new interval target size: {}".format(
-            replacementVolumeRatio, size))
+        logger.debug(
+            "Token replacement size factor: {}, new interval target size: {}".format(
+                replacementVolumeRatio, size
+            )
+        )
         del allEvents
 
         # Create a counter for the current byte size of the read in samples
