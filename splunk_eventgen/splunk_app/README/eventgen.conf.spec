@@ -17,7 +17,6 @@
 ## IMPORTANT! Do not specify any settings under a default stanza
 ## The layering system will not behave appropriately
 ## Use [global] instead
-[default]
 
 [global]
 disabled = false
