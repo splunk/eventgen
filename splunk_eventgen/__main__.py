@@ -274,6 +274,8 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
     target_file = os.path.join(dest, "sa_eventgen_{}.spl".format(EVENTGEN_VERSION))
     splunk_app = os.path.join(FILE_LOCATION, "splunk_app")
     splunk_app_samples = os.path.join(splunk_app, "samples")
+    if os.path.exists(splunk_app_samples):
+        shutil.rmtree(splunk_app_samples)
     shutil.copytree(os.path.join(FILE_LOCATION, "samples"), splunk_app_samples)
     try:
         shutil.copytree(splunk_app, directory)
@@ -291,7 +293,7 @@ def build_splunk_app(dest, source=os.getcwd(), remove=True):
     shutil.copyfile(eventgen_conf, directory_default_dir)
 
     # install 3rd lib dependencies
-    install_target = os.path.join(directory, "lib")
+    install_target = os.path.join(directory, "bin")
     install_cmd = (
         "pip install --requirement splunk_eventgen/lib/requirements.txt --upgrade --no-compile "
         + "--no-binary :all: --target "
