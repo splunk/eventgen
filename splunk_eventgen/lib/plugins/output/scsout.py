@@ -136,15 +136,24 @@ class SCSOutputPlugin(OutputPlugin):
             
             while events:
                 current_event = events.pop()
+                current_eventbody = current_event['body']
+                try:
+                    current_eventbody = json.loads(current_eventbody)
+                    current_event['body'] = current_eventbody
+                except ValueError:
+                    pass
+
                 if self.attr_keys:
-                    event_dict = json.loads(current_event['body'])
+                    # event_dict = json.loads(current_event['body'])
                     temp_dict = dict()
                     for k in self.attr_keys:
-                        if k in event_dict:
-                            temp_dict[k] = event_dict[k]
+                        if k in current_eventbody:
+                            temp_dict[k] = current_eventbody[k]
                     # current_event["attributes"] = json.dumps({k: event_dict[k] for k in self.attr_keys})
                     current_event["attributes"] = temp_dict
-                    current_event['body'] = event_dict
+                    # current_event['body'] = event_dict
+                    # current_event['body'] = current_event['body'].strip("\n") # strip newline
+                # print(current_event)
                 payload.append(current_event)
                 current_size += len(json.dumps(current_event))
                 if not events:
