@@ -139,6 +139,9 @@ outputMode = modinput | s2s | file | splunkstream | stdout | devnull | spool | h
 scsHost = <host:port> | <api-url>
     * Defaults to api.scp.splunk.com
 
+attribute_keys = key1, key2, key3, ...
+    * Defaults to none
+
 scsAccessToken = access token for Splunk Cloud Services. 
     * Either client credentials or this should be used for authorization, however, without client credentials, access token won't be refreshed after 12 hours (playground) as of now.
 

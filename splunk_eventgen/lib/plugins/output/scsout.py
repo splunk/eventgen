@@ -45,15 +45,20 @@ class SCSOutputPlugin(OutputPlugin):
         self.scs_env = getattr(self._sample, "scsEnv")
         self.scs_ingest_end_point = getattr(self._sample, "scsIngestEndPoint")
         self.tenant = getattr(self._sample, "scsTenant")
+        self.attr_keys = getattr(self._sample, "attribute_keys", None)
         self._host = self._get_scs_attributes(self.scs_env)["api_url"]
         self.verify = False if hasattr(self._sample, "scsInsecure") and getattr(self._sample, "scsInsecure") == "true" else True
 
         if not self.scs_ingest_end_point:
-            raise NoSCSEndPoint("please specify your REST endpoint (events | metrics)")
+            raise NoSCSIngestEndPoint("please specify your REST endpoint (events | metrics)")
         if not self.tenant:
             raise NoSCSTenant("please specify your tenant(s), be it a single value or a list")
         if not self.scs_env:
             raise NoSCSEnv("please specify the SCS environment of your tenant")
+
+        # create an attribute key in new event dict, which takes in a line of string of keys delimited by comma
+        if self.attr_keys:
+            self.attr_keys = [k.strip() for k in self.attr_keys.split(',')]
 
         # self.api_url = f'{self.scs_scheme}://{host}/{self.tenant}/ingest/v1beta2/{self.scs_ingest_end_point}'
 
@@ -131,6 +136,16 @@ class SCSOutputPlugin(OutputPlugin):
             
             while events:
                 current_event = events.pop()
+                if self.attr_keys:
+                    event_dict = json.loads(current_event['body'])
+                    temp_dict = dict()
+                    for k in self.attr_keys:
+                        if k in event_dict:
+                            temp_dict[k] = event_dict[k]
+                    # current_event["attributes"] = json.dumps({k: event_dict[k] for k in self.attr_keys})
+                    current_event["attributes"] = temp_dict
+                    current_event['body'] = event_dict
+                print(current_event)
                 payload.append(current_event)
                 current_size += len(json.dumps(current_event))
                 if not events:
