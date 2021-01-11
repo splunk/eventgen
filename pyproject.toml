@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "splunk_eventgen"
-version = "7.2.0"
+version = "7.2.1"
 description = "Splunk Event Generator to produce real-time, representative data"
 authors = [ "Brian Bingham <bbingham@splunk.com>", "Tony Lee <tonyl@splunk.com>", "Jack Meixensperger <jackm@splunk.com>",]
 license = "Apache-2.0"
