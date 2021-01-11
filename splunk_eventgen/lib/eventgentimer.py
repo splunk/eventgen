@@ -182,7 +182,6 @@ class Timer(object):
                                 raweventsize=raw_event_size,
                             )
                             self.perdayrater.rate()
-                            self.perdayrater.queue_it(count)
                         self.rater.queue_it(count)
                     self.countdown = self.interval
                     self.executions += 1

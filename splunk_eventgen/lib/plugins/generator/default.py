@@ -73,7 +73,8 @@ class DefaultGenerator(GeneratorPlugin):
                     % (self._sample.name, self._sample.app, len(eventsDict))
                 )
 
-        GeneratorPlugin.build_events(self, eventsDict, startTime, earliest, latest)
+        send_objects = self.replace_tokens(eventsDict, earliest, latest)
+        self.send_events(send_objects, startTime)
 
 
 def load():
