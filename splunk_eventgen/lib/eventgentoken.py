@@ -117,6 +117,7 @@ class Token(object):
                 # Reset replay internal variables for this token
                 self._replaytd = None
                 self._lastts = None
+                self.replacementValue = replacement
         return event
 
     def _getReplacement(
