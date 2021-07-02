@@ -1236,7 +1236,7 @@ class Config(object):
         random.seed(value)
 
     def _buildConfDict(self):
-        """Build configuration dictionary that we will use """
+        """Build configuration dictionary that we will use"""
 
         # Abstracts grabbing configuration from Splunk or directly from Configuration Files
         if self.splunkEmbedded and not STANDALONE:

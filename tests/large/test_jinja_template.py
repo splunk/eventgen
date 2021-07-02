@@ -6,7 +6,7 @@ ts_format = "%Y-%m-%dT%H:%M:%S"
 
 
 def test_jinja_template_simple(eventgen_test_helper):
-    """Test simple jinja template """
+    """Test simple jinja template"""
     current_datetime = datetime.datetime.now()
     events = eventgen_test_helper("eventgen_jinja_simple.conf").get_events()
     # assert the event length is the same as sample file size
