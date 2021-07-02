@@ -45,8 +45,8 @@ COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
 COPY dist/splunk_eventgen*.tar.gz /root/splunk_eventgen.tgz
 RUN /opt/pypy/bin/pypy3 -m pip install /root/splunk_eventgen.tgz && \
     rm /root/splunk_eventgen.tgz
-COPY pyproject.toml /usr/lib/python3.7/site-packages/splunk_eventgen/pyproject.toml
-COPY poetry.lock /usr/lib/python3.7/site-packages/splunk_eventgen/poetry.lock
+COPY pyproject.toml /opt/pypy/site-packages/splunk_eventgen/pyproject.toml
+COPY poetry.lock /opt/pypy/site-packages/splunk_eventgen/poetry.lock
 
 EXPOSE 2222 6379 9500
 RUN chmod a+x /sbin/entrypoint.sh
