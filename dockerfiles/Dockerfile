@@ -34,8 +34,9 @@ RUN apk --no-cache upgrade && \
 COPY dockerfiles/sshd_config /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
 COPY dist/splunk_eventgen*.tar.gz /root/splunk_eventgen.tgz
-RUN pip3 install /root/splunk_eventgen.tgz && \
+RUN CRYPTOGRAPHY_DONT_BUILD_RUST=1 pip3 install /root/splunk_eventgen.tgz && \
 	rm /root/splunk_eventgen.tgz
+
 COPY pyproject.toml /usr/lib/python3.7/site-packages/splunk_eventgen/pyproject.toml
 COPY poetry.lock /usr/lib/python3.7/site-packages/splunk_eventgen/poetry.lock
 
