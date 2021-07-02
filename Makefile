@@ -13,6 +13,12 @@ XLARGE ?= 'tests/xlarge'
 NEWLY_ADDED_PY_FILES = $(shell git ls-files -o --exclude-standard | grep -E '\.py$$')
 CHANGED_ADDED_PY_FILES = $(shell git ls-files -mo --exclude-standard | grep -E '\.py$$')
 ALL_PY_FILES = $(shell git ls-files tests splunk_eventgen | grep -E '\.py$$')
+CURL_FLAGS := -k -O
+UNAME := $(shell uname)
+
+ifeq ($(UNAME), Darwin)
+CURL_FLAGS := -k -o
+endif
 
 .PHONY: tests, lint, format, docs
 
@@ -103,7 +109,7 @@ clean:
 	docker network rm eg_network_test || true
 
 setup_eventgen:
-	curl -k -O splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
+	curl ${CURL_FLAGS} splunk_eventgen/default/eventgen_engine.conf ${ENGINE_CONF_SOURCE}
 
 eg_network:
 	docker network create --attachable --driver bridge eg_network || true

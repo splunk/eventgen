@@ -21,6 +21,7 @@ eventgen_wsgi.conf
 **/*.tgz
 .cache
 *.xml
+splunk_eventgen/default/eventgen_engine.conf
 !tests/large/splunk/input.xml
 !splunk_eventgen/splunk_app/default/data/ui/nav/default.xml
 dist

@@ -1,0 +1,54 @@
+FROM redis:5.0.12-buster
+
+RUN apt update && \
+    apt -y install \
+    bash \
+    curl \
+    tar \
+    lbzip2 \
+    bzip2 \
+    gcc \
+    libc-dev \
+    libz-dev \
+    libffi-dev \
+    libssl-dev \
+    libxml2-dev \
+    libxslt-dev \
+    python-dev \
+    python-pip \
+    sudo \
+    openssh-server \
+    acl \
+    g++ \
+    git \
+    curl && \
+    rm -rf /tmp/* && \
+    rm -rf /var/cache/apt/* && \
+    rm -rf /etc/ssh/ssh_host_rsa_key && \
+    ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa && \
+    mkdir -p /var/run/sshd && \
+    mkdir -p /root/.ssh && \
+    chmod 0700 /root/.ssh && \
+    passwd -u root && \
+    # install dependencies of conductor2 used by perf
+    python2.7 -m pip install filelock twisted requests queuelib ujson psutil crochet msgpack-python unidecode attrdict service_identity
+
+RUN curl https://downloads.python.org/pypy/pypy3.7-v7.3.5-linux64.tar.bz2 \
+    | tar -xjC /opt \
+    && mv /opt/pypy3.7-v7.3.5-linux64 /opt/pypy \
+    && echo "export PATH=\"$PATH\":/opt/pypy/bin" >> /root/.bashrc \
+    && /opt/pypy/bin/pypy3 -m ensurepip \
+    && /opt/pypy/bin/pypy3 -m pip install --upgrade pip
+
+COPY dockerfiles/sshd_config /etc/ssh/sshd_config
+COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
+COPY dist/splunk_eventgen*.tar.gz /root/splunk_eventgen.tgz
+RUN /opt/pypy/bin/pypy3 -m pip install /root/splunk_eventgen.tgz && \
+    rm /root/splunk_eventgen.tgz
+COPY pyproject.toml /usr/lib/python3.7/site-packages/splunk_eventgen/pyproject.toml
+COPY poetry.lock /usr/lib/python3.7/site-packages/splunk_eventgen/poetry.lock
+
+EXPOSE 2222 6379 9500
+RUN chmod a+x /sbin/entrypoint.sh
+WORKDIR /opt/pypy/site-packages/splunk_eventgen
+ENTRYPOINT ["/sbin/entrypoint.sh"]
