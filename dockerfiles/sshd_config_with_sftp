@@ -1,0 +1,35 @@
+Port 2222
+AcceptEnv LANG LANGUAGE XMODIFIERS LC_* RD_*
+AddressFamily any
+AllowAgentForwarding yes
+AllowTcpForwarding yes
+AuthorizedKeysFile %h/.ssh/authorized_keys
+ChallengeResponseAuthentication no
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+ClientAliveInterval 180
+Compression delayed
+HostBasedAuthentication no
+HostKey /etc/ssh/ssh_host_rsa_key
+IgnoreRhosts yes
+IgnoreUserKnownHosts yes
+KexAlgorithms curve25519-sha256@libssh.org,ecdh-sha2-nistp521,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group-exchange-sha256
+LogLevel INFO
+LoginGraceTime 30s
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com
+MaxAuthTries 5
+MaxSessions 128
+PasswordAuthentication no
+PermitEmptyPasswords no
+PermitRootLogin yes
+PermitTunnel yes
+PermitUserEnvironment no
+PidFile /var/run/sshd.pid
+PrintMotd no
+Protocol 2
+PubKeyAuthentication yes
+StrictModes no
+Subsystem sftp internal-sftp
+SyslogFacility AUTH
+TcpKeepalive yes
+UseDns no
+X11Forwarding yes

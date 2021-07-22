@@ -40,7 +40,7 @@ RUN curl https://downloads.python.org/pypy/pypy3.7-v7.3.5-linux64.tar.bz2 \
     && /opt/pypy/bin/pypy3 -m ensurepip \
     && /opt/pypy/bin/pypy3 -m pip install --upgrade pip
 
-COPY dockerfiles/sshd_config /etc/ssh/sshd_config
+COPY dockerfiles/sshd_config_with_sftp /etc/ssh/sshd_config
 COPY dockerfiles/entrypoint.sh /sbin/entrypoint.sh
 COPY dist/splunk_eventgen*.tar.gz /root/splunk_eventgen.tgz
 RUN /opt/pypy/bin/pypy3 -m pip install /root/splunk_eventgen.tgz && \
