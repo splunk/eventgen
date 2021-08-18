@@ -40,7 +40,7 @@ test_helper:
 	docker cp . ${EVENTGEN_TEST_IMAGE}:$(shell pwd)
 
 	@echo 'Verifying contents of pip.conf'
-	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip3 install dist/splunk_eventgen*.tar.gz"
+	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "cd $(shell pwd); pip3 install --upgrade pip; pip3 install dist/splunk_eventgen*.tar.gz"
 
 	@echo 'Installing test dependencies'
 	docker exec -i ${EVENTGEN_TEST_IMAGE} /bin/sh -c "pip3 install poetry;poetry config virtualenvs.create false;poetry install --no-root"
