@@ -173,9 +173,15 @@ class ReplayGenerator(GeneratorPlugin):
                     rpevent, self.backfill_time, earliest, latest
                 )
                 previous_event = current_event
-                previous_event_timediff = rpevent["timediff"]
+                if len(line_list) != 1:
+                    previous_event_timediff = line_list[index + 1]["timediff"]
+                else:
+                    previous_event_timediff = rpevent["timediff"]
                 self._out.bulksend([current_event])
                 continue
+            else:
+                previous_event = rpevent
+                previous_event_timediff = rpevent["timediff"]
             try:
                 time.sleep(previous_event_timediff.total_seconds())
             except ValueError:
@@ -186,8 +192,6 @@ class ReplayGenerator(GeneratorPlugin):
                 logger.error("Event: {0}".format(rpevent))
                 pass
             current_time = datetime.datetime.now()
-            previous_event = rpevent
-            previous_event_timediff = rpevent["timediff"]
             send_event = self.set_time_and_tokens(
                 rpevent, current_time, earliest, latest
             )
