@@ -173,7 +173,10 @@ class ReplayGenerator(GeneratorPlugin):
                     rpevent, self.backfill_time, earliest, latest
                 )
                 previous_event = current_event
-                previous_event_timediff = line_list[index + 1]["timediff"]
+                if len(line_list) != 1:
+                    previous_event_timediff = line_list[index + 1]["timediff"]
+                else:
+                    previous_event_timediff = rpevent["timediff"]
                 self._out.bulksend([current_event])
                 continue
             else:
